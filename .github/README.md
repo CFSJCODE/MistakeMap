@@ -352,7 +352,7 @@ O MistakeMap cria uma memória de falhas e recuperações ligada ao conteúdo es
 | Aplicou fórmula correta ao caso errado | Erro de seleção/modelagem | Hipóteses, domínio de validade |
 
 > [!WARNING]
-> A classificação deve ser **revisável**. Uma mesma resposta errada pode ter múltiplas causas possíveis e, sem explicação do estudante, o sistema deve registrar incerteza em vez de afirmar intenção cognitiva.
+> Uma mesma resposta errada pode ter **múltiplas causas possíveis**. Sem explicação do estudante, o sistema deve registrar incerteza em vez de afirmar intenção cognitiva.
 
 <br>
 
@@ -377,16 +377,23 @@ O MistakeMap cria uma memória de falhas e recuperações ligada ao conteúdo es
 
 <br>
 
+---
+
+<br>
+
 <a id="regras-de-dominio"></a>
 
-### Regras de Domínio
+## Regras de Domínio
 
-- Erro sugerido por IA permanece `pending` até validação ou confirmação contextual.
-- Um exercício pode envolver vários conceitos e um erro pode afetar mais de um conceito.
-- Erro corrigido em tentativas futuras não é apagado; sua prioridade diminui pela evidência de recuperação.
-- A ausência de erro em poucos exercícios não prova domínio absoluto.
-- O sistema não deve inferir transtorno, deficiência ou diagnóstico de aprendizagem.
-- Conteúdo de provas/professores pode ter restrições de direitos; compartilhamento público não faz parte do MVP.
+1. Erro sugerido por IA permanece `pending` até validação ou confirmação contextual.
+2. Um exercício pode envolver vários conceitos.
+3. Um erro pode afetar mais de um conceito.
+4. Erro corrigido em tentativas futuras **não é apagado**.
+5. Sua prioridade diminui pela evidência de recuperação.
+6. A ausência de erro em poucos exercícios não prova domínio absoluto.
+7. O sistema não deve inferir transtorno, deficiência ou diagnóstico de aprendizagem.
+8. Conteúdo de provas/professores pode ter restrições de direitos.
+9. Compartilhamento público não faz parte do MVP.
 
 <br>
 
@@ -398,15 +405,41 @@ O MistakeMap cria uma memória de falhas e recuperações ligada ao conteúdo es
 
 ## Pipeline de Extração e IA
 
-O pipeline precisa preservar a resolução do estudante, pois classificar apenas a resposta final perde informação.
+O pipeline deve preservar a **resolução do estudante**. Classificar apenas a resposta final faria o sistema perder informação crítica.
 
-OCR/visão extrai texto e expressões quando possível; um LLM compara tentativa, correção e conceitos da disciplina para propor eventos de erro. Um grafo conceitual conecta tópicos e pré-requisitos.
+OCR/visão extrai texto e expressões quando possível.
 
-A prioridade de revisão é calculada sobre **eventos validados**, não sobre inferências ocultas.
+Um LLM compara:
+
+- tentativa;
+- correção;
+- conceitos da disciplina;
+
+para propor eventos de erro.
+
+Um grafo conceitual conecta tópicos e pré-requisitos.
+
+> [!IMPORTANT]
+> A prioridade de revisão é calculada sobre **eventos validados**, não sobre inferências ocultas.
 
 <br>
 
-### Etapas
+### Pipeline de processamento
+
+```mermaid
+flowchart LR
+    A["1. Captura<br/>Imagem / PDF / Digitação"] --> B["2. Estrutura<br/>Enunciado + passos + resposta + correção"]
+    B --> C["3. Conceitos<br/>Busca / LLM"]
+    C --> D["4. Erros<br/>Tipo + passo + explicação"]
+    D --> E{"5. Validação"}
+    E -->|Confirmado| F["Evento confiável"]
+    E -->|Corrigido| G["Evento revisado"]
+    E -->|Rejeitado| H["Evento rejeitado"]
+    F --> I["6. Agregação"]
+    G --> I
+    I --> J["MistakeMap"]
+    J --> K["Prioridade de revisão"]
+```
 
 | Etapa | Processamento | Resultado |
 |:---|:---|:---|
@@ -419,39 +452,65 @@ A prioridade de revisão é calculada sobre **eventos validados**, não sobre in
 
 <br>
 
+---
+
+<br>
+
 <a id="modelagem-de-prioridade"></a>
 
-### Modelagem de Prioridade
+## Modelagem de Prioridade
 
-Uma prioridade simples pode ser modelada por:
+Uma prioridade simples pode ser definida como:
 
 $$
-P = F \cdot R \cdot I \cdot (1-M)
+P = F \times R \times I \times (1 - M)
 $$
 
-Onde:
+onde:
 
-| Variável | Interpretação |
-|:---:|:---|
+| Variável | Significado |
+|:---:|---|
+| $P$ | Prioridade de revisão |
 | $F$ | Frequência normalizada do erro |
 | $R$ | Fator de recência |
 | $I$ | Importância do conceito |
-| $M$ | Evidência de domínio/recuperação no intervalo $[0,1]$ |
+| $M$ | Evidência de domínio/recuperação entre `0` e `1` |
 
-> [!IMPORTANT]
-> O objetivo de $P$ é **ordenar revisão**, não produzir uma nota sobre capacidade intelectual.
+> [!NOTE]
+> O objetivo é **ordenar a revisão**, não produzir uma nota sobre capacidade intelectual.
+
+```text
+Frequência alta
+      ×
+Recência alta
+      ×
+Conceito importante
+      ×
+Baixa recuperação
+      =
+Alta prioridade de revisão
+```
+
+<br>
+
+---
 
 <br>
 
 <a id="limites-e-salvaguardas"></a>
 
-### Limites e Salvaguardas
+## Limites e Salvaguardas
 
-- Reconhecimento de matemática manuscrita é imperfeito; oferecer edição do OCR e entrada manual.
+- Reconhecimento de matemática manuscrita é imperfeito.
+- O sistema deve oferecer edição do OCR.
+- Entrada manual deve permanecer disponível.
 - Comparar soluções exige tolerar métodos alternativos corretos.
-- Um erro aparente pode ser apenas erro de transcrição do OCR.
-- A causa cognitiva real nem sempre é observável; utilizar linguagem como **“padrão sugerido”**.
-- Priorização deve ser transparente e ajustável para evitar comportamento excessivamente prescritivo.
+- Um erro aparente pode ser erro de transcrição do OCR.
+- A causa cognitiva real nem sempre é observável.
+- Deve-se utilizar linguagem como **“padrão sugerido”**.
+- Priorização deve ser transparente.
+- Priorização deve ser ajustável.
+- O sistema deve evitar comportamento excessivamente prescritivo.
 
 <br>
 
@@ -463,42 +522,48 @@ Onde:
 
 ## Arquitetura de Software
 
-Flutter oferece captura, revisão e visualização do mapa. Supabase armazena exercícios, imagens, taxonomia, eventos e histórico. OCR/LLM permanecem em backend seguro; o grafo pode ser modelado relacionalmente por `concept_edges` no PostgreSQL, sem exigir banco de grafos no MVP.
+<br>
+
+### Responsabilidades principais
+
+**Flutter** oferece:
+
+- captura;
+- revisão;
+- visualização do mapa.
+
+**Supabase** armazena:
+
+- exercícios;
+- imagens;
+- taxonomia;
+- eventos;
+- histórico.
+
+OCR/LLM ficam em **backend seguro**.
+
+O grafo pode ser modelado relacionalmente com `concept_edges` no PostgreSQL, sem exigir banco de grafos no MVP.
 
 <br>
 
-### Visão em camadas
+### Visão arquitetural
 
 ```mermaid
 flowchart TB
-    UI["Camada de Experiência<br/>Flutter: captura, exercício, revisão, mapa, fila"]
-    STATE["Estado e Navegação<br/>Riverpod + GoRouter"]
-    DOMAIN["Domínio<br/>Disciplinas, conceitos, exercícios, tentativas, erros, revisões, domínio"]
-    AI["IA Educacional<br/>OCR + Parsing + LLM"]
-    BACKEND["Supabase<br/>Auth + PostgreSQL + RLS + Storage + Edge Functions"]
-    ANALYTICS["Análise<br/>Agregações por conceito, tipo, recência e recuperação"]
+    UX["CAMADA DE EXPERIÊNCIA<br/>Flutter: captura, exercício, revisão, mapa e fila de estudo"]
+    STATE["ESTADO E NAVEGAÇÃO<br/>Riverpod + GoRouter"]
+    DOMAIN["DOMÍNIO<br/>Disciplinas, conceitos, exercícios, tentativas, erros, revisões e domínio"]
+    AI["IA EDUCACIONAL<br/>OCR + parsing + LLM para sugestões com evidência"]
+    SB["SUPABASE<br/>Auth + PostgreSQL + RLS + Storage + Edge Functions"]
+    ANALYSIS["ANÁLISE<br/>Agregações por conceito, tipo de erro, recência e recuperação"]
 
-    UI --> STATE
+    UX --> STATE
     STATE --> DOMAIN
     DOMAIN --> AI
-    DOMAIN --> BACKEND
-    AI --> BACKEND
-    BACKEND --> ANALYTICS
-    ANALYTICS --> UI
+    DOMAIN --> SB
+    AI --> SB
+    SB --> ANALYSIS
 ```
-
-<br>
-
-### Stack recomendada
-
-| Camada | Tecnologia | Responsabilidade |
-|:---|:---|:---|
-| **Frontend** | Dart + Flutter | Câmera, editor, mapa e revisão |
-| **Backend** | Supabase | Auth, banco, Storage e jobs |
-| **Banco** | PostgreSQL | Eventos e grafo conceitual via tabelas |
-| **OCR** | Motor compatível | Texto/matemática com revisão manual |
-| **IA** | LLM backend | Sugestão de conceitos e erros |
-| **Visualização** | `CustomPaint` / graph lib | Mapa conceitual e evolução |
 
 <br>
 
@@ -508,13 +573,14 @@ flowchart TB
 
 <a id="modelo-de-dados"></a>
 
-## Modelo de Dados no Supabase
+## Modelo de Dados
 
-A modelagem deve ser **event-oriented**: cada erro é uma ocorrência ligada a uma tentativa, enquanto o mapa é uma projeção agregada.
+A modelagem deve ser **event-oriented**:
 
-Isso permite recalcular prioridades sem modificar o histórico.
+- cada erro é uma ocorrência ligada a uma tentativa;
+- o mapa é uma projeção agregada.
 
-<br>
+Assim, ajustes na fórmula de prioridade podem recalcular o mapa **sem modificar o histórico**.
 
 | Tabela | Campos essenciais | Observações |
 |:---|:---|:---|
@@ -522,7 +588,7 @@ Isso permite recalcular prioridades sem modificar o histórico.
 | `concepts` | `id`, `subject_id`, `name`, `description`, `importance` | Nó conceitual |
 | `concept_edges` | `from_concept_id`, `to_concept_id`, `relation` | Pré-requisito/relacionamento |
 | `exercises` | `id`, `subject_id`, `source`, `prompt_text`, `difficulty`, `created_at` | Questão |
-| `exercise_concepts` | `exercise_id`, `concept_id`, `weight` | Relação N:N |
+| `exercise_concepts` | `exercise_id`, `concept_id`, `weight` | Relação N |
 | `attempts` | `id`, `exercise_id`, `user_id`, `solution_text`, `answer`, `attempted_at` | Tentativa |
 | `corrections` | `id`, `attempt_id`, `reference_text`, `attachment_id`, `reviewed_by` | Gabarito/comentário |
 | `error_types` | `id`, `name`, `category`, `description` | Taxonomia de erro |
@@ -531,36 +597,90 @@ Isso permite recalcular prioridades sem modificar o histórico.
 
 <br>
 
+---
+
+<br>
+
 <a id="relacionamentos"></a>
 
-### Relacionamentos
+## Relacionamentos
+
+<br>
+
+### Cardinalidades principais
+
+```text
+subjects 1 ---- N concepts
+
+concepts N ---- N concepts
+           via concept_edges
+
+exercises N ---- N concepts
+            via exercise_concepts
+
+exercises 1 ---- N attempts
+
+attempts 1 ---- 0..N corrections
+
+attempts 1 ---- N error_events
+
+concepts 1 ---- N error_events/mastery_events
+```
+
+<br>
+
+### Diagrama entidade-relacionamento
 
 ```mermaid
 erDiagram
     SUBJECTS ||--o{ CONCEPTS : contains
     SUBJECTS ||--o{ EXERCISES : contains
+
     CONCEPTS ||--o{ CONCEPT_EDGES : source
     CONCEPTS ||--o{ CONCEPT_EDGES : target
-    EXERCISES ||--o{ EXERCISE_CONCEPTS : has
+
+    EXERCISES ||--o{ EXERCISE_CONCEPTS : maps
     CONCEPTS ||--o{ EXERCISE_CONCEPTS : maps
+
     EXERCISES ||--o{ ATTEMPTS : receives
-    ATTEMPTS ||--o{ CORRECTIONS : receives
-    ATTEMPTS ||--o{ ERROR_EVENTS : produces
-    CONCEPTS ||--o{ ERROR_EVENTS : affected_by
-    CONCEPTS ||--o{ MASTERY_EVENTS : recovered_by
+    ATTEMPTS ||--o{ CORRECTIONS : has
+    ATTEMPTS ||--o{ ERROR_EVENTS : generates
+
+    ERROR_TYPES ||--o{ ERROR_EVENTS : classifies
+    CONCEPTS ||--o{ ERROR_EVENTS : relates
+    CONCEPTS ||--o{ MASTERY_EVENTS : recovers
+    ATTEMPTS ||--o{ MASTERY_EVENTS : evidences
 ```
+
+<br>
+
+---
 
 <br>
 
 <a id="regras-de-integridade"></a>
 
-### Regras de Integridade
+## Regras de Integridade
 
-- `error_events.status` deve ser `pending`, `confirmed`, `rejected` ou `superseded`.
-- Um evento confirmado deve apontar para tentativa e evidência/passo suficientemente identificável.
-- `concept_edges` não devem criar ciclos quando `relation=prerequisite`, salvo se permitido explicitamente.
-- Excluir disciplina exige arquivamento/cascade controlado para não quebrar tentativas.
-- Resultados de prioridade são derivados e recalculáveis; eventos históricos permanecem imutáveis.
+`error_events.status` deve aceitar:
+
+```text
+pending
+confirmed
+rejected
+superseded
+```
+
+Além disso:
+
+- [ ] Um evento confirmado deve apontar para tentativa.
+- [ ] Um evento confirmado deve possuir evidência/passo suficientemente identificável.
+- [ ] `concept_edges` não devem criar ciclos quando `relation = prerequisite`, salvo se o modelo permitir explicitamente.
+- [ ] Excluir disciplina exige arquivamento ou cascade controlado.
+- [ ] Exclusões não devem quebrar tentativas.
+- [ ] Resultados de prioridade são derivados.
+- [ ] Resultados de prioridade podem ser recalculados.
+- [ ] Eventos históricos permanecem imutáveis.
 
 <br>
 
@@ -570,29 +690,40 @@ erDiagram
 
 <a id="seguranca-e-privacidade"></a>
 
-## Segurança, Privacidade e Controle de Acesso
+## Segurança e Privacidade
 
 Cadernos, provas, notas e padrões de desempenho são **dados pessoais educacionais**.
 
-Mesmo em uso individual, o produto deve impedir exposição entre contas e evitar telemetria que associe conteúdo de exercícios à identidade sem necessidade.
-
-<br>
-
-### Controles recomendados
+Mesmo em uso individual, o produto deve impedir exposição entre contas e evitar telemetria desnecessária.
 
 | Mecanismo | Aplicação |
 |:---|:---|
 | **Supabase Auth** | Identidade, sessão, refresh token e provedores OAuth |
-| **Row Level Security** | Políticas `SELECT/INSERT/UPDATE/DELETE` no PostgreSQL |
-| **Storage Policies** | Buckets privados e URLs temporárias para anexos sensíveis |
-| **Service Role** | Nunca embutir no aplicativo Flutter; apenas servidor confiável |
-| **Secrets** | Variáveis de ambiente fora do Git; rotação e segregação por ambiente |
-| **Auditoria** | Registrar alterações críticas com usuário, timestamp e entidade |
-| **Dados educacionais** | Sem leaderboard público ou exposição de fragilidades por padrão |
-| **IA** | Enviar somente exercício/tentativa necessários; remover metadados não essenciais |
+| **Row Level Security** | Políticas `SELECT`, `INSERT`, `UPDATE` e `DELETE` avaliadas no PostgreSQL |
+| **Storage Policies** | Buckets privados por padrão e URLs temporárias |
+| **Service Role** | Restrita a Edge Functions/servidor confiável |
+| **Secrets** | Variáveis de ambiente fora do Git |
+| **Auditoria** | Alterações críticas com usuário, timestamp e entidade |
+| **Dados educacionais** | Sem leaderboard público ou exposição automática de fragilidades |
+| **IA** | Enviar somente dados necessários e remover identificadores/metadados não essenciais |
 
 > [!CAUTION]
-> **Regra crítica de segurança:** o mapa de erros pertence ao estudante. Compartilhamento com professor/tutor deve ser explícito, granular e revogável; nenhuma fragilidade pode ser publicada automaticamente.
+> A chave `service_role` **nunca deve existir no bundle Flutter**.
+
+<br>
+
+### Regra crítica
+
+> [!IMPORTANT]
+> O mapa de erros **pertence ao estudante**.
+
+Compartilhamento com professor/tutor deve ser:
+
+- **explícito**;
+- **granular**;
+- **revogável**.
+
+Nenhuma fragilidade pode ser publicada automaticamente.
 
 <br>
 
@@ -602,7 +733,11 @@ Mesmo em uso individual, o produto deve impedir exposição entre contas e evita
 
 <a id="experiencia-do-usuario"></a>
 
-## Experiência do Usuário e Telas
+## Experiência do Usuário
+
+<br>
+
+### Telas principais
 
 | Tela | Elementos principais |
 |:---|:---|
@@ -612,23 +747,29 @@ Mesmo em uso individual, o produto deve impedir exposição entre contas e evita
 | **Revisão de erro** | Correção, passo afetado, conceitos e sugestões de IA |
 | **MistakeMap** | Grafo/heatmap conceitual com filtros por período e tipo |
 | **Conceito** | Erros recorrentes, exercícios, recuperações e pré-requisitos |
-| **Tipos de erro** | Distribuição por unidade, sinal, lógica, modelagem e leitura |
+| **Tipos de erro** | Distribuição por unidade, sinal, lógica, modelagem, leitura etc. |
 | **Sessão de revisão** | Lista priorizada e registro de novo desempenho |
 
 <br>
 
 ### Diretrizes de interface
 
-- Visual moderno, formal e informacional, sem aparência de template genérico.
+- Visual moderno, formal e informacional.
+- Evitar aparência de template genérico.
 - Responsividade real por breakpoints.
 - Desktop com alta densidade de informação.
-- Mobile orientado à tarefa em campo.
-- Ações críticas devem exibir estado, consequência e possibilidade de revisão.
-- Acessibilidade com contraste, labels textuais, áreas de toque adequadas e teclado no desktop.
-- Estados vazios devem indicar o próximo passo operacional.
-- Evitar linguagem punitiva como **“você é ruim em”**.
+- Mobile orientado à tarefa.
+- Ações críticas exibem estado e consequência.
+- Possibilidade de revisão antes da confirmação.
+- Contraste adequado.
+- Labels textuais.
+- Áreas de toque adequadas.
+- Navegação por teclado no desktop.
+- Estados vazios indicam o próximo passo.
+- Evitar linguagem punitiva.
 - Preferir **“há recorrência recente em”**.
-- O mapa deve mostrar melhora e recuperação, não apenas acumular vermelho.
+- Sempre permitir abrir a evidência.
+- O mapa deve mostrar melhora e recuperação.
 
 <br>
 
@@ -642,47 +783,54 @@ Mesmo em uso individual, o produto deve impedir exposição entre contas e evita
 
 <br>
 
-### Registrar exercício corrigido
+### 1. Registrar exercício corrigido
 
 ```mermaid
 sequenceDiagram
-    participant A as Aluno
+    actor Aluno
     participant APP as MistakeMap
-    participant OCR as OCR
-    participant AI as IA
+    participant OCR
+    participant IA
     participant DB as Supabase
 
-    A->>APP: Fotografa exercício, resolução e correção
-    APP->>OCR: Solicita extração
+    Aluno->>APP: Fotografa enunciado, resolução e correção
+    APP->>OCR: Solicita reconhecimento
     OCR-->>APP: Retorna texto editável
-    A->>APP: Corrige OCR
-    APP->>AI: Envia tentativa + correção
-    AI-->>APP: Sugere conceitos e erros
-    A->>APP: Confirma, corrige ou rejeita
-    APP->>DB: Persiste eventos validados
-    DB-->>APP: Atualiza projeção do MistakeMap
+    Aluno->>APP: Corrige erros relevantes
+    APP->>IA: Solicita conceitos e eventos candidatos
+    IA-->>APP: Retorna hipóteses
+    Aluno->>APP: Revisa hipóteses
+    APP->>DB: Persiste eventos confirmados
+    DB-->>APP: Atualiza MistakeMap
 ```
 
+1. Aluno fotografa enunciado, resolução e correção.
+2. OCR cria texto editável.
+3. Aluno corrige erros relevantes de reconhecimento.
+4. Sistema sugere conceitos e eventos de erro.
+5. Aluno revisa cada hipótese.
+6. Aluno pode adicionar a própria explicação.
+7. Eventos confirmados atualizam o mapa.
+
 <br>
 
-### Planejar revisão
+### 2. Planejar revisão
 
-1. Motor calcula prioridade com eventos confirmados.
+1. Motor calcula prioridade dos conceitos com base em eventos confirmados.
 2. Aluno abre conceito prioritário.
 3. Revisa evidências anteriores.
-4. Resolve novo exercício.
+4. Resolve novo exercício relacionado.
 5. Resultado gera `mastery_event` ou novo `error_event`.
-6. O mapa evolui conforme evidência recente.
+6. O mapa muda gradualmente conforme evidência recente.
 
 <br>
 
-### Reclassificar um erro
+### 3. Reclassificar um erro
 
 1. Aluno percebe que o problema não era cálculo, mas unidade.
-2. Edita o evento confirmado.
-3. A alteração cria revisão/superseding.
-4. Agregações são recalculadas.
-5. Histórico preserva a classificação anterior.
+2. Edita o evento confirmado criando revisão/superseding.
+3. Agregações são recalculadas.
+4. Histórico preserva a classificação anterior.
 
 <br>
 
@@ -692,11 +840,9 @@ sequenceDiagram
 
 <a id="relatorios-e-exportacoes"></a>
 
-## Relatórios, Exportações e Integrações
+## Relatórios e Exportações
 
-Exportações devem favorecer **metacognição**: mostrar evidências, padrões e evolução, e não apenas rankings de desempenho.
-
-<br>
+Exportações devem favorecer **metacognição**.
 
 | Saída / integração | Conteúdo ou finalidade |
 |:---|:---|
@@ -724,11 +870,13 @@ lib/
 │   ├── router/
 │   ├── theme/
 │   └── bootstrap/
+│
 ├── core/
 │   ├── errors/
 │   ├── utils/
 │   ├── services/
 │   └── widgets/
+│
 ├── features/
 │   ├── auth/
 │   ├── subjects/
@@ -742,11 +890,17 @@ lib/
 │   ├── review/
 │   ├── reports/
 │   └── settings/
+│
 └── main.dart
 ```
 
-> [!TIP]
-> **Riverpod** é recomendado para estado e injeção de dependências; **GoRouter** para navegação e deep links. Bloc também é válido, desde que o projeto adote um único padrão principal.
+| Item | Recomendação |
+|:---|:---|
+| **Gerenciamento de estado** | Riverpod |
+| **Injeção de dependências** | Riverpod |
+| **Navegação** | GoRouter |
+| **Deep links** | GoRouter |
+| **Alternativa válida** | Bloc, desde que o projeto adote um único padrão principal |
 
 <br>
 
@@ -758,18 +912,23 @@ lib/
 
 ## Offline e Sincronização
 
-Fotografar e anotar exercício deve funcionar durante aula ou estudo sem internet.
+Fotografar e anotar exercício deve funcionar durante aula ou estudo **sem internet**.
 
-IA pode esperar; o usuário não deve perder a resolução original nem alterações manuais.
+> **A IA pode esperar.** O usuário não deve perder a resolução original nem alterações manuais.
 
-- Rascunhos locais de exercícios e tentativas.
-- Fila de imagens com hash para upload posterior.
-- Cache do grafo e eventos recentes para consulta offline.
-- Processamento de IA marcado como pendente até conexão.
-- Edições conflitantes em eventos confirmados geram revisão explícita.
+<br>
 
-> [!IMPORTANT]
-> **MVP:** captura, digitação e consulta básica offline; OCR/LLM e recalculação global executam após sincronização.
+### Recursos previstos
+
+- [ ] Rascunhos locais de exercícios e tentativas.
+- [ ] Fila de imagens com hash para upload posterior.
+- [ ] Cache do grafo.
+- [ ] Cache de eventos recentes.
+- [ ] Processamento de IA marcado como pendente.
+- [ ] Revisão explícita para conflitos em eventos confirmados.
+
+> [!NOTE]
+> No MVP, captura, digitação e consulta básica devem funcionar offline. OCR/LLM e recalculações globais podem ocorrer após sincronização.
 
 <br>
 
@@ -779,7 +938,7 @@ IA pode esperar; o usuário não deve perder a resolução original nem alteraç
 
 <a id="roadmap"></a>
 
-## Roadmap de Implementação
+## Roadmap
 
 | Fase | Entregas | Critério de conclusão |
 |:---|:---|:---|
@@ -794,11 +953,33 @@ IA pode esperar; o usuário não deve perder a resolução original nem alteraç
 
 <br>
 
+### Visão do roadmap
+
+```mermaid
+flowchart LR
+    F0["Fase 0<br/>Fundação"] --> F1["Fase 1<br/>Disciplinas"]
+    F1 --> F2["Fase 2<br/>Tentativas"]
+    F2 --> F3["Fase 3<br/>Erros"]
+    F3 --> F4["Fase 4<br/>IA"]
+    F4 --> F5["Fase 5<br/>Prioridade"]
+    F5 --> F6["Fase 6<br/>Relatórios"]
+    F6 --> F7["Fase 7<br/>Hardening"]
+```
+
+<br>
+
+---
+
+<br>
+
 <a id="mvp-recomendado"></a>
 
-### MVP Recomendado
+## MVP Recomendado
 
-O MVP deve permitir que o estudante registre e classifique erros manualmente. A IA entra como **acelerador**, não como dependência fundamental.
+O MVP deve permitir que o estudante **registre e classifique erros manualmente**.
+
+> [!TIP]
+> A IA entra como **acelerador**, não como dependência estrutural do valor inicial do produto.
 
 - [ ] Disciplinas, conceitos e relações.
 - [ ] Exercícios/tentativas com imagens.
@@ -816,11 +997,11 @@ O MVP deve permitir que o estudante registre e classifique erros manualmente. A 
 
 <a id="criterios-de-aceitacao"></a>
 
-## Critérios de Aceitação do MVP
+## Critérios de Aceitação
 
 | ID | Critério verificável |
-|:---:|:---|
-| **AC-01** | Nenhum erro sugerido por IA torna-se confirmado sem revisão configurada do usuário |
+|:---:|---|
+| **AC-01** | Nenhum erro sugerido pela IA torna-se confirmado sem revisão configurada do usuário |
 | **AC-02** | Todo evento de erro confirmado aponta para uma tentativa |
 | **AC-03** | Usuário pode abrir a evidência associada a um nó prioritário |
 | **AC-04** | Novo desempenho positivo pode reduzir prioridade sem apagar erros antigos |
@@ -828,7 +1009,7 @@ O MVP deve permitir que o estudante registre e classifique erros manualmente. A 
 | **AC-06** | Conceitos de outro usuário não aparecem na conta atual |
 | **AC-07** | A fórmula de prioridade é explicável em termos de fatores exibíveis |
 | **AC-08** | Compartilhamento de relatório não inclui exercícios não selecionados |
-| **AC-09** | O app não gera diagnósticos de aprendizagem |
+| **AC-09** | O aplicativo não gera diagnósticos de aprendizagem |
 | **AC-10** | A chave `service_role` não existe no bundle Flutter |
 
 <br>
@@ -841,30 +1022,88 @@ O MVP deve permitir que o estudante registre e classifique erros manualmente. A 
 
 ## Testes e Qualidade
 
-### Estratégia de testes
-
-- **Unitários** — regras de domínio, validações e funções de pontuação.
-- **Widget tests** — formulários, navegação, filtros, estados vazios e erros.
-- **Integração** — autenticação, PostgreSQL, Storage e operações transacionais.
-- **RLS** — usuários autorizados, não autorizados e dados de contas distintas.
-- **Concorrência** — operações que alteram estado/histórico.
-- **Falhas de rede** — recuperação e repetição idempotente.
-- **Privacidade** — nenhum token/documento sensível em telemetria.
-- **IA** — soluções alternativas corretas não devem gerar falsos erros.
-- **Avaliação humana** — precisão das sugestões de conceitos e tipos.
-- **Prioridade** — valores conhecidos para frequência, recência e recuperação.
+<details open>
+<summary><strong>Testes unitários</strong></summary>
 
 <br>
 
-### Pirâmide de testes
+- Regras de domínio.
+- Validações.
+- Funções de pontuação/cálculo.
+- Cálculo de prioridade.
+- Decaimento temporal.
 
-```mermaid
-flowchart TB
-    E2E["Poucos testes E2E<br/>Fluxos críticos"]
-    INT["Testes de integração<br/>Supabase + Storage + RLS"]
-    UNIT["Muitos testes unitários<br/>Domínio + scoring + validações"]
-    UNIT --> INT --> E2E
-```
+</details>
+
+<details>
+<summary><strong>Testes de widget</strong></summary>
+
+<br>
+
+- Formulários.
+- Navegação.
+- Filtros.
+- Estados vazios.
+- Mensagens de erro.
+
+</details>
+
+<details>
+<summary><strong>Testes de integração</strong></summary>
+
+<br>
+
+- Autenticação.
+- Banco.
+- Storage.
+- Operações transacionais no Supabase.
+
+</details>
+
+<details>
+<summary><strong>Testes de segurança</strong></summary>
+
+<br>
+
+- RLS com usuários autorizados.
+- RLS com usuários não autorizados.
+- Isolamento entre contas.
+
+</details>
+
+<details>
+<summary><strong>Concorrência e resiliência</strong></summary>
+
+<br>
+
+- Testes de concorrência nas operações que alteram reserva, saldo, estado ou histórico.
+- Recuperação de falhas de rede.
+- Repetição idempotente de comandos.
+
+</details>
+
+<details>
+<summary><strong>Observabilidade</strong></summary>
+
+<br>
+
+- Monitoramento sem registrar tokens.
+- Não registrar documentos privados.
+- Não registrar dados pessoais desnecessários.
+
+</details>
+
+<details>
+<summary><strong>Avaliação da IA</strong></summary>
+
+<br>
+
+- Testes com soluções alternativas corretas.
+- Avaliação humana de amostra de eventos.
+- Medição da precisão de conceitos sugeridos.
+- Medição da precisão de tipos sugeridos.
+
+</details>
 
 <br>
 
@@ -885,6 +1124,60 @@ flowchart TB
 | **RAG das notas** | Conectar erros aos trechos de teoria do próprio material do aluno |
 | **Análise longitudinal** | Comparar semestres e identificar padrões recuperados ou reincidentes |
 
+<details>
+<summary><strong>Integração com Anki/flashcards</strong></summary>
+
+<br>
+
+Gerar revisão a partir de padrões confirmados.
+
+</details>
+
+<details>
+<summary><strong>Professor/tutor</strong></summary>
+
+<br>
+
+Fluxo opcional de validação colaborativa.
+
+</details>
+
+<details>
+<summary><strong>Geração de exercícios</strong></summary>
+
+<br>
+
+Criar variações direcionadas ao padrão de erro com critérios de segurança acadêmica.
+
+</details>
+
+<details>
+<summary><strong>LaTeX/Math OCR</strong></summary>
+
+<br>
+
+Aprimorar captura de expressões matemáticas.
+
+</details>
+
+<details>
+<summary><strong>RAG das notas</strong></summary>
+
+<br>
+
+Conectar erros aos trechos de teoria do próprio material do aluno.
+
+</details>
+
+<details>
+<summary><strong>Análise longitudinal</strong></summary>
+
+<br>
+
+Comparar semestres e identificar padrões recuperados ou reincidentes.
+
+</details>
+
 <br>
 
 ---
@@ -895,9 +1188,10 @@ flowchart TB
 
 ## Recomendação de Implementação
 
-Desenvolver a **taxonomia e o modelo de eventos antes da IA**.
+> [!IMPORTANT]
+> **Desenvolver a taxonomia e o modelo de eventos antes da IA.**
 
-Um sistema que registra:
+Um sistema que sabe registrar:
 
 - onde o erro ocorreu;
 - qual conceito estava envolvido;
@@ -915,21 +1209,32 @@ A inteligência automática deve **reduzir o trabalho de classificação**, não
 
 <a id="exemplo-de-registro"></a>
 
-## Exemplo de Registro de Domínio
+## Exemplo de Registro
 
 ```yaml
-disciplina: Lógica Proposicional
-exercicio: EX-00472
+disciplina: "Lógica Proposicional"
+exercicio: "EX-00472"
 tentativa: "25/08/2026 20:14"
-erro_confirmado: Negação incorreta de conjunção
-tipo: Transformação lógica
+
+erro_confirmado:
+  descricao: "Negação incorreta de conjunção"
+  tipo: "Transformação lógica"
+
 conceitos:
   - Negação
   - Conjunção
   - Leis de De Morgan
-evidencia: Passo 3 da resolução
-recorrencia: 3 eventos nos últimos 21 dias
-prioridade: Alta
+
+evidencia:
+  referencia: "Passo 3 da resolução"
+
+recorrencia:
+  eventos: 3
+  janela: "últimos 21 dias"
+
+prioridade:
+  nivel: "Alta"
+  justificativa_visivel: true
 ```
 
 <br>
@@ -961,29 +1266,29 @@ prioridade: Alta
 ## Execução
 
 > [!NOTE]
-> Este repositório encontra-se em fase de **concepção / MVP**. A documentação define a arquitetura e o roadmap; os comandos abaixo representam o fluxo padrão esperado para uma base Flutter.
+> O documento de concepção define a arquitetura e o roadmap, mas não fornece instruções formais de build ou implantação. Os comandos abaixo representam apenas o **fluxo padrão esperado para um projeto Flutter**.
 
 <br>
 
 ### Pré-requisitos
 
-- Flutter SDK
-- Dart SDK
-- Projeto Supabase configurado
-- Ambiente compatível com a plataforma de destino
+- [ ] Flutter SDK
+- [ ] Dart SDK
+- [ ] Projeto Supabase configurado
+- [ ] Ambiente compatível com a plataforma de destino
 
 <br>
 
-### Clonar
+### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/CFSJCODE/MistakeMap.git
-cd MistakeMap
+git clone https://github.com/CFSJCODE/MISTAKEMAP.git
+cd MISTAKEMAP
 ```
 
 <br>
 
-### Instalar dependências
+### 2. Instalar dependências
 
 ```bash
 flutter pub get
@@ -991,7 +1296,7 @@ flutter pub get
 
 <br>
 
-### Verificar ambiente
+### 3. Verificar o ambiente
 
 ```bash
 flutter doctor
@@ -999,7 +1304,7 @@ flutter doctor
 
 <br>
 
-### Executar
+### 4. Executar
 
 ```bash
 flutter run
@@ -1015,7 +1320,7 @@ flutter run
 
 ## Síntese
 
-> **MistakeMap trata o erro como dado de aprendizagem: não um ponto final vermelho, mas um sinal que, quando conectado a outros sinais, revela onde a próxima revisão pode produzir maior retorno.**
+> **MistakeMap trata o erro como dado de aprendizagem:** não um ponto final vermelho, mas um sinal que, quando conectado a outros sinais, revela onde a próxima revisão pode produzir maior retorno.
 
 <br>
 
@@ -1023,37 +1328,25 @@ flutter run
 
 <br>
 
-<div align="center">
-
-## MistakeMap
-
-### O erro não é o fim da resolução. É um sinal.
+<p align="right"><a href="#readme-top">↑ Voltar ao topo</a></p>
 
 <br>
 
-**Projeto Integrado I: Desenvolvimento Móvel**  
-**Curso de Engenharia de Computação — PUC Minas**
+<h3 align="center">MistakeMap</h3>
 
-<br>
+<p align="center"><strong>O erro não é o fim da resolução. É um sinal.</strong></p>
 
-**Discentes**  
-Cláudio Francisco Dos Santos Júnior  
-Lucas Emanuel Simão Silva
+<p align="center">
+  Projeto Integrado I: Desenvolvimento Móvel · Engenharia de Computação · PUC Minas<br>
+  Cláudio Francisco Dos Santos Júnior · Lucas Emanuel Simão Silva<br>
+  Orientação: Ilo Amy Saldanha Rivero
+</p>
 
-<br>
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter">
+  <img src="https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart">
+  <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
+</p>
 
-**Orientação**  
-Ilo Amy Saldanha Rivero
-
-<br>
-
-<img src="https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter">
-<img src="https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart">
-<img src="https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
-<img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
-
-<br><br>
-
-<a href="#readme-top">Voltar ao topo</a>
-
-</div>
+<p align="center"><sub>Versão 1.0 · Agosto de 2026</sub></p>
