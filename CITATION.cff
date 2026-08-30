@@ -2,13 +2,12 @@ cff-version: 1.2.0
 message: >-
   If you use MistakeMap in academic work, research, teaching material,
   software documentation, or a derivative academic project, please cite
-  the original software and its authors. For a citation formatted according
-  to ABNT NBR 6023:2018, see CITATION_ABNT.md in this repository.
-title: "MistakeMap: mapa dos padrões de erro do estudante"
+  the original software and its authors.
+title: "MistakeMap"
 type: software
 authors:
-  - family-names: "Santos Júnior"
-    given-names: "Cláudio Francisco dos"
+  - family-names: "Dos Santos Júnior"
+    given-names: "Cláudio Francisco"
   - family-names: "Silva"
     given-names: "Lucas Emanuel Simão"
 abstract: >-
@@ -36,31 +35,13 @@ date-released: "2026-08-30"
 version: "1.0"
 preferred-citation:
   type: software
-  title: "MistakeMap: mapa dos padrões de erro do estudante"
+  title: "MistakeMap"
   authors:
-    - family-names: "Santos Júnior"
-      given-names: "Cláudio Francisco dos"
+    - family-names: "Dos Santos Júnior"
+      given-names: "Cláudio Francisco"
     - family-names: "Silva"
       given-names: "Lucas Emanuel Simão"
   year: 2026
   version: "1.0"
   repository-code: "https://github.com/CFSJCODE/MistakeMap"
-  url: "https://github.com/CFSJCODE/MistakeMap"
   license: "PolyForm-Noncommercial-1.0.0"
-
-# ---------------------------------------------------------------------------
-# CITAÇÃO ABNT — NBR 6023:2018
-# ---------------------------------------------------------------------------
-#
-# SANTOS JÚNIOR, Cláudio Francisco dos; SILVA, Lucas Emanuel Simão.
-# MistakeMap: mapa dos padrões de erro do estudante. Versão 1.0.
-# 2026. Software. Disponível em: https://github.com/CFSJCODE/MistakeMap.
-# Acesso em: 30 ago. 2026.
-#
-# Sistema autor-data:
-# (SANTOS JÚNIOR; SILVA, 2026)
-#
-# Citação narrativa:
-# Santos Júnior e Silva (2026)
-#
-# A forma ABNT também está disponível em CITATION_ABNT.md.
