@@ -1,0 +1,53 @@
+name: Sync repository metadata
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/LICENSE"
+      - ".github/CITATION.cff"
+      - ".github/workflows/sync-repository-metadata.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-repository-metadata-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Sync GitHub root metadata
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync canonical metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .github/LICENSE LICENSE
+          cp .github/CITATION.cff CITATION.cff
+
+      - name: Commit synchronized mirrors
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- LICENSE CITATION.cff; then
+            echo "Repository metadata is already synchronized."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add LICENSE CITATION.cff
+          git commit -m "chore: sync repository metadata [skip ci]"
+          git push
