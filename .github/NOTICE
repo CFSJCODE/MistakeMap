@@ -1,0 +1,64 @@
+MistakeMap
+NOTICE — Copyright, Attribution and Project Identity
+
+Copyright © 2026 Cláudio Francisco Dos Santos Júnior
+Copyright © 2026 Lucas Emanuel Simão Silva
+
+Original authors:
+Cláudio Francisco Dos Santos Júnior
+Lucas Emanuel Simão Silva
+
+Original project:
+MistakeMap
+https://github.com/CFSJCODE/MistakeMap
+
+License:
+PolyForm Noncommercial License 1.0.0
+SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
+Required Notice: MistakeMap — Copyright © 2026 Cláudio Francisco Dos Santos Júnior and Lucas Emanuel Simão Silva.
+Required Notice: Original authors of MistakeMap: Cláudio Francisco Dos Santos Júnior and Lucas Emanuel Simão Silva.
+Required Notice: Original project: MistakeMap — https://github.com/CFSJCODE/MistakeMap
+Required Notice: This authorship notice must accompany every redistributed copy of MistakeMap, including copies containing modifications or derivative works, as required by the Notices section of the PolyForm Noncommercial License 1.0.0.
+
+PROJECT CONTEXT
+
+MistakeMap is an academic software project developed in the context of
+Projeto Integrado I: Desenvolvimento Móvel, Curso de Engenharia de Computação,
+Pontifícia Universidade Católica de Minas Gerais — PUC Minas.
+
+Academic supervision:
+Ilo Amy Saldanha Rivero
+
+The references to PUC Minas, the course, the discipline, and academic
+supervision identify the academic context of the project and do not, by
+themselves, imply ownership, endorsement, sponsorship, trademark ownership,
+or transfer of copyright.
+
+ATTRIBUTION
+
+Redistribution of MistakeMap must preserve the Required Notice lines above
+in accordance with the controlling software license.
+
+Developers of forks or derivative works may identify their own contributions
+separately, but must not remove, replace, conceal, or misrepresent the
+attribution of the original MistakeMap authors.
+
+Example:
+
+Based on MistakeMap, originally developed by
+Cláudio Francisco Dos Santos Júnior and
+Lucas Emanuel Simão Silva.
+
+Original project:
+https://github.com/CFSJCODE/MistakeMap
+
+THIRD-PARTY MATERIALS
+
+This NOTICE does not alter the licenses, copyrights, trademarks, or other
+rights applicable to third-party dependencies, libraries, models, fonts,
+datasets, APIs, assets, or other components used by the project.
+
+For licensing terms, see LICENSE.
+For practical usage guidance, see USAGE_POLICY.md.
+For project-name and brand guidance, see TRADEMARKS.md.
