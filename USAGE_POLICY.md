@@ -1,371 +1,478 @@
-# MistakeMap — Política de Uso
+# MistakeMap — Política de Uso e Atribuição
 
-> **Licença principal:** PolyForm Noncommercial License 1.0.0  
-> **SPDX:** `PolyForm-Noncommercial-1.0.0`
+> **Licença do software:** PolyForm Noncommercial License 1.0.0  
+> **SPDX:** `PolyForm-Noncommercial-1.0.0`  
+> **Projeto original:** https://github.com/CFSJCODE/MistakeMap
 
-Copyright © 2026 **Cláudio Francisco Dos Santos Júnior**
-e **Lucas Emanuel Simão Silva**.
+Copyright © 2026 **Cláudio Francisco Dos Santos Júnior** e
+**Lucas Emanuel Simão Silva**.
 
 ---
 
 ## 1. Finalidade deste documento
 
-Este documento apresenta, em linguagem prática, exemplos de usos
-permitidos e não permitidos do software **MistakeMap**.
+Esta política explica, em linguagem prática, como o MistakeMap pode ser
+utilizado, copiado, modificado e redistribuído.
 
-Ele não substitui nem modifica os termos jurídicos da
-**PolyForm Noncommercial License 1.0.0**.
+Ela também estabelece como a autoria original deve ser apresentada nas
+redistribuições do projeto.
 
-Em caso de divergência entre este documento e a licença oficial,
-prevalecem os termos do arquivo `LICENSE`.
-
----
-
-# 2. Princípio geral
-
-O MistakeMap pode ser:
-
-- utilizado;
-- estudado;
-- executado;
-- copiado;
-- modificado;
-- adaptado;
-- bifurcado por meio de forks;
-- redistribuído;
-- utilizado para pesquisa;
-- utilizado para experimentação;
-- utilizado em projetos acadêmicos;
-
-desde que o uso permaneça dentro das finalidades permitidas pela
-PolyForm Noncommercial License 1.0.0.
-
-A licença principal do MistakeMap é **não comercial**.
+Este documento é explicativo. Ele **não substitui nem modifica** a licença
+PolyForm Noncommercial License 1.0.0. Em caso de conflito, prevalecem os
+termos do arquivo `LICENSE` e da licença PolyForm indicada nele.
 
 ---
 
-# 3. Uso pessoal e residencial
+## 2. Autores originais e atribuição obrigatória
 
-## Permitido
+O **MistakeMap** é um projeto originalmente desenvolvido por:
 
-É permitido utilizar o MistakeMap gratuitamente em ambiente pessoal
-ou residencial para atividades não comerciais.
+- **Cláudio Francisco Dos Santos Júnior**
+- **Lucas Emanuel Simão Silva**
+
+A disponibilização do código-fonte não transfere a autoria original.
+
+A licença PolyForm utilizada pelo projeto exige que, ao redistribuir qualquer
+cópia de qualquer parte do software, com ou sem modificações, sejam fornecidos
+os termos da licença ou o endereço oficial da licença e sejam preservadas as
+linhas em texto simples iniciadas por `Required Notice:` fornecidas com o
+software.
+
+Por isso, toda redistribuição deve manter os avisos de autoria existentes no
+arquivo `LICENSE`.
+
+### Atribuição mínima obrigatória na redistribuição
+
+As seguintes informações devem permanecer nos `Required Notice:`:
+
+> **MistakeMap**  
+> Autores originais: **Cláudio Francisco Dos Santos Júnior** e
+> **Lucas Emanuel Simão Silva**  
+> Projeto original: https://github.com/CFSJCODE/MistakeMap
+
+Uma pessoa que faça alterações pode receber crédito pelas suas próprias
+contribuições, mas não deve substituir, ocultar ou falsificar a identificação
+dos autores originais.
+
+Exemplo correto:
+
+> Projeto derivado desenvolvido por Fulano de Tal, baseado no MistakeMap,
+> originalmente desenvolvido por Cláudio Francisco Dos Santos Júnior e
+> Lucas Emanuel Simão Silva.
+
+---
+
+## 3. Princípio geral de uso
+
+O MistakeMap pode ser utilizado, estudado, copiado, modificado e redistribuído
+para finalidades permitidas pela PolyForm Noncommercial License 1.0.0.
+
+A licença é **não comercial**.
+
+De forma resumida:
+
+- uso não comercial: permitido;
+- uso pessoal: permitido;
+- estudo e experimentação: permitidos;
+- pesquisa: permitida dentro dos termos da licença;
+- uso por instituição educacional: permitido nos termos da PolyForm;
+- cópias: permitidas;
+- modificações: permitidas;
+- trabalhos derivados: permitidos para finalidades autorizadas;
+- redistribuição: permitida, preservando licença e `Required Notice:`;
+- exploração comercial fora das finalidades permitidas: não licenciada.
+
+---
+
+## 4. Uso pessoal e residencial
+
+### Permitido
+
+O MistakeMap pode ser usado gratuitamente em ambiente pessoal ou residencial
+para finalidades não comerciais.
 
 Exemplos:
 
-- instalar o MistakeMap em computador pessoal;
-- instalar o aplicativo em smartphone ou tablet;
-- executar uma instância local do sistema;
-- hospedar uma instância privada para uso pessoal;
-- utilizar o aplicativo para organizar estudos;
-- analisar exercícios pessoais;
-- utilizar o sistema para revisar matemática, física, computação,
-  engenharia ou outras disciplinas;
-- utilizar o software como ferramenta pessoal de aprendizagem;
-- estudar o código-fonte;
-- experimentar alterações no software;
+- instalar o aplicativo em computador pessoal;
+- instalar em smartphone ou tablet;
+- executar uma instância local;
+- manter uma instância privada para estudo;
+- utilizar o MistakeMap para organizar estudos;
+- registrar e analisar exercícios;
+- estudar matemática, física, computação, engenharia e outras disciplinas;
+- testar funcionalidades;
+- estudar a arquitetura Flutter/Dart;
+- estudar o banco de dados;
+- experimentar OCR ou modelos de IA;
+- modificar a interface;
 - criar funcionalidades próprias;
-- executar testes;
-- desenvolver plugins ou integrações para uso pessoal;
-- criar uma versão personalizada para uso próprio.
+- criar integrações para uso pessoal;
+- criar uma versão personalizada para uso próprio;
+- realizar testes, benchmarks e experimentos sem finalidade comercial.
 
 ---
 
-# 4. Uso educacional
+## 5. Uso educacional
 
-## Permitido
+### Permitido
 
-O MistakeMap pode ser utilizado em atividades educacionais compatíveis
-com os termos da PolyForm Noncommercial License 1.0.0.
+A PolyForm Noncommercial License 1.0.0 considera o uso por instituições
+educacionais como uma finalidade permitida, observados os seus termos.
 
 Exemplos:
 
 - uso por estudantes;
 - uso por professores;
-- uso durante aulas;
-- uso em laboratórios;
-- uso em escolas;
-- uso em universidades;
-- uso em instituições educacionais;
-- uso em grupos de estudo;
-- uso em trabalhos acadêmicos;
-- uso em projetos de disciplinas;
-- uso em projetos de extensão;
-- uso em pesquisa acadêmica;
+- uso em sala de aula;
+- uso em laboratório;
+- uso em escola;
+- uso em universidade;
+- uso em disciplina acadêmica;
+- uso em grupo de estudos;
+- uso em projeto interdisciplinar;
+- uso em trabalho acadêmico;
+- uso em projeto de extensão;
 - uso em iniciação científica;
-- uso em demonstrações acadêmicas;
-- uso em hackathons educacionais;
-- uso como referência para ensino de Flutter ou Dart;
-- uso como referência para ensino de bancos de dados;
-- uso como referência para ensino de inteligência artificial;
-- criação de versões experimentais para disciplinas;
-- adaptação do sistema para necessidades pedagógicas específicas.
+- uso em pesquisa acadêmica;
+- demonstrações educacionais;
+- avaliação de arquitetura de software;
+- estudo de Flutter e Dart;
+- estudo de PostgreSQL/Supabase;
+- estudo de OCR;
+- estudo de inteligência artificial aplicada à aprendizagem;
+- adaptação do sistema para atividades pedagógicas;
+- criação de uma versão institucional para atividades educacionais permitidas.
 
-A PolyForm Noncommercial License 1.0.0 considera expressamente
-determinados usos por instituições educacionais como finalidades
-permitidas.
+O fato de uma instituição receber financiamento não elimina automaticamente
+o enquadramento educacional previsto pela PolyForm. Casos híbridos nos quais
+o software é transformado em produto ou serviço comercial devem ser avaliados
+separadamente.
 
 ---
 
-# 5. Pesquisa e desenvolvimento acadêmico
+## 6. Pesquisa, experimentação e desenvolvimento acadêmico
 
-## Permitido
+### Permitido
 
-É permitido utilizar o MistakeMap como objeto ou instrumento de
-pesquisa dentro dos limites da licença.
+Dentro dos limites da licença, o MistakeMap pode ser utilizado como objeto,
+referência ou instrumento de pesquisa.
 
 Exemplos:
 
 - estudar sua arquitetura;
 - avaliar algoritmos;
 - testar modelos de IA;
-- experimentar OCR;
+- experimentar mecanismos de OCR;
 - estudar sistemas de recomendação;
-- estudar análise de aprendizagem;
+- estudar learning analytics;
+- avaliar modelos de classificação de erros;
+- testar grafos conceituais;
 - experimentar novas estruturas de dados;
 - criar protótipos derivados;
-- realizar benchmarks;
-- publicar resultados acadêmicos referentes ao software;
-- produzir artigos, trabalhos e relatórios sobre o projeto.
+- executar benchmarks;
+- realizar experimentos de usabilidade;
+- produzir trabalhos acadêmicos sobre o projeto;
+- produzir relatórios técnicos;
+- apresentar o projeto em contexto educacional ou científico.
 
-Sempre que o MistakeMap ou partes relevantes do projeto forem
-utilizados em publicações acadêmicas, recomenda-se atribuir
-corretamente a autoria e indicar o repositório original.
+### Citação acadêmica
+
+Quando o MistakeMap for objeto relevante de um trabalho acadêmico ou
+publicação, recomenda-se também citar formalmente o projeto.
+
+Forma sugerida:
+
+> DOS SANTOS JÚNIOR, Cláudio Francisco; SILVA, Lucas Emanuel Simão.
+> **MistakeMap**. 2026. Software.
+> Disponível em: https://github.com/CFSJCODE/MistakeMap
+
+Um arquivo `CITATION.cff` pode ser utilizado para definir uma citação
+estruturada no GitHub.
 
 ---
 
-# 6. Cópias
+## 7. Cópias e backups
 
-## Permitido
+### Permitido
 
-É permitido criar cópias do MistakeMap dentro das condições da licença.
-
-Isso inclui:
+É permitido, dentro das finalidades autorizadas:
 
 - clonar o repositório;
-- criar backup;
 - manter cópia local;
-- copiar o código entre computadores;
-- criar forks no GitHub;
-- distribuir cópias para estudantes ou pesquisadores;
-- preservar versões antigas para pesquisa ou estudo.
+- criar backup;
+- copiar o software entre dispositivos;
+- preservar versões históricas;
+- criar fork;
+- distribuir cópias em atividades autorizadas;
+- manter espelhos não comerciais do repositório.
 
-As cópias distribuídas devem preservar os termos de licenciamento e
-os avisos obrigatórios aplicáveis.
+Quando uma cópia for redistribuída para outra pessoa, devem acompanhar a
+distribuição os termos da licença ou seu endereço oficial e os
+`Required Notice:` aplicáveis.
 
 ---
 
-# 7. Modificações
+## 8. Modificações
 
-## Permitido
+### Permitido
 
-É permitido modificar o MistakeMap para finalidades permitidas pela
-licença.
+É permitido modificar o MistakeMap para finalidades autorizadas.
 
 Exemplos:
 
-- alterar a interface;
 - corrigir bugs;
+- alterar a interface;
 - adicionar funcionalidades;
 - remover funcionalidades;
-- alterar a arquitetura interna;
+- refatorar código;
+- alterar arquitetura;
 - substituir o backend;
 - utilizar outro banco de dados;
-- substituir serviços de OCR;
-- substituir modelos de IA;
+- substituir mecanismo de OCR;
+- substituir modelo de IA;
 - criar novos algoritmos;
 - criar novas visualizações;
-- portar o aplicativo para outra plataforma;
+- portar para outra plataforma;
 - criar integrações;
-- criar uma distribuição específica para uma instituição de ensino;
-- adaptar funcionalidades para acessibilidade;
+- melhorar acessibilidade;
 - traduzir a interface;
 - criar temas;
-- criar módulos adicionais.
+- criar módulos adicionais;
+- adaptar o projeto a uma disciplina.
+
+A modificação não elimina a obrigação de preservar os avisos
+`Required Notice:` quando a versão modificada for redistribuída.
 
 ---
 
-# 8. Forks e trabalhos derivados
+## 9. Forks e trabalhos derivados
 
-## Permitido
+### Permitido para finalidades autorizadas
 
-É permitido criar forks e versões derivadas do MistakeMap dentro das
-finalidades autorizadas pela licença.
+É permitido criar forks e trabalhos derivados dentro dos limites da licença.
 
-Uma versão modificada deve deixar claro quando não representa a versão
-oficial do MistakeMap.
+Uma versão derivada pode identificar seus próprios desenvolvedores, desde que
+não apague ou substitua a autoria original do MistakeMap nos avisos
+obrigatórios.
 
-Exemplo aceitável:
+### Exemplo
 
-> "Projeto baseado no MistakeMap, originalmente desenvolvido por
-> Cláudio Francisco Dos Santos Júnior e Lucas Emanuel Simão Silva."
+**Autores originais do MistakeMap**
 
-Os avisos obrigatórios de autoria e licenciamento aplicáveis devem ser
-preservados.
+- Cláudio Francisco Dos Santos Júnior
+- Lucas Emanuel Simão Silva
 
----
+**Autores da versão derivada**
 
-# 9. Redistribuição
+- Nome do desenvolvedor ou equipe responsável pelas modificações
 
-## Permitido
-
-É possível redistribuir versões originais ou modificadas dentro das
-condições previstas pela PolyForm Noncommercial License 1.0.0.
-
-Ao redistribuir o software, devem acompanhar a distribuição:
-
-- os termos da licença;
-- os avisos `Required Notice:`;
-- os avisos de copyright aplicáveis.
+Uma versão derivada não deve se apresentar falsamente como sendo uma
+distribuição oficial dos autores originais.
 
 ---
 
-# 10. Uso comercial
+## 10. Redistribuição
 
-## Não autorizado por esta licença
+### Permitida sob condições
 
-A PolyForm Noncommercial License 1.0.0 não concede uma autorização
-geral para exploração comercial do MistakeMap.
+É permitido redistribuir cópias originais ou modificadas para finalidades
+autorizadas.
 
-Portanto, sem uma licença comercial separada, não se deve:
+Ao redistribuir, deve-se preservar:
+
+1. o texto da licença PolyForm ou o endereço oficial indicado no `LICENSE`;
+2. todas as linhas iniciadas por `Required Notice:`;
+3. a identificação dos autores originais contida nesses avisos;
+4. os avisos de copyright aplicáveis.
+
+### Autoria na redistribuição
+
+A redistribuição deve continuar identificando:
+
+**Cláudio Francisco Dos Santos Júnior**  
+**Lucas Emanuel Simão Silva**
+
+como autores originais do MistakeMap por meio dos avisos obrigatórios.
+
+Não é permitido remover esses `Required Notice:` da cópia redistribuída.
+
+---
+
+## 11. Distribuições compiladas
+
+A redistribuição de uma versão compilada — por exemplo APK, executável
+Windows, pacote web ou outra forma binária — continua sujeita às condições
+de distribuição da licença.
+
+A distribuição deve incluir uma forma acessível de receber:
+
+- os termos da licença ou seu endereço oficial;
+- os `Required Notice:` do MistakeMap.
+
+Recomenda-se incluir essas informações em pelo menos um dos seguintes locais:
+
+- arquivo `NOTICE`;
+- documentação distribuída;
+- diretório de licenças;
+- página "Sobre";
+- tela de informações legais.
+
+Essa recomendação facilita a conformidade, mas a obrigação jurídica
+controladora continua sendo aquela prevista pela licença PolyForm.
+
+---
+
+## 12. Uso comercial
+
+### Não concedido de forma geral
+
+A licença do MistakeMap não concede uma autorização geral para exploração
+comercial.
+
+Sem uma licença comercial separada ou outro fundamento jurídico aplicável,
+não se deve presumir autorização para:
 
 - vender o MistakeMap;
 - vender cópias do MistakeMap;
+- vender um fork;
 - vender uma versão modificada;
-- transformar o MistakeMap em um produto comercial;
-- cobrar pelo acesso ao MistakeMap como produto ou serviço;
-- incorporar o MistakeMap a um produto comercial;
-- incorporar o MistakeMap a um SaaS comercial;
+- oferecer o MistakeMap como produto pago;
+- oferecer hospedagem paga do MistakeMap como produto;
+- transformar o MistakeMap em SaaS comercial;
+- incorporar o MistakeMap em produto comercial;
+- oferecer white-label comercial;
 - revender o software;
-- comercializar forks;
-- licenciar comercialmente uma versão derivada;
-- utilizar o projeto como base de um produto vendido a terceiros;
-- comercializar o software apenas alterando seu nome ou identidade
-  visual.
+- cobrar licença de acesso a uma distribuição derivada;
+- rebatizar o projeto e comercializá-lo como produto próprio.
 
-Uso comercial pode ser autorizado separadamente pelos titulares dos
-direitos autorais.
+Uma autorização comercial pode ser concedida separadamente pelos titulares
+dos direitos aplicáveis.
 
 ---
 
-# 11. Empresas
+## 13. Empresas e organizações comerciais
 
-Uma empresa não recebe automaticamente autorização para explorar
-comercialmente o MistakeMap apenas porque seu código-fonte está
-publicamente disponível.
+O fato de o repositório estar publicamente acessível não concede a uma empresa
+uma licença comercial.
 
-Exemplos normalmente incompatíveis com a licença não comercial:
+Exemplos de situações que devem ser tratadas como potencial uso comercial e,
+portanto, não devem ser presumidas como autorizadas:
 
-- incluir o MistakeMap em produto vendido pela empresa;
-- utilizar o software para prestar um serviço comercial baseado
-  diretamente no MistakeMap;
-- oferecer uma versão hospedada paga;
-- revender versões modificadas;
-- incorporar funcionalidades do MistakeMap a software proprietário
-  comercial.
+- transformar MistakeMap em produto da empresa;
+- oferecer uma versão paga;
+- incorporar o código em software comercial;
+- usar o projeto como base direta de serviço vendido a clientes;
+- oferecer SaaS pago;
+- oferecer OEM ou white-label;
+- revender uma versão modificada.
 
-Para situações comerciais, deve ser solicitada uma licença separada
-aos titulares dos direitos.
-
----
-
-# 12. Instituições educacionais
-
-O uso por instituições educacionais é contemplado expressamente pela
-PolyForm Noncommercial License 1.0.0.
-
-Isso permite, entre outros exemplos compatíveis:
-
-- utilização em sala de aula;
-- laboratórios acadêmicos;
-- pesquisa universitária;
-- atividades de professores;
-- projetos de estudantes;
-- atividades institucionais de ensino;
-- atividades acadêmicas de pesquisa e experimentação.
-
-A criação de um produto ou serviço comercial baseado no MistakeMap
-deve ser analisada separadamente e pode exigir autorização comercial.
+Usos empresariais ambíguos devem ser avaliados com base no texto da
+PolyForm Noncommercial License 1.0.0 e, quando necessário, mediante
+autorização específica.
 
 ---
 
-# 13. Autoria
+## 14. Instituições educacionais e atividade comercial
 
-A disponibilização pública do código-fonte não transfere a autoria
-original do MistakeMap.
+O uso de MistakeMap por uma instituição educacional é expressamente tratado
+pela PolyForm Noncommercial License 1.0.0 como finalidade permitida.
 
-Autores originais:
+Entretanto, isso não deve ser interpretado automaticamente como autorização
+para transformar o software em produto comercial independente.
 
-- **Cláudio Francisco Dos Santos Júnior**
-- **Lucas Emanuel Simão Silva**
+Exemplos geralmente coerentes com a finalidade educacional:
 
-O fato de uma pessoa:
+- uso em aula;
+- laboratório;
+- pesquisa;
+- atividade de professor;
+- projeto de estudante;
+- projeto acadêmico;
+- avaliação pedagógica;
+- experimentação institucional.
 
-- clonar;
-- copiar;
-- estudar;
-- modificar;
-- distribuir;
-- contribuir;
-- criar um fork;
+Exemplos que exigem análise adicional:
 
-não a transforma automaticamente em autora do projeto original.
-
-Contribuidores mantêm os direitos aplicáveis sobre suas contribuições,
-conforme a legislação e os termos adotados pelo projeto.
-
----
-
-# 14. Remoção ou ocultação de autoria
-
-Ao redistribuir partes do software às quais se aplicam os avisos
-`Required Notice:`, esses avisos devem ser preservados conforme
-estabelecido pela licença.
-
-Não é aceitável redistribuir o projeto de forma que atribua falsamente
-a criação original do MistakeMap a outra pessoa ou organização.
+- venda de uma distribuição MistakeMap;
+- SaaS comercial baseado no MistakeMap;
+- revenda a terceiros;
+- produto white-label;
+- licenciamento comercial de uma versão derivada.
 
 ---
 
-# 15. Nome MistakeMap e identidade visual
+## 15. Autoria original
 
-A licença do código-fonte não concede automaticamente direitos sobre:
+A criação de:
 
-- o nome **MistakeMap**;
-- logotipo oficial;
-- símbolos;
-- identidade visual;
-- marcas eventualmente registradas;
-- materiais gráficos identificados como oficiais.
+- fork;
+- cópia;
+- tradução;
+- modificação;
+- adaptação;
+- integração;
+- nova interface;
+- novo módulo;
+- port para outra plataforma;
 
-Uma versão derivada não deve alegar ser uma distribuição oficial do
-MistakeMap quando não for autorizada pelos mantenedores.
+não transfere a autoria do projeto original.
 
-Consulte também `TRADEMARKS.md`.
+Os autores originais continuam sendo:
 
----
+**Cláudio Francisco Dos Santos Júnior**  
+**Lucas Emanuel Simão Silva**
 
-# 16. Contribuições
-
-Contribuições ao projeto são bem-vindas desde que respeitem:
-
-- a licença do projeto;
-- os direitos autorais dos autores;
-- direitos autorais de terceiros;
-- as diretrizes de contribuição;
-- as políticas de segurança e privacidade.
-
-Nenhum colaborador deve enviar código que não tenha autorização legal
-para contribuir.
+Autores posteriores podem receber crédito por suas contribuições sem apagar
+a atribuição original.
 
 ---
 
-# 17. Conteúdo produzido pelos usuários
+## 16. Falsa atribuição e ocultação de origem
 
-A licença do software MistakeMap não transfere automaticamente direitos
-sobre conteúdos carregados ou produzidos pelos usuários.
+Não se deve apresentar o MistakeMap original como criação de outra pessoa ou
+organização.
 
-Isso pode incluir:
+Também não se deve remover, substituir ou ocultar os `Required Notice:` para
+fazer uma redistribuição parecer uma criação independente sem relação com o
+MistakeMap original.
+
+É legítimo declarar autoria sobre modificações próprias.
+
+Exemplo correto:
+
+> "Módulo X desenvolvido por Fulano de Tal sobre uma versão derivada do
+> MistakeMap, originalmente desenvolvido por Cláudio Francisco Dos Santos
+> Júnior e Lucas Emanuel Simão Silva."
+
+---
+
+## 17. Nome MistakeMap e identidade visual
+
+A licença do código não concede automaticamente direito de utilizar nome,
+logotipo ou identidade visual de maneira enganosa.
+
+Uma versão derivada pode declarar que é:
+
+> "Baseada no MistakeMap."
+
+Entretanto, não deve alegar, sem autorização, que:
+
+- é a distribuição oficial;
+- foi publicada pelos autores originais;
+- possui aprovação formal dos autores;
+- é produto oficial do projeto;
+- é produto oficial de uma instituição relacionada ao projeto.
+
+Uma política separada pode ser mantida em `TRADEMARKS.md`.
+
+---
+
+## 18. Conteúdo dos usuários
+
+A licença do MistakeMap se refere ao software.
+
+Ela não transfere automaticamente direitos sobre conteúdos inseridos no
+sistema, como:
 
 - exercícios;
 - provas;
@@ -375,101 +482,197 @@ Isso pode incluir:
 - anotações;
 - correções;
 - materiais de professores;
-- materiais didáticos.
+- livros;
+- apostilas;
+- conteúdos de terceiros.
 
-Cada conteúdo continua sujeito aos direitos de seu respectivo titular.
-
----
-
-# 18. Dependências de terceiros
-
-Bibliotecas, frameworks, modelos, APIs e outros componentes de
-terceiros utilizados pelo MistakeMap continuam sujeitos às suas
-respectivas licenças.
-
-A licença do MistakeMap não substitui nem altera as licenças dessas
-dependências.
+Esses materiais permanecem sujeitos aos direitos de seus respectivos
+titulares.
 
 ---
 
-# 19. Inteligência artificial e modelos externos
+## 19. Dependências e componentes de terceiros
 
-Modelos de OCR, modelos de linguagem e outros componentes de IA
-integrados ao MistakeMap podem possuir condições próprias de uso.
+Bibliotecas, frameworks, modelos, fontes, assets, datasets, APIs e outros
+componentes de terceiros permanecem sujeitos às respectivas licenças.
 
-O usuário ou distribuidor é responsável por verificar as licenças dos
-modelos utilizados em sua distribuição.
+Exemplos possíveis no ecossistema do MistakeMap incluem:
+
+- Flutter;
+- Dart;
+- Supabase;
+- PostgreSQL;
+- bibliotecas Flutter;
+- engines de OCR;
+- modelos de linguagem;
+- modelos de visão;
+- fontes;
+- ícones.
+
+A licença do MistakeMap não substitui as licenças desses componentes.
 
 ---
 
-# 20. Licença comercial separada
+## 20. Inteligência artificial e modelos externos
 
-Os titulares dos direitos do MistakeMap podem conceder,
-separadamente, autorização para utilização comercial.
+Modelos de OCR, modelos de linguagem, modelos de visão e serviços externos
+integrados ao MistakeMap podem possuir termos próprios.
 
-Uma licença comercial pode estabelecer condições próprias para:
+Quem cria ou redistribui uma versão modificada deve verificar se possui
+direitos adequados para utilizar e distribuir cada componente incluído.
+
+---
+
+## 21. Contribuições
+
+Contribuições podem ser aceitas desde que respeitem:
+
+- a licença do projeto;
+- direitos autorais dos autores;
+- direitos de terceiros;
+- licenças das dependências;
+- políticas de contribuição;
+- regras de segurança e privacidade.
+
+O contribuidor pode receber crédito pelas suas contribuições.
+
+Isso não substitui a identificação dos autores originais do MistakeMap.
+
+Para projetos com múltiplos contribuidores, recomenda-se definir também uma
+política em `CONTRIBUTING.md` e, caso necessário, um DCO ou CLA.
+
+---
+
+## 22. Licença comercial separada
+
+Os titulares dos direitos aplicáveis podem conceder licenças comerciais
+separadas.
+
+Uma licença comercial poderá contemplar, por exemplo:
 
 - empresas;
-- produtos comerciais;
 - SaaS;
+- implantação comercial;
 - distribuição comercial;
 - integração proprietária;
-- suporte comercial;
-- implantação empresarial;
 - OEM;
-- white-label.
+- white-label;
+- suporte comercial;
+- produto fechado;
+- serviços associados.
 
-Nenhuma autorização comercial deve ser presumida apenas pela
-existência pública deste repositório.
-
----
-
-# 21. Resumo prático
-
-| Situação | Permitido? |
-|---|---|
-| Estudante instalar em casa | ✅ Sim |
-| Estudante estudar o código | ✅ Sim |
-| Criar um fork para aprender Flutter | ✅ Sim |
-| Alterar o aplicativo para uso próprio | ✅ Sim |
-| Professor adaptar para uma disciplina | ✅ Sim |
-| Escola utilizar em atividade pedagógica | ✅ Sim |
-| Universidade utilizar em laboratório | ✅ Sim |
-| Utilizar em pesquisa acadêmica | ✅ Sim |
-| Criar trabalho derivado não comercial | ✅ Sim |
-| Redistribuir versão permitida preservando licença e avisos | ✅ Sim |
-| Empresa simplesmente vender o MistakeMap | ❌ Não |
-| Revender fork modificado como produto | ❌ Não |
-| Transformar o código em SaaS comercial sem autorização | ❌ Não |
-| Retirar avisos obrigatórios na redistribuição | ❌ Não |
-| Afirmar falsamente ser autor do projeto original | ❌ Não |
-| Afirmar que um fork não oficial é o MistakeMap oficial | ❌ Não |
-| Solicitar autorização comercial aos autores | ✅ Sim |
+A existência de uma possibilidade de licenciamento comercial separado não
+altera a licença não comercial das versões já disponibilizadas sob a
+PolyForm, salvo quando juridicamente aplicável aos termos daquela versão.
 
 ---
 
-# 22. Licença aplicável
+## 23. Matriz prática de utilização
 
-O código-fonte do MistakeMap é disponibilizado sob:
-
-**PolyForm Noncommercial License 1.0.0**
-
-SPDX:
-
-`PolyForm-Noncommercial-1.0.0`
-
-Consulte o arquivo [`LICENSE`](./LICENSE) para os termos jurídicos
-aplicáveis.
+| Situação | Status |
+|---|:---:|
+| Estudante instalar em casa para estudar | ✅ Permitido |
+| Usar em computador pessoal | ✅ Permitido |
+| Estudar o código-fonte | ✅ Permitido |
+| Criar backup | ✅ Permitido |
+| Criar fork para aprender Flutter/Dart | ✅ Permitido |
+| Modificar para uso pessoal | ✅ Permitido |
+| Professor adaptar para uma disciplina | ✅ Permitido |
+| Escola utilizar em atividade educacional | ✅ Permitido |
+| Universidade utilizar em laboratório | ✅ Permitido |
+| Utilizar em pesquisa acadêmica | ✅ Permitido |
+| Criar protótipo acadêmico derivado | ✅ Permitido |
+| Redistribuir para finalidade autorizada mantendo licença e `Required Notice:` | ✅ Permitido |
+| Dar crédito aos próprios modificadores além dos autores originais | ✅ Permitido |
+| Remover os `Required Notice:` dos autores ao redistribuir | ❌ Não permitido |
+| Substituir os autores originais pelo nome do modificador | ❌ Não permitido |
+| Apresentar falsamente o projeto original como criação própria | ❌ Não permitido |
+| Vender o MistakeMap como produto sem licença comercial apropriada | ❌ Não licenciado |
+| Vender fork modificado sem licença comercial apropriada | ❌ Não licenciado |
+| Oferecer SaaS comercial baseado diretamente no projeto sem autorização aplicável | ❌ Não licenciado |
+| Rebatizar e comercializar o software como produto próprio | ❌ Não licenciado |
+| Pedir autorização/licença comercial separada | ✅ Permitido |
 
 ---
 
-# 23. Prevalência dos termos jurídicos
+## 24. Forma recomendada de atribuição
 
-Este documento é uma explicação informativa das condições gerais de
-uso do projeto.
+Para README, documentação, página "Sobre" ou relatório:
 
-Ele não substitui, altera ou amplia os direitos concedidos pela
+> **MistakeMap**  
+> Originalmente desenvolvido por **Cláudio Francisco Dos Santos Júnior**
+> e **Lucas Emanuel Simão Silva**.  
+> Projeto original: https://github.com/CFSJCODE/MistakeMap  
+> Licença: PolyForm Noncommercial License 1.0.0.
+
+Para versão derivada:
+
+> **Baseado no MistakeMap**, originalmente desenvolvido por
+> **Cláudio Francisco Dos Santos Júnior** e
+> **Lucas Emanuel Simão Silva**.  
+> Modificações desta versão: [nome do autor/equipe].  
+> Projeto original: https://github.com/CFSJCODE/MistakeMap
+
+---
+
+## 25. Arquivos recomendados no repositório
+
+```text
+MistakeMap/
+├── LICENSE
+├── NOTICE
+├── USAGE_POLICY.md
+├── TRADEMARKS.md
+├── CITATION.cff
+├── CONTRIBUTING.md
+├── README.md
+└── ...
+```
+
+O `LICENSE` contém a referência à licença controladora e os
+`Required Notice:`.
+
+O `USAGE_POLICY.md` explica os cenários de utilização.
+
+O `NOTICE` pode repetir os avisos de copyright e autoria.
+
+O `TRADEMARKS.md` pode disciplinar nome, logotipo e identidade visual.
+
+O `CITATION.cff` pode definir a forma acadêmica de citar o projeto.
+
+---
+
+## 26. Prevalência dos termos jurídicos
+
+Esta política existe para tornar as regras do projeto mais compreensíveis.
+
+Ela não pretende criar uma nova licença nem alterar a
 PolyForm Noncommercial License 1.0.0.
 
-Em caso de dúvida ou conflito de interpretação, prevalecem os termos
-da licença aplicável e a legislação competente.
+Em caso de dúvida, conflito ou situação não contemplada neste documento:
+
+1. consulte o arquivo `LICENSE`;
+2. consulte os termos oficiais da PolyForm Noncommercial License 1.0.0;
+3. preserve os `Required Notice:` fornecidos com o software;
+4. obtenha autorização específica quando a finalidade comercial ou outro
+   uso não estiver claramente autorizado.
+
+---
+
+## 27. Resumo
+
+O MistakeMap foi disponibilizado para permitir estudo, aprendizagem,
+experimentação, pesquisa, cópias, modificações e trabalhos derivados dentro
+das finalidades autorizadas pela PolyForm Noncommercial License 1.0.0.
+
+A autoria original deve permanecer identificada nas redistribuições por meio
+dos avisos obrigatórios `Required Notice:`.
+
+**Autores originais**
+
+- **Cláudio Francisco Dos Santos Júnior**
+- **Lucas Emanuel Simão Silva**
+
+**Projeto original**
+
+https://github.com/CFSJCODE/MistakeMap
