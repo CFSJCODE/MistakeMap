@@ -1,0 +1,47 @@
+cff-version: 1.2.0
+message: >-
+  If you use MistakeMap in academic work, research, teaching material,
+  software documentation, or a derivative academic project, please cite
+  the original software and its authors.
+title: "MistakeMap"
+type: software
+authors:
+  - family-names: "Dos Santos Júnior"
+    given-names: "Cláudio Francisco"
+  - family-names: "Silva"
+    given-names: "Lucas Emanuel Simão"
+abstract: >-
+  MistakeMap is a learning-oriented application that transforms corrected
+  exercises into a conceptual map of error patterns, recurrence, recovery,
+  and evolution. The project is designed around Flutter and Dart with a
+  Supabase/PostgreSQL backend, OCR/LLM-assisted classification, human
+  validation, and a conceptual graph for evidence-based review prioritization.
+keywords:
+  - MistakeMap
+  - Flutter
+  - Dart
+  - Supabase
+  - PostgreSQL
+  - learning analytics
+  - educational technology
+  - OCR
+  - artificial intelligence
+  - conceptual graph
+  - error analysis
+license: "PolyForm-Noncommercial-1.0.0"
+repository-code: "https://github.com/CFSJCODE/MistakeMap"
+url: "https://github.com/CFSJCODE/MistakeMap"
+date-released: "2026-08-30"
+version: "1.0"
+preferred-citation:
+  type: software
+  title: "MistakeMap"
+  authors:
+    - family-names: "Dos Santos Júnior"
+      given-names: "Cláudio Francisco"
+    - family-names: "Silva"
+      given-names: "Lucas Emanuel Simão"
+  year: 2026
+  version: "1.0"
+  repository-code: "https://github.com/CFSJCODE/MistakeMap"
+  license: "PolyForm-Noncommercial-1.0.0"
