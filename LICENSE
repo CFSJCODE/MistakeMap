@@ -1,143 +1,86 @@
 MistakeMap
-Copyright Notice and Required Attribution
-
-Required Notice: Copyright (c) 2026 Cláudio Francisco Dos Santos Júnior and Lucas Emanuel Simão Silva.
-
-Required Notice: MistakeMap is an original software project developed by Cláudio Francisco Dos Santos Júnior and Lucas Emanuel Simão Silva.
-
-Required Notice: Original project repository: CFSJCODE/MistakeMap.
+PolyForm Noncommercial License 1.0.0
 
 SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+Copyright © 2026 Cláudio Francisco Dos Santos Júnior
+Copyright © 2026 Lucas Emanuel Simão Silva
 
-PolyForm Noncommercial License 1.0.0
+Required Notice: MistakeMap — Copyright © 2026 Cláudio Francisco Dos Santos Júnior and Lucas Emanuel Simão Silva.
+Required Notice: Original authors of MistakeMap: Cláudio Francisco Dos Santos Júnior and Lucas Emanuel Simão Silva.
+Required Notice: Original project: MistakeMap — https://github.com/CFSJCODE/MistakeMap
+Required Notice: This authorship notice must accompany every redistributed copy of MistakeMap, including copies containing modifications or derivative works, as required by the Notices section of the PolyForm Noncommercial License 1.0.0.
 
-<https://polyformproject.org/licenses/noncommercial/1.0.0>
+LICENSE TERMS
 
-## Acceptance
+The MistakeMap software is made available under the PolyForm Noncommercial
+License 1.0.0.
 
-In order to get any license under these terms, you must agree
-to them as both strict obligations and conditions to all
-your licenses.
+The controlling license terms are available at:
 
-## Copyright License
+https://polyformproject.org/licenses/noncommercial/1.0.0
 
-The licensor grants you a copyright license for the
-software to do everything you might do with the software
-that would otherwise infringe the licensor's copyright
-in it for any permitted purpose.  However, you may
-only distribute the software according to [Distribution
-License](#distribution-license) and make changes or new works
-based on the software according to [Changes and New Works
-License](#changes-and-new-works-license).
+The short SPDX identifier is:
 
-## Distribution License
+PolyForm-Noncommercial-1.0.0
 
-The licensor grants you an additional copyright license
-to distribute copies of the software.  Your license
-to distribute covers distributing the software with
-changes and new works permitted by [Changes and New Works
-License](#changes-and-new-works-license).
+ATTRIBUTION AND REQUIRED NOTICES
 
-## Notices
+The PolyForm Noncommercial License 1.0.0 requires a person who distributes
+any copy of any part of the software, with or without changes, to provide
+the license terms or the official license URL and to preserve the plain-text
+lines beginning with "Required Notice:" that were provided with the software.
 
-You must ensure that anyone who gets a copy of any part of
-the software from you also gets a copy of these terms or the
-URL for them above, as well as copies of any plain-text lines
-beginning with `Required Notice:` that the licensor provided
-with the software.  For example:
+Accordingly, every redistribution of MistakeMap, whether original, modified,
+forked, ported, packaged, compiled, or incorporated into another permitted
+noncommercial work, must preserve the Required Notice lines above.
 
-> Required Notice: Copyright Yoyodyne, Inc. (http://example.com)
+Those notices identify the original authors of MistakeMap as:
 
-## Changes and New Works License
+Cláudio Francisco Dos Santos Júnior
+Lucas Emanuel Simão Silva
 
-The licensor grants you an additional copyright license to
-make changes and new works based on the software for any
-permitted purpose.
+A person who modifies MistakeMap may identify their own authorship or
+contributions separately, but must not remove, replace, conceal, or
+misrepresent the attribution of the original MistakeMap authors in the
+Required Notice lines.
 
-## Patent License
+NONCOMMERCIAL LICENSING
 
-The licensor grants you a patent license for the software that
-covers patent claims the licensor can license, or becomes able
-to license, that you would infringe by using the software.
+This file does not grant a general commercial license.
 
-## Noncommercial Purposes
+Commercial exploitation of MistakeMap that is not a permitted purpose under
+the PolyForm Noncommercial License 1.0.0 requires a separate license or
+authorization from the applicable copyright holders.
 
-Any noncommercial purpose is a permitted purpose.
+Examples of activities that may require a separate commercial license include
+selling MistakeMap, selling modified copies, offering the software as a paid
+product or paid hosted service, or incorporating it into a commercial product
+when that activity is not otherwise a permitted purpose under the controlling
+license.
 
-## Personal Uses
+TRADEMARKS AND PROJECT IDENTITY
 
-Personal use for research, experiment, and testing for
-the benefit of public knowledge, personal study, private
-entertainment, hobby projects, amateur pursuits, or religious
-observance, without any anticipated commercial application,
-is use for a permitted purpose.
+The software license does not by itself grant rights to use the MistakeMap
+name, logo, visual identity, or other project branding in a way that falsely
+suggests that a modified or third-party distribution is an official release,
+is endorsed by the original authors, or originates from the original project.
 
-## Noncommercial Organizations
+THIRD-PARTY COMPONENTS
 
-Use by any charitable organization, educational institution,
-public research organization, public safety or health
-organization, environmental protection organization,
-or government institution is use for a permitted purpose
-regardless of the source of funding or obligations resulting
-from the funding.
+Dependencies, libraries, models, fonts, assets, APIs, datasets, and other
+third-party components remain subject to their own licenses and terms.
+Nothing in this file changes third-party licensing obligations.
 
-## Fair Use
+INTERPRETATION
 
-You may have "fair use" rights for the software under the
-law. These terms do not limit them.
+The PolyForm Noncommercial License 1.0.0 is the controlling software license.
+This file records the project-specific copyright and Required Notice lines and
+points to the controlling license terms.
 
-## No Other Rights
+If any explanatory statement in this file conflicts with the controlling
+PolyForm Noncommercial License 1.0.0, the controlling license terms prevail.
 
-These terms do not allow you to sublicense or transfer any of
-your licenses to anyone else, or prevent the licensor from
-granting licenses to anyone else.  These terms do not imply
-any other licenses.
+For a practical explanation of permitted and non-permitted scenarios, see:
 
-## Patent Defense
-
-If you make any written claim that the software infringes or
-contributes to infringement of any patent, your patent license
-for the software granted under these terms ends immediately. If
-your company makes such a claim, your patent license ends
-immediately for work on behalf of your company.
-
-## Violations
-
-The first time you are notified in writing that you have
-violated any of these terms, or done anything with the software
-not covered by your licenses, your licenses can nonetheless
-continue if you come into full compliance with these terms,
-and take practical steps to correct past violations, within
-32 days of receiving notice.  Otherwise, all your licenses
-end immediately.
-
-## No Liability
-
-***As far as the law allows, the software comes as is, without
-any warranty or condition, and the licensor will not be liable
-to you for any damages arising out of these terms or the use
-or nature of the software, under any kind of legal claim.***
-
-## Definitions
-
-The **licensor** is the individual or entity offering these
-terms, and the **software** is the software the licensor makes
-available under these terms.
-
-**You** refers to the individual or entity agreeing to these
-terms.
-
-**Your company** is any legal entity, sole proprietorship,
-or other kind of organization that you work for, plus all
-organizations that have control over, are under the control of,
-or are under common control with that organization.  **Control**
-means ownership of substantially all the assets of an entity,
-or the power to direct its management and policies by vote,
-contract, or otherwise.  Control can be direct or indirect.
-
-**Your licenses** are all the licenses granted to you for the
-software under these terms.
-
-**Use** means anything you do with the software requiring one
-of your licenses.
+USAGE_POLICY.md
