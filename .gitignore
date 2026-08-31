@@ -1,0 +1,47 @@
+# Documentação
+/Documentação/
+/documentação/
+/documentacao/
+/docs/
+/doc/
+
+# Flutter / Dart
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/build/
+**/coverage/
+**/doc/api/
+**/.widget_preview/
+**/ios/Flutter/.last_build_id
+app.*.symbols
+app.*.map.json
+
+# Android build outputs
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# Arquivos de ambiente e segredos
+.env
+.env.*
+*.keystore
+*.jks
+
+# IDEs e Editores
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Arquivos do Sistema Operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+*.class
+*.log
+*.pyc
+*.swp
