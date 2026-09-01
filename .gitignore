@@ -27,6 +27,8 @@ app.*.map.json
 # Arquivos de ambiente e segredos
 .env
 .env.*
+!.env.example
+!.env.*.example
 *.keystore
 *.jks
 
