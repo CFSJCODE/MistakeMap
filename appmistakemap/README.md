@@ -110,8 +110,8 @@ O diretório `appmistakemap/` contém a aplicação cliente frontend do **Mistak
       <strong>Supabase</strong><br><sub>Client SDK</sub>
     </td>
     <td align="center" width="145">
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/materialui/materialui-original.svg" width="46" height="46" alt="Material Design 3"><br>
-      <strong>Material 3</strong><br><sub>Design System</sub>
+      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows8/windows8-original.svg" width="46" height="46" alt="Fluent UI"><br>
+      <strong>Fluent UI</strong><br><sub>Design System</sub>
     </td>
   </tr>
 </table>
@@ -119,7 +119,7 @@ O diretório `appmistakemap/` contém a aplicação cliente frontend do **Mistak
 
 | Camada | Tecnologia / Padrão | Responsabilidade |
 |:---|:---|:---|
-| **Interface / Componentes** | Flutter (Material 3) | Renderização de telas, formulários, captura de câmera e gráficos |
+| **Interface / Componentes** | Flutter (Fluent UI) | Renderização de telas, formulários, captura de câmera e gráficos |
 | **Gerenciamento de Estado** | Riverpod | Injeção de dependências reativa e controle de ciclo de vida de dados |
 | **Roteamento** | GoRouter | Navegação declarativa, tratamento de histórico e deep links |
 | **Integração de Backend** | `supabase_flutter` | Autenticação, sincronização de banco de dados e upload de fotos |
@@ -142,7 +142,7 @@ lib/
 ├── app/                  # Configurações globais da aplicação
 │   ├── bootstrap/        # Inicialização assíncrona (Supabase, configs locais)
 │   ├── router/           # Definição centralizada de rotas (GoRouter)
-│   └── theme/            # Definições de tema e cores Material 3
+│   └── theme/            # Definições de tema e cores Fluent UI
 │
 ├── core/                 # Componentes compartilhados transversais
 │   ├── errors/           # Classes de tratamento de exceções e falhas
