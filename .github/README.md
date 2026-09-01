@@ -14,6 +14,7 @@ Plataforma de aprendizagem orientada a erros que transforma exercícios corrigid
 ![Status](https://img.shields.io/badge/Status-Concepção%20%2F%20MVP-F59E0B?style=flat-square)
 ![Versão](https://img.shields.io/badge/Versão-1.0-0A7F5A?style=flat-square)
 ![PUC Minas](https://img.shields.io/badge/Projeto%20Acadêmico-PUC%20Minas-003B71?style=flat-square)
+![Fluent UI](https://img.shields.io/badge/Design%20System-Fluent%20UI-0078D4?style=flat-square&logo=windows11&logoColor=white)
 
 <br>
 
@@ -96,14 +97,54 @@ flowchart LR
 
 <br>
 
-### Aplicação e arquitetura Flutter
+### Aplicação, arquitetura e interface Flutter
 
 <p>
   <img src="https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter">
   <img src="https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart">
+  <img src="https://img.shields.io/badge/Fluent_UI-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Fluent UI">
   <img src="https://img.shields.io/badge/Riverpod-6C63FF?style=flat-square&logo=flutter&logoColor=white" alt="Riverpod">
   <img src="https://img.shields.io/badge/GoRouter-02569B?style=flat-square&logo=flutter&logoColor=white" alt="GoRouter">
 </p>
+
+<br>
+
+### Design System
+
+<p>
+  <img src="https://img.shields.io/badge/Design_System-Fluent_UI-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Fluent UI">
+  <img src="https://img.shields.io/badge/App-FluentApp-0078D4?style=flat-square" alt="FluentApp">
+  <img src="https://img.shields.io/badge/Theme-FluentThemeData-0078D4?style=flat-square" alt="FluentThemeData">
+  <img src="https://img.shields.io/badge/Icons-FluentIcons-0078D4?style=flat-square" alt="FluentIcons">
+</p>
+
+O **MistakeMap utiliza Fluent UI como Design System oficial da camada de apresentação**.
+
+A interface deve utilizar, sempre que aplicável, os componentes e princípios do ecossistema Fluent:
+
+- `FluentApp`;
+- `FluentThemeData`;
+- `NavigationView`;
+- `NavigationPane`;
+- `CommandBar`;
+- `InfoBar`;
+- `ContentDialog`;
+- `Flyout`;
+- `FluentIcons`;
+- `FilledButton`;
+- `Button`;
+- `TextBox`;
+- `ComboBox`;
+- `AutoSuggestBox`;
+- `ProgressRing`;
+- `ProgressBar`;
+- `Acrylic`, quando houver justificativa funcional;
+- tipografia, hierarquia, profundidade, espaçamento e estados coerentes com o **Fluent Design System**.
+
+> [!IMPORTANT]
+> **Material Design não constitui a linguagem visual principal do MistakeMap.**
+>
+> O projeto utiliza Flutter como framework de interface, porém sua identidade visual e seus componentes de apresentação são baseados em **Fluent UI**.
 
 <br>
 
@@ -142,31 +183,43 @@ flowchart LR
 ### Stack principal
 
 <div align="center">
+
 <table>
   <tr>
-    <td align="center" width="145">
+    <td align="center" width="130">
       <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/flutter/flutter-original.svg" width="46" height="46" alt="Flutter"><br>
-      <strong>Flutter</strong><br><sub>Interface</sub>
+      <strong>Flutter</strong><br><sub>Framework</sub>
     </td>
-    <td align="center" width="145">
+    <td align="center" width="130">
       <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dart/dart-original.svg" width="46" height="46" alt="Dart"><br>
       <strong>Dart</strong><br><sub>Linguagem</sub>
     </td>
-    <td align="center" width="145">
+    <td align="center" width="130">
+      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows11/windows11-original.svg" width="46" height="46" alt="Fluent UI"><br>
+      <strong>Fluent UI</strong><br><sub>Design System</sub>
+    </td>
+    <td align="center" width="130">
       <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/supabase/supabase-original.svg" width="46" height="46" alt="Supabase"><br>
       <strong>Supabase</strong><br><sub>Backend</sub>
     </td>
-    <td align="center" width="145">
+    <td align="center" width="130">
       <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postgresql/postgresql-original.svg" width="46" height="46" alt="PostgreSQL"><br>
       <strong>PostgreSQL</strong><br><sub>Persistência</sub>
     </td>
   </tr>
 </table>
+
 </div>
+
+<br>
 
 | Camada | Tecnologia | Responsabilidade |
 |:---|:---|:---|
 | **Frontend** | Flutter + Dart | Captura, edição, revisão e visualização |
+| **Design System** | `fluent_ui` | Linguagem visual e componentes da aplicação |
+| **Aplicação raiz** | `FluentApp` | Configuração global da camada visual |
+| **Tema** | `FluentThemeData` | Cores, brilho, tipografia e comportamento visual |
+| **Iconografia** | `FluentIcons` | Iconografia consistente com Fluent Design |
 | **Estado** | Riverpod | Gerenciamento de estado e injeção de dependências |
 | **Navegação** | GoRouter | Rotas e deep links |
 | **Backend** | Supabase | Auth, banco, Storage e jobs |
@@ -190,7 +243,9 @@ flowchart LR
 | **Projeto** | MistakeMap |
 | **Documento-base** | Concepção, Arquitetura e Roadmap de Implementação |
 | **Contexto de aplicação** | Estudo individual, matemática, física, computação, engenharias e disciplinas baseadas em resolução de problemas |
-| **Stack principal** | Flutter + Dart + Supabase/PostgreSQL + Storage + OCR/LLM + grafo conceitual |
+| **Stack principal** | Flutter + Dart + Fluent UI + Supabase/PostgreSQL + Storage + OCR/LLM + grafo conceitual |
+| **Design System** | Fluent UI / Fluent Design |
+| **Pacote de interface** | `fluent_ui` |
 | **Plataformas** | Android, Windows e Web |
 | **Versão** | **1.0 — Agosto de 2026** |
 | **Status** | Concepção / MVP |
@@ -229,6 +284,7 @@ flowchart LR
 - [Regras de Integridade](#regras-de-integridade)
 - [Segurança e Privacidade](#seguranca-e-privacidade)
 - [Experiência do Usuário](#experiencia-do-usuario)
+- [Fluent UI](#fluent-ui)
 - [Fluxos Operacionais](#fluxos-operacionais)
 - [Relatórios e Exportações](#relatorios-e-exportacoes)
 - [Arquitetura Flutter](#arquitetura-flutter)
@@ -526,11 +582,28 @@ Alta prioridade de revisão
 
 ### Responsabilidades principais
 
-**Flutter** oferece:
+**Flutter + Fluent UI** oferecem:
 
 - captura;
 - revisão;
-- visualização do mapa.
+- visualização do mapa;
+- navegação;
+- componentes responsivos;
+- feedback visual;
+- identidade de interface consistente.
+
+**Riverpod** oferece:
+
+- gerenciamento de estado;
+- injeção de dependências;
+- gerenciamento de estados assíncronos;
+- desacoplamento entre apresentação e domínio.
+
+**GoRouter** oferece:
+
+- navegação declarativa;
+- rotas;
+- deep links.
 
 **Supabase** armazena:
 
@@ -550,20 +623,42 @@ O grafo pode ser modelado relacionalmente com `concept_edges` no PostgreSQL, sem
 
 ```mermaid
 flowchart TB
-    UX["CAMADA DE EXPERIÊNCIA<br/>Flutter: captura, exercício, revisão, mapa e fila de estudo"]
+    UX["CAMADA DE EXPERIÊNCIA<br/>Flutter + Fluent UI<br/>captura, exercício, revisão, mapa e fila de estudo"]
+    FLUENT["DESIGN SYSTEM<br/>FluentApp + FluentThemeData + NavigationView<br/>InfoBar + ContentDialog + FluentIcons"]
     STATE["ESTADO E NAVEGAÇÃO<br/>Riverpod + GoRouter"]
     DOMAIN["DOMÍNIO<br/>Disciplinas, conceitos, exercícios, tentativas, erros, revisões e domínio"]
     AI["IA EDUCACIONAL<br/>OCR + parsing + LLM para sugestões com evidência"]
     SB["SUPABASE<br/>Auth + PostgreSQL + RLS + Storage + Edge Functions"]
     ANALYSIS["ANÁLISE<br/>Agregações por conceito, tipo de erro, recência e recuperação"]
 
+    UX --> FLUENT
     UX --> STATE
     STATE --> DOMAIN
     DOMAIN --> AI
     DOMAIN --> SB
     AI --> SB
     SB --> ANALYSIS
+    ANALYSIS --> DOMAIN
 ```
+
+<br>
+
+### Separação lógica
+
+```mermaid
+flowchart LR
+    P["Presentation<br/>Flutter + Fluent UI"]
+    D["Domain<br/>Entidades + Casos de Uso"]
+    R["Repositories<br/>Abstrações"]
+    I["Infrastructure<br/>Supabase + OCR + IA"]
+
+    P --> D
+    D --> R
+    R --> I
+```
+
+> [!NOTE]
+> A camada de domínio não deve depender diretamente de `fluent_ui`, Supabase ou widgets Flutter. A interface é uma implementação da camada de apresentação, e não uma dependência da lógica de negócio.
 
 <br>
 
@@ -588,7 +683,7 @@ Assim, ajustes na fórmula de prioridade podem recalcular o mapa **sem modificar
 | `concepts` | `id`, `subject_id`, `name`, `description`, `importance` | Nó conceitual |
 | `concept_edges` | `from_concept_id`, `to_concept_id`, `relation` | Pré-requisito/relacionamento |
 | `exercises` | `id`, `subject_id`, `source`, `prompt_text`, `difficulty`, `created_at` | Questão |
-| `exercise_concepts` | `exercise_id`, `concept_id`, `weight` | Relação N |
+| `exercise_concepts` | `exercise_id`, `concept_id`, `weight` | Relação N:N |
 | `attempts` | `id`, `exercise_id`, `user_id`, `solution_text`, `answer`, `attempted_at` | Tentativa |
 | `corrections` | `id`, `attempt_id`, `reference_text`, `attachment_id`, `reviewed_by` | Gabarito/comentário |
 | `error_types` | `id`, `name`, `category`, `description` | Taxonomia de erro |
@@ -754,11 +849,14 @@ Nenhuma fragilidade pode ser publicada automaticamente.
 
 ### Diretrizes de interface
 
+- Fluent UI como linguagem visual principal.
 - Visual moderno, formal e informacional.
 - Evitar aparência de template genérico.
+- Evitar reprodução de padrões visuais característicos do Material Design.
 - Responsividade real por breakpoints.
 - Desktop com alta densidade de informação.
 - Mobile orientado à tarefa.
+- Hierarquia visual clara.
 - Ações críticas exibem estado e consequência.
 - Possibilidade de revisão antes da confirmação.
 - Contraste adequado.
@@ -770,6 +868,223 @@ Nenhuma fragilidade pode ser publicada automaticamente.
 - Preferir **“há recorrência recente em”**.
 - Sempre permitir abrir a evidência.
 - O mapa deve mostrar melhora e recuperação.
+- Animações devem comunicar mudanças de estado ou navegação.
+- Transparência deve possuir função visual e não ser aplicada indiscriminadamente.
+- A interface deve continuar legível mesmo sem efeitos translúcidos.
+
+<br>
+
+---
+
+<br>
+
+<a id="fluent-ui"></a>
+
+## Fluent UI
+
+O **MistakeMap adota Fluent UI como Design System oficial da aplicação**.
+
+O objetivo é construir uma interface:
+
+- consistente;
+- adaptativa;
+- informacional;
+- acessível;
+- adequada ao desktop;
+- funcional em dispositivos móveis;
+- compatível visualmente com ambientes modernos do Windows;
+- preservando a portabilidade fornecida pelo Flutter.
+
+<br>
+
+### Componentes principais
+
+| Necessidade | Componente Fluent UI |
+|:---|:---|
+| **Aplicação raiz** | `FluentApp` |
+| **Tema** | `FluentThemeData` |
+| **Navegação principal** | `NavigationView` |
+| **Menu lateral** | `NavigationPane` |
+| **Barra de comandos** | `CommandBar` |
+| **Mensagens contextuais** | `InfoBar` |
+| **Diálogos** | `ContentDialog` |
+| **Menus contextuais** | `Flyout` |
+| **Iconografia** | `FluentIcons` |
+| **Ação primária** | `FilledButton` |
+| **Ação secundária** | `Button` |
+| **Entrada textual** | `TextBox` |
+| **Seleção** | `ComboBox` |
+| **Busca e sugestão** | `AutoSuggestBox` |
+| **Progresso indeterminado** | `ProgressRing` |
+| **Progresso determinado** | `ProgressBar` |
+| **Superfícies contextuais** | `Acrylic`, quando justificável |
+
+<br>
+
+### Hierarquia visual
+
+```text
+FluentApp
+│
+├── FluentThemeData
+│
+└── NavigationView
+    │
+    ├── NavigationPane
+    │
+    └── Conteúdo
+        │
+        ├── CommandBar
+        ├── Painéis
+        ├── MistakeMap
+        ├── InfoBar
+        ├── Flyout
+        └── ContentDialog
+```
+
+<br>
+
+### Princípios visuais
+
+> [!IMPORTANT]
+> A interface deve comunicar **estrutura, profundidade, contexto e estado**, não apenas decorar o conteúdo.
+
+#### Hierarquia
+
+A aplicação deve distinguir claramente:
+
+1. conteúdo primário;
+2. conteúdo secundário;
+3. metadados;
+4. ações;
+5. alertas;
+6. superfícies temporárias.
+
+#### Profundidade
+
+A profundidade visual pode representar:
+
+1. fundo da aplicação;
+2. superfície principal;
+3. painéis;
+4. menus contextuais;
+5. overlays;
+6. diálogos.
+
+#### Acrylic
+
+O efeito `Acrylic` pode ser utilizado em:
+
+- menus;
+- painéis temporários;
+- superfícies de navegação;
+- elementos flutuantes;
+- diálogos ou contextos específicos.
+
+> [!WARNING]
+> Acrylic não deve ser tratado como simples efeito decorativo aplicado indiscriminadamente a todos os componentes.
+
+#### Movimento
+
+Animações podem indicar:
+
+- navegação;
+- alteração de contexto;
+- expansão;
+- atualização do grafo;
+- confirmação de ações;
+- mudança de prioridade;
+- entrada e saída de superfícies.
+
+#### Tipografia
+
+A tipografia deve priorizar:
+
+- legibilidade;
+- hierarquia;
+- contraste;
+- densidade adequada;
+- leitura rápida em dashboards;
+- diferenciação entre títulos, corpo, metadados e indicadores.
+
+<br>
+
+### Responsividade
+
+```mermaid
+flowchart LR
+    A["Espaço disponível"] --> B{"Breakpoint"}
+
+    B -->|"Compacto"| C["Interface mobile<br/>Navegação compacta<br/>Uma tarefa principal"]
+
+    B -->|"Intermediário"| D["NavigationPane compacta<br/>Painéis adaptativos"]
+
+    B -->|"Expandido"| E["NavigationView completa<br/>Layout master-detail<br/>Alta densidade"]
+```
+
+<br>
+
+### Desktop
+
+No Windows e em telas grandes:
+
+- `NavigationView` pode permanecer expandida;
+- informações secundárias podem permanecer visíveis;
+- filtros podem coexistir com o grafo;
+- painéis master-detail podem ser utilizados;
+- atalhos de teclado devem ser suportados;
+- hover pode oferecer informações complementares;
+- redimensionamento de janela deve reorganizar o layout dinamicamente.
+
+<br>
+
+### Mobile
+
+No Android e em telas compactas:
+
+- uma tarefa principal deve possuir prioridade visual;
+- painéis simultâneos devem ser reduzidos;
+- ações principais devem permanecer facilmente acessíveis;
+- nenhuma função crítica pode depender de hover;
+- áreas de toque devem permanecer adequadas;
+- a navegação deve adaptar-se ao espaço disponível.
+
+<br>
+
+### Fluent UI versus Material Design
+
+> [!WARNING]
+> **O MistakeMap não deve misturar deliberadamente Fluent UI e Material Design como duas linguagens visuais concorrentes.**
+
+Devem ser evitados como padrões visuais principais:
+
+- `MaterialApp`;
+- `Scaffold`;
+- `AppBar`;
+- `FloatingActionButton`;
+- `NavigationRail`;
+- `NavigationDrawer` Material;
+- `SnackBar` quando `InfoBar` atender ao caso;
+- iconografia Material quando houver equivalente apropriado em `FluentIcons`.
+
+A estrutura preferencial é:
+
+```dart
+FluentApp(
+  // ...
+)
+```
+
+em vez de:
+
+```dart
+MaterialApp(
+  // ...
+)
+```
+
+> [!NOTE]
+> Isso não remove Flutter da arquitetura. Flutter continua responsável pela composição, layout e renderização. **Fluent UI define o Design System e os componentes utilizados na camada visual.**
 
 <br>
 
@@ -868,14 +1183,27 @@ A base de código deve seguir arquitetura **feature-first**, com separação cla
 lib/
 ├── app/
 │   ├── router/
+│   │   ├── app_router.dart
+│   │   └── routes.dart
+│   │
 │   ├── theme/
+│   │   ├── fluent_theme.dart
+│   │   ├── fluent_colors.dart
+│   │   ├── fluent_typography.dart
+│   │   └── fluent_breakpoints.dart
+│   │
 │   └── bootstrap/
+│       └── app_bootstrap.dart
 │
 ├── core/
 │   ├── errors/
 │   ├── utils/
 │   ├── services/
+│   │
 │   └── widgets/
+│       ├── fluent/
+│       ├── responsive/
+│       └── common/
 │
 ├── features/
 │   ├── auth/
@@ -894,13 +1222,111 @@ lib/
 └── main.dart
 ```
 
+<br>
+
+### Organização interna recomendada por feature
+
+```text
+features/
+└── mistake_map/
+    ├── data/
+    │   ├── datasources/
+    │   ├── models/
+    │   └── repositories/
+    │
+    ├── domain/
+    │   ├── entities/
+    │   ├── repositories/
+    │   └── usecases/
+    │
+    └── presentation/
+        ├── controllers/
+        ├── providers/
+        ├── pages/
+        └── widgets/
+```
+
+<br>
+
+### Componentes arquiteturais
+
 | Item | Recomendação |
 |:---|:---|
+| **Framework** | Flutter |
+| **Linguagem** | Dart |
+| **Design System** | Fluent UI |
+| **Biblioteca visual** | `fluent_ui` |
+| **Aplicação raiz** | `FluentApp` |
+| **Tema** | `FluentThemeData` |
+| **Iconografia** | `FluentIcons` |
 | **Gerenciamento de estado** | Riverpod |
 | **Injeção de dependências** | Riverpod |
 | **Navegação** | GoRouter |
 | **Deep links** | GoRouter |
-| **Alternativa válida** | Bloc, desde que o projeto adote um único padrão principal |
+| **Backend** | Supabase |
+| **Banco** | PostgreSQL |
+| **Alternativa de estado válida** | Bloc, desde que o projeto adote um único padrão principal |
+
+<br>
+
+### Estrutura conceitual da aplicação
+
+```text
+MistakeMapApp
+│
+└── FluentApp
+    │
+    ├── FluentThemeData
+    │
+    └── Router
+        │
+        └── MistakeMapShell
+            │
+            └── NavigationView
+                │
+                ├── NavigationPane
+                │   ├── Dashboard
+                │   ├── Disciplinas
+                │   ├── Exercícios
+                │   ├── MistakeMap
+                │   ├── Revisão
+                │   ├── Relatórios
+                │   └── Configurações
+                │
+                └── Conteúdo da rota
+```
+
+<br>
+
+### Exemplo conceitual da aplicação raiz
+
+```dart
+import 'package:fluent_ui/fluent_ui.dart';
+
+class MistakeMapApp extends StatelessWidget {
+  const MistakeMapApp({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FluentApp(
+      title: 'MistakeMap',
+      debugShowCheckedModeBanner: false,
+      theme: FluentThemeData(
+        brightness: Brightness.light,
+      ),
+      darkTheme: FluentThemeData(
+        brightness: Brightness.dark,
+      ),
+      home: const MistakeMapShell(),
+    );
+  }
+}
+```
+
+> [!NOTE]
+> O exemplo demonstra somente a decisão arquitetural referente ao Design System. A aplicação definitiva deve integrar roteamento, Riverpod, internacionalização, configurações globais e persistência.
 
 <br>
 
@@ -942,14 +1368,14 @@ Fotografar e anotar exercício deve funcionar durante aula ou estudo **sem inter
 
 | Fase | Entregas | Critério de conclusão |
 |:---|:---|:---|
-| **Fase 0 — Fundação** | Flutter, Supabase, Auth e Storage | Login e dados privados |
+| **Fase 0 — Fundação** | Flutter, Fluent UI, Supabase, Auth e Storage | Aplicação base Fluent, login e dados privados |
 | **Fase 1 — Disciplinas** | Conceitos, relações e exercícios | Grafo manual navegável |
 | **Fase 2 — Tentativas** | Soluções, correções e anexos | Histórico de estudo completo |
 | **Fase 3 — Erros** | Taxonomia e eventos manuais | Mapa funciona sem IA |
 | **Fase 4 — IA** | OCR, conceitos e erros sugeridos | Sugestões revisáveis com evidência |
 | **Fase 5 — Prioridade** | Agregação, recência e `mastery_events` | Fila de revisão explicável |
 | **Fase 6 — Relatórios** | PDF/CSV e compartilhamento seletivo | Portabilidade garantida |
-| **Fase 7 — Hardening** | RLS, testes e avaliação educacional | Release estável |
+| **Fase 7 — Hardening** | RLS, acessibilidade, testes e avaliação educacional | Release estável |
 
 <br>
 
@@ -957,7 +1383,7 @@ Fotografar e anotar exercício deve funcionar durante aula ou estudo **sem inter
 
 ```mermaid
 flowchart LR
-    F0["Fase 0<br/>Fundação"] --> F1["Fase 1<br/>Disciplinas"]
+    F0["Fase 0<br/>Fundação<br/>Flutter + Fluent UI"] --> F1["Fase 1<br/>Disciplinas"]
     F1 --> F2["Fase 2<br/>Tentativas"]
     F2 --> F3["Fase 3<br/>Erros"]
     F3 --> F4["Fase 4<br/>IA"]
@@ -981,6 +1407,9 @@ O MVP deve permitir que o estudante **registre e classifique erros manualmente**
 > [!TIP]
 > A IA entra como **acelerador**, não como dependência estrutural do valor inicial do produto.
 
+- [ ] Estrutura Flutter com `FluentApp`.
+- [ ] Design System configurado com `FluentThemeData`.
+- [ ] Navegação Fluent responsiva.
 - [ ] Disciplinas, conceitos e relações.
 - [ ] Exercícios/tentativas com imagens.
 - [ ] Taxonomia inicial de erros.
@@ -1011,6 +1440,11 @@ O MVP deve permitir que o estudante **registre e classifique erros manualmente**
 | **AC-08** | Compartilhamento de relatório não inclui exercícios não selecionados |
 | **AC-09** | O aplicativo não gera diagnósticos de aprendizagem |
 | **AC-10** | A chave `service_role` não existe no bundle Flutter |
+| **AC-11** | Fluent UI é utilizado como Design System principal |
+| **AC-12** | A aplicação utiliza `FluentApp` como estrutura visual raiz ou arquitetura Fluent equivalente |
+| **AC-13** | Navegação principal permanece funcional em layouts compactos, intermediários e expandidos |
+| **AC-14** | Recursos essenciais não dependem exclusivamente de hover |
+| **AC-15** | Feedbacks críticos possuem indicação textual e não dependem apenas de cor |
 
 <br>
 
@@ -1040,11 +1474,17 @@ O MVP deve permitir que o estudante **registre e classifique erros manualmente**
 
 <br>
 
+- Componentes Fluent UI.
+- `NavigationView`.
+- `NavigationPane`.
 - Formulários.
 - Navegação.
 - Filtros.
 - Estados vazios.
+- `InfoBar`.
+- `ContentDialog`.
 - Mensagens de erro.
+- Responsividade.
 
 </details>
 
@@ -1057,6 +1497,8 @@ O MVP deve permitir que o estudante **registre e classifique erros manualmente**
 - Banco.
 - Storage.
 - Operações transacionais no Supabase.
+- Navegação entre funcionalidades.
+- Persistência após retomada de sessão.
 
 </details>
 
@@ -1072,13 +1514,46 @@ O MVP deve permitir que o estudante **registre e classifique erros manualmente**
 </details>
 
 <details>
+<summary><strong>Testes de acessibilidade</strong></summary>
+
+<br>
+
+- Navegação por teclado.
+- Indicadores de foco.
+- Contraste.
+- Escalonamento de texto.
+- Labels semânticos.
+- Uso sem dependência exclusiva de cor.
+- Uso sem dependência exclusiva de hover.
+
+</details>
+
+<details>
+<summary><strong>Testes responsivos</strong></summary>
+
+<br>
+
+- Layout compacto.
+- Layout intermediário.
+- Layout expandido.
+- Redimensionamento de janela no Windows.
+- Alteração de orientação no Android.
+- Diferentes densidades de tela.
+- Overflow de conteúdo.
+- Navegação adaptativa.
+
+</details>
+
+<details>
 <summary><strong>Concorrência e resiliência</strong></summary>
 
 <br>
 
-- Testes de concorrência nas operações que alteram reserva, saldo, estado ou histórico.
+- Testes de concorrência nas operações que alteram estado ou histórico.
 - Recuperação de falhas de rede.
 - Repetição idempotente de comandos.
+- Sincronização de dados locais.
+- Tratamento explícito de conflitos.
 
 </details>
 
@@ -1090,6 +1565,7 @@ O MVP deve permitir que o estudante **registre e classifique erros manualmente**
 - Monitoramento sem registrar tokens.
 - Não registrar documentos privados.
 - Não registrar dados pessoais desnecessários.
+- Separar telemetria técnica de conteúdo educacional.
 
 </details>
 
@@ -1123,6 +1599,9 @@ O MVP deve permitir que o estudante **registre e classifique erros manualmente**
 | **LaTeX/Math OCR** | Aprimorar captura de expressões matemáticas |
 | **RAG das notas** | Conectar erros aos trechos de teoria do próprio material do aluno |
 | **Análise longitudinal** | Comparar semestres e identificar padrões recuperados ou reincidentes |
+| **Fluent UI adaptativo** | Refinar comportamento específico para desktop, tablet e mobile |
+| **Temas Fluent** | Suporte aprimorado a temas claro, escuro e cores de destaque |
+| **Atalhos de teclado** | Aumentar produtividade em Windows e Web |
 
 <details>
 <summary><strong>Integração com Anki/flashcards</strong></summary>
@@ -1178,6 +1657,24 @@ Comparar semestres e identificar padrões recuperados ou reincidentes.
 
 </details>
 
+<details>
+<summary><strong>Fluent UI adaptativo</strong></summary>
+
+<br>
+
+Criar uma camada responsiva capaz de adaptar automaticamente:
+
+- densidade;
+- navegação;
+- quantidade de painéis;
+- espaçamentos;
+- comportamento de comandos;
+- visualização do grafo;
+
+de acordo com o espaço disponível.
+
+</details>
+
 <br>
 
 ---
@@ -1200,6 +1697,32 @@ Um sistema que sabe registrar:
 já produz valor.
 
 A inteligência automática deve **reduzir o trabalho de classificação**, não substituir o ato metacognitivo de revisar a própria solução.
+
+Do ponto de vista visual, o **Design System Fluent deve ser estruturado antes da implementação extensiva das telas**, evitando que cada funcionalidade estabeleça padrões independentes de:
+
+- cores;
+- tipografia;
+- espaçamento;
+- navegação;
+- iconografia;
+- diálogos;
+- estados;
+- feedback;
+- responsividade.
+
+<br>
+
+### Ordem recomendada
+
+```mermaid
+flowchart LR
+    A["1. Domínio"] --> B["2. Modelo de eventos"]
+    B --> C["3. Design System Fluent"]
+    C --> D["4. Componentes compartilhados"]
+    D --> E["5. Features"]
+    E --> F["6. IA"]
+    F --> G["7. Otimização"]
+```
 
 <br>
 
@@ -1276,6 +1799,9 @@ prioridade:
 - [ ] Dart SDK
 - [ ] Projeto Supabase configurado
 - [ ] Ambiente compatível com a plataforma de destino
+- [ ] Dependência `fluent_ui`
+- [ ] Dependência Riverpod
+- [ ] Dependência GoRouter
 
 <br>
 
@@ -1312,6 +1838,24 @@ flutter run
 
 <br>
 
+### Dependências arquiteturais esperadas
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+
+  fluent_ui:
+  flutter_riverpod:
+  go_router:
+  supabase_flutter:
+```
+
+> [!WARNING]
+> As versões das dependências devem ser definidas no `pubspec.yaml` de acordo com a versão de Flutter utilizada e com a compatibilidade validada no projeto. O README não deve fixar versões arbitrárias sem testes no ambiente real.
+
+<br>
+
 ---
 
 <br>
@@ -1321,6 +1865,30 @@ flutter run
 ## Síntese
 
 > **MistakeMap trata o erro como dado de aprendizagem:** não um ponto final vermelho, mas um sinal que, quando conectado a outros sinais, revela onde a próxima revisão pode produzir maior retorno.
+
+A arquitetura combina:
+
+```text
+Flutter
+   +
+Dart
+   +
+Fluent UI
+   +
+Riverpod
+   +
+GoRouter
+   +
+Supabase
+   +
+PostgreSQL
+   +
+OCR / LLM
+   +
+Grafo Conceitual
+```
+
+para construir uma aplicação educacional na qual a interface não apenas apresenta resultados, mas ajuda o estudante a **navegar pela própria trajetória de aprendizagem**.
 
 <br>
 
@@ -1345,8 +1913,13 @@ flutter run
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter">
   <img src="https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart">
+  <img src="https://img.shields.io/badge/Fluent_UI-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Fluent UI">
   <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
+</p>
+
+<p align="center">
+  <sub>Flutter · Dart · Fluent UI · Riverpod · GoRouter · Supabase · PostgreSQL</sub>
 </p>
 
 <p align="center"><sub>Versão 1.0 · Agosto de 2026</sub></p>
