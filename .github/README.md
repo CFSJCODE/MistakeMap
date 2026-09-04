@@ -129,8 +129,8 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
 <p>
   <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/Storage-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase Storage">
   <img src="https://img.shields.io/badge/RLS-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="Row Level Security">
+  <img src="https://img.shields.io/badge/Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white" alt="Cloudflare R2">
 </p>
 
 ### Inteligência e processamento
@@ -190,8 +190,9 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
 | **Iconografia** | `FluentIcons` | Iconografia consistente com Fluent Design |
 | **Estado** | Riverpod | Gerenciamento de estado e injeção de dependências |
 | **Navegação** | GoRouter | Rotas e deep links |
-| **Backend** | Supabase | Auth, banco, Storage e jobs |
+| **Backend** | Supabase | Auth, banco e jobs |
 | **Banco** | PostgreSQL | Eventos e grafo conceitual via tabelas |
+| **Armazenamento de arquivos** | Cloudflare R2 | Fotos de exercícios (10GB grátis, compatível S3, egress zero) |
 | **OCR** | Motor compatível | Texto/matemática com revisão manual |
 | **IA** | LLM em backend | Sugestão de conceitos e erros |
 | **Visualização** | `CustomPaint` / graph library | Mapa conceitual e evolução |
@@ -207,7 +208,7 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
 | **Projeto** | MistakeMap |
 | **Documento-base** | Concepção, Arquitetura e Roadmap de Implementação |
 | **Contexto de aplicação** | Estudo individual, matemática, física, computação, engenharias e disciplinas baseadas em resolução de problemas |
-| **Stack principal** | Flutter + Dart + Fluent UI + Supabase/PostgreSQL + Storage + OCR/LLM + grafo conceitual |
+| **Stack principal** | Flutter + Dart + Fluent UI + Supabase/PostgreSQL + Cloudflare R2 + OCR/LLM + grafo conceitual |
 | **Design System** | Fluent UI / Fluent Design |
 | **Pacote de interface** | `fluent_ui` |
 | **Plataformas** | Android, Windows e Web |
@@ -631,7 +632,8 @@ flowchart TB
     STATE["ESTADO E NAVEGAÇÃO<br/>Riverpod + GoRouter"]
     DOMAIN["DOMÍNIO<br/>Disciplinas, conceitos, exercícios, tentativas, erros, revisões e domínio"]
     AI["IA EDUCACIONAL<br/>OCR + parsing + LLM para sugestões com evidência"]
-    SB["SUPABASE<br/>Auth + PostgreSQL + RLS + Storage + Edge Functions"]
+    SB["SUPABASE<br/>Auth + PostgreSQL + RLS + Edge Functions"]
+    R2["CLOUDFLARE R2<br/>Armazenamento de fotos (S3-compatível)"]
     ANALYSIS["ANÁLISE<br/>Agregações por conceito, tipo de erro, recência e recuperação"]
 
     UX --> FLUENT
@@ -639,7 +641,9 @@ flowchart TB
     STATE --> DOMAIN
     DOMAIN --> AI
     DOMAIN --> SB
+    DOMAIN --> R2
     AI --> SB
+    AI --> R2
     SB --> ANALYSIS
     ANALYSIS --> DOMAIN
 ```
@@ -776,7 +780,7 @@ Mesmo em uso individual, o produto deve impedir exposição entre contas e evita
 |:---|:---|
 | **Supabase Auth** | Identidade, sessão, refresh token e provedores OAuth |
 | **Row Level Security** | Políticas `SELECT`, `INSERT`, `UPDATE` e `DELETE` avaliadas no PostgreSQL |
-| **Storage Policies** | Buckets privados por padrão e URLs temporárias |
+| **Storage Policies (Cloudflare R2)** | Bucket privado, URLs assinadas temporárias, sem acesso público direto |
 | **Service Role** | Restrita a Edge Functions/servidor confiável |
 | **Secrets** | Variáveis de ambiente fora do Git |
 | **Auditoria** | Alterações críticas com usuário, timestamp e entidade |
