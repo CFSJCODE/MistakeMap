@@ -113,6 +113,10 @@ O diretório `appmistakemap/` contém a aplicação cliente frontend do **Mistak
       <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows8/windows8-original.svg" width="46" height="46" alt="Fluent UI"><br>
       <strong>Fluent UI</strong><br><sub>Design System</sub>
     </td>
+    <td align="center" width="145">
+      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cloudflare/cloudflare-original.svg" width="46" height="46" alt="Cloudflare R2"><br>
+      <strong>Cloudflare R2</strong><br><sub>File Storage</sub>
+    </td>
   </tr>
 </table>
 </div>
@@ -122,7 +126,8 @@ O diretório `appmistakemap/` contém a aplicação cliente frontend do **Mistak
 | **Interface / Componentes** | Flutter (Fluent UI) | Renderização de telas, formulários, captura de câmera e gráficos |
 | **Gerenciamento de Estado** | Riverpod | Injeção de dependências reativa e controle de ciclo de vida de dados |
 | **Roteamento** | GoRouter | Navegação declarativa, tratamento de histórico e deep links |
-| **Integração de Backend** | `supabase_flutter` | Autenticação, sincronização de banco de dados e upload de fotos |
+| **Integração de Backend** | `supabase_flutter` | Autenticação e sincronização de banco de dados |
+| **Armazenamento de Arquivos** | Cloudflare R2 (S3-compatível) | Upload e armazenamento de fotos de exercícios (10GB grátis, egress zero) |
 | **Padronização e Qualidade** | `flutter_lints` / `analysis_options.yaml` | Análise estática contínua de código |
 
 <br>
