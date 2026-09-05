@@ -5,6 +5,11 @@
 /docs/
 /doc/
 
+# Rust
+worker/target/
+**/*.rs.bk
+*.pdb
+
 # Flutter / Dart
 **/.dart_tool/
 **/.flutter-plugins
