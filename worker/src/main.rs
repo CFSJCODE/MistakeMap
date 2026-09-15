@@ -1,6 +1,7 @@
 mod attempts;
 mod config;
 mod db;
+mod quota;
 mod routes;
 mod storage;
 
@@ -170,14 +171,31 @@ async fn process_attempt(
             "baixando asset"
         );
 
+        // Verifica cota Class B antes de cada GET no R2.
+        if let Err(e) = quota::check_class_b(db).await {
+            tracing::warn!(attempt_id = %row.id, "download bloqueado por cota R2: {e}");
+            mark_failed_logged(db, &row).await;
+            return;
+        }
+
         match storage::download_asset(storage, &config.r2_bucket, &asset.object_path).await {
             Ok(bytes) => {
+                let byte_count = bytes.len() as i64;
                 tracing::info!(
                     attempt_id = %row.id,
                     asset_id = %asset.id,
-                    bytes = bytes.len(),
+                    bytes = byte_count,
                     "asset baixado com sucesso"
                 );
+
+                // Registra a operação Class B e o tamanho transferido.
+                if let Err(e) = quota::increment_class_b(db).await {
+                    tracing::error!("falha ao incrementar cota Class B: {e}");
+                }
+                if let Err(e) = quota::add_storage_bytes(db, byte_count).await {
+                    tracing::error!("falha ao registrar bytes de storage: {e}");
+                }
+
                 // TODO (Fase P1): passar `bytes` para o módulo de OCR.
                 let _ = bytes;
             }
