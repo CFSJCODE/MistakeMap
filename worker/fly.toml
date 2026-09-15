@@ -1,0 +1,32 @@
+# fly.toml app configuration file generated for mistakemap-worker on 2026-09-14T23:25:17-03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'mistakemap-worker'
+primary_region = 'gru'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  # Sem isto o Fly cria uma segunda máquina para HA a cada deploy, dobrando o
+  # consumo. Uma máquina basta: o poll loop retoma a fila intacta após restart.
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 25
+    soft_limit = 20
+
+[[vm]]
+  size = 'shared-cpu-1x'
+
+# O worker deve rodar 24/7. 'always' remove o teto de 10 tentativas do padrao
+# on-failure, para o poll loop sempre voltar apos um crash.
+[[restart]]
+  policy = 'always'
