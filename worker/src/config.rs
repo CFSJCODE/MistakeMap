@@ -9,6 +9,9 @@ pub struct Config {
     pub r2_access_key_id: String,
     pub r2_secret_access_key: String,
     pub port: u16,
+    // URL base do projeto Supabase — usada para buscar as chaves públicas JWT (JWKS).
+    // Formato: https://<project-ref>.supabase.co
+    pub supabase_url: String,
 }
 
 impl Config {
@@ -24,6 +27,7 @@ impl Config {
             r2_bucket: get("CLOUDFLARE_R2_BUCKET")?,
             r2_access_key_id: get("CLOUDFLARE_R2_ACCESS_KEY_ID")?,
             r2_secret_access_key: get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")?,
+            supabase_url: get("SUPABASE_URL")?,
             port: env::var("PORT")
                 .ok()
                 .and_then(|p| p.parse().ok())
