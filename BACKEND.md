@@ -1,6 +1,6 @@
 # MistakeMap — Decisões e Arquitetura do Backend
 
-> Documento vivo. Atualizado em: 2026-09-14
+> Documento vivo. Atualizado em: 2026-09-15
 
 ---
 
@@ -26,7 +26,7 @@ Flutter (cliente móvel)
 | **Flutter** | Mobile (Android/iOS) | Cliente — autenticação, upload, visualização |
 | **Supabase** | Supabase Cloud (free tier) | Auth (JWT ES256), PostgreSQL, RLS, RPCs |
 | **Cloudflare R2** | Cloudflare (free tier) | Storage de imagens e assets dos alunos |
-| **Rust Worker** | Fly.io (free tier) | Pipeline assíncrono: poll → OCR → LLM → gravar resultados |
+| **Rust Worker** | Fly.io (trial — ver seção 9) | Pipeline assíncrono: poll → OCR → LLM → gravar resultados |
 
 ---
 
@@ -35,7 +35,7 @@ Flutter (cliente móvel)
 ### Por que Rust para o worker?
 
 - Worker já ~60% implementado em Rust (axum, SQLx, tokio, aws-sdk-s3)
-- Baixo consumo de memória (~15-30 MB RSS) — cabe folgado no free tier do Fly.io (256 MB RAM)
+- Baixo consumo de memória (~15-30 MB RSS) — cabe folgado numa VM `shared-cpu-1x` de 256 MB
 - `FOR UPDATE SKIP LOCKED` e controle de concorrência otimista são triviais com SQLx async
 - OCR e LLM são chamadas HTTP para APIs externas — sem vantagem do Python nesse ponto
 - **Decisão: manter Rust. Não migrar para Python ou C++**
@@ -44,12 +44,18 @@ Flutter (cliente móvel)
 
 | Critério | Fly.io | Railway | Render |
 |---|---|---|---|
-| Free tier | 3 VMs sempre ativas | 500h/mês (~21 dias) | 750h/mês + spin-down |
-| Poll loop 24/7 | ✅ Funciona | ❌ Para antes do fim do mês | ❌ Cold start de 50s |
+| Plano sem cartão | Trial: **máquina para após 5 min** | 500h/mês (~21 dias) | 750h/mês + spin-down |
+| Poll loop 24/7 | ⚠️ Exige cartão | ❌ Para antes do fim do mês | ❌ Cold start de 50s |
 | Ping artificial | — | Proibido pelos termos | Proibido pelos termos |
-| Cold start | Nenhum | Nenhum (enquanto tem horas) | ~50s após inatividade |
+| Cold start | Nenhum (com cartão) | Nenhum (enquanto tem horas) | ~50s após inatividade |
 
-**Decisão: Fly.io** — processo sempre ativo, sem hacks de keep-alive.
+**Decisão: Fly.io**, com uma ressalva importante descoberta no deploy (ver seção 9).
+
+> ⚠️ **Correção de uma premissa anterior.** Este documento afirmava que o Fly.io
+> oferecia "3 VMs sempre ativas" no plano gratuito. Isso descreve o free tier
+> antigo, que **não existe mais para contas novas**. Hoje uma conta sem cartão
+> fica em trial, e o próprio runner do Fly desliga a máquina após 5 minutos:
+> `Trial machine stopping. To run for longer than 5m0s, add a credit card`.
 
 ### Por que Cloudflare R2 e não Supabase Storage?
 
@@ -231,21 +237,64 @@ worker/
 
 ---
 
-## 9. Deploy (Pendente)
+## 9. Deploy (2026-09-15)
 
-### Plataforma: Fly.io
+> ⚠️ **Bloqueio em aberto: o trial do Fly.io desliga a máquina após 5 minutos.**
+> A imagem sobe, conecta em tudo e responde `/health` — mas só dentro dessa
+> janela. O poll loop **não roda 24/7** enquanto a conta estiver em trial.
+> Duas saídas: adicionar cartão no Fly (1 × shared-cpu-1x 256 MB fica na casa de
+> ~US$ 2/mês, dentro do crédito de trial) ou migrar de plataforma. Nenhuma
+> mudança de código resolve — é limite de conta.
 
-- **Conta**: criada (free trial, organização "Personal")
-- **CLI**: `flyctl` — instalar com `winget install flyctl`
-- **Pendente**: criar `Dockerfile` e `fly.toml` na pasta `worker/`
-- **Secrets** a configurar via `fly secrets set`: todas as variáveis do `.env`
+### Estado atual
 
-### Estratégia de deploy
+| Item | Valor |
+|---|---|
+| Plataforma | Fly.io |
+| App | `mistakemap-worker` |
+| URL | https://mistakemap-worker.fly.dev |
+| Região | `gru` (São Paulo) |
+| Máquinas | 1 × `shared-cpu-1x` |
+| Imagem final | 36 MB |
+| Health check | `GET /health` → `{"bucket":"mistakemap","database":"ok","r2":"ok"}` |
+
+### Decisões de infraestrutura
+
+- **1 máquina, não 2.** O Fly cria uma segunda máquina para HA por padrão. Fixado com `min_machines_running = 0` no `fly.toml` — o poll loop não perde trabalho num restart, porque as tentativas continuam na fila e o `FOR UPDATE SKIP LOCKED` impede processamento duplicado.
+- **`auto_stop_machines = 'off'`** — obrigatório. O poll loop precisa rodar 24/7; se a máquina suspender, o pipeline para.
+- **Secrets via `flyctl secrets set`** — nunca em arquivo versionado. As 7 variáveis do `Config::from_env()` estão configuradas.
+
+### Armadilhas encontradas no primeiro deploy
+
+Cada uma quebrou o build ou quebraria o runtime:
+
+| Problema | Causa | Correção |
+|---|---|---|
+| `feature edition2024 is required` | `rust:1.82` não suporta `edition = "2024"` | Usar imagem Rust atual |
+| `rustc 1.86 is not supported` | `aws-sdk-s3 1.145` e `sqlx 0.9` exigem rustc 1.94.1+ | `rust:slim-trixie` (stable atual) |
+| Contexto de build de 3,8 GB | `target/` enviado a cada deploy | `.dockerignore` |
+| `openssl-sys` não acha OpenSSL | `rust:slim` não traz `pkg-config`/`libssl-dev` | Instalar no estágio **builder** |
+| `set DATABASE_URL to use query macros` | `quota.rs` usava `sqlx::query!` (validação em tempo de compilação) | Converter para a API runtime, como em `attempts.rs` |
+| **glibc incompatível (silencioso)** | builder em `rust:slim` (**trixie**, glibc 2.41) e runtime em `debian:bookworm-slim` (glibc 2.36) | Ambos os estágios em **trixie** |
+| libssl ausente no runtime | `openssl-sys` linka dinamicamente; runtime só tinha `ca-certificates` | Instalar `openssl` no runtime (o apt resolve a libssl correta) |
+
+> A incompatibilidade de glibc é a mais perigosa: o build passa normalmente e o container só quebra ao subir. Num build multi-stage, **builder e runtime devem usar a mesma release do Debian**.
+
+### Conexão com o Postgres: session mode, não transaction mode
 
 ```
-fly launch   # detecta Cargo.toml, cria fly.toml e Dockerfile base
-fly secrets set DATABASE_URL="..." SUPABASE_URL="..." ...
-fly deploy   # build multi-stage Rust → imagem mínima ~20MB
+postgresql://postgres.<ref>:<senha>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
+```
+
+Porta **5432** (session mode), não 6543 (transaction mode). O Supavisor em transaction mode multiplexa conexões por transação e quebra o cache de prepared statements do sqlx. O worker é um processo persistente com pool — precisa de session mode.
+
+### Comandos
+
+```
+flyctl deploy              # build + deploy
+flyctl status              # estado das máquinas
+flyctl logs                # logs em tempo real
+flyctl secrets list        # secrets (apenas nomes e digests)
 ```
 
 ---
@@ -268,8 +317,8 @@ fly deploy   # build multi-stage Rust → imagem mínima ~20MB
 
 ## 11. Pendências e Próximos Passos
 
-- [ ] Criar `Dockerfile` multi-stage para o worker Rust
-- [ ] Criar `fly.toml` e fazer primeiro deploy no Fly.io
+- [x] Criar `Dockerfile` multi-stage para o worker Rust
+- [x] Criar `fly.toml` e fazer primeiro deploy no Fly.io
 - [ ] Implementar `ocr.rs` (Fase P1) — integração com API de OCR matemático
 - [ ] Implementar `llm.rs` (Fase P1) — classificação de erros via LLM
 - [ ] Criar signed URLs para leitura de assets pelo Flutter
