@@ -29,6 +29,11 @@ app.*.map.json
 **/android/app/profile/
 **/android/app/release/
 
+# Supabase CLI
+# Cache local da CLI (project-ref, versoes, pooler-url). E estado de ferramenta,
+# nao codigo: muda por maquina e nao deve ser versionado.
+**/supabase/.temp/
+
 # Arquivos de ambiente e segredos
 .env
 .env.*
