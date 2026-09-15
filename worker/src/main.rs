@@ -94,17 +94,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // qualquer uma delas terminar. Assim, se o loop travar ou o servidor
     // parar, o processo todo encerra de forma limpa.
     tokio::select! {
-        result = axum::serve(listener, app) => {
-            if let Err(e) = result {
-                tracing::error!("servidor HTTP encerrou com erro: {e}");
-            }
-        }
+        result = axum::serve(listener, app) => match result {
+            Ok(()) => tracing::error!("servidor HTTP encerrou inesperadamente"),
+            Err(e) => tracing::error!("servidor HTTP encerrou com erro: {e}"),
+        },
         _ = poll_handle => {
             tracing::error!("loop de polling encerrou inesperadamente");
         }
     }
 
-    Ok(())
+    // Sair do select! e sempre anormal: o worker deve rodar 24/7. Retornar Err
+    // faz o processo sair com codigo != 0, para o Fly reiniciar a maquina em vez
+    // de tratar como encerramento limpo e deixa-la parada.
+    Err("worker encerrou inesperadamente".into())
 }
 
 // Loop de polling: acorda a cada POLL_INTERVAL, busca tentativas pendentes

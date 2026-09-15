@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use sqlx::PgPool;
 
 // Limites gratuitos do Cloudflare R2 (por mês calendário).
@@ -46,24 +47,20 @@ impl From<sqlx::Error> for QuotaError {
     }
 }
 
-// Garante que a linha do mês atual existe e a retorna.
-// Usa INSERT ... ON CONFLICT DO NOTHING para ser seguro com concorrência.
-async fn upsert_period(pool: &PgPool, period: &str) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        "INSERT INTO r2_quota_usage (period) VALUES ($1) ON CONFLICT (period) DO NOTHING",
-        period
-    )
-    .execute(pool)
-    .await?;
-    Ok(())
-}
-
 fn current_period() -> String {
     let now = chrono::Utc::now();
     format!("{}-{:02}", now.year(), now.month())
 }
 
-use chrono::Datelike;
+// Garante que a linha do mês atual existe.
+// Usa INSERT ... ON CONFLICT DO NOTHING para ser seguro com concorrência.
+async fn upsert_period(pool: &PgPool, period: &str) -> Result<(), sqlx::Error> {
+    sqlx::query("INSERT INTO r2_quota_usage (period) VALUES ($1) ON CONFLICT (period) DO NOTHING")
+        .bind(period)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
 
 // Verifica se há cota disponível para uma operação Class A (upload).
 // Retorna Err se o uso atual >= 95% do limite mensal.
@@ -71,23 +68,23 @@ pub async fn check_class_a(pool: &PgPool) -> Result<(), QuotaError> {
     let period = current_period();
     upsert_period(pool, &period).await?;
 
-    let row = sqlx::query!(
+    let (class_a_ops, storage_bytes): (i64, i64) = sqlx::query_as(
         "SELECT class_a_ops, storage_bytes_estimate FROM r2_quota_usage WHERE period = $1",
-        period
     )
+    .bind(period.as_str())
     .fetch_one(pool)
     .await?;
 
-    if row.class_a_ops >= CLASS_A_CEILING {
+    if class_a_ops >= CLASS_A_CEILING {
         return Err(QuotaError::ClassAExceeded {
-            current: row.class_a_ops,
+            current: class_a_ops,
             ceiling: CLASS_A_CEILING,
         });
     }
 
-    if row.storage_bytes_estimate >= STORAGE_CEILING {
+    if storage_bytes >= STORAGE_CEILING {
         return Err(QuotaError::StorageExceeded {
-            current_bytes: row.storage_bytes_estimate,
+            current_bytes: storage_bytes,
             ceiling_bytes: STORAGE_CEILING,
         });
     }
@@ -100,16 +97,15 @@ pub async fn check_class_b(pool: &PgPool) -> Result<(), QuotaError> {
     let period = current_period();
     upsert_period(pool, &period).await?;
 
-    let row = sqlx::query!(
-        "SELECT class_b_ops FROM r2_quota_usage WHERE period = $1",
-        period
-    )
-    .fetch_one(pool)
-    .await?;
+    let class_b_ops: i64 =
+        sqlx::query_scalar("SELECT class_b_ops FROM r2_quota_usage WHERE period = $1")
+            .bind(period.as_str())
+            .fetch_one(pool)
+            .await?;
 
-    if row.class_b_ops >= CLASS_B_CEILING {
+    if class_b_ops >= CLASS_B_CEILING {
         return Err(QuotaError::ClassBExceeded {
-            current: row.class_b_ops,
+            current: class_b_ops,
             ceiling: CLASS_B_CEILING,
         });
     }
@@ -121,11 +117,11 @@ pub async fn check_class_b(pool: &PgPool) -> Result<(), QuotaError> {
 // Cada URL gerada = 1 PUT futuro pelo Flutter = 1 Class A op.
 pub async fn increment_class_a(pool: &PgPool) -> Result<(), sqlx::Error> {
     let period = current_period();
-    sqlx::query!(
+    sqlx::query(
         "UPDATE r2_quota_usage SET class_a_ops = class_a_ops + 1, updated_at = NOW()
          WHERE period = $1",
-        period
     )
+    .bind(period.as_str())
     .execute(pool)
     .await?;
     Ok(())
@@ -134,11 +130,11 @@ pub async fn increment_class_a(pool: &PgPool) -> Result<(), sqlx::Error> {
 // Incrementa o contador Class B após um download de asset.
 pub async fn increment_class_b(pool: &PgPool) -> Result<(), sqlx::Error> {
     let period = current_period();
-    sqlx::query!(
+    sqlx::query(
         "UPDATE r2_quota_usage SET class_b_ops = class_b_ops + 1, updated_at = NOW()
          WHERE period = $1",
-        period
     )
+    .bind(period.as_str())
     .execute(pool)
     .await?;
     Ok(())
@@ -150,13 +146,13 @@ pub async fn increment_class_b(pool: &PgPool) -> Result<(), sqlx::Error> {
 // Portanto, atualizamos o storage só quando sabemos o tamanho (no download).
 pub async fn add_storage_bytes(pool: &PgPool, bytes: i64) -> Result<(), sqlx::Error> {
     let period = current_period();
-    sqlx::query!(
+    sqlx::query(
         "UPDATE r2_quota_usage
          SET storage_bytes_estimate = storage_bytes_estimate + $1, updated_at = NOW()
          WHERE period = $2",
-        bytes,
-        period
     )
+    .bind(bytes)
+    .bind(period.as_str())
     .execute(pool)
     .await?;
     Ok(())
@@ -167,20 +163,20 @@ pub async fn current_usage(pool: &PgPool) -> Result<UsageSnapshot, sqlx::Error> 
     let period = current_period();
     upsert_period(pool, &period).await?;
 
-    let row = sqlx::query!(
+    let (class_a_ops, class_b_ops, storage_bytes): (i64, i64, i64) = sqlx::query_as(
         "SELECT class_a_ops, class_b_ops, storage_bytes_estimate FROM r2_quota_usage WHERE period = $1",
-        period
     )
+    .bind(period.as_str())
     .fetch_one(pool)
     .await?;
 
     Ok(UsageSnapshot {
         period,
-        class_a_ops: row.class_a_ops,
+        class_a_ops,
         class_a_ceiling: CLASS_A_CEILING,
-        class_b_ops: row.class_b_ops,
+        class_b_ops,
         class_b_ceiling: CLASS_B_CEILING,
-        storage_bytes: row.storage_bytes_estimate,
+        storage_bytes,
         storage_ceiling: STORAGE_CEILING,
     })
 }
