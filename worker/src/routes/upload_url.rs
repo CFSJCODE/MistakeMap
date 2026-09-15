@@ -48,7 +48,14 @@ pub async fn upload_url(
     //    Se o token for inválido, expirado ou de outro projeto, retorna 401.
     let user_id = validate_jwt(&token, &state.jwt_key)?;
 
-    // 3. Sanitizar a extensão: só formatos permitidos, sem path traversal.
+    // 3. Verificar cota R2 Class A antes de qualquer processamento.
+    //    Bloqueia quando >= 95% do limite mensal gratuito (950k de 1M ops).
+    crate::quota::check_class_a(&state.db).await.map_err(|e| {
+        tracing::warn!("upload bloqueado por cota R2: {e}");
+        StatusCode::SERVICE_UNAVAILABLE
+    })?;
+
+    // 4. Sanitizar a extensão: só formatos permitidos, sem path traversal.
     let ext = sanitize_extension(&body.extension)?;
 
     // 4. Construir o caminho do objeto no bucket.
@@ -79,6 +86,12 @@ pub async fn upload_url(
             tracing::error!("erro ao gerar URL presigned: {e}");
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
+
+    // Incrementa o contador Class A — cada URL gerada representa 1 PUT futuro.
+    if let Err(e) = crate::quota::increment_class_a(&state.db).await {
+        tracing::error!("falha ao incrementar cota Class A: {e}");
+        // Não bloqueamos o upload por erro de contagem — apenas logamos.
+    }
 
     tracing::info!(
         user_id = %user_id,
