@@ -7,11 +7,22 @@ $ErrorActionPreference = "Stop"
 # --------------------------------------------------------------------------
 # Configuracao R2 (mesmos valores do worker/.env)
 # --------------------------------------------------------------------------
-$Env:AWS_ACCESS_KEY_ID     = "dc047e07707520f4cf44e130c710dc74"
-$Env:AWS_SECRET_ACCESS_KEY = "9d94f4b78f4237d657f6090fbe31069c091987c5c422152656f63f4b5f2e41a4"
+# Le as credenciais de worker/.env (gitignored). Elas NAO ficam neste arquivo,
+# que e versionado num repositorio publico.
+$EnvFile = Join-Path $PSScriptRoot "..\worker\.env"
+if (-not (Test-Path $EnvFile)) { throw "worker/.env nao encontrado em: $EnvFile" }
+
+$Cfg = @{}
+Get-Content $EnvFile | Where-Object { $_ -match '^\s*[^#\s].*=' } | ForEach-Object {
+    $k, $v = $_ -split '=', 2
+    $Cfg[$k.Trim()] = $v.Trim()
+}
+
+$Env:AWS_ACCESS_KEY_ID     = $Cfg['CLOUDFLARE_R2_ACCESS_KEY_ID']
+$Env:AWS_SECRET_ACCESS_KEY = $Cfg['CLOUDFLARE_R2_SECRET_ACCESS_KEY']
 $Env:AWS_DEFAULT_REGION    = "auto"
-$ENDPOINT = "https://954f3233c7c998b8e862c1a59673d9a0.r2.cloudflarestorage.com"
-$BUCKET   = "mistakemap"
+$ENDPOINT = $Cfg['CLOUDFLARE_R2_S3_ENDPOINT']
+$BUCKET   = $Cfg['CLOUDFLARE_R2_BUCKET']
 
 # --------------------------------------------------------------------------
 # Dados imaginarios: 2 alunos, cada um com 3 tentativas, 1-2 imagens cada
