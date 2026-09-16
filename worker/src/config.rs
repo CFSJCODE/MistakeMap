@@ -12,6 +12,9 @@ pub struct Config {
     // URL base do projeto Supabase — usada para buscar as chaves públicas JWT (JWKS).
     // Formato: https://<project-ref>.supabase.co
     pub supabase_url: String,
+    // Segredo compartilhado que autoriza POST /process-batch.
+    // A rota e publica na borda porque o pg_net nao assina com IAM.
+    pub cron_secret: String,
 }
 
 impl Config {
@@ -28,6 +31,7 @@ impl Config {
             r2_access_key_id: get("CLOUDFLARE_R2_ACCESS_KEY_ID")?,
             r2_secret_access_key: get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")?,
             supabase_url: get("SUPABASE_URL")?,
+            cron_secret: get("WORKER_CRON_SECRET")?,
             port: env::var("PORT")
                 .ok()
                 .and_then(|p| p.parse().ok())
