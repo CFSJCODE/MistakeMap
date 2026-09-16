@@ -1,0 +1,16 @@
+.dart_tool/
+.git/
+.github/
+.idea/
+.vscode/
+android/
+ios/
+linux/
+macos/
+windows/
+build/
+*.iml
+*.log
+.DS_Store
+Thumbs.db
+Documentação/
