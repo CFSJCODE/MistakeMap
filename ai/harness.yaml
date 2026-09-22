@@ -1,0 +1,89 @@
+# harness.yaml — MistakeMap
+# Baseado em "Engenharia de Loops" — Lucas Borges / Onfly / PUC Minas 2026
+# Princípio: "O loop define o que acontece; o harness garante onde e como acontece de forma segura."
+
+harness:
+  name: "mistakemap-harness"
+  version: "1.0"
+  project: "MistakeMap"
+
+# ─── Orçamento de tokens e custos ────────────────────────────────────────────
+budget:
+  max_tokens: 50000           # Teto de tokens por execução completa
+  max_cost_usd: 0.50          # Teto de custo em dólares
+  max_cycles: 10              # Número máximo de ciclos antes de parar
+  warn_at_pct: 80             # Aviso quando atingir 80% do orçamento
+
+# ─── Detector de falta de progresso ──────────────────────────────────────────
+progress:
+  stall_cycles: 3             # Para após 3 ciclos sem mudança nos ACs
+  stall_action: "abort"       # "abort" | "escalate" | "skip"
+  min_ac_delta: 1             # Pelo menos 1 AC precisa avançar por ciclo
+
+# ─── Sandbox e permissões ────────────────────────────────────────────────────
+sandbox:
+  allow_fs_write:
+    - "./appmistakemap/lib/**"
+    - "./appmistakemap/test/**"
+    - "./appmistakemap/pubspec.yaml"
+    - "./worker/src/**"
+    - "./worker/tests/**"
+    - "./_reversa_sdd/**"
+    - "./_reversa_forward/**"
+    - "./_reversa_bugs/**"
+    - "./_reversa_docs/**"
+    - "./_reversa_refactor/**"
+    - "./.reversa/**"
+  deny_fs_write:
+    - "./.env"
+    - "./secrets/**"
+    - "../**"                  # Fora do projeto: proibido
+    - "./worker/target/**"     # Artefatos de build: somente leitura
+  allow_network: false
+  allow_shell:
+    - "flutter test"
+    - "flutter analyze"
+    - "flutter build"
+    - "dart analyze"
+    - "dart test"
+    - "dart pub get"
+    - "cargo test"
+    - "cargo check"
+    - "cargo clippy"
+    - "cargo build"
+  env_vars:
+    FLUTTER_ROOT: ""          # Preenchido automaticamente
+    CI: "true"
+
+# ─── Execução desacompanhada ──────────────────────────────────────────────────
+unattended:
+  enabled: true
+  max_runtime_minutes: 120    # Máximo de 2h de execução autônoma
+  on_failure: "open_pr"       # "abort" | "open_pr" | "notify"
+  notify_on_success: true
+  notify_on_failure: true
+
+# ─── Critérios de aceitação padrão ───────────────────────────────────────────
+# Podem ser sobrescritos por cada loop individual.
+default_acceptance_criteria:
+  AC1:
+    label: "Flutter tests"
+    command: "flutter test --reporter compact"
+    success_pattern: "All tests passed"
+    fail_pattern: "Some tests failed|Error"
+  AC2:
+    label: "Flutter analyze"
+    command: "flutter analyze"
+    success_pattern: "No issues found"
+    fail_pattern: "error •|warning •"
+  AC3:
+    label: "Dart format"
+    command: "dart format --set-exit-if-changed lib/"
+    success_pattern: "\\$\\? == 0"
+
+# ─── Gate de saída ────────────────────────────────────────────────────────────
+gate:
+  require_all_ac: true        # Todos os ACs devem passar para encerrar com sucesso
+  allow_partial_exit: false   # Não encerra com ACs pendentes
+  on_success: "commit"        # "commit" | "open_pr" | "notify_only"
+  commit_message_template: "fix: loop autônomo — {goal} [AC1✓ AC2✓ AC3✓]"
