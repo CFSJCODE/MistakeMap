@@ -57,3 +57,6 @@ desktop.ini
 *.log
 *.pyc
 *.swp
+
+# Reversa — configurações pessoais (não versionar)
+.reversa/config.user.toml
