@@ -1,0 +1,42 @@
+# .reversa/config.toml — Configuração do Reversa para o MistakeMap
+
+[project]
+name = "MistakeMap"
+language = "dart"
+secondary_language = "rust"
+framework = "flutter"
+output_dir = "_reversa_sdd"
+forward_dir = "_reversa_forward"
+bugs_dir = "_reversa_bugs"
+docs_dir = "_reversa_docs"
+
+[engines]
+primary = "claude-code"
+entry_file = "CLAUDE.md"
+skills_path = ".claude/skills"
+
+[analysis]
+# Pastas que o Scout deve mapear
+include = [
+  "appmistakemap/lib",
+  "appmistakemap/test",
+  "worker/src",
+]
+exclude = [
+  "worker/target",
+  ".dart_tool",
+  "build",
+  ".reversa",
+  "_reversa_sdd",
+  "_reversa_forward",
+  "_reversa_bugs",
+  "_reversa_docs",
+]
+
+[confidence]
+confirmed = "🟢 CONFIRMED"
+inferred  = "🟡 INFERRED"
+gap       = "🔴 GAP"
+
+[harness]
+config_file = "harness.yaml"
