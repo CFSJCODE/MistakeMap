@@ -1,6 +1,6 @@
 # MistakeMap — Decisões e Arquitetura do Backend
 
-> Documento vivo. Atualizado em: 2026-09-15
+> Documento vivo. Atualizado em: 2026-09-16
 
 ---
 
@@ -14,9 +14,9 @@ Flutter (cliente móvel)
     └── Upload de imagens ─────────► Cloudflare R2 (via presigned URL)
                                           ▲
                                           │ download para OCR/LLM
-                                    Rust Worker (Fly.io)
-                                          │
-                                          └── poll loop ──► Supabase PostgreSQL
+                                    Rust Worker (Fly.io → Cloud Run)
+                                          ▲
+                                          └── POST /process-batch ◄── pg_cron (Supabase)
 ```
 
 ### Componentes e responsabilidades
@@ -26,7 +26,7 @@ Flutter (cliente móvel)
 | **Flutter** | Mobile (Android/iOS) | Cliente — autenticação, upload, visualização |
 | **Supabase** | Supabase Cloud (free tier) | Auth (JWT ES256), PostgreSQL, RLS, RPCs |
 | **Cloudflare R2** | Cloudflare (free tier) | Storage de imagens e assets dos alunos |
-| **Rust Worker** | Fly.io (trial — ver seção 9) | Pipeline assíncrono: poll → OCR → LLM → gravar resultados |
+| **Rust Worker** | Fly.io (trial — ver seção 9) | Pipeline em lote sob demanda: lote → OCR → LLM → gravar resultados |
 
 ---
 
@@ -85,7 +85,8 @@ CLOUDFLARE_R2_S3_ENDPOINT      # https://954f3233c7c998b8e862c1a59673d9a0.r2.clo
 CLOUDFLARE_R2_BUCKET           # mistakemap
 CLOUDFLARE_R2_ACCESS_KEY_ID    # (R2 API token)
 CLOUDFLARE_R2_SECRET_ACCESS_KEY# (R2 API token secret)
-PORT                           # 8080 (padrão; Fly.io injeta automaticamente)
+PORT                           # 8080 (padrão; a plataforma injeta automaticamente)
+WORKER_CRON_SECRET             # segredo do header X-Cron-Secret em POST /process-batch
 ```
 
 ---
@@ -114,16 +115,22 @@ Flutter                    Worker (Fly.io)              Cloudflare R2
 - Presigned URL expira em **15 minutos**
 - Extensões permitidas: `jpg`, `jpeg`, `png`, `webp`, `pdf`
 - Caminho no R2: `uploads/{user_id}/{uuid}.{ext}`
+- ⚠️ A RPC `finalizar_tentativa` do diagrama **ainda não existe** — hoje nada cria linhas em `attempt_assets` nem move `attempts` para `pending`
 
 ---
 
 ## 5. Pipeline de Processamento (Worker)
 
-### Poll loop
+### Processamento em lote sob demanda
 
-- Intervalo: **10 segundos**
-- Batch: **5 tentativas por rodada**
-- Padrão: `FOR UPDATE SKIP LOCKED` — workers paralelos nunca processam a mesma tentativa
+O worker **não tem mais loop próprio**. A cadência vem de fora: o `pg_cron` do
+Supabase chama `POST /process-batch` via `pg_net`, e cada chamada processa um
+lote e retorna. Isso permite o processo escalar a zero entre execuções — o que
+viabiliza hospedagem gratuita sem VM ligada 24/7 (ver seção 9).
+
+- Batch: **5 tentativas por chamada** (`pipeline::BATCH_SIZE`), pequeno para caber no timeout de requisição da plataforma
+- Autorização: segredo compartilhado no header `X-Cron-Secret`, comparado em tempo constante
+- Padrão: `FOR UPDATE SKIP LOCKED` — chamadas concorrentes nunca processam a mesma tentativa
 
 ### Máquina de estados de `attempts`
 
@@ -153,7 +160,7 @@ Cada `UPDATE` de status usa `WHERE id = $1 AND version = $2` — se outra instâ
 | Fase | Status | Descrição |
 |---|---|---|
 | Download R2 | ✅ Implementado | `storage::download_asset` via aws-sdk-s3 |
-| OCR matemático | 🔲 P1 (TODO) | `ocr.rs` — placeholder em `main.rs:181` |
+| OCR matemático | 🔲 P1 (TODO) | `ocr.rs` — TODO em `pipeline.rs::process_attempt` |
 | LLM classificação | 🔲 P1 (TODO) | `llm.rs` — classificar erros, gravar `error_events` |
 | Signed URLs (leitura) | 🔲 Pendente | Para Flutter visualizar assets salvos |
 
@@ -174,7 +181,7 @@ Cada `UPDATE` de status usa `WHERE id = $1 AND version = $2` — se outra instâ
 
 - Tabela `r2_quota_usage` no Supabase PostgreSQL — coluna `period CHAR(7)` formato `YYYY-MM`
 - `check_class_a()` — chamado **antes** de gerar URL presigned; retorna `503` se estourado
-- `check_class_b()` — chamado **antes** de cada download no poll loop
+- `check_class_b()` — chamado **antes** de cada download do lote
 - `increment_class_a()` — chamado após gerar URL (proxy para o PUT futuro do Flutter)
 - `increment_class_b()` — chamado após download bem-sucedido
 - `add_storage_bytes()` — acumula bytes transferidos
@@ -216,15 +223,17 @@ Cada `UPDATE` de status usa `WHERE id = $1 AND version = $2` — se outra instâ
 worker/
 ├── Cargo.toml          # axum, sqlx, aws-sdk-s3, jsonwebtoken, reqwest, chrono, tokio
 ├── src/
-│   ├── main.rs         # AppState, poll loop, fetch_jwks, servidor HTTP
+│   ├── main.rs         # AppState, fetch_jwks, rotas e servidor HTTP
 │   ├── config.rs       # Config lida de variáveis de ambiente
 │   ├── db.rs           # connect() e ping() ao PostgreSQL
 │   ├── storage.rs      # build_client(), ping(), download_asset()
 │   ├── attempts.rs     # fetch_pending(), fetch_assets(), mark_completed(), mark_failed()
+│   ├── pipeline.rs     # run_batch(): processa um lote de tentativas pendentes
 │   ├── quota.rs        # check/increment Class A e B, add_storage_bytes
 │   └── routes/
 │       ├── mod.rs
 │       ├── health.rs   # GET /health — verifica Postgres + R2
+│       ├── process_batch.rs # POST /process-batch — acionado pelo pg_cron
 │       └── upload_url.rs # POST /upload-url — valida JWT, verifica cota, gera presigned URL
 ```
 
@@ -234,17 +243,28 @@ worker/
 |---|---|---|
 | GET | `/health` | Verifica conectividade com Postgres e R2 |
 | POST | `/upload-url` | Gera presigned PUT URL para upload direto ao R2 |
+| POST | `/process-batch` | Processa um lote de tentativas pendentes (exige `X-Cron-Secret`) |
 
 ---
 
 ## 9. Deploy (2026-09-15)
 
-> ⚠️ **Bloqueio em aberto: o trial do Fly.io desliga a máquina após 5 minutos.**
-> A imagem sobe, conecta em tudo e responde `/health` — mas só dentro dessa
-> janela. O poll loop **não roda 24/7** enquanto a conta estiver em trial.
-> Duas saídas: adicionar cartão no Fly (1 × shared-cpu-1x 256 MB fica na casa de
-> ~US$ 2/mês, dentro do crédito de trial) ou migrar de plataforma. Nenhuma
-> mudança de código resolve — é limite de conta.
+> ⚠️ **Migração em andamento: Fly.io → Google Cloud Run + pg_cron.**
+> O Fly.io não tem mais plano gratuito: o trial dá **2 horas de VM no total ou
+> 7 dias**, o que vier primeiro, e desliga cada máquina após 5 minutos. Um
+> worker com poll loop 24/7 não cabe nisso.
+>
+> Decisão (2026-09-15): mover para o **Cloud Run**, cujo free tier não expira
+> (2M requisições, 360.000 GB-s e 180.000 vCPU-s por mês), usando a mesma imagem
+> Docker. Para isso o poll loop virou `POST /process-batch`, acionado pelo
+> `pg_cron` + `pg_net` (já instalados no Supabase). Estimativa para cron a cada
+> minuto, ~2 s por lote a 256 MB: ~21.600 GB-s e ~86.400 vCPU-s por mês.
+>
+> **Estado:** código pronto e testado localmente. Falta criar a conta GCP,
+> fazer o deploy no Cloud Run e criar o job no `pg_cron`. A instância na Fly
+> abaixo ainda roda a imagem **antiga** (com poll loop) — não fazer
+> `flyctl deploy` desta versão sem antes configurar `WORKER_CRON_SECRET`, ou o
+> worker não sobe.
 
 ### Estado atual
 
