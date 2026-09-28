@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "aws4fetch": "https://esm.sh/aws4fetch@1.0.20",
+    "postgresjs": "https://deno.land/x/postgresjs@v3.4.4/mod.js"
+  }
+}
