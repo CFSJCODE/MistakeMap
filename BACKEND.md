@@ -1,6 +1,6 @@
 # MistakeMap — Decisões e Arquitetura do Backend
 
-> Documento vivo. Atualizado em: 2026-09-16
+> Documento vivo. Atualizado em: 2026-09-28
 
 ---
 
@@ -11,12 +11,16 @@ Flutter (cliente móvel)
     │
     ├── Auth / RPC / DB queries ──► Supabase (PostgreSQL + Auth)
     │
+    └── POST /upload-url ──────────► Supabase Edge Functions
+    │   POST /process-batch             ├── upload-url   → gera presigned URL → R2
+    │   GET  /health                    ├── process-batch → baixa R2 → OCR → LLM
+    │                                   └── health        → verifica DB + R2
+    │
     └── Upload de imagens ─────────► Cloudflare R2 (via presigned URL)
                                           ▲
                                           │ download para OCR/LLM
-                                    Rust Worker (Fly.io → Cloud Run)
-                                          ▲
-                                          └── POST /process-batch ◄── pg_cron (Supabase)
+                                    pg_cron (Supabase, a cada N min)
+                                    └── POST /process-batch ◄── pg_net
 ```
 
 ### Componentes e responsabilidades
@@ -24,38 +28,46 @@ Flutter (cliente móvel)
 | Componente | Plataforma | Função |
 |---|---|---|
 | **Flutter** | Mobile (Android/iOS) | Cliente — autenticação, upload, visualização |
-| **Supabase** | Supabase Cloud (free tier) | Auth (JWT ES256), PostgreSQL, RLS, RPCs |
+| **Supabase** | Supabase Cloud (free tier) | Auth (JWT ES256), PostgreSQL, RLS, RPCs, Edge Functions |
 | **Cloudflare R2** | Cloudflare (free tier) | Storage de imagens e assets dos alunos |
-| **Rust Worker** | Fly.io (trial — ver seção 9) | Pipeline em lote sob demanda: lote → OCR → LLM → gravar resultados |
+| **Edge Functions** | Supabase (Deno/TypeScript) | `upload-url`, `process-batch`, `health` — sem VM, sem custo fixo |
+
+> **Nota histórica:** o backend foi originalmente implementado como um worker Rust
+> rodando no Fly.io (ver `worker/`). Migrado para Supabase Edge Functions em
+> 2026-09-28 para eliminar dependência de VM e manter tudo no free tier sem
+> necessidade de cartão de crédito.
 
 ---
 
 ## 2. Decisões de Linguagem e Plataforma
 
-### Por que Rust para o worker?
+### Por que Supabase Edge Functions e não VM (Fly.io / Cloud Run)?
 
-- Worker já ~60% implementado em Rust (axum, SQLx, tokio, aws-sdk-s3)
-- Baixo consumo de memória (~15-30 MB RSS) — cabe folgado numa VM `shared-cpu-1x` de 256 MB
-- `FOR UPDATE SKIP LOCKED` e controle de concorrência otimista são triviais com SQLx async
-- OCR e LLM são chamadas HTTP para APIs externas — sem vantagem do Python nesse ponto
-- **Decisão: manter Rust. Não migrar para Python ou C++**
-
-### Por que Fly.io e não Railway ou Render?
-
-| Critério | Fly.io | Railway | Render |
+| Critério | Edge Functions (Supabase) | Fly.io | Cloud Run |
 |---|---|---|---|
-| Plano sem cartão | Trial: **máquina para após 5 min** | 500h/mês (~21 dias) | 750h/mês + spin-down |
-| Poll loop 24/7 | ⚠️ Exige cartão | ❌ Para antes do fim do mês | ❌ Cold start de 50s |
-| Ping artificial | — | Proibido pelos termos | Proibido pelos termos |
-| Cold start | Nenhum (com cartão) | Nenhum (enquanto tem horas) | ~50s após inatividade |
+| Custo fixo | **Zero** | Trial para após 5 min sem cartão | Grátis até 2M req/mês |
+| Deploy | `supabase functions deploy` | `flyctl deploy` | `gcloud run deploy` |
+| Secrets | `supabase secrets set` | `flyctl secrets set` | Secret Manager |
+| Cold start | ~500ms (Deno) | Nenhum (VM quente) | ~1–3s |
+| Acesso ao DB | Via `SUPABASE_DB_URL` direto | Via `DATABASE_URL` | Via `DATABASE_URL` |
+| Auth JWT | Via `@supabase/supabase-js` | Via `jsonwebtoken` (Rust) | Idem |
+| Linguagem | TypeScript / Deno | Rust | Rust / qualquer |
+| Manutenção | Zero infra | Gerenciar VM e deploy | Gerenciar imagem e IAM |
 
-**Decisão: Fly.io**, com uma ressalva importante descoberta no deploy (ver seção 9).
+**Decisão (2026-09-28): Supabase Edge Functions.** O pipeline é baseado em lote
+(chamadas HTTP externas para OCR e LLM) — não há trabalho CPU-bound que
+justifique uma VM. O cold start de ~500ms é aceitável para um job de cron.
 
-> ⚠️ **Correção de uma premissa anterior.** Este documento afirmava que o Fly.io
-> oferecia "3 VMs sempre ativas" no plano gratuito. Isso descreve o free tier
-> antigo, que **não existe mais para contas novas**. Hoje uma conta sem cartão
-> fica em trial, e o próprio runner do Fly desliga a máquina após 5 minutos:
-> `Trial machine stopping. To run for longer than 5m0s, add a credit card`.
+> **Nota sobre o worker Rust:** o código em `worker/` continua no repositório como
+> referência histórica e como fallback caso as Edge Functions se tornem
+> insuficientes (ex: timeout de 150s do Deno vs 300s do Cloud Run). Para
+> reativar, seguir as instruções da Seção 9 (Deploy histórico — Fly.io).
+
+### Por que Cloudflare R2 e não Supabase Storage?
+
+- R2 free tier: **10 GB storage + egress gratuito**
+- Supabase Storage free tier: 1 GB storage + egress cobrado
+- Flutter não pode guardar credenciais do R2 → padrão de presigned URL via Edge Function
 
 ### Por que Cloudflare R2 e não Supabase Storage?
 
@@ -217,105 +229,149 @@ Cada `UPDATE` de status usa `WHERE id = $1 AND version = $2` — se outra instâ
 
 ---
 
-## 8. Estrutura do Worker Rust
+## 8. Estrutura das Edge Functions
+
+```
+supabase/functions/
+├── health/
+│   ├── deno.json        # imports: aws4fetch, postgresjs
+│   └── index.ts         # GET → verifica DB (SELECT 1) e R2 (HEAD bucket) em paralelo
+├── upload-url/
+│   ├── deno.json        # imports: @supabase/supabase-js, aws4fetch, postgresjs
+│   └── index.ts         # POST → valida JWT Supabase, verifica cota, gera presigned URL
+└── process-batch/
+    ├── deno.json        # imports: aws4fetch, postgresjs
+    └── index.ts         # POST → X-Cron-Secret, busca pending, baixa R2, TODO OCR→LLM
+```
+
+### Endpoints
+
+| Método | Função | URL |
+|---|---|---|
+| `GET` | `/health` | `https://bmdjicshcjpknuaywaph.supabase.co/functions/v1/health` |
+| `POST` | `/upload-url` | `https://bmdjicshcjpknuaywaph.supabase.co/functions/v1/upload-url` |
+| `POST` | `/process-batch` | `https://bmdjicshcjpknuaywaph.supabase.co/functions/v1/process-batch` |
+
+### Body de requisição do `upload-url`
+
+```json
+{ "filename": "foto.jpg", "content_type": "image/jpeg" }
+```
+
+**Autenticação:** `Authorization: Bearer <supabase-jwt>` (token do usuário autenticado).
+
+### Secrets necessários (configurar via `supabase secrets set`)
+
+```
+SUPABASE_DB_URL                 # string de conexão direta (porta 5432, session mode)
+CLOUDFLARE_R2_S3_ENDPOINT       # https://954f3233c7c998b8e862c1a59673d9a0.r2.cloudflarestorage.com
+CLOUDFLARE_R2_BUCKET            # mistakemap
+CLOUDFLARE_R2_ACCESS_KEY_ID     # (R2 API token)
+CLOUDFLARE_R2_SECRET_ACCESS_KEY # (R2 API token secret)
+WORKER_CRON_SECRET              # segredo compartilhado para X-Cron-Secret
+```
+
+> `SUPABASE_URL` e `SUPABASE_ANON_KEY` são injetados automaticamente pelo runtime
+> do Supabase — não precisam ser configurados manualmente.
+
+### Referência histórica — Worker Rust (arquivado)
+
+O código em `worker/` (Rust/axum/SQLx) implementa o mesmo contrato de API.
+Mantido como referência e fallback para o caso de as Edge Functions se tornarem
+insuficientes (timeout Deno 150s vs Cloud Run 300s por requisição).
 
 ```
 worker/
 ├── Cargo.toml          # axum, sqlx, aws-sdk-s3, jsonwebtoken, reqwest, chrono, tokio
-├── src/
-│   ├── main.rs         # AppState, fetch_jwks, rotas e servidor HTTP
-│   ├── config.rs       # Config lida de variáveis de ambiente
-│   ├── db.rs           # connect() e ping() ao PostgreSQL
-│   ├── storage.rs      # build_client(), ping(), download_asset()
-│   ├── attempts.rs     # fetch_pending(), fetch_assets(), mark_completed(), mark_failed()
-│   ├── pipeline.rs     # run_batch(): processa um lote de tentativas pendentes
-│   ├── quota.rs        # check/increment Class A e B, add_storage_bytes
-│   └── routes/
-│       ├── mod.rs
-│       ├── health.rs   # GET /health — verifica Postgres + R2
-│       ├── process_batch.rs # POST /process-batch — acionado pelo pg_cron
-│       └── upload_url.rs # POST /upload-url — valida JWT, verifica cota, gera presigned URL
+├── fly.toml            # configuração Fly.io (plataforma anterior)
+└── src/
+    ├── main.rs / config.rs / db.rs / storage.rs
+    ├── attempts.rs / pipeline.rs / quota.rs
+    └── routes/{health,process_batch,upload_url}.rs
 ```
-
-### Endpoints HTTP
-
-| Método | Rota | Função |
-|---|---|---|
-| GET | `/health` | Verifica conectividade com Postgres e R2 |
-| POST | `/upload-url` | Gera presigned PUT URL para upload direto ao R2 |
-| POST | `/process-batch` | Processa um lote de tentativas pendentes (exige `X-Cron-Secret`) |
 
 ---
 
-## 9. Deploy (2026-09-15)
-
-> ⚠️ **Migração em andamento: Fly.io → Google Cloud Run + pg_cron.**
-> O Fly.io não tem mais plano gratuito: o trial dá **2 horas de VM no total ou
-> 7 dias**, o que vier primeiro, e desliga cada máquina após 5 minutos. Um
-> worker com poll loop 24/7 não cabe nisso.
->
-> Decisão (2026-09-15): mover para o **Cloud Run**, cujo free tier não expira
-> (2M requisições, 360.000 GB-s e 180.000 vCPU-s por mês), usando a mesma imagem
-> Docker. Para isso o poll loop virou `POST /process-batch`, acionado pelo
-> `pg_cron` + `pg_net` (já instalados no Supabase). Estimativa para cron a cada
-> minuto, ~2 s por lote a 256 MB: ~21.600 GB-s e ~86.400 vCPU-s por mês.
->
-> **Estado:** código pronto e testado localmente. Falta criar a conta GCP,
-> fazer o deploy no Cloud Run e criar o job no `pg_cron`. A instância na Fly
-> abaixo ainda roda a imagem **antiga** (com poll loop) — não fazer
-> `flyctl deploy` desta versão sem antes configurar `WORKER_CRON_SECRET`, ou o
-> worker não sobe.
-
-### Estado atual
-
-| Item | Valor |
-|---|---|
-| Plataforma | Fly.io |
-| App | `mistakemap-worker` |
-| URL | https://mistakemap-worker.fly.dev |
-| Região | `gru` (São Paulo) |
-| Máquinas | 1 × `shared-cpu-1x` |
-| Imagem final | 36 MB |
-| Health check | `GET /health` → `{"bucket":"mistakemap","database":"ok","r2":"ok"}` |
-
-### Decisões de infraestrutura
-
-- **1 máquina, não 2.** O Fly cria uma segunda máquina para HA por padrão. Fixado com `min_machines_running = 0` no `fly.toml` — o poll loop não perde trabalho num restart, porque as tentativas continuam na fila e o `FOR UPDATE SKIP LOCKED` impede processamento duplicado.
-- **`auto_stop_machines = 'off'`** — obrigatório. O poll loop precisa rodar 24/7; se a máquina suspender, o pipeline para.
-- **Secrets via `flyctl secrets set`** — nunca em arquivo versionado. As 7 variáveis do `Config::from_env()` estão configuradas.
-
-### Armadilhas encontradas no primeiro deploy
-
-Cada uma quebrou o build ou quebraria o runtime:
-
-| Problema | Causa | Correção |
-|---|---|---|
-| `feature edition2024 is required` | `rust:1.82` não suporta `edition = "2024"` | Usar imagem Rust atual |
-| `rustc 1.86 is not supported` | `aws-sdk-s3 1.145` e `sqlx 0.9` exigem rustc 1.94.1+ | `rust:slim-trixie` (stable atual) |
-| Contexto de build de 3,8 GB | `target/` enviado a cada deploy | `.dockerignore` |
-| `openssl-sys` não acha OpenSSL | `rust:slim` não traz `pkg-config`/`libssl-dev` | Instalar no estágio **builder** |
-| `set DATABASE_URL to use query macros` | `quota.rs` usava `sqlx::query!` (validação em tempo de compilação) | Converter para a API runtime, como em `attempts.rs` |
-| **glibc incompatível (silencioso)** | builder em `rust:slim` (**trixie**, glibc 2.41) e runtime em `debian:bookworm-slim` (glibc 2.36) | Ambos os estágios em **trixie** |
-| libssl ausente no runtime | `openssl-sys` linka dinamicamente; runtime só tinha `ca-certificates` | Instalar `openssl` no runtime (o apt resolve a libssl correta) |
-
-> A incompatibilidade de glibc é a mais perigosa: o build passa normalmente e o container só quebra ao subir. Num build multi-stage, **builder e runtime devem usar a mesma release do Debian**.
-
-### Conexão com o Postgres: session mode, não transaction mode
-
-```
-postgresql://postgres.<ref>:<senha>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
-```
-
-Porta **5432** (session mode), não 6543 (transaction mode). O Supavisor em transaction mode multiplexa conexões por transação e quebra o cache de prepared statements do sqlx. O worker é um processo persistente com pool — precisa de session mode.
+## 9. Deploy — Supabase Edge Functions (ativo desde 2026-09-28)
 
 ### Comandos
 
+```bash
+# Deployar todas as funções de uma vez
+supabase functions deploy --project-ref bmdjicshcjpknuaywaph
+
+# Ou individualmente
+supabase functions deploy health        --project-ref bmdjicshcjpknuaywaph
+supabase functions deploy upload-url    --project-ref bmdjicshcjpknuaywaph
+supabase functions deploy process-batch --project-ref bmdjicshcjpknuaywaph
+
+# Configurar secrets (uma vez; não ficam no repositório)
+supabase secrets set --project-ref bmdjicshcjpknuaywaph \
+  SUPABASE_DB_URL="postgresql://postgres.<ref>:<senha>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres" \
+  CLOUDFLARE_R2_S3_ENDPOINT="https://954f3233c7c998b8e862c1a59673d9a0.r2.cloudflarestorage.com" \
+  CLOUDFLARE_R2_BUCKET="mistakemap" \
+  CLOUDFLARE_R2_ACCESS_KEY_ID="..." \
+  CLOUDFLARE_R2_SECRET_ACCESS_KEY="..." \
+  WORKER_CRON_SECRET="..."
+
+# Ver logs em tempo real
+supabase functions logs health        --project-ref bmdjicshcjpknuaywaph
+supabase functions logs process-batch --project-ref bmdjicshcjpknuaywaph
 ```
-flyctl deploy              # build + deploy
-flyctl status              # estado das máquinas
-flyctl logs                # logs em tempo real
-flyctl secrets list        # secrets (apenas nomes e digests)
+
+### Conexão com o Postgres: session mode (porta 5432)
+
+As Edge Functions se conectam via `postgresjs` com `prepare: false` (obrigatório
+com Supavisor/pgBouncer). Usar porta **5432** (session mode), não 6543 (transaction
+mode) — o `FOR UPDATE SKIP LOCKED` requer que a mesma conexão mantenha o estado
+da transação.
+
+### Configuração do pg_cron (aplicar no SQL Editor do Supabase)
+
+```sql
+-- Já incluído na migration supabase/migrations/20260928120000_worker_keepalive_cron.sql
+-- Chamar process-batch a cada N minutos (ex: a cada 1 min para MVP)
+SELECT cron.schedule(
+  'process-batch-trigger',
+  '* * * * *',
+  format(
+    $$SELECT net.http_post(
+        url    := 'https://bmdjicshcjpknuaywaph.supabase.co/functions/v1/process-batch',
+        headers := jsonb_build_object('x-cron-secret', %L),
+        body   := '{}'::jsonb,
+        timeout_milliseconds := 25000
+    )$$,
+    current_setting('app.worker_cron_secret')
+  )
+);
 ```
+
+> Antes de executar: `ALTER DATABASE postgres SET app.worker_cron_secret = '<valor>';`
+
+### Monitor de saúde (migration já criada)
+
+O job `worker-health-monitor` (migration `20260928120000`) pinga
+`GET /functions/v1/health` a cada 5 min. Histórico em `net._http_response`.
+
+---
+
+## 10. Deploy histórico — Worker Rust no Fly.io (arquivado)
+
+> O Fly.io não tem mais plano gratuito: trial dá ~2h de VM no total e desliga
+> cada máquina após 5 minutos sem cartão. Esse path foi abandonado em favor
+> das Edge Functions.
+
+O código em `worker/` e o `fly.toml` permanecem no repositório como referência.
+Se precisar reativar (ex: timeout Deno 150s for insuficiente para OCR pesado):
+
+```bash
+cd worker
+flyctl deploy
+flyctl secrets set DATABASE_URL="..." WORKER_CRON_SECRET="..." # etc.
+```
+
+Armadilhas documentadas do primeiro deploy estão preservadas no histórico git
+(último commit que tocou o BACKEND.md antes de 2026-09-28).
 
 ---
 
