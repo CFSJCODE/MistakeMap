@@ -16,7 +16,9 @@ primary_region = 'gru'
   auto_start_machines = true
   # Sem isto o Fly cria uma segunda máquina para HA a cada deploy, dobrando o
   # consumo. Uma máquina basta: o poll loop retoma a fila intacta após restart.
-  min_machines_running = 0
+  # Mantido em 1 para garantir que sempre haja uma VM alocada — combinado com
+  # auto_stop_machines = 'off' e o cron de keepalive a cada 4 min.
+  min_machines_running = 1
 
   [http_service.concurrency]
     type = 'requests'
