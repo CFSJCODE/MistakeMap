@@ -1,28 +1,79 @@
 import 'dart:typed_data';
-import 'dart:ui';
 
-import 'package:flutter/material.dart';
+import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/cupertino.dart' show CupertinoSliverRefreshControl;
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ─── Cores da identidade visual ──────────────────────────────────────────────
 const Color titleBlue = Color.fromARGB(255, 30, 92, 167);
 const Color contentBlue = Color.fromARGB(255, 33, 69, 114);
 
-// ─── Fluent UI + Liquid Glass — tokens ───────────────────────────────────────
-const Color kGlassBg        = Color(0xCCFFFFFF);   // branco 80 %
-const Color kGlassBorder    = Color(0xB3FFFFFF);   // borda 70 %
-const Color kScaffoldBg     = Color(0xFFE8EFF2);   // fundo ligeiramente azulado
-const double kRadius        = 16;
-const double kRadiusSm      = 10;
+// Tons da paleta Material com os valores exatos do SDK: a classe Colors do
+// Fluent UI tem outros valores, e as cores já adotadas devem ser mantidas.
+abstract final class Cores {
+  static const Color branco = Color(0xFFFFFFFF);
+  static const Color transparente = Color(0x00000000);
+  static const Color vermelho = Color(0xFFF44336);
+  static const Color vermelho300 = Color(0xFFE57373);
+  static const Color vermelho400 = Color(0xFFEF5350);
+  static const Color vermelho600 = Color(0xFFE53935);
+  static const Color vermelho700 = Color(0xFFD32F2F);
+  static const Color verde = Color(0xFF4CAF50);
+  static const Color verde600 = Color(0xFF43A047);
+  static const Color laranja = Color(0xFFFF9800);
+  static const Color laranja400 = Color(0xFFFFA726);
+  static const Color laranja700 = Color(0xFFF57C00);
+  static const Color ambar = Color(0xFFFFC107);
+  static const Color azul600 = Color(0xFF1E88E5);
+  static const Color cinza = Color(0xFF9E9E9E);
+  static const Color cinza100 = Color(0xFFF5F5F5);
+  static const Color cinza200 = Color(0xFFEEEEEE);
+  static const Color cinza300 = Color(0xFFE0E0E0);
+  static const Color cinza600 = Color(0xFF757575);
+  static const Color cinza700 = Color(0xFF616161);
+}
 
-// gradiente de fundo para realçar o efeito glass
+// ─── Fluent UI + Liquid Glass — tokens ───────────────────────────────────────
+const Color kGlassBg = Color(0xCCFFFFFF); // branco 80 %
+const Color kGlassBorder = Color(0xB3FFFFFF); // borda 70 %
+const Color kScaffoldBg = Color(0xFFE8EFF2); // fundo ligeiramente azulado
+const double kRadius = 16;
+const double kRadiusSm = 10;
+const double kAlturaBarraSuperior = 44;
+// GlassTabBar.bottom: cápsula de 64 + margem vertical de 20 em cima e embaixo.
+const double kAlturaBarraAbas = 104;
+
+// Gradiente de fundo (efeito Mica) que dá profundidade às camadas de vidro.
 const BoxDecoration kBgGradient = BoxDecoration(
   gradient: LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [Color(0xFFDDE8EE), Color(0xFFEBF3EF), Color(0xFFE4EBF0)],
+  ),
+);
+
+final FluentThemeData temaFluent = FluentThemeData(
+  brightness: Brightness.light,
+  accentColor: contentBlue.toAccentColor(),
+  scaffoldBackgroundColor: kScaffoldBg,
+  cardColor: kGlassBg,
+);
+
+// As cores semânticas do vidro (toasts, brilhos) seguem a paleta do app.
+const GlassThemeData temaVidro = GlassThemeData(
+  brightness: Brightness.light,
+  light: GlassThemeVariant(
+    quality: GlassQuality.standard,
+    glowColors: GlassGlowColors(
+      primary: titleBlue,
+      success: contentBlue,
+      info: titleBlue,
+      warning: Cores.laranja700,
+      danger: Cores.vermelho700,
+    ),
   ),
 );
 
@@ -41,17 +92,390 @@ const String _supabaseAnonKey =
 // Atalho para o cliente Supabase
 SupabaseClient get _db => Supabase.instance.client;
 
+// ─── Design system: Fluent UI + Liquid Glass ─────────────────────────────────
+// Liquid Glass (Apple): estrutura e camada flutuante — scaffold, barras,
+// botões da barra, painéis de destaque e toasts.
+// Fluent UI (Microsoft): conteúdo e controles — tipografia, cards de conteúdo,
+// campos, botões, combos, progresso, diálogos e ícones (WindowsIcons).
+
+extension _Tipografia on BuildContext {
+  Typography get tipo => FluentTheme.of(this).typography;
+}
+
+class _FundoMica extends StatelessWidget {
+  const _FundoMica();
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: kBgGradient,
+      child: SizedBox.expand(),
+    );
+  }
+}
+
+// Espaço do conteúdo abaixo da barra superior de vidro e acima da barra de
+// abas (o shell soma kAlturaBarraAbas ao padding inferior do MediaQuery).
+EdgeInsets _paddingCorpo(
+  BuildContext context, {
+  double horizontal = 16,
+  double topo = 16,
+  double base = 24,
+}) {
+  final p = MediaQuery.paddingOf(context);
+  return EdgeInsets.fromLTRB(
+    horizontal,
+    p.top + kAlturaBarraSuperior + topo,
+    horizontal,
+    p.bottom + base,
+  );
+}
+
+class _PaginaVidro extends StatelessWidget {
+  const _PaginaVidro({
+    required this.titulo,
+    required this.corpo,
+    this.acoes = const [],
+    this.voltar = false,
+  });
+
+  final String titulo;
+  final Widget corpo;
+  final List<Widget> acoes;
+  final bool voltar;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassScaffold(
+      background: const _FundoMica(),
+      backgroundColor: kScaffoldBg,
+      statusBarStyle: GlassStatusBarStyle.dark,
+      // Desfoque progressivo: o esmaecimento suave deixa o texto rolado
+      // legível atrás do título da barra.
+      edgeStyle: GlassScrollEdgeStyle.blur,
+      appBar: GlassAppBar(
+        centerTitle: false,
+        toolbarHeight: kAlturaBarraSuperior,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        leading: voltar
+            ? _BotaoBarra(
+                icone: WindowsIcons.back,
+                dica: 'Voltar',
+                onPressed: () => Navigator.of(context).maybePop(),
+              )
+            : null,
+        title: Text(
+          titulo,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.tipo.subtitle?.copyWith(color: titleBlue),
+        ),
+        actions: acoes,
+      ),
+      body: corpo,
+    );
+  }
+}
+
+class _BotaoBarra extends StatelessWidget {
+  const _BotaoBarra({
+    required this.icone,
+    required this.dica,
+    required this.onPressed,
+    this.cor = titleBlue,
+  });
+
+  final IconData icone;
+  final String dica;
+  final VoidCallback? onPressed;
+  final Color cor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: dica,
+      child: GlassIconButton(
+        size: 40,
+        semanticLabel: dica,
+        icon: Icon(icone, size: 18, color: cor),
+        onPressed: onPressed,
+      ),
+    );
+  }
+}
+
+// Lista com "puxar para atualizar" no estilo Apple, respeitando as barras de vidro.
+class _ListaAtualizavel extends StatelessWidget {
+  const _ListaAtualizavel({required this.onRefresh, required this.children});
+
+  final Future<void> Function() onRefresh;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = _paddingCorpo(context);
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      slivers: [
+        SliverToBoxAdapter(child: SizedBox(height: padding.top)),
+        CupertinoSliverRefreshControl(onRefresh: onRefresh),
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            padding.left,
+            0,
+            padding.right,
+            padding.bottom,
+          ),
+          sliver: SliverList(delegate: SliverChildListDelegate(children)),
+        ),
+      ],
+    );
+  }
+}
+
+// Painel flutuante de vidro líquido: resumos, destaques e formulários soltos.
+// Não coloque GlassButton/GlassIconButton dentro dele (vidro dentro de vidro).
+class _PainelVidro extends StatelessWidget {
+  const _PainelVidro({
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.raio = kRadius,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double raio;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: padding,
+      shape: LiquidRoundedSuperellipse(borderRadius: raio),
+      settings: const LiquidGlassSettings(
+        glassColor: Color(0x59FFFFFF),
+        thickness: 18,
+        blur: 8,
+      ),
+      child: child,
+    );
+  }
+}
+
+// Card de conteúdo Fluent com acabamento acrílico (listas e blocos de texto).
+class _CartaoFluent extends StatelessWidget {
+  const _CartaoFluent({
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.cor = kGlassBg,
+    this.onPressed,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final Color cor;
+  final VoidCallback? onPressed;
+
+  Widget _card(Color fundo) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(kRadius),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 20,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Card(
+        padding: padding,
+        backgroundColor: fundo,
+        borderColor: kGlassBorder,
+        borderRadius: BorderRadius.circular(kRadius),
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final acao = onPressed;
+    if (acao == null) return _card(cor);
+    return HoverButton(
+      onPressed: acao,
+      builder: (context, estados) {
+        final pressionado = estados.contains(WidgetState.pressed);
+        final sobre = estados.contains(WidgetState.hovered);
+        final fundo = pressionado
+            ? Color.alphaBlend(contentBlue.withValues(alpha: 0.08), cor)
+            : sobre
+            ? Color.alphaBlend(contentBlue.withValues(alpha: 0.04), cor)
+            : cor;
+        return _card(fundo);
+      },
+    );
+  }
+}
+
+// Etiqueta em pílula (status, papéis, tecnologias).
+class _Pilula extends StatelessWidget {
+  const _Pilula({
+    required this.texto,
+    required this.cor,
+    this.icone,
+    this.solida = false,
+  });
+
+  final String texto;
+  final Color cor;
+  final IconData? icone;
+  final bool solida;
+
+  @override
+  Widget build(BuildContext context) {
+    final frente = solida ? Cores.branco : cor;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: solida ? cor : cor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(kRadiusSm),
+        border: solida ? null : Border.all(color: cor.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icone != null) ...[
+            Icon(icone, size: 12, color: frente),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            texto,
+            style: context.tipo.caption?.copyWith(
+              color: frente,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BannerDemo extends StatelessWidget {
+  const _BannerDemo();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!kModoDemo) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Cores.vermelho600,
+        borderRadius: BorderRadius.circular(kRadiusSm),
+      ),
+      child: Text(
+        '⚠ Demonstração',
+        textAlign: TextAlign.center,
+        style: context.tipo.caption?.copyWith(
+          color: Cores.branco,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+// Padding, cantos e texto padronizados para Button/FilledButton do Fluent.
+ButtonStyle _estiloBotao({
+  double raio = kRadiusSm,
+  EdgeInsetsGeometry padding = const EdgeInsets.symmetric(
+    vertical: 12,
+    horizontal: 20,
+  ),
+  double fonte = 16,
+  Color? fundo,
+  Color? texto,
+}) {
+  return ButtonStyle(
+    padding: WidgetStatePropertyAll(padding),
+    shape: WidgetStatePropertyAll(
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(raio)),
+    ),
+    textStyle: WidgetStatePropertyAll(
+      TextStyle(fontSize: fonte, fontWeight: FontWeight.w600),
+    ),
+    backgroundColor: fundo == null
+        ? null
+        : WidgetStateProperty.resolveWith(
+            (estados) => estados.contains(WidgetState.disabled)
+                ? fundo.withValues(alpha: 0.45)
+                : estados.contains(WidgetState.pressed)
+                ? Color.alphaBlend(const Color(0x33000000), fundo)
+                : fundo,
+          ),
+    foregroundColor: texto == null ? null : WidgetStatePropertyAll(texto),
+  );
+}
+
+// Aviso flutuante: sucesso em contentBlue e erro em vermelho 700 (cores
+// semânticas definidas no temaVidro).
+void _avisar(BuildContext context, String mensagem, {bool erro = false}) {
+  GlassToast.show(
+    context,
+    message: mensagem,
+    type: erro ? GlassToastType.error : GlassToastType.success,
+    position: GlassToastPosition.top,
+    icon: Icon(erro ? WindowsIcons.error_badge : WindowsIcons.completed),
+  );
+}
+
+Future<bool> _confirmar(
+  BuildContext context, {
+  required String titulo,
+  required String mensagem,
+  String confirmar = 'Confirmar',
+  String cancelar = 'Cancelar',
+  bool destrutivo = false,
+}) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    barrierDismissible: true,
+    builder: (ctx) => ContentDialog(
+      title: Text(titulo),
+      content: Text(mensagem),
+      actions: [
+        Button(
+          style: _estiloBotao(fonte: 14),
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: Text(cancelar),
+        ),
+        FilledButton(
+          style: _estiloBotao(
+            fonte: 14,
+            fundo: destrutivo ? Cores.vermelho700 : null,
+          ),
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text(confirmar),
+        ),
+      ],
+    ),
+  );
+  return ok ?? false;
+}
+
+// ─── fim: Design system ──────────────────────────────────────────────────────
+
 // ─── Modelo de usuário com papel (role) ──────────────────────────────────────
 class AppUser {
   final String id;
   final String email;
   final String role;
 
-  const AppUser({
-    required this.id,
-    required this.email,
-    required this.role,
-  });
+  const AppUser({required this.id, required this.email, required this.role});
 
   bool get isAdmin => role == 'admin';
 }
@@ -77,8 +501,19 @@ Future<AppUser> _carregarPerfil(User supaUser) async {
 // ─── Entry point ─────────────────────────────────────────────────────────────
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey); // ignore: deprecated_member_use
-  runApp(const MistakeMapApp());
+  await Supabase.initialize(
+    url: _supabaseUrl,
+    // ignore: deprecated_member_use
+    anonKey: _supabaseAnonKey,
+  );
+  await LiquidGlassWidgets.initialize();
+  runApp(
+    LiquidGlassWidgets.wrap(
+      theme: temaVidro,
+      brightnessResolver: (context) => FluentTheme.maybeOf(context)?.brightness,
+      child: const MistakeMapApp(),
+    ),
+  );
 }
 
 class MistakeMapApp extends StatelessWidget {
@@ -86,16 +521,17 @@ class MistakeMapApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return FluentApp(
       title: 'MistakeMap',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: contentBlue,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF4F6F4),
+      themeMode: ThemeMode.light,
+      theme: temaFluent,
+      // O app é só claro; sem isso, os textos Cupertino dos overlays de vidro
+      // (toasts) seguem o modo escuro do sistema e somem sobre o vidro claro.
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(platformBrightness: Brightness.light),
+        child: child!,
       ),
       home: const AuthGate(),
     );
@@ -128,8 +564,9 @@ class _LoadingScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return const DecoratedBox(
+      decoration: kBgGradient,
+      child: Center(child: ProgressRing()),
     );
   }
 }
@@ -183,78 +620,58 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     _listaKey.currentState?.carregarExercicios();
   }
 
-  List<Widget> get _telas => [
-        TelaInicial(user: widget.user),
-        TelaPrincipal(key: _listaKey, user: widget.user),
-        TelaMapaConceitual(key: _mapaKey, user: widget.user),
-        TelaAdicionarExercicio(user: widget.user, onIrParaMapa: _irParaExercicios),
-        if (widget.user.isAdmin) TelaAdmin(user: widget.user),
-      ];
+  void _selecionar(int i) {
+    setState(() => _indiceAtual = i);
+    if (i == 1) _listaKey.currentState?.carregarExercicios();
+    if (i == 2) _mapaKey.currentState?.carregar();
+  }
 
-  List<NavigationDestination> get _destinos => [
-        const NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home),
-          label: 'Início',
-        ),
-        const NavigationDestination(
-          icon: Icon(Icons.list_alt_outlined),
-          selectedIcon: Icon(Icons.list_alt),
-          label: 'Exercícios',
-        ),
-        const NavigationDestination(
-          icon: Icon(Icons.account_tree_outlined),
-          selectedIcon: Icon(Icons.account_tree),
-          label: 'Mapa',
-        ),
-        const NavigationDestination(
-          icon: Icon(Icons.add_circle_outline),
-          selectedIcon: Icon(Icons.add_circle),
-          label: 'Adicionar',
-        ),
-        if (widget.user.isAdmin)
-          const NavigationDestination(
-            icon: Icon(Icons.admin_panel_settings_outlined),
-            selectedIcon: Icon(Icons.admin_panel_settings),
-            label: 'Admin',
-          ),
-      ];
+  List<Widget> get _telas => [
+    TelaInicial(user: widget.user),
+    TelaPrincipal(key: _listaKey, user: widget.user),
+    TelaMapaConceitual(key: _mapaKey, user: widget.user),
+    TelaAdicionarExercicio(user: widget.user, onIrParaMapa: _irParaExercicios),
+    if (widget.user.isAdmin) TelaAdmin(user: widget.user),
+  ];
+
+  List<GlassTab> get _abas => [
+    const GlassTab(
+      icon: Icon(WindowsIcons.home),
+      activeIcon: Icon(WindowsIcons.home_solid),
+      label: 'Início',
+    ),
+    const GlassTab(icon: Icon(WindowsIcons.bulleted_list), label: 'Exercícios'),
+    const GlassTab(icon: Icon(WindowsIcons.relationship), label: 'Mapa'),
+    const GlassTab(icon: Icon(WindowsIcons.add), label: 'Adicionar'),
+    if (widget.user.isAdmin)
+      const GlassTab(icon: Icon(WindowsIcons.admin), label: 'Admin'),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final mq = MediaQuery.of(context);
+    return GlassScaffold(
+      background: const _FundoMica(),
       backgroundColor: kScaffoldBg,
-      extendBody: true,
-      body: IndexedStack(index: _indiceAtual, children: _telas),
-      bottomNavigationBar: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xB3E7EBE8),
-              border: Border(
-                top: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  width: 0.6,
-                ),
-              ),
-            ),
-            child: NavigationBar(
-              selectedIndex: _indiceAtual,
-              onDestinationSelected: (i) {
-                setState(() => _indiceAtual = i);
-                if (i == 1) _listaKey.currentState?.carregarExercicios();
-                if (i == 2) _mapaKey.currentState?.carregar();
-              },
-              backgroundColor: Colors.transparent,
-              indicatorColor:
-                  contentBlue.withValues(alpha: 0.18),
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              destinations: _destinos,
-            ),
+      statusBarStyle: GlassStatusBarStyle.dark,
+      bottomBar: GlassTabBar.bottom(
+        selectedIndex: _indiceAtual,
+        onTabSelected: _selecionar,
+        tabs: _abas,
+        iconSize: 20,
+        indicatorColor: contentBlue.withValues(alpha: 0.18),
+        selectedIconColor: titleBlue,
+        selectedLabelColor: titleBlue,
+        unselectedIconColor: contentBlue,
+        unselectedLabelColor: contentBlue,
+      ),
+      body: MediaQuery(
+        data: mq.copyWith(
+          padding: mq.padding.copyWith(
+            bottom: mq.padding.bottom + kAlturaBarraAbas,
           ),
         ),
+        child: IndexedStack(index: _indiceAtual, children: _telas),
       ),
     );
   }
@@ -286,12 +703,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
 
   void _snack(String msg, {bool erro = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: erro ? Colors.red.shade700 : contentBlue,
-      ),
-    );
+    _avisar(context, msg, erro: erro);
   }
 
   Future<void> _entrarComEmailSenha() async {
@@ -304,8 +716,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
     setState(() => _carregando = true);
     try {
       if (_modoCadastro) {
-        final res =
-            await _db.auth.signUp(email: email, password: senha);
+        final res = await _db.auth.signUp(email: email, password: senha);
         if (res.user != null && res.session == null) {
           _snack('Verifique seu e-mail para confirmar o cadastro.');
         }
@@ -334,173 +745,256 @@ class _TelaCadastroState extends State<TelaCadastro> {
   }
 
   String _traduzirErroAuth(String msg) {
-    if (msg.contains('Invalid login credentials')) return 'E-mail ou senha incorretos.';
-    if (msg.contains('Email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
-    if (msg.contains('User already registered')) return 'Este e-mail já possui uma conta.';
+    if (msg.contains('Invalid login credentials')) {
+      return 'E-mail ou senha incorretos.';
+    }
+    if (msg.contains('Email not confirmed')) {
+      return 'Confirme seu e-mail antes de entrar.';
+    }
+    if (msg.contains('User already registered')) {
+      return 'Este e-mail já possui uma conta.';
+    }
     return msg;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    // Fora do shell: sem barra superior nem barra de abas.
+    return GlassScaffold(
+      background: const _FundoMica(),
+      backgroundColor: kScaffoldBg,
+      statusBarStyle: GlassStatusBarStyle.dark,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 60),
-              const Text(
-                'MistakeMap',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: titleBlue,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Transforme erros em aprendizado',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: contentBlue),
-              ),
-              const SizedBox(height: 40),
-              // Campo de e-mail
-              TextField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'email@dominio.com',
-                  hintStyle: const TextStyle(color: contentBlue),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: contentBlue),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Campo de senha
-              TextField(
-                controller: _senhaCtrl,
-                obscureText: !_senhaVisivel,
-                decoration: InputDecoration(
-                  hintText: 'senha',
-                  hintStyle: const TextStyle(color: contentBlue),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: contentBlue),
-                  ),
-                  suffixIcon: IconButton(
-                    tooltip: _senhaVisivel ? 'Ocultar senha' : 'Mostrar senha',
-                    icon: Icon(_senhaVisivel
-                        ? Icons.visibility_off
-                        : Icons.visibility),
-                    onPressed: () =>
-                        setState(() => _senhaVisivel = !_senhaVisivel),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Botão principal
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: contentBlue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-                onPressed: _carregando ? null : _entrarComEmailSenha,
-                child: _carregando
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(
-                        _modoCadastro ? 'Criar conta' : 'Entrar',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () =>
-                    setState(() => _modoCadastro = !_modoCadastro),
-                child: Text(
-                  _modoCadastro
-                      ? 'Já tenho conta — Entrar'
-                      : 'Não tenho conta — Criar',
-                  style: const TextStyle(color: contentBlue),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Divisor "ou"
-              const Row(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                      child: Divider(thickness: 1, color: contentBlue)),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('ou',
-                        style: TextStyle(color: contentBlue)),
+                  _cabecalho(context),
+                  const SizedBox(height: 32),
+                  _PainelVidro(
+                    padding: const EdgeInsets.all(24),
+                    child: _formulario(context),
                   ),
-                  Expanded(
-                      child: Divider(thickness: 1, color: contentBlue)),
+                  const SizedBox(height: 32),
+                  _termos(context),
                 ],
               ),
-              const SizedBox(height: 16),
-              // Botão Google
-              ElevatedButton.icon(
-                icon: const Icon(Icons.g_mobiledata, size: 30),
-                label: const Text('Continue com Google'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey.shade100,
-                  foregroundColor: contentBlue,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: const BorderSide(color: contentBlue),
-                  ),
-                ),
-                onPressed: _carregando ? null : _entrarComGoogle,
-              ),
-              const SizedBox(height: 40),
-              RichText(
-                textAlign: TextAlign.center,
-                text: const TextSpan(
-                  style: TextStyle(color: contentBlue, fontSize: 12),
-                  children: [
-                    TextSpan(
-                        text:
-                            'Ao continuar, você concorda com nossos '),
-                    TextSpan(
-                      text: 'Termos de Serviço\n',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextSpan(text: 'e '),
-                    TextSpan(
-                      text: 'Política de Privacidade',
-                      style: TextStyle(
-                          color: titleBlue,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _cabecalho(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'MistakeMap',
+          textAlign: TextAlign.center,
+          style: context.tipo.title?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: titleBlue,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Transforme erros em aprendizado',
+          textAlign: TextAlign.center,
+          style: context.tipo.body?.copyWith(color: contentBlue),
+        ),
+      ],
+    );
+  }
+
+  // Borda contentBlue dos campos. Sem foco, a linha inferior do TextBox fica
+  // transparente (unfocusedColor) para não somar um traço cinza à borda; com
+  // foco, vale o realce de 2 px do Fluent.
+  WidgetStateProperty<BoxDecoration> get _decoracaoCampo {
+    return WidgetStatePropertyAll(
+      BoxDecoration(
+        borderRadius: BorderRadius.circular(kRadiusSm),
+        border: Border.all(color: contentBlue),
+      ),
+    );
+  }
+
+  Widget _iconeCampo(IconData icone) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 12),
+      child: Icon(icone, size: 16, color: contentBlue),
+    );
+  }
+
+  Widget _divisor() {
+    return const Divider(
+      style: DividerThemeData(
+        thickness: 1,
+        horizontalMargin: EdgeInsets.zero,
+        decoration: BoxDecoration(color: contentBlue),
+      ),
+    );
+  }
+
+  Widget _formulario(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Campo de e-mail
+        TextBox(
+          controller: _emailCtrl,
+          keyboardType: TextInputType.emailAddress,
+          placeholder: 'email@dominio.com',
+          placeholderStyle: const TextStyle(color: contentBlue),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: _decoracaoCampo,
+          unfocusedColor: Cores.transparente,
+          prefix: _iconeCampo(WindowsIcons.mail),
+        ),
+        const SizedBox(height: 16),
+        TextBox(
+          controller: _senhaCtrl,
+          obscureText: !_senhaVisivel,
+          placeholder: 'senha',
+          placeholderStyle: const TextStyle(color: contentBlue),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: _decoracaoCampo,
+          unfocusedColor: Cores.transparente,
+          prefix: _iconeCampo(WindowsIcons.lock),
+          suffix: Padding(
+            padding: const EdgeInsetsDirectional.only(end: 4),
+            child: Tooltip(
+              message: _senhaVisivel ? 'Ocultar senha' : 'Mostrar senha',
+              child: IconButton(
+                icon: Icon(
+                  _senhaVisivel ? WindowsIcons.hide : WindowsIcons.red_eye,
+                  size: 16,
+                  color: contentBlue,
+                ),
+                onPressed: () => setState(() => _senhaVisivel = !_senhaVisivel),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Botão principal
+        FilledButton(
+          style: _estiloBotao(
+            fundo: contentBlue,
+            texto: Cores.branco,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          ),
+          onPressed: _carregando ? null : _entrarComEmailSenha,
+          child: _carregando
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: ProgressRing(
+                    strokeWidth: 2.5,
+                    activeColor: Cores.branco,
+                  ),
+                )
+              : Text(_modoCadastro ? 'Criar conta' : 'Entrar'),
+        ),
+        const SizedBox(height: 8),
+        HyperlinkButton(
+          style: ButtonStyle(
+            foregroundColor: WidgetStateProperty.resolveWith(
+              (estados) =>
+                  estados.contains(WidgetState.hovered) ||
+                      estados.contains(WidgetState.pressed)
+                  ? titleBlue
+                  : contentBlue,
+            ),
+          ),
+          onPressed: () => setState(() => _modoCadastro = !_modoCadastro),
+          child: Text(
+            _modoCadastro
+                ? 'Já tenho conta — Entrar'
+                : 'Não tenho conta — Criar',
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Divisor "ou"
+        Row(
+          children: [
+            Expanded(child: _divisor()),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'ou',
+                style: context.tipo.body?.copyWith(color: contentBlue),
+              ),
+            ),
+            Expanded(child: _divisor()),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Botão Google
+        Button(
+          style:
+              _estiloBotao(
+                fundo: Cores.cinza100,
+                texto: contentBlue,
+                fonte: 14,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 24,
+                ),
+              ).copyWith(
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(kRadiusSm),
+                    side: const BorderSide(color: contentBlue),
+                  ),
+                ),
+              ),
+          onPressed: _carregando ? null : _entrarComGoogle,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Não há ícone do Google em WindowsIcons: usa-se a letra "G".
+              ExcludeSemantics(
+                child: Text(
+                  'G',
+                  style: context.tipo.subtitle?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: contentBlue,
+                    height: 1,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text('Continue com Google'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _termos(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        style: context.tipo.caption?.copyWith(color: contentBlue),
+        children: const [
+          TextSpan(text: 'Ao continuar, você concorda com nossos '),
+          TextSpan(
+            text: 'Termos de Serviço\n',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          TextSpan(text: 'e '),
+          TextSpan(
+            text: 'Política de Privacidade',
+            style: TextStyle(color: titleBlue, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }
@@ -538,14 +1032,10 @@ class _TelaInicialState extends State<TelaInicial> {
       final lista = res as List;
       final total = lista.length;
       final pendentes = lista
-          .where((a) =>
-              a['status'] == 'pending' || a['status'] == 'uploading')
+          .where((a) => a['status'] == 'pending' || a['status'] == 'uploading')
           .length;
-      final completos =
-          lista.where((a) => a['status'] == 'completed').length;
-      final pct = total > 0
-          ? '${((completos / total) * 100).round()}%'
-          : '0%';
+      final completos = lista.where((a) => a['status'] == 'completed').length;
+      final pct = total > 0 ? '${((completos / total) * 100).round()}%' : '0%';
 
       if (mounted) {
         setState(() {
@@ -566,190 +1056,171 @@ class _TelaInicialState extends State<TelaInicial> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('Início — Resumo'),
-        backgroundColor: Colors.transparent,
-        foregroundColor: titleBlue,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              decoration: const BoxDecoration(color: Color(0xAAE8EFF2)),
+    return _PaginaVidro(
+      titulo: 'Início — Resumo',
+      acoes: [
+        _BotaoBarra(
+          icone: WindowsIcons.sign_out,
+          dica: 'Sair',
+          onPressed: _sair,
+        ),
+      ],
+      corpo: _carregando
+          ? const Center(child: ProgressRing())
+          : CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: _paddingCorpo(context, horizontal: 24, topo: 8),
+                    child: Column(
+                      children: [
+                        _cabecalho(context),
+                        const Spacer(),
+                        const SizedBox(height: 24),
+                        _resumo(context),
+                        const Spacer(),
+                        const SizedBox(height: 24),
+                        _botaoSobre(context),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
+    );
+  }
+
+  // Cabeçalho com nome/email e badge de admin
+  Widget _cabecalho(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'MistakeMap',
+          style: context.tipo.title?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: titleBlue,
           ),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Sair',
-            icon: const Icon(Icons.logout),
-            onPressed: _sair,
+        const SizedBox(height: 4),
+        Text(
+          widget.user.email,
+          style: context.tipo.caption?.copyWith(color: contentBlue),
+        ),
+        if (widget.user.isAdmin) ...[
+          const SizedBox(height: 8),
+          const _Pilula(
+            texto: 'Administrador',
+            cor: contentBlue,
+            icone: WindowsIcons.admin,
+            solida: true,
           ),
         ],
+      ],
+    );
+  }
+
+  // Cards de estatísticas
+  Widget _resumo(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Dashboard do Estudante',
+          textAlign: TextAlign.center,
+          style: context.tipo.subtitle?.copyWith(color: titleBlue),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Acompanhe seu progresso e transforme erros em aprendizado.',
+          textAlign: TextAlign.center,
+          style: context.tipo.body?.copyWith(color: contentBlue),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            _ResumoCard(
+              icone: WindowsIcons.bulleted_list,
+              label: 'Exercícios',
+              value: '$_totalExercicios',
+            ),
+            const SizedBox(width: 12),
+            _ResumoCard(
+              icone: WindowsIcons.history,
+              label: 'Para revisar',
+              value: '$_paraRevisar',
+            ),
+            const SizedBox(width: 12),
+            _ResumoCard(
+              icone: WindowsIcons.education,
+              label: 'Evolução',
+              value: _evolucao,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Botão "Sobre o App"
+  Widget _botaoSobre(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Button(
+        style:
+            _estiloBotao(
+              fundo: const Color(0xFFE7EBE8),
+              texto: contentBlue,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            ).copyWith(
+              shape: WidgetStatePropertyAll(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(kRadiusSm),
+                  side: const BorderSide(color: contentBlue),
+                ),
+              ),
+            ),
+        onPressed: () =>
+            Navigator.of(context)
+                .push(FluentPageRoute(builder: (_) => const TelaSobre())),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(WindowsIcons.info, size: 18),
+            SizedBox(width: 8),
+            Text('Sobre o App'),
+          ],
+        ),
       ),
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: kBgGradient,
-        child: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Stack(
-          children: [
-            // Cabeçalho com nome/email e badge de admin
-            Align(
-              alignment: Alignment.topCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'MistakeMap',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: titleBlue,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.user.email,
-                      style: const TextStyle(
-                          fontSize: 13, color: contentBlue),
-                    ),
-                    if (widget.user.isAdmin) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: contentBlue,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'Administrador',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            // Cards de estatísticas
-            Center(
-              child: _carregando
-                  ? const CircularProgressIndicator()
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment:
-                            CrossAxisAlignment.stretch,
-                        children: [
-                          const Text(
-                            'Dashboard do Estudante',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w600,
-                              color: titleBlue,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Acompanhe seu progresso e transforme erros em aprendizado.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                fontSize: 16, color: contentBlue),
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              _ResumoCard(
-                                  label: 'Exercícios',
-                                  value: '$_totalExercicios'),
-                              const SizedBox(width: 10),
-                              _ResumoCard(
-                                  label: 'Para revisar',
-                                  value: '$_paraRevisar'),
-                              const SizedBox(width: 10),
-                              _ResumoCard(
-                                  label: 'Evolução',
-                                  value: _evolucao),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-            ),
-            // Botão "Sobre o App"
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.info_outline),
-                  style: OutlinedButton.styleFrom(
-                    textStyle: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.w500),
-                    backgroundColor: const Color(0xFFE7EBE8),
-                    foregroundColor: contentBlue,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 18, horizontal: 24),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: const BorderSide(color: contentBlue),
-                    ),
-                  ),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const TelaSobre()),
-                  ),
-                  label: const Text('Sobre o App',
-                      style: TextStyle(fontSize: 17)),
-                ),
-              ),
-            ),
-          ],
-        ),
-            ),
-          ],
-        ),
-        ), // SafeArea
-      ), // Container gradient
     );
   }
 }
 
 class _ResumoCard extends StatelessWidget {
-  const _ResumoCard({required this.label, required this.value});
+  const _ResumoCard({
+    required this.icone,
+    required this.label,
+    required this.value,
+  });
 
+  final IconData icone;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: _GlassCard(
+      child: _PainelVidro(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        radius: kRadiusSm,
+        raio: kRadiusSm,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            Icon(icone, size: 18, color: titleBlue),
+            const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 22,
+              style: context.tipo.subtitle?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: contentBlue,
               ),
@@ -758,7 +1229,7 @@ class _ResumoCard extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: contentBlue),
+              style: context.tipo.caption?.copyWith(color: contentBlue),
             ),
           ],
         ),
@@ -773,15 +1244,17 @@ class _ResumoCard extends StatelessWidget {
 class TelaAdicionarExercicio extends StatefulWidget {
   final AppUser user;
   final VoidCallback? onIrParaMapa;
-  const TelaAdicionarExercicio({super.key, required this.user, this.onIrParaMapa});
+  const TelaAdicionarExercicio({
+    super.key,
+    required this.user,
+    this.onIrParaMapa,
+  });
 
   @override
-  State<TelaAdicionarExercicio> createState() =>
-      _TelaAdicionarExercicioState();
+  State<TelaAdicionarExercicio> createState() => _TelaAdicionarExercicioState();
 }
 
-class _TelaAdicionarExercicioState
-    extends State<TelaAdicionarExercicio> {
+class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
   final _formKey = GlobalKey<FormState>();
   final _imagePicker = ImagePicker();
   final _assuntoCtrl = TextEditingController();
@@ -801,7 +1274,10 @@ class _TelaAdicionarExercicioState
 
   Future<void> _selecionarImagem(ImageSource source) async {
     final img = await _imagePicker.pickImage(
-        source: source, imageQuality: 85, maxWidth: 2048);
+      source: source,
+      imageQuality: 85,
+      maxWidth: 2048,
+    );
     if (img == null) return;
     final bytes = await img.readAsBytes();
     if (!mounted) return;
@@ -812,22 +1288,26 @@ class _TelaAdicionarExercicioState
   }
 
   Future<void> _mostrarOpcoesDeImagem() async {
-    final source = await showModalBottomSheet<ImageSource>(
+    // ContentDialog em vez de showGlassActionSheet: a folha de vidro pinta o
+    // texto com CupertinoColors.label, que segue o brilho do sistema (fica
+    // branco sobre o cartão claro quando o SO está em modo escuro), enquanto o
+    // diálogo Fluent segue o tema claro do app.
+    final source = await showDialog<ImageSource>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Wrap(
+      barrierDismissible: true,
+      builder: (ctx) => ContentDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
+              leading: const Icon(WindowsIcons.camera, size: 20),
               title: const Text('Tirar uma foto'),
-              onTap: () =>
-                  Navigator.pop(ctx, ImageSource.camera),
+              onPressed: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
+              leading: const Icon(WindowsIcons.photo_collection, size: 20),
               title: const Text('Escolher da galeria'),
-              onTap: () =>
-                  Navigator.pop(ctx, ImageSource.gallery),
+              onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
           ],
         ),
@@ -838,12 +1318,7 @@ class _TelaAdicionarExercicioState
 
   void _snack(String msg, {bool erro = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: erro ? Colors.red.shade700 : contentBlue,
-      ),
-    );
+    _avisar(context, msg, erro: erro);
   }
 
   Future<void> _continuar() async {
@@ -860,10 +1335,7 @@ class _TelaAdicionarExercicioState
       // 2. Cria o exercício
       final exRes = await _db
           .from('exercises')
-          .insert({
-            'subject_id': subjectId,
-            'prompt_text': descricao,
-          })
+          .insert({'subject_id': subjectId, 'prompt_text': descricao})
           .select('id')
           .single();
       final exerciseId = exRes['id'] as String;
@@ -923,18 +1395,16 @@ class _TelaAdicionarExercicioState
   }
 
   Future<void> _uploadImagem(String attemptId) async {
-    final ext = _imagemSelecionada!.name
-        .split('.')
-        .last
-        .toLowerCase();
+    final ext = _imagemSelecionada!.name.split('.').last.toLowerCase();
 
     // Chama a Edge Function para obter URL presigned da R2
-    final fnRes = await _db.functions
-        .invoke('upload-url', body: {'file_ext': ext});
+    final fnRes = await _db.functions.invoke(
+      'upload-url',
+      body: {'file_ext': ext},
+    );
 
     if (fnRes.status >= 400) {
-      throw Exception(
-          'upload-url retornou status ${fnRes.status}');
+      throw Exception('upload-url retornou status ${fnRes.status}');
     }
 
     final data = fnRes.data as Map<String, dynamic>;
@@ -949,8 +1419,7 @@ class _TelaAdicionarExercicioState
     );
 
     if (putRes.statusCode >= 400) {
-      throw Exception(
-          'Upload para R2 falhou: HTTP ${putRes.statusCode}');
+      throw Exception('Upload para R2 falhou: HTTP ${putRes.statusCode}');
     }
 
     // Registra o asset e atualiza o status da attempt
@@ -970,205 +1439,308 @@ class _TelaAdicionarExercicioState
     setState(() => _sucesso = false);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_sucesso ? 'Registrado!' : 'Adicionar exercício'),
-        backgroundColor: const Color(0xFFE7EBE8),
-        foregroundColor: titleBlue,
+  // Botão contornado: fundo transparente e borda contentBlue, com leve realce
+  // em hover/press.
+  ButtonStyle get _estiloContorno {
+    return _estiloBotao(
+      texto: contentBlue,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith(
+        (estados) => estados.contains(WidgetState.pressed)
+            ? contentBlue.withValues(alpha: 0.08)
+            : estados.contains(WidgetState.hovered)
+            ? contentBlue.withValues(alpha: 0.04)
+            : Cores.transparente,
       ),
-      backgroundColor: const Color(0xFFF4F6F4),
-      body: SafeArea(
-        child: _sucesso ? _buildSucesso() : _buildForm(),
-      ),
-    );
-  }
-
-  Widget _buildSucesso() {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.check_circle_outline,
-                  size: 72, color: Colors.green),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Exercício registrado!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: titleBlue),
-            ),
-            const SizedBox(height: 10),
-            if (_ultimoAssunto.isNotEmpty)
-              Text(
-                'Assunto: $_ultimoAssunto',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15, color: contentBlue),
-              ),
-            const SizedBox(height: 8),
-            const Text(
-              'Continue registrando para mapear seus padrões de erro.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: contentBlue),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Registrar outro'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: contentBlue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: _resetarParaForm,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.account_tree_outlined),
-                label: const Text('Ver no Mapa'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: contentBlue,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: contentBlue),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () {
-                  _resetarParaForm();
-                  widget.onIrParaMapa?.call();
-                },
-              ),
-            ),
-          ],
+      shape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusSm),
+          side: const BorderSide(color: contentBlue),
         ),
       ),
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return _PaginaVidro(
+      titulo: _sucesso ? 'Registrado!' : 'Adicionar exercício',
+      corpo: _sucesso ? _buildSucesso() : _buildForm(),
+    );
+  }
+
+  Widget _buildSucesso() {
+    return CustomScrollView(
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Padding(
+            padding: _paddingCorpo(context),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: _PainelVidro(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Cores.verde.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            WindowsIcons.completed,
+                            size: 72,
+                            color: Cores.verde,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Exercício registrado!',
+                        textAlign: TextAlign.center,
+                        style: context.tipo.subtitle?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: titleBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_ultimoAssunto.isNotEmpty)
+                        Text(
+                          'Assunto: $_ultimoAssunto',
+                          textAlign: TextAlign.center,
+                          style: context.tipo.body?.copyWith(
+                            color: contentBlue,
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Continue registrando para mapear seus padrões de erro.',
+                        textAlign: TextAlign.center,
+                        style: context.tipo.body?.copyWith(color: contentBlue),
+                      ),
+                      const SizedBox(height: 32),
+                      FilledButton(
+                        style: _estiloBotao(
+                          fundo: contentBlue,
+                          texto: Cores.branco,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 20,
+                          ),
+                        ),
+                        onPressed: _resetarParaForm,
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(WindowsIcons.add, size: 18),
+                            SizedBox(width: 8),
+                            Text('Registrar outro'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Button(
+                        style: _estiloContorno,
+                        onPressed: () {
+                          _resetarParaForm();
+                          widget.onIrParaMapa?.call();
+                        },
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(WindowsIcons.relationship, size: 18),
+                            SizedBox(width: 8),
+                            Text('Ver no Mapa'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildForm() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Registre um erro para acompanhar sua evolução.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 19, color: contentBlue),
-            ),
-            const SizedBox(height: 28),
-            TextFormField(
-              controller: _assuntoCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Assunto',
-                hintText: 'Ex.: Equações de segundo grau',
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Informe o assunto' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _erroCtrl,
-              minLines: 4,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: 'O que você errou?',
-                hintText: 'Descreva brevemente sua dificuldade',
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: Colors.white,
-                alignLabelWithHint: true,
-              ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Descreva o erro' : null,
-            ),
-            const SizedBox(height: 24),
-            if (_imagemBytes == null)
-              OutlinedButton.icon(
-                onPressed: _mostrarOpcoesDeImagem,
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: const Text('Adicionar foto do exercício'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: contentBlue,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: contentBlue),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+      padding: _paddingCorpo(context),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Registre um erro para acompanhar sua evolução.',
+                  textAlign: TextAlign.center,
+                  style: context.tipo.bodyLarge?.copyWith(color: contentBlue),
                 ),
-              )
-            else
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.memory(_imagemBytes!,
-                        height: 220, fit: BoxFit.cover),
+                const SizedBox(height: 24),
+                _CartaoFluent(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _AdicionarCampoTexto(
+                        rotulo: 'Assunto',
+                        dica: 'Ex.: Equações de segundo grau',
+                        controller: _assuntoCtrl,
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Informe o assunto'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      _AdicionarCampoTexto(
+                        rotulo: 'O que você errou?',
+                        dica: 'Descreva brevemente sua dificuldade',
+                        controller: _erroCtrl,
+                        minLines: 4,
+                        maxLines: 6,
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Descreva o erro'
+                            : null,
+                      ),
+                      const SizedBox(height: 24),
+                      if (_imagemBytes == null)
+                        Button(
+                          style: _estiloContorno,
+                          onPressed: _mostrarOpcoesDeImagem,
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(WindowsIcons.attach_camera, size: 18),
+                              SizedBox(width: 8),
+                              Text('Adicionar foto do exercício'),
+                            ],
+                          ),
+                        )
+                      else
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(kRadiusSm),
+                              child: Image.memory(
+                                _imagemBytes!,
+                                height: 220,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Center(
+                              child: HyperlinkButton(
+                                onPressed: () => setState(() {
+                                  _imagemSelecionada = null;
+                                  _imagemBytes = null;
+                                }),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(WindowsIcons.delete, size: 16),
+                                    SizedBox(width: 8),
+                                    Text('Remover imagem'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
-                  TextButton.icon(
-                    onPressed: () => setState(() {
-                      _imagemSelecionada = null;
-                      _imagemBytes = null;
-                    }),
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Remover imagem'),
-                  ),
-                ],
-              ),
-            const SizedBox(height: 8),
-            ElevatedButton.icon(
-              onPressed: _enviando ? null : _continuar,
-              icon: _enviando
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.check),
-              label: Text(_enviando ? 'Enviando…' : 'Registrar exercício'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: contentBlue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 17),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(color: contentBlue),
                 ),
-              ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  style: _estiloBotao(
+                    fundo: contentBlue,
+                    texto: Cores.branco,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 20,
+                    ),
+                  ),
+                  onPressed: _enviando ? null : _continuar,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_enviando)
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: ProgressRing(
+                            strokeWidth: 2.5,
+                            activeColor: Cores.branco,
+                          ),
+                        )
+                      else
+                        const Icon(WindowsIcons.check_mark, size: 18),
+                      const SizedBox(width: 8),
+                      Text(_enviando ? 'Enviando…' : 'Registrar exercício'),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ─── Mapa conceitual ─────────────────────────────────────────────────────────
+// Campo rotulado com fundo branco, compartilhado pelas telas de adicionar e
+// editar exercício.
+class _AdicionarCampoTexto extends StatelessWidget {
+  const _AdicionarCampoTexto({
+    required this.rotulo,
+    required this.dica,
+    required this.controller,
+    required this.validator,
+    this.minLines,
+    this.maxLines = 1,
+  });
+
+  final String rotulo;
+  final String dica;
+  final TextEditingController controller;
+  final FormFieldValidator<String> validator;
+  final int? minLines;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    return InfoLabel(
+      label: rotulo,
+      labelStyle: context.tipo.bodyStrong?.copyWith(color: contentBlue),
+      child: TextFormBox(
+        controller: controller,
+        placeholder: dica,
+        minLines: minLines,
+        maxLines: maxLines,
+        validator: validator,
+        decoration: const WidgetStatePropertyAll(
+          BoxDecoration(color: Cores.branco),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── fim: Tela de adicionar exercício ────────────────────────────────────────
+
+// ─── Mapa conceitual ──────────────────────────────────────────────────────────
 class _SubjectData {
   final String nome;
   int total = 0;
@@ -1198,9 +1770,6 @@ class _SubjectData {
   int get atencao => pendentes + semTentativa + erros;
 }
 
-// ─── fim: Tela de adicionar exercício ────────────────────────────────────────
-
-// ─── Mapa conceitual ──────────────────────────────────────────────────────────
 class TelaMapaConceitual extends StatefulWidget {
   final AppUser user;
   const TelaMapaConceitual({super.key, required this.user});
@@ -1233,7 +1802,12 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
       };
 
       if (subjectMap.isEmpty) {
-        if (mounted) setState(() { _stats = []; _carregando = false; });
+        if (mounted) {
+          setState(() {
+            _stats = [];
+            _carregando = false;
+          });
+        }
         return;
       }
 
@@ -1259,7 +1833,12 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
       final lista = dataMap.values.toList()
         ..sort((a, b) => b.total.compareTo(a.total));
 
-      if (mounted) setState(() { _stats = lista; _carregando = false; });
+      if (mounted) {
+        setState(() {
+          _stats = lista;
+          _carregando = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _carregando = false);
     }
@@ -1268,87 +1847,85 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
   int get _totalExercicios => _stats.fold(0, (s, d) => s + d.total);
   int get _totalConcluidos => _stats.fold(0, (s, d) => s + d.concluidos);
   int get _totalAtencao => _stats.fold(0, (s, d) => s + d.atencao);
-  int get _maxTotal => _stats.isEmpty ? 1 : _stats.map((s) => s.total).reduce((a, b) => a > b ? a : b);
+  int get _maxTotal => _stats.isEmpty
+      ? 1
+      : _stats.map((s) => s.total).reduce((a, b) => a > b ? a : b);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('Mapa Conceitual'),
-        backgroundColor: Colors.transparent,
-        foregroundColor: titleBlue,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(color: const Color(0xAAE8EFF2)),
-          ),
+    return _PaginaVidro(
+      titulo: 'Mapa Conceitual',
+      acoes: [
+        _BotaoBarra(
+          icone: WindowsIcons.refresh,
+          dica: 'Atualizar',
+          onPressed: carregar,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Atualizar',
-            onPressed: carregar,
-          ),
-        ],
-      ),
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: kBgGradient,
-        child: Column(
-          children: [
-            Expanded(
-              child: _carregando
-                  ? const Center(child: CircularProgressIndicator())
-                  : _stats.isEmpty
-                      ? _buildVazio()
-                      : RefreshIndicator(
-                          onRefresh: carregar,
-                          child: ListView(
-                            padding: const EdgeInsets.fromLTRB(16, kToolbarHeight + 16, 16, 16),
-                            children: [
-                              _buildResumo(),
-                              const SizedBox(height: 16),
-                              _buildGrafo(),
-                              const SizedBox(height: 16),
-                              _buildPorAssunto(),
-                              const SizedBox(height: 16),
-                              _buildFragilidades(),
-                              const SizedBox(height: 16),
-                            ],
-                          ),
-                        ),
+      ],
+      corpo: _carregando
+          ? _estadoFixo(const ProgressRing())
+          : _stats.isEmpty
+          ? _estadoFixo(_buildVazio())
+          : _ListaAtualizavel(
+              onRefresh: carregar,
+              children: [
+                if (kModoDemo) ...[
+                  const _BannerDemo(),
+                  const SizedBox(height: 16),
+                ],
+                _buildResumo(),
+                const SizedBox(height: 16),
+                _buildGrafo(),
+                const SizedBox(height: 16),
+                _buildPorAssunto(),
+                const SizedBox(height: 16),
+                _buildFragilidades(),
+              ],
             ),
-            if (kModoDemo) const _BannerDemo(),
-          ],
-        ),
+    );
+  }
+
+  // Carregando e estado vazio não rolam: ficam entre as barras de vidro e
+  // mantêm o aviso de demonstração sempre visível.
+  Widget _estadoFixo(Widget conteudo) {
+    return Padding(
+      padding: _paddingCorpo(context),
+      child: Column(
+        children: [
+          if (kModoDemo) const _BannerDemo(),
+          Expanded(child: Center(child: conteudo)),
+        ],
       ),
     );
   }
 
   Widget _buildVazio() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.account_tree_outlined,
-                size: 72, color: contentBlue.withValues(alpha: 0.35)),
-            const SizedBox(height: 20),
-            const Text('Nenhum dado ainda',
-                style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold, color: titleBlue)),
-            const SizedBox(height: 8),
-            const Text(
-              'Adicione exercícios para visualizar seu mapa conceitual.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: contentBlue),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            WindowsIcons.relationship,
+            size: 72,
+            color: contentBlue.withValues(alpha: 0.35),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Nenhum dado ainda',
+            textAlign: TextAlign.center,
+            style: context.tipo.subtitle?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: titleBlue,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Adicione exercícios para visualizar seu mapa conceitual.',
+            textAlign: TextAlign.center,
+            style: context.tipo.body?.copyWith(color: contentBlue),
+          ),
+        ],
       ),
     );
   }
@@ -1357,172 +1934,176 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
     return Row(
       children: [
         Expanded(
-            child: _StatCard(
-                valor: _totalExercicios.toString(),
-                label: 'Exercícios',
-                cor: contentBlue)),
+          child: _StatCard(
+            valor: _totalExercicios.toString(),
+            label: 'Exercícios',
+            cor: contentBlue,
+          ),
+        ),
         const SizedBox(width: 8),
         Expanded(
-            child: _StatCard(
-                valor: _totalConcluidos.toString(),
-                label: 'Concluídos',
-                cor: Colors.green.shade600)),
+          child: _StatCard(
+            valor: _totalConcluidos.toString(),
+            label: 'Concluídos',
+            cor: Cores.verde600,
+          ),
+        ),
         const SizedBox(width: 8),
         Expanded(
-            child: _StatCard(
-                valor: _totalAtencao.toString(),
-                label: 'Atenção',
-                cor: Colors.orange.shade700)),
+          child: _StatCard(
+            valor: _totalAtencao.toString(),
+            label: 'Atenção',
+            cor: Cores.laranja700,
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _tituloSecao(String texto) {
+    return Text(
+      texto,
+      style: context.tipo.bodyStrong?.copyWith(
+        color: titleBlue,
+        letterSpacing: 0.5,
+      ),
     );
   }
 
   Widget _buildGrafo() {
     final maxT = _maxTotal.toDouble();
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Grafo por assunto',
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: titleBlue,
-                    letterSpacing: 0.5)),
-            const SizedBox(height: 2),
-            const Text('Tamanho = quantidade · Cor = % concluído',
-                style: TextStyle(fontSize: 11, color: contentBlue)),
-            const SizedBox(height: 16),
-            Center(
-              child: Wrap(
-                spacing: 14,
-                runSpacing: 18,
-                alignment: WrapAlignment.center,
-                children: _stats.map((s) {
-                  final size = 56.0 + (s.total / maxT) * 28.0;
-                  final color = Color.lerp(
-                      Colors.red.shade400, Colors.green.shade500, s.taxaConclusao)!;
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: size,
-                        height: size,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: color,
-                          boxShadow: [
-                            BoxShadow(
-                                color: color.withValues(alpha: 0.35),
-                                blurRadius: 6,
-                                spreadRadius: 1),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '${(s.taxaConclusao * 100).round()}%',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold),
+    return _CartaoFluent(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _tituloSecao('Grafo por assunto'),
+          const SizedBox(height: 4),
+          Text(
+            'Tamanho = quantidade · Cor = % concluído',
+            style: context.tipo.caption?.copyWith(color: contentBlue),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              alignment: WrapAlignment.center,
+              children: _stats.map((s) {
+                final size = 56.0 + (s.total / maxT) * 28.0;
+                final color = Color.lerp(
+                  Cores.vermelho400,
+                  Cores.verde,
+                  s.taxaConclusao,
+                )!;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: size,
+                      height: size,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color,
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.35),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${(s.taxaConclusao * 100).round()}%',
+                            style: context.tipo.body?.copyWith(
+                              color: Cores.branco,
+                              fontWeight: FontWeight.bold,
                             ),
-                            if (size > 66)
-                              Text(
-                                '${s.total} ex.',
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 10),
+                          ),
+                          if (size > 66)
+                            Text(
+                              '${s.total} ex.',
+                              // Valor exato de Colors.white70 do Material.
+                              style: context.tipo.caption?.copyWith(
+                                color: const Color(0xB3FFFFFF),
                               ),
-                          ],
-                        ),
+                            ),
+                        ],
                       ),
-                      const SizedBox(height: 5),
-                      SizedBox(
-                        width: size + 10,
-                        child: Text(
-                          s.nome,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontSize: 11,
-                              color: contentBlue,
-                              fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _MapaLegenda(cor: Colors.red.shade400, texto: '0%'),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Container(
-                    height: 6,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [
-                        Colors.red.shade400,
-                        Colors.orange,
-                        Colors.green.shade500,
-                      ]),
-                      borderRadius: BorderRadius.circular(3),
                     ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: size + 10,
+                      child: Text(
+                        s.nome,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.tipo.caption?.copyWith(
+                          color: contentBlue,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const _MapaLegenda(cor: Cores.vermelho400, texto: '0%'),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Cores.vermelho400, Cores.laranja, Cores.verde],
+                    ),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-                const SizedBox(width: 6),
-                _MapaLegenda(cor: Colors.green.shade500, texto: '100%'),
-              ],
-            ),
-          ],
-        ),
+              ),
+              const SizedBox(width: 8),
+              const _MapaLegenda(cor: Cores.verde, texto: '100%'),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPorAssunto() {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Evolução por assunto',
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: titleBlue,
-                    letterSpacing: 0.5)),
-            const SizedBox(height: 12),
-            ..._stats.map((s) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _SubjectBar(data: s),
-                )),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                _MapaLegenda(cor: Colors.green.shade500, texto: 'Concluído'),
-                const SizedBox(width: 10),
-                _MapaLegenda(cor: Colors.orange.shade400, texto: 'Pendente'),
-                const SizedBox(width: 10),
-                _MapaLegenda(cor: Colors.red.shade400, texto: 'Erro'),
-                const SizedBox(width: 10),
-                _MapaLegenda(cor: Colors.grey.shade300, texto: 'Sem tentativa'),
-              ],
+    return _CartaoFluent(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _tituloSecao('Evolução por assunto'),
+          const SizedBox(height: 12),
+          ..._stats.map(
+            (s) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _SubjectBar(data: s),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          // Wrap evita estouro horizontal das quatro legendas em telas estreitas.
+          const Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              _MapaLegenda(cor: Cores.verde, texto: 'Concluído'),
+              _MapaLegenda(cor: Cores.laranja400, texto: 'Pendente'),
+              _MapaLegenda(cor: Cores.vermelho400, texto: 'Erro'),
+              _MapaLegenda(cor: Cores.cinza300, texto: 'Sem tentativa'),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1530,119 +2111,133 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
   Widget _buildFragilidades() {
     final fragilidades = [..._stats]
       ..sort((a, b) => a.taxaConclusao.compareTo(b.taxaConclusao));
-    final top = fragilidades.where((s) => s.taxaConclusao < 1.0).take(3).toList();
+    final top = fragilidades
+        .where((s) => s.taxaConclusao < 1.0)
+        .take(3)
+        .toList();
 
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.warning_amber_outlined, size: 18, color: Colors.orange),
-                SizedBox(width: 6),
-                Text('Principais fragilidades',
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: titleBlue,
-                        letterSpacing: 0.5)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (top.isEmpty)
-              const Row(
-                children: [
-                  Icon(Icons.emoji_events, color: Colors.amber),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Parabéns! Todos os exercícios foram concluídos.',
-                      style: TextStyle(color: contentBlue, fontSize: 14),
-                    ),
-                  ),
-                ],
-              )
-            else
-              ...top.asMap().entries.map((entry) {
-                final i = entry.key;
-                final s = entry.value;
-                const emojis = ['🔴', '🟠', '🟡'];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    children: [
-                      Text(emojis[i], style: const TextStyle(fontSize: 18)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(s.nome,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: titleBlue,
-                                    fontSize: 14)),
-                            Text(
-                              '${s.atencao} de ${s.total} precisam de atenção',
-                              style: TextStyle(
-                                  fontSize: 12, color: Colors.grey.shade600),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '${(s.taxaConclusao * 100).round()}%',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: s.taxaConclusao < 0.5
-                              ? Colors.red.shade600
-                              : Colors.orange.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String valor;
-  final String label;
-  final Color cor;
-  const _StatCard({required this.valor, required this.label, required this.cor});
-
-  @override
-  Widget build(BuildContext context) {
-    return _GlassCard(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      radius: kRadiusSm,
+    return _CartaoFluent(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(valor,
-              style: TextStyle(
-                  fontSize: 26, fontWeight: FontWeight.bold, color: cor)),
-          const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11,
-                  color: cor.withValues(alpha: 0.8),
-                  fontWeight: FontWeight.w500)),
+          Row(
+            children: [
+              const Icon(WindowsIcons.warning, size: 16, color: Cores.laranja),
+              const SizedBox(width: 8),
+              Expanded(child: _tituloSecao('Principais fragilidades')),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (top.isEmpty)
+            Row(
+              children: [
+                const Icon(
+                  WindowsIcons.favorite_star_fill,
+                  size: 20,
+                  color: Cores.ambar,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Parabéns! Todos os exercícios foram concluídos.',
+                    style: context.tipo.body?.copyWith(color: contentBlue),
+                  ),
+                ),
+              ],
+            )
+          else
+            ...top.asMap().entries.map((entry) {
+              final i = entry.key;
+              final s = entry.value;
+              const emojis = ['🔴', '🟠', '🟡'];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Text(emojis[i], style: context.tipo.bodyLarge),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s.nome,
+                            style: context.tipo.bodyStrong?.copyWith(
+                              color: titleBlue,
+                            ),
+                          ),
+                          Text(
+                            '${s.atencao} de ${s.total} precisam de atenção',
+                            style: context.tipo.caption?.copyWith(
+                              color: Cores.cinza600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${(s.taxaConclusao * 100).round()}%',
+                      style: context.tipo.body?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: s.taxaConclusao < 0.5
+                            ? Cores.vermelho600
+                            : Cores.laranja700,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
     );
   }
 }
 
+// Resumo numérico em painel de vidro (camada de destaque do topo do mapa).
+class _StatCard extends StatelessWidget {
+  final String valor;
+  final String label;
+  final Color cor;
+  const _StatCard({
+    required this.valor,
+    required this.label,
+    required this.cor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _PainelVidro(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      raio: kRadiusSm,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            valor,
+            style: context.tipo.title?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: cor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: context.tipo.caption?.copyWith(
+              color: cor.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Barra empilhada por status: as proporções vêm dos contadores (flex), por
+// isso continua como Container proporcional e não como ProgressBar.
 class _SubjectBar extends StatelessWidget {
   final _SubjectData data;
   const _SubjectBar({required this.data});
@@ -1656,41 +2251,51 @@ class _SubjectBar extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(data.nome,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: contentBlue)),
+              child: Text(
+                data.nome,
+                style: context.tipo.body?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: contentBlue,
+                ),
+              ),
             ),
-            Text('${data.concluidos}/${data.total}',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            const SizedBox(width: 8),
+            Text(
+              '${data.concluidos}/${data.total}',
+              style: context.tipo.caption?.copyWith(color: Cores.cinza600),
+            ),
           ],
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: SizedBox(
             height: 10,
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (data.concluidos > 0)
                   Expanded(
-                      flex: data.concluidos,
-                      child: Container(color: Colors.green.shade500)),
+                    flex: data.concluidos,
+                    child: const ColoredBox(color: Cores.verde),
+                  ),
                 if (data.pendentes > 0)
                   Expanded(
-                      flex: data.pendentes,
-                      child: Container(color: Colors.orange.shade400)),
+                    flex: data.pendentes,
+                    child: const ColoredBox(color: Cores.laranja400),
+                  ),
                 if (data.erros > 0)
                   Expanded(
-                      flex: data.erros,
-                      child: Container(color: Colors.red.shade400)),
+                    flex: data.erros,
+                    child: const ColoredBox(color: Cores.vermelho400),
+                  ),
                 if (data.semTentativa > 0)
                   Expanded(
-                      flex: data.semTentativa,
-                      child: Container(color: Colors.grey.shade300)),
+                    flex: data.semTentativa,
+                    child: const ColoredBox(color: Cores.cinza300),
+                  ),
                 if (total == 1 && data.total == 0)
-                  Expanded(child: Container(color: Colors.grey.shade200)),
+                  const Expanded(child: ColoredBox(color: Cores.cinza200)),
               ],
             ),
           ),
@@ -1711,11 +2316,12 @@ class _MapaLegenda extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(color: cor, shape: BoxShape.circle)),
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: cor, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 4),
-        Text(texto, style: const TextStyle(fontSize: 11, color: contentBlue)),
+        Text(texto, style: context.tipo.caption?.copyWith(color: contentBlue)),
       ],
     );
   }
@@ -1777,13 +2383,20 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
       };
 
       if (subjectMap.isEmpty) {
-        if (mounted) setState(() { _exercicios = []; _carregando = false; });
+        if (mounted) {
+          setState(() {
+            _exercicios = [];
+            _carregando = false;
+          });
+        }
         return;
       }
 
       final exRes = await _db
           .from('exercises')
-          .select('id, prompt_text, created_at, subject_id, attempts(id, status, user_id)')
+          .select(
+            'id, prompt_text, created_at, subject_id, attempts(id, status, user_id)',
+          )
           .inFilter('subject_id', subjectMap.keys.toList())
           .order('created_at', ascending: false);
 
@@ -1793,218 +2406,135 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
             .where((a) => a['user_id'] == widget.user.id)
             .toList();
         final latest = userAttempts.isNotEmpty ? userAttempts.first : null;
-        lista.add(Exercicio(
-          id: e['id'] as String,
-          subjectId: e['subject_id'] as String,
-          subjectName: subjectMap[e['subject_id']] ?? '—',
-          promptText: e['prompt_text'] as String? ?? '',
-          status: latest?['status'] as String? ?? 'sem_tentativa',
-          attemptId: latest?['id'] as String?,
-          createdAt: e['created_at'] != null
-              ? DateTime.tryParse(e['created_at'] as String)
-              : null,
-        ));
+        lista.add(
+          Exercicio(
+            id: e['id'] as String,
+            subjectId: e['subject_id'] as String,
+            subjectName: subjectMap[e['subject_id']] ?? '—',
+            promptText: e['prompt_text'] as String? ?? '',
+            status: latest?['status'] as String? ?? 'sem_tentativa',
+            attemptId: latest?['id'] as String?,
+            createdAt: e['created_at'] != null
+                ? DateTime.tryParse(e['created_at'] as String)
+                : null,
+          ),
+        );
       }
 
-      if (mounted) setState(() { _exercicios = lista; _carregando = false; });
+      if (mounted) {
+        setState(() {
+          _exercicios = lista;
+          _carregando = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _carregando = false);
     }
   }
 
   Future<void> _confirmarExclusao(Exercicio ex) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Excluir exercício'),
-        content: Text(
+    final ok = await _confirmar(
+      context,
+      titulo: 'Excluir exercício',
+      mensagem:
           'Excluir o exercício de "${ex.subjectName}"?\n'
           'Esta ação não pode ser desfeita.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
+      confirmar: 'Excluir',
+      cancelar: 'Cancelar',
+      destrutivo: true,
     );
-    if (ok != true || !mounted) return;
+    if (!ok || !mounted) return;
     await _excluir(ex);
   }
 
   Future<void> _excluir(Exercicio ex) async {
     try {
       if (ex.attemptId != null) {
-        await _db.from('attempt_assets').delete().eq('attempt_id', ex.attemptId!);
+        await _db
+            .from('attempt_assets')
+            .delete()
+            .eq('attempt_id', ex.attemptId!);
       }
-      await _db.from('attempts').delete()
+      await _db
+          .from('attempts')
+          .delete()
           .eq('exercise_id', ex.id)
           .eq('user_id', widget.user.id);
       await _db.from('exercises').delete().eq('id', ex.id);
-      final rem = await _db.from('exercises').select('id').eq('subject_id', ex.subjectId);
+      final rem = await _db
+          .from('exercises')
+          .select('id')
+          .eq('subject_id', ex.subjectId);
       if ((rem as List).isEmpty) {
         await _db.from('subjects').delete().eq('id', ex.subjectId);
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Exercício excluído.'), backgroundColor: contentBlue),
-      );
+      _avisar(context, 'Exercício excluído.');
       carregarExercicios();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao excluir: $e'), backgroundColor: Colors.red.shade700),
-      );
+      _avisar(context, 'Erro ao excluir: $e', erro: true);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('Meus Exercícios'),
-        backgroundColor: Colors.transparent,
-        foregroundColor: titleBlue,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(color: const Color(0xAAE8EFF2)),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Atualizar',
-            onPressed: carregarExercicios,
-          ),
-        ],
-      ),
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: kBgGradient,
-        child: Column(
-        children: [
-          Expanded(
-            child: _carregando
-                ? const Center(child: CircularProgressIndicator())
-                : _exercicios.isEmpty
-                    ? const _MapaVazio()
-                    : RefreshIndicator(
-                        onRefresh: carregarExercicios,
-                        child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _exercicios.length,
-                    itemBuilder: (_, i) {
-                      final ex = _exercicios[i];
-                      return _ExercicioCard(
-                        exercicio: ex,
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TelaDetalheExercicio(
-                                exercicio: ex,
-                                user: widget.user,
-                                onAtualizar: carregarExercicios,
-                              ),
-                            ),
-                          );
-                          carregarExercicios();
-                        },
-                        onEditar: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TelaEditarExercicio(
-                                exercicio: ex,
-                                user: widget.user,
-                              ),
-                            ),
-                          );
-                          carregarExercicios();
-                        },
-                        onExcluir: () => _confirmarExclusao(ex),
-                      );
-                    },
-                  ),
-                ),
-          ),
-        ],
-        ), // Column
-      ), // Container gradient
-    );
-  }
-}
-
-// ─── Glass card (Fluent UI + Liquid Glass) ────────────────────────────────────
-class _GlassCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsets padding;
-  final double radius;
-
-  const _GlassCard({
-    required this.child,
-    this.padding = const EdgeInsets.all(16),
-    this.radius = kRadius,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: kGlassBg,
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: kGlassBorder, width: 0.8),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0D000000),
-                blurRadius: 20,
-                spreadRadius: 0,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: child,
+  Future<void> _abrirDetalhe(Exercicio ex) async {
+    await Navigator.push(
+      context,
+      FluentPageRoute(
+        builder: (_) => TelaDetalheExercicio(
+          exercicio: ex,
+          user: widget.user,
+          onAtualizar: carregarExercicios,
         ),
       ),
     );
+    carregarExercicios();
   }
-}
 
-class _BannerDemo extends StatelessWidget {
-  const _BannerDemo();
+  Future<void> _abrirEdicao(Exercicio ex) async {
+    await Navigator.push(
+      context,
+      FluentPageRoute(
+        builder: (_) => TelaEditarExercicio(exercicio: ex, user: widget.user),
+      ),
+    );
+    carregarExercicios();
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!kModoDemo) return const SizedBox.shrink();
-    return Container(
-      width: double.infinity,
-      color: Colors.red.shade600,
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: const Text(
-        '⚠ Demonstração',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.8,
+    return _PaginaVidro(
+      titulo: 'Meus Exercícios',
+      acoes: [
+        _BotaoBarra(
+          icone: WindowsIcons.refresh,
+          dica: 'Atualizar',
+          onPressed: carregarExercicios,
         ),
-      ),
+      ],
+      corpo: _corpo(context),
+    );
+  }
+
+  Widget _corpo(BuildContext context) {
+    if (_carregando) {
+      return Padding(
+        padding: _paddingCorpo(context),
+        child: const Center(child: ProgressRing()),
+      );
+    }
+    if (_exercicios.isEmpty) return const _MapaVazio();
+    return _ListaAtualizavel(
+      onRefresh: carregarExercicios,
+      children: [
+        for (final ex in _exercicios)
+          _ExercicioCard(
+            exercicio: ex,
+            onTap: () => _abrirDetalhe(ex),
+            onEditar: () => _abrirEdicao(ex),
+            onExcluir: () => _confirmarExclusao(ex),
+          ),
+      ],
     );
   }
 }
@@ -2014,26 +2544,31 @@ class _MapaVazio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+    return Padding(
+      padding: _paddingCorpo(context, horizontal: 32),
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.account_tree_outlined,
-                size: 72, color: contentBlue.withValues(alpha: 0.4)),
-            const SizedBox(height: 20),
-            const Text(
+            Icon(
+              WindowsIcons.relationship,
+              size: 72,
+              color: contentBlue.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 24),
+            Text(
               'Seu mapa ainda está vazio',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.bold, color: titleBlue),
+              style: context.tipo.subtitle?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: titleBlue,
+              ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Adicione exercícios para identificar suas fragilidades conceituais.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: contentBlue),
+              style: context.tipo.body?.copyWith(color: contentBlue),
             ),
           ],
         ),
@@ -2064,97 +2599,82 @@ class _ExercicioCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: _GlassCard(
-        padding: EdgeInsets.zero,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(kRadius),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            exercicio.subjectName,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: titleBlue,
-                            ),
+      child: _CartaoFluent(
+        onPressed: onTap,
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          exercicio.subjectName,
+                          style: context.tipo.bodyStrong?.copyWith(
+                            color: titleBlue,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        _StatusBadge(status: exercicio.status),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      exercicio.promptText,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, color: contentBlue),
-                    ),
-                    if (exercicio.createdAt != null) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        _fmtData(exercicio.createdAt!),
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                       ),
+                      const SizedBox(width: 8),
+                      _StatusBadge(status: exercicio.status),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    exercicio.promptText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.tipo.body?.copyWith(color: contentBlue),
+                  ),
+                  if (exercicio.createdAt != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _fmtData(exercicio.createdAt!),
+                      style: context.tipo.caption?.copyWith(color: Cores.cinza),
+                    ),
                   ],
-                ),
-              ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: contentBlue, size: 20),
-                tooltip: 'Opções',
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: 'ver',
-                    child: ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.visibility_outlined),
-                      title: Text('Ver detalhes'),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'editar',
-                    child: ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.edit_outlined),
-                      title: Text('Editar'),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'excluir',
-                    child: ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.delete_outline, color: Colors.red),
-                      title: Text('Excluir',
-                          style: TextStyle(color: Colors.red)),
-                    ),
-                  ),
                 ],
-                onSelected: (v) {
-                  if (v == 'ver') onTap();
-                  if (v == 'editar') onEditar();
-                  if (v == 'excluir') onExcluir();
-                },
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 4),
+            _menu(),
+          ],
         ),
-        ), // _GlassCard
-      ), // Padding
+      ),
+    );
+  }
+
+  Widget _menu() {
+    return DropDownButton(
+      placement: FlyoutPlacementMode.bottomRight,
+      buttonBuilder: (context, abrir) => Tooltip(
+        message: 'Opções',
+        child: IconButton(
+          icon: const Icon(WindowsIcons.more, size: 16, color: contentBlue),
+          onPressed: abrir,
+        ),
+      ),
+      items: [
+        MenuFlyoutItem(
+          leading: const Icon(WindowsIcons.view),
+          text: const Text('Ver detalhes'),
+          onPressed: onTap,
+        ),
+        MenuFlyoutItem(
+          leading: const Icon(WindowsIcons.edit),
+          text: const Text('Editar'),
+          onPressed: onEditar,
+        ),
+        MenuFlyoutItem(
+          leading: const Icon(WindowsIcons.delete, color: Cores.vermelho),
+          text: const Text('Excluir', style: TextStyle(color: Cores.vermelho)),
+          onPressed: onExcluir,
+        ),
+      ],
     );
   }
 }
@@ -2170,33 +2690,21 @@ class _StatusBadge extends StatelessWidget {
     switch (status) {
       case 'completed':
         label = 'Concluído';
-        cor = Colors.green.shade600;
+        cor = Cores.verde600;
       case 'pending':
         label = 'Pendente';
-        cor = Colors.orange.shade700;
+        cor = Cores.laranja700;
       case 'uploading':
         label = 'Enviando';
-        cor = Colors.blue.shade600;
+        cor = Cores.azul600;
       case 'error':
         label = 'Erro';
-        cor = Colors.red.shade600;
+        cor = Cores.vermelho600;
       default:
         label = 'Sem tentativa';
-        cor = Colors.grey.shade500;
+        cor = Cores.cinza;
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: cor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: cor.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-            fontSize: 11, color: cor, fontWeight: FontWeight.w600),
-      ),
-    );
+    return _Pilula(texto: label, cor: cor);
   }
 }
 
@@ -2221,197 +2729,219 @@ class TelaDetalheExercicio extends StatelessWidget {
       '${dt.year}';
 
   Future<void> _excluir(BuildContext context) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Excluir exercício'),
-        content: Text(
+    final ok = await _confirmar(
+      context,
+      titulo: 'Excluir exercício',
+      mensagem:
           'Excluir o exercício de "${exercicio.subjectName}"?\n'
           'Esta ação não pode ser desfeita.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
+      confirmar: 'Excluir',
+      cancelar: 'Cancelar',
+      destrutivo: true,
     );
-    if (ok != true || !context.mounted) return;
+    if (!ok || !context.mounted) return;
     try {
       if (exercicio.attemptId != null) {
-        await _db.from('attempt_assets').delete().eq('attempt_id', exercicio.attemptId!);
+        await _db
+            .from('attempt_assets')
+            .delete()
+            .eq('attempt_id', exercicio.attemptId!);
       }
-      await _db.from('attempts').delete()
+      await _db
+          .from('attempts')
+          .delete()
           .eq('exercise_id', exercicio.id)
           .eq('user_id', user.id);
       await _db.from('exercises').delete().eq('id', exercicio.id);
-      final rem = await _db.from('exercises').select('id').eq('subject_id', exercicio.subjectId);
+      final rem = await _db
+          .from('exercises')
+          .select('id')
+          .eq('subject_id', exercicio.subjectId);
       if ((rem as List).isEmpty) {
         await _db.from('subjects').delete().eq('id', exercicio.subjectId);
       }
       if (!context.mounted) return;
       onAtualizar();
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Exercício excluído.'), backgroundColor: contentBlue),
-      );
+      // O toast vai para o Overlay do Navigator, então continua visível na
+      // tela anterior depois do pop.
+      _avisar(context, 'Exercício excluído.');
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao excluir: $e'), backgroundColor: Colors.red.shade700),
-      );
+      _avisar(context, 'Erro ao excluir: $e', erro: true);
     }
+  }
+
+  Future<void> _editar(BuildContext context) async {
+    await Navigator.push(
+      context,
+      FluentPageRoute(
+        builder: (_) => TelaEditarExercicio(exercicio: exercicio, user: user),
+      ),
+    );
+    onAtualizar();
+    if (context.mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(exercicio.subjectName),
-        backgroundColor: const Color(0xFFE7EBE8),
-        foregroundColor: titleBlue,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Editar',
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TelaEditarExercicio(
-                      exercicio: exercicio, user: user),
-                ),
-              );
-              onAtualizar();
-              if (context.mounted) Navigator.pop(context);
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-            tooltip: 'Excluir',
-            onPressed: () => _excluir(context),
-          ),
-        ],
-      ),
-      backgroundColor: const Color(0xFFF4F6F4),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Text('Status:',
-                      style: TextStyle(
-                          color: contentBlue, fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 8),
-                  _StatusBadge(status: exercicio.status),
-                ],
-              ),
-              if (exercicio.createdAt != null) ...[
-                const SizedBox(height: 8),
+    return _PaginaVidro(
+      titulo: exercicio.subjectName,
+      voltar: true,
+      acoes: [
+        _BotaoBarra(
+          icone: WindowsIcons.edit,
+          dica: 'Editar',
+          onPressed: () => _editar(context),
+        ),
+        _BotaoBarra(
+          icone: WindowsIcons.delete,
+          dica: 'Excluir',
+          cor: Cores.vermelho400,
+          onPressed: () => _excluir(context),
+        ),
+      ],
+      corpo: SingleChildScrollView(
+        padding: _paddingCorpo(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
                 Text(
-                  'Adicionado em ${_fmtData(exercicio.createdAt!)}',
-                  style:
-                      TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  'Status:',
+                  style: context.tipo.bodyStrong?.copyWith(color: contentBlue),
                 ),
+                const SizedBox(width: 8),
+                _StatusBadge(status: exercicio.status),
               ],
-              const SizedBox(height: 20),
-              const Text('ASSUNTO',
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: contentBlue,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1)),
+            ),
+            if (exercicio.createdAt != null) ...[
               const SizedBox(height: 8),
-              _DetalheBox(child: Text(exercicio.subjectName,
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: titleBlue))),
-              const SizedBox(height: 16),
-              const Text('DESCRIÇÃO DO ERRO',
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: contentBlue,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1)),
-              const SizedBox(height: 8),
-              _DetalheBox(child: Text(exercicio.promptText,
-                  style: const TextStyle(
-                      fontSize: 15, color: contentBlue, height: 1.5))),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Editar exercício'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: contentBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TelaEditarExercicio(
-                            exercicio: exercicio, user: user),
-                      ),
-                    );
-                    onAtualizar();
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-                  label: Text('Excluir exercício',
-                      style: TextStyle(color: Colors.red.shade400)),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: BorderSide(color: Colors.red.shade300),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () => _excluir(context),
-                ),
+              Text(
+                'Adicionado em ${_fmtData(exercicio.createdAt!)}',
+                style: context.tipo.caption?.copyWith(color: Cores.cinza),
               ),
             ],
-          ),
+            const SizedBox(height: 24),
+            _rotulo(context, 'ASSUNTO'),
+            const SizedBox(height: 8),
+            _DetalheBox(
+              child: Text(
+                exercicio.subjectName,
+                style: context.tipo.bodyStrong?.copyWith(color: titleBlue),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _rotulo(context, 'DESCRIÇÃO DO ERRO'),
+            const SizedBox(height: 8),
+            _DetalheBox(
+              child: Text(
+                exercicio.promptText,
+                style: context.tipo.body?.copyWith(
+                  color: contentBlue,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: _estiloBotao(
+                  fundo: contentBlue,
+                  texto: Cores.branco,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 24,
+                  ),
+                ),
+                onPressed: () => _editar(context),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(WindowsIcons.edit, size: 18),
+                    SizedBox(width: 8),
+                    Text('Editar exercício'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: Button(
+                style:
+                    _estiloBotao(
+                      texto: Cores.vermelho400,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 24,
+                      ),
+                    ).copyWith(
+                      // Realce vermelho em vez do véu preto do _estiloBotao,
+                      // coerente com a ação destrutiva.
+                      backgroundColor: WidgetStateProperty.resolveWith(
+                        (estados) => estados.contains(WidgetState.pressed)
+                            ? Cores.vermelho400.withValues(alpha: 0.12)
+                            : estados.contains(WidgetState.hovered)
+                            ? Cores.vermelho400.withValues(alpha: 0.08)
+                            : Cores.transparente,
+                      ),
+                      shape: WidgetStatePropertyAll(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(kRadiusSm),
+                          side: const BorderSide(color: Cores.vermelho300),
+                        ),
+                      ),
+                    ),
+                onPressed: () => _excluir(context),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(WindowsIcons.delete, size: 18),
+                    SizedBox(width: 8),
+                    Text('Excluir exercício'),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  // Rótulo de seção em caixa alta (ASSUNTO, DESCRIÇÃO DO ERRO).
+  Widget _rotulo(BuildContext context, String texto) {
+    return Text(
+      texto,
+      style: context.tipo.caption?.copyWith(
+        color: contentBlue,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1,
       ),
     );
   }
 }
 
+// Card Fluent sem sombra: a borda contentBlue a 25 % não é configurável no
+// _CartaoFluent.
 class _DetalheBox extends StatelessWidget {
   final Widget child;
   const _DetalheBox({required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: contentBlue.withValues(alpha: 0.25)),
+      child: Card(
+        padding: const EdgeInsets.all(16),
+        backgroundColor: Cores.branco,
+        borderColor: contentBlue.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(kRadiusSm),
+        child: child,
       ),
-      child: child,
     );
   }
 }
@@ -2442,10 +2972,8 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
   @override
   void initState() {
     super.initState();
-    _assuntoCtrl =
-        TextEditingController(text: widget.exercicio.subjectName);
-    _erroCtrl =
-        TextEditingController(text: widget.exercicio.promptText);
+    _assuntoCtrl = TextEditingController(text: widget.exercicio.subjectName);
+    _erroCtrl = TextEditingController(text: widget.exercicio.promptText);
   }
 
   @override
@@ -2457,12 +2985,7 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
 
   void _snack(String msg, {bool erro = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: erro ? Colors.red.shade700 : contentBlue,
-      ),
-    );
+    _avisar(context, msg, erro: erro);
   }
 
   Future<void> _salvar() async {
@@ -2488,10 +3011,11 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
         final novoSubjectId = existente != null
             ? existente['id'] as String
             : (await _db
-                    .from('subjects')
-                    .insert({'user_id': widget.user.id, 'name': novoAssunto})
-                    .select('id')
-                    .single())['id'] as String;
+                      .from('subjects')
+                      .insert({'user_id': widget.user.id, 'name': novoAssunto})
+                      .select('id')
+                      .single())['id']
+                  as String;
 
         await _db
             .from('exercises')
@@ -2522,78 +3046,85 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Editar exercício'),
-        backgroundColor: const Color(0xFFE7EBE8),
-        foregroundColor: titleBlue,
-      ),
-      backgroundColor: const Color(0xFFF4F6F4),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Atualize as informações do exercício.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: contentBlue),
-                ),
-                const SizedBox(height: 28),
-                TextFormField(
-                  controller: _assuntoCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Assunto',
-                    hintText: 'Ex.: Equações de segundo grau',
-                    border: OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Colors.white,
+    return _PaginaVidro(
+      titulo: 'Editar exercício',
+      voltar: true,
+      corpo: SingleChildScrollView(
+        padding: _paddingCorpo(context),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Atualize as informações do exercício.',
+                    textAlign: TextAlign.center,
+                    style: context.tipo.body?.copyWith(color: contentBlue),
                   ),
-                  validator: (v) => v == null || v.trim().isEmpty
-                      ? 'Informe o assunto'
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _erroCtrl,
-                  minLines: 4,
-                  maxLines: 8,
-                  decoration: const InputDecoration(
-                    labelText: 'O que você errou?',
-                    hintText: 'Descreva brevemente sua dificuldade',
-                    border: OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Colors.white,
-                    alignLabelWithHint: true,
+                  const SizedBox(height: 24),
+                  _CartaoFluent(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _AdicionarCampoTexto(
+                          rotulo: 'Assunto',
+                          dica: 'Ex.: Equações de segundo grau',
+                          controller: _assuntoCtrl,
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Informe o assunto'
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                        _AdicionarCampoTexto(
+                          rotulo: 'O que você errou?',
+                          dica: 'Descreva brevemente sua dificuldade',
+                          controller: _erroCtrl,
+                          minLines: 4,
+                          maxLines: 8,
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Descreva o erro'
+                              : null,
+                        ),
+                      ],
+                    ),
                   ),
-                  validator: (v) => v == null || v.trim().isEmpty
-                      ? 'Descreva o erro'
-                      : null,
-                ),
-                const SizedBox(height: 28),
-                ElevatedButton.icon(
-                  onPressed: _salvando ? null : _salvar,
-                  icon: _salvando
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.check),
-                  label: Text(_salvando ? 'Salvando…' : 'Salvar alterações'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: contentBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 17),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    style: _estiloBotao(
+                      fundo: contentBlue,
+                      texto: Cores.branco,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
+                    ),
+                    onPressed: _salvando ? null : _salvar,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_salvando)
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: ProgressRing(
+                              strokeWidth: 2.5,
+                              activeColor: Cores.branco,
+                            ),
+                          )
+                        else
+                          const Icon(WindowsIcons.check_mark, size: 18),
+                        const SizedBox(width: 8),
+                        Text(_salvando ? 'Salvando…' : 'Salvar alterações'),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -2654,197 +3185,168 @@ class _TelaAdminState extends State<TelaAdmin> {
 
   Future<void> _alterarRole(String userId, String novaRole) async {
     try {
-      await _db
-          .from('profiles')
-          .update({'role': novaRole})
-          .eq('id', userId);
+      await _db.from('profiles').update({'role': novaRole}).eq('id', userId);
       await _carregar();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao alterar papel: $e'),
-            backgroundColor: Colors.red.shade700,
-          ),
-        );
+        _avisar(context, 'Erro ao alterar papel: $e', erro: true);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Painel Administrativo'),
-        backgroundColor: const Color(0xFFE7EBE8),
-        foregroundColor: titleBlue,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Atualizar',
-            onPressed: _carregar,
-          ),
-        ],
-      ),
-      backgroundColor: const Color(0xFFF4F6F4),
-      body: SafeArea(
-        child: _carregando
-            ? const Center(child: CircularProgressIndicator())
-            : _erro != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(_erro!,
-                          style: const TextStyle(
-                              color: Colors.red)),
-                    ),
-                  )
-                : Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                            16, 16, 16, 8),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.group,
-                                color: contentBlue),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${_perfis.length} usuário(s) cadastrado(s)',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                color: contentBlue,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16),
-                          itemCount: _perfis.length,
-                          itemBuilder: (ctx, i) {
-                            final p = _perfis[i];
-                            final uid = p['id'] as String;
-                            final role = p['role'] as String;
-                            final institution =
-                                p['institution_name'] as String?;
-                            final course = p['course'] as String?;
-                            final isCurrentUser =
-                                uid == widget.user.id;
-                            final isAdmin = role == 'admin';
+    return _PaginaVidro(
+      titulo: 'Painel Administrativo',
+      acoes: [
+        _BotaoBarra(
+          icone: WindowsIcons.refresh,
+          dica: 'Atualizar',
+          onPressed: _carregar,
+        ),
+      ],
+      corpo: _carregando
+          ? Padding(
+              padding: _paddingCorpo(context),
+              child: const Center(child: ProgressRing()),
+            )
+          : _erro != null
+          ? Padding(
+              padding: _paddingCorpo(context, horizontal: 24),
+              child: Center(
+                child: Text(
+                  _erro!,
+                  style: context.tipo.body?.copyWith(color: Cores.vermelho),
+                ),
+              ),
+            )
+          : ListView.builder(
+              padding: _paddingCorpo(context),
+              itemCount: _perfis.length + 1,
+              itemBuilder: (ctx, i) =>
+                  i == 0 ? _cabecalho(ctx) : _itemPerfil(ctx, _perfis[i - 1]),
+            ),
+    );
+  }
 
-                            return Card(
-                              margin: const EdgeInsets.only(
-                                  bottom: 10),
-                              elevation: 1,
-                              child: ListTile(
-                                contentPadding:
-                                    const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8),
-                                leading: CircleAvatar(
-                                  backgroundColor: isAdmin
-                                      ? contentBlue
-                                      : Colors.grey.shade300,
-                                  child: Icon(
-                                    isAdmin
-                                        ? Icons
-                                            .admin_panel_settings
-                                        : Icons.person,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                                title: Text(
-                                  // Mostra ID encurtado (email fica em auth.users, inacessível pelo client)
-                                  'ID: ${uid.substring(0, 8)}…${uid.substring(uid.length - 4)}',
-                                  style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        _RoleBadge(role: role),
-                                        if (isCurrentUser) ...[
-                                          const SizedBox(width: 6),
-                                          const Text(
-                                            '(você)',
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.grey),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                    if (institution != null ||
-                                        course != null) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        [institution, course]
-                                            .whereType<String>()
-                                            .join(' · '),
-                                        style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                trailing: isCurrentUser
-                                    ? null
-                                    : PopupMenuButton<String>(
-                                        icon: const Icon(
-                                            Icons.more_vert),
-                                        tooltip: 'Gerenciar papel',
-                                        itemBuilder: (_) => [
-                                          PopupMenuItem(
-                                            value: 'admin',
-                                            enabled: !isAdmin,
-                                            child: const ListTile(
-                                              dense: true,
-                                              contentPadding:
-                                                  EdgeInsets.zero,
-                                              leading: Icon(Icons
-                                                  .admin_panel_settings),
-                                              title: Text(
-                                                  'Tornar administrador'),
-                                            ),
-                                          ),
-                                          PopupMenuItem(
-                                            value: 'user',
-                                            enabled: isAdmin,
-                                            child: const ListTile(
-                                              dense: true,
-                                              contentPadding:
-                                                  EdgeInsets.zero,
-                                              leading:
-                                                  Icon(Icons.person),
-                                              title: Text(
-                                                  'Revogar administrador'),
-                                            ),
-                                          ),
-                                        ],
-                                        onSelected: (novaRole) =>
-                                            _alterarRole(
-                                                uid, novaRole),
-                                      ),
-                              ),
-                            );
-                          },
+  // Resumo com o total de perfis cadastrados
+  Widget _cabecalho(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _PainelVidro(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        raio: kRadiusSm,
+        child: Row(
+          children: [
+            const Icon(WindowsIcons.people, size: 20, color: contentBlue),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${_perfis.length} usuário(s) cadastrado(s)',
+                style: context.tipo.bodyStrong?.copyWith(color: contentBlue),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _itemPerfil(BuildContext context, Map<String, dynamic> p) {
+    final uid = p['id'] as String;
+    final role = p['role'] as String;
+    final institution = p['institution_name'] as String?;
+    final course = p['course'] as String?;
+    final isCurrentUser = uid == widget.user.id;
+    final isAdmin = role == 'admin';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _CartaoFluent(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isAdmin ? contentBlue : Cores.cinza300,
+              ),
+              child: Icon(
+                isAdmin ? WindowsIcons.admin : WindowsIcons.contact,
+                color: Cores.branco,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    // Mostra ID encurtado (email fica em auth.users, inacessível pelo client)
+                    'ID: ${uid.substring(0, 8)}…${uid.substring(uid.length - 4)}',
+                    style: context.tipo.body?.copyWith(fontFamily: 'monospace'),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      _RoleBadge(role: role),
+                      if (isCurrentUser) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '(você)',
+                          style: context.tipo.caption?.copyWith(
+                            color: Cores.cinza,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
+                  if (institution != null || course != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      [institution, course].whereType<String>().join(' · '),
+                      style: context.tipo.caption?.copyWith(color: Cores.cinza),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (!isCurrentUser) ...[
+              const SizedBox(width: 8),
+              _menuPapel(uid, isAdmin),
+            ],
+          ],
+        ),
       ),
+    );
+  }
+
+  // Menu de troca de papel: cada opção só fica habilitada quando muda o papel.
+  Widget _menuPapel(String uid, bool isAdmin) {
+    return DropDownButton(
+      placement: FlyoutPlacementMode.bottomRight,
+      buttonBuilder: (context, onOpen) => Tooltip(
+        message: 'Gerenciar papel',
+        child: IconButton(
+          icon: const Icon(WindowsIcons.more, size: 16),
+          onPressed: onOpen,
+        ),
+      ),
+      items: [
+        MenuFlyoutItem(
+          leading: const Icon(WindowsIcons.admin, size: 16),
+          text: const Text('Tornar administrador'),
+          onPressed: isAdmin ? null : () => _alterarRole(uid, 'admin'),
+        ),
+        MenuFlyoutItem(
+          leading: const Icon(WindowsIcons.contact, size: 16),
+          text: const Text('Revogar administrador'),
+          onPressed: isAdmin ? () => _alterarRole(uid, 'user') : null,
+        ),
+      ],
     );
   }
 }
@@ -2856,23 +3358,9 @@ class _RoleBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAdmin = role == 'admin';
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: isAdmin
-            ? contentBlue.withValues(alpha: 0.15)
-            : Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        isAdmin ? 'Administrador' : 'Usuário',
-        style: TextStyle(
-          fontSize: 11,
-          color: isAdmin ? contentBlue : Colors.grey.shade700,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+    return _Pilula(
+      texto: isAdmin ? 'Administrador' : 'Usuário',
+      cor: isAdmin ? contentBlue : Cores.cinza700,
     );
   }
 }
@@ -2885,189 +3373,182 @@ class TelaSobre extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F4),
-      body: CustomScrollView(
-        slivers: [
-          // ── Hero expandido ────────────────────────────────────────────────
-          SliverAppBar(
-            expandedHeight: 220,
-            pinned: true,
-            backgroundColor: const Color(0xFF142A4A),
-            foregroundColor: Colors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF142A4A),
-                      Color(0xFF1E5CA7),
-                    ],
+    return _PaginaVidro(
+      titulo: 'Sobre o MistakeMap',
+      voltar: true,
+      corpo: SingleChildScrollView(
+        padding: _paddingCorpo(context),
+        child: Center(
+          child: ConstrainedBox(
+            // Limita a largura de leitura em telas largas (Windows/Web).
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _heroi(context),
+                const SizedBox(height: 32),
+                // Missão, Visão, Valores
+                const _SobreSecaoTitulo(titulo: 'Nossa Identidade'),
+                const SizedBox(height: 12),
+                const _MvvCard(
+                  icone: WindowsIcons.flag,
+                  cor: Color(0xFF1E5CA7),
+                  titulo: 'Missão',
+                  descricao:
+                      'Ajudar estudantes a identificar e superar suas lacunas conceituais, '
+                      'transformando exercícios corrigidos em um mapa visual de fragilidades '
+                      'para orientar revisões inteligentes.',
+                ),
+                const SizedBox(height: 12),
+                const _MvvCard(
+                  icone: WindowsIcons.view,
+                  cor: Color(0xFF21457A),
+                  titulo: 'Visão',
+                  descricao:
+                      'Ser a principal ferramenta de aprendizado ativo no Brasil, '
+                      'onde cada erro se torna uma oportunidade de crescimento '
+                      'mensurada e guiada por inteligência artificial.',
+                ),
+                const SizedBox(height: 12),
+                const _MvvCard(
+                  icone: WindowsIcons.heart,
+                  cor: Color(0xFF142A4A),
+                  titulo: 'Valores',
+                  descricao:
+                      '• Aprendizado contínuo acima de resultados imediatos\n'
+                      '• Transparência no progresso do estudante\n'
+                      '• Tecnologia acessível e centrada no ser humano\n'
+                      '• Privacidade e respeito aos dados pessoais',
+                ),
+                const SizedBox(height: 32),
+                // Equipe
+                const _SobreSecaoTitulo(titulo: 'A Equipe'),
+                const SizedBox(height: 12),
+                const _MembroCard(
+                  iniciais: 'CJ',
+                  nome: 'Cláudio Francisco',
+                  corAvatar: Color(0xFF1E5CA7),
+                  responsabilidades: [
+                    'Backend',
+                    'Storage (R2)',
+                    'OCR',
+                    'IA / LLM',
+                  ],
+                  descricao:
+                      'Responsável pela arquitetura backend, integração com '
+                      'Supabase, armazenamento de arquivos no Cloudflare R2 '
+                      'e pipeline de processamento com OCR e IA.',
+                ),
+                const SizedBox(height: 12),
+                const _MembroCard(
+                  iniciais: 'LE',
+                  nome: 'Lucas Emanuel',
+                  corAvatar: Color(0xFF21457A),
+                  responsabilidades: ['Frontend', 'Design', 'UI/UX'],
+                  descricao:
+                      'Responsável pela experiência do usuário, design de '
+                      'interfaces, prototipagem no Figma e implementação '
+                      'das telas no Flutter.',
+                ),
+                const SizedBox(height: 32),
+                // Stack técnica
+                const _SobreSecaoTitulo(titulo: 'Stack Tecnológica'),
+                const SizedBox(height: 12),
+                const Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _Pilula(texto: 'Flutter / Dart', cor: contentBlue),
+                    _Pilula(texto: 'Supabase Auth', cor: contentBlue),
+                    _Pilula(texto: 'PostgreSQL', cor: contentBlue),
+                    _Pilula(texto: 'Cloudflare R2', cor: contentBlue),
+                    _Pilula(texto: 'Edge Functions', cor: contentBlue),
+                    _Pilula(texto: 'Rust Worker', cor: contentBlue),
+                    _Pilula(texto: 'OCR', cor: contentBlue),
+                    _Pilula(texto: 'LLM', cor: contentBlue),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                // Rodapé
+                Center(
+                  child: Text(
+                    'PUC Minas · Projeto Integrado I · 2026',
+                    style: context.tipo.caption?.copyWith(
+                      color: contentBlue.withValues(alpha: 0.6),
+                    ),
                   ),
                 ),
-                child: SafeArea(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 32),
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              width: 1.5),
-                        ),
-                        child: const Icon(Icons.map_outlined,
-                            size: 40, color: Colors.white),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'MistakeMap',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Transforme erros em aprendizado',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    'v1.0.0 — Sprint 2',
+                    style: context.tipo.caption?.copyWith(
+                      color: contentBlue.withValues(alpha: 0.4),
+                    ),
                   ),
                 ),
-              ),
-              title: const Text(
-                'Sobre o MistakeMap',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-              titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
+              ],
             ),
           ),
-          // ── Conteúdo rolável ──────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Missão, Visão, Valores
-                  _SobreSecaoTitulo(titulo: 'Nossa Identidade'),
-                  const SizedBox(height: 12),
-                  _MvvCard(
-                    icone: Icons.flag_outlined,
-                    cor: const Color(0xFF1E5CA7),
-                    titulo: 'Missão',
-                    descricao:
-                        'Ajudar estudantes a identificar e superar suas lacunas conceituais, '
-                        'transformando exercícios corrigidos em um mapa visual de fragilidades '
-                        'para orientar revisões inteligentes.',
-                  ),
-                  const SizedBox(height: 12),
-                  _MvvCard(
-                    icone: Icons.visibility_outlined,
-                    cor: const Color(0xFF21457A),
-                    titulo: 'Visão',
-                    descricao:
-                        'Ser a principal ferramenta de aprendizado ativo no Brasil, '
-                        'onde cada erro se torna uma oportunidade de crescimento '
-                        'mensurada e guiada por inteligência artificial.',
-                  ),
-                  const SizedBox(height: 12),
-                  _MvvCard(
-                    icone: Icons.diamond_outlined,
-                    cor: const Color(0xFF142A4A),
-                    titulo: 'Valores',
-                    descricao:
-                        '• Aprendizado contínuo acima de resultados imediatos\n'
-                        '• Transparência no progresso do estudante\n'
-                        '• Tecnologia acessível e centrada no ser humano\n'
-                        '• Privacidade e respeito aos dados pessoais',
-                  ),
-                  const SizedBox(height: 32),
-                  // Equipe
-                  _SobreSecaoTitulo(titulo: 'A Equipe'),
-                  const SizedBox(height: 12),
-                  _MembroCard(
-                    iniciais: 'CJ',
-                    nome: 'Cláudio Francisco',
-                    corAvatar: const Color(0xFF1E5CA7),
-                    responsabilidades: const [
-                      'Backend',
-                      'Storage (R2)',
-                      'OCR',
-                      'IA / LLM',
-                    ],
-                    descricao:
-                        'Responsável pela arquitetura backend, integração com '
-                        'Supabase, armazenamento de arquivos no Cloudflare R2 '
-                        'e pipeline de processamento com OCR e IA.',
-                  ),
-                  const SizedBox(height: 12),
-                  _MembroCard(
-                    iniciais: 'LE',
-                    nome: 'Lucas Emanuel',
-                    corAvatar: const Color(0xFF21457A),
-                    responsabilidades: const [
-                      'Frontend',
-                      'Design',
-                      'UI/UX',
-                    ],
-                    descricao:
-                        'Responsável pela experiência do usuário, design de '
-                        'interfaces, prototipagem no Figma e implementação '
-                        'das telas no Flutter.',
-                  ),
-                  const SizedBox(height: 32),
-                  // Stack técnica
-                  _SobreSecaoTitulo(titulo: 'Stack Tecnológica'),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: const [
-                      _TechChip(label: 'Flutter / Dart'),
-                      _TechChip(label: 'Supabase Auth'),
-                      _TechChip(label: 'PostgreSQL'),
-                      _TechChip(label: 'Cloudflare R2'),
-                      _TechChip(label: 'Edge Functions'),
-                      _TechChip(label: 'Rust Worker'),
-                      _TechChip(label: 'OCR'),
-                      _TechChip(label: 'LLM'),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  // Rodapé
-                  Center(
-                    child: Text(
-                      'PUC Minas · Projeto Integrado I · 2026',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: contentBlue.withValues(alpha: 0.6)),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Text(
-                      'v1.0.0 — Sprint 2',
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: contentBlue.withValues(alpha: 0.4)),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+        ),
+      ),
+    );
+  }
+
+  // Destaque com o gradiente da identidade.
+  Widget _heroi(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF142A4A), Color(0xFF1E5CA7)],
+        ),
+        borderRadius: BorderRadius.circular(kRadius),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF142A4A).withValues(alpha: 0.25),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: Cores.branco.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Cores.branco.withValues(alpha: 0.3),
+                width: 1.5,
               ),
+            ),
+            child: const Icon(
+              WindowsIcons.map_pin,
+              size: 40,
+              color: Cores.branco,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'MistakeMap',
+            textAlign: TextAlign.center,
+            style: context.tipo.title?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Cores.branco,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Transforme erros em aprendizado',
+            textAlign: TextAlign.center,
+            style: context.tipo.body?.copyWith(
+              color: Cores.branco.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -3086,20 +3567,21 @@ class _SobreSecaoTitulo extends StatelessWidget {
       children: [
         Container(
           width: 4,
-          height: 22,
+          height: 24,
           decoration: BoxDecoration(
             color: titleBlue,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(width: 10),
-        Text(
-          titulo,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: titleBlue,
-            letterSpacing: 0.3,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            titulo,
+            style: context.tipo.subtitle?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: titleBlue,
+              letterSpacing: 0.3,
+            ),
           ),
         ),
       ],
@@ -3122,30 +3604,20 @@ class _MvvCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: cor.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return _CartaoFluent(
+      cor: Cores.branco,
+      padding: EdgeInsets.zero,
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Barra lateral colorida
+            // Barra lateral colorida; o raio desconta a borda de 1 px do card.
             Container(
               width: 6,
               decoration: BoxDecoration(
                 color: cor,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(14),
-                  bottomLeft: Radius.circular(14),
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(kRadius - 1),
                 ),
               ),
             ),
@@ -3165,23 +3637,22 @@ class _MvvCard extends StatelessWidget {
                           ),
                           child: Icon(icone, size: 20, color: cor),
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          titulo,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: cor,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            titulo,
+                            style: context.tipo.bodyStrong?.copyWith(
+                              color: cor,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Text(
                       descricao,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF4A5568),
+                      style: context.tipo.body?.copyWith(
+                        color: const Color(0xFF4A5568),
                         height: 1.5,
                       ),
                     ),
@@ -3213,74 +3684,50 @@ class _MembroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: corAvatar.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return _CartaoFluent(
+      cor: Cores.branco,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: corAvatar,
+              // Avatar circular com as iniciais.
+              Container(
+                width: 52,
+                height: 52,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: corAvatar,
+                  shape: BoxShape.circle,
+                ),
                 child: Text(
                   iniciais,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
+                  style: context.tipo.bodyLarge?.copyWith(
+                    color: Cores.branco,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       nome,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      style: context.tipo.bodyStrong?.copyWith(
                         color: corAvatar,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Wrap(
-                      spacing: 6,
+                      spacing: 8,
                       runSpacing: 4,
-                      children: responsabilidades
-                          .map((r) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: corAvatar.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                      color: corAvatar.withValues(alpha: 0.3)),
-                                ),
-                                child: Text(
-                                  r,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: corAvatar,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ))
-                          .toList(),
+                      children: [
+                        for (final r in responsabilidades)
+                          _Pilula(texto: r, cor: corAvatar),
+                      ],
                     ),
                   ],
                 ),
@@ -3288,42 +3735,21 @@ class _MembroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Divider(height: 1, thickness: 0.5),
-          const SizedBox(height: 10),
+          const Divider(
+            style: DividerThemeData(
+              thickness: 0.5,
+              horizontalMargin: EdgeInsets.zero,
+            ),
+          ),
+          const SizedBox(height: 12),
           Text(
             descricao,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF4A5568),
+            style: context.tipo.body?.copyWith(
+              color: const Color(0xFF4A5568),
               height: 1.5,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _TechChip extends StatelessWidget {
-  final String label;
-  const _TechChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: contentBlue.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: contentBlue.withValues(alpha: 0.25)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          color: contentBlue,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }
