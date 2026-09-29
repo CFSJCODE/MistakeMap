@@ -329,7 +329,7 @@ da transação.
 ### Configuração do pg_cron (aplicar no SQL Editor do Supabase)
 
 ```sql
--- Já incluído na migration supabase/migrations/20260928120000_worker_keepalive_cron.sql
+-- Configuração separada: a migration de monitoramento abaixo não cria este job.
 -- Chamar process-batch a cada N minutos (ex: a cada 1 min para MVP)
 SELECT cron.schedule(
   'process-batch-trigger',
@@ -350,8 +350,14 @@ SELECT cron.schedule(
 
 ### Monitor de saúde (migration já criada)
 
-O job `worker-health-monitor` (migration `20260928120000`) pinga
-`GET /functions/v1/health` a cada 5 min. Histórico em `net._http_response`.
+O SQL proposto para `worker-health-monitor` (migration `20260928120000`) agenda
+`GET /functions/v1/health` a cada 5 min, com histórico em `net._http_response`.
+
+Ele permanece pendente em `supabase/migrations/`, fora do diretório do deploy.
+Na verificação de 29/09/2026, a função `health` não estava implantada e a URL
+retornava HTTP 404. Implante e valide a função antes de promover esse SQL para
+`appmistakemap/database/supabase/migrations/`, com uma nova versão posterior à
+última aplicada. Consulte [o procedimento de migrações](appmistakemap/database/README.md).
 
 ---
 
