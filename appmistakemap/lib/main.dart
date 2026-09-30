@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart' show sha256;
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/cupertino.dart' show CupertinoSliverRefreshControl;
 import 'package:http/http.dart' as http;
@@ -468,6 +469,98 @@ Future<bool> _confirmar(
 }
 
 // ─── fim: Design system ──────────────────────────────────────────────────────
+
+// ─── Contrato de upload (Edge Function upload-url) ───────────────────────────
+// Espelha supabase/functions/upload-url/handler.ts e a política RLS de
+// attempt_assets (migração 20260929052429).
+
+/// Tamanho máximo aceito pela upload-url e pela análise de IA.
+const int kMaxBytesImagem = 8 * 1024 * 1024;
+
+const Map<String, String> _extensaoPorTipo = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+/// Content-Type que a upload-url assina para a foto, ou null se o formato não
+/// é aceito. O PUT para a R2 precisa repetir esse valor exato (image/jpeg,
+/// nunca image/jpg), senão a assinatura da URL não confere.
+String? tipoMimeImagem(String nomeArquivo, {String? mimeType}) {
+  final ponto = nomeArquivo.lastIndexOf('.');
+  final extensao = ponto < 0
+      ? ''
+      : nomeArquivo.substring(ponto + 1).toLowerCase();
+  final porExtensao = switch (extensao) {
+    'jpg' || 'jpeg' => 'image/jpeg',
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    _ => null,
+  };
+  if (porExtensao != null) return porExtensao;
+  return _extensaoPorTipo.containsKey(mimeType) ? mimeType : null;
+}
+
+/// Corpo do POST para a upload-url, ou null se a foto não pode ser enviada.
+/// O nome enviado é sintético: o nome original do arquivo não sai do aparelho.
+Map<String, Object>? pedidoDeUpload(
+  String nomeArquivo,
+  int tamanhoBytes, {
+  String? mimeType,
+}) {
+  final tipo = tipoMimeImagem(nomeArquivo, mimeType: mimeType);
+  if (tipo == null || tamanhoBytes <= 0 || tamanhoBytes > kMaxBytesImagem) {
+    return null;
+  }
+  return {
+    'filename': 'exercicio.${_extensaoPorTipo[tipo]}',
+    'content_type': tipo,
+    'size_bytes': tamanhoBytes,
+  };
+}
+
+/// SHA-256 em hexadecimal minúsculo: formato exigido pela política RLS de
+/// attempt_assets e conferido pela análise antes de enviar a foto à IA.
+String sha256Hex(List<int> bytes) => sha256.convert(bytes).toString();
+
+/// Falha de envio com mensagem já pronta para o usuário.
+class ErroDeEnvio implements Exception {
+  final String mensagem;
+  const ErroDeEnvio(this.mensagem);
+
+  @override
+  String toString() => mensagem;
+}
+
+/// Mensagem amigável para erros conhecidos do backend, ou null quando o erro
+/// não é reconhecido (o chamador decide como exibi-lo).
+String? mensagemDeErro(Object erro) {
+  if (erro is ErroDeEnvio) return erro.mensagem;
+  if (erro is FunctionException) {
+    final detalhes = erro.details;
+    if (detalhes is Map && detalhes['message'] is String) {
+      return detalhes['message'] as String;
+    }
+    if (detalhes is Map && detalhes['error'] == 'storage_quota_exceeded') {
+      return 'O limite de armazenamento de fotos foi atingido.';
+    }
+    return erro.status == 0
+        ? 'Sem conexão com o servidor. Verifique a internet e tente novamente.'
+        : 'O envio de fotos está temporariamente indisponível.';
+  }
+  // guard_analyzed_exercise: o diagnóstico da IA pertence ao enunciado
+  // enviado, então enunciado e matéria ficam imutáveis após a tentativa.
+  if (erro is PostgrestException &&
+      erro.code == '42501' &&
+      erro.message.contains('create a new exercise')) {
+    return 'Este exercício já foi enviado para análise, então o enunciado e a '
+        'matéria não podem mais ser alterados. Registre um novo exercício '
+        'com a versão corrigida.';
+  }
+  return null;
+}
+
+// ─── fim: Contrato de upload ─────────────────────────────────────────────────
 
 // ─── Modelo de usuário com papel (role) ──────────────────────────────────────
 class AppUser {
@@ -1325,37 +1418,54 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _enviando = true);
 
+    String? exerciseId;
     try {
       final assunto = _assuntoCtrl.text.trim();
       final descricao = _erroCtrl.text.trim();
 
-      // 1. Busca ou cria o assunto (subject) do usuário
+      // 1. Com imagem, o envio para a R2 vem primeiro: se falhar, nenhuma
+      //    tentativa fica presa em 'uploading' no banco.
+      final imagem = _imagemBytes != null && _imagemSelecionada != null
+          ? await _enviarImagem(_imagemSelecionada!, _imagemBytes!)
+          : null;
+
+      // 2. Busca ou cria o assunto (subject) do usuário
       final subjectId = await _obterOuCriarSubject(assunto);
 
-      // 2. Cria o exercício
+      // 3. Cria o exercício
       final exRes = await _db
           .from('exercises')
           .insert({'subject_id': subjectId, 'prompt_text': descricao})
           .select('id')
           .single();
-      final exerciseId = exRes['id'] as String;
+      exerciseId = exRes['id'] as String;
 
-      // 3. Cria a tentativa (attempt)
+      // 4. Cria a tentativa (attempt). Com imagem ela nasce em 'uploading',
+      //    único estado em que a política de attempt_assets aceita anexos.
       final attRes = await _db
           .from('attempts')
           .insert({
             'exercise_id': exerciseId,
             'user_id': widget.user.id,
             'solution_text': descricao,
-            'status': _imagemBytes != null ? 'uploading' : 'pending',
+            'status': imagem != null ? 'uploading' : 'pending',
           })
           .select('id')
           .single();
       final attemptId = attRes['id'] as String;
 
-      // 4. Se há imagem, faz upload para R2 via Edge Function
-      if (_imagemBytes != null && _imagemSelecionada != null) {
-        await _uploadImagem(attemptId);
+      // 5. Registra o anexo e libera a tentativa para a análise de IA, que o
+      //    pg_cron dispara via process-batch.
+      if (imagem != null) {
+        await _db.from('attempt_assets').insert({
+          'attempt_id': attemptId,
+          'object_path': imagem.objectPath,
+          'sha256': imagem.sha256,
+        });
+        await _db
+            .from('attempts')
+            .update({'status': 'pending'})
+            .eq('id', attemptId);
       }
 
       if (!mounted) return;
@@ -1368,7 +1478,16 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
         _sucesso = true;
       });
     } catch (e) {
-      _snack('Erro ao registrar: $e', erro: true);
+      // Desfaz o registro parcial; a exclusão em cascata leva tentativa e
+      // anexo junto com o exercício.
+      if (exerciseId != null) {
+        try {
+          await _db.from('exercises').delete().eq('id', exerciseId);
+        } catch (_) {
+          // Melhor esforço: o erro original é o que interessa ao usuário.
+        }
+      }
+      _snack(mensagemDeErro(e) ?? 'Erro ao registrar: $e', erro: true);
     } finally {
       if (mounted) setState(() => _enviando = false);
     }
@@ -1394,45 +1513,50 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
     return res['id'] as String;
   }
 
-  Future<void> _uploadImagem(String attemptId) async {
-    final ext = _imagemSelecionada!.name.split('.').last.toLowerCase();
-
-    // Chama a Edge Function para obter URL presigned da R2
-    final fnRes = await _db.functions.invoke(
-      'upload-url',
-      body: {'file_ext': ext},
+  // Envia a foto para a R2 por URL pré-assinada (válida por 15 min) obtida da
+  // Edge Function upload-url. Retorna o caminho do objeto e o SHA-256 que a
+  // tentativa precisa registrar em attempt_assets.
+  Future<({String objectPath, String sha256})> _enviarImagem(
+    XFile arquivo,
+    Uint8List bytes,
+  ) async {
+    final pedido = pedidoDeUpload(
+      arquivo.name,
+      bytes.length,
+      mimeType: arquivo.mimeType,
     );
-
-    if (fnRes.status >= 400) {
-      throw Exception('upload-url retornou status ${fnRes.status}');
+    if (pedido == null) {
+      throw const ErroDeEnvio('Envie uma foto JPG, PNG ou WebP de até 8 MB.');
     }
 
-    final data = fnRes.data as Map<String, dynamic>;
-    final uploadUrl = data['upload_url'] as String;
-    final objectPath = data['object_path'] as String;
+    final fnRes = await _db.functions.invoke('upload-url', body: pedido);
+    final data = fnRes.data;
+    if (data is! Map ||
+        data['upload_url'] is! String ||
+        data['object_path'] is! String) {
+      throw const ErroDeEnvio(
+        'O envio de fotos está temporariamente indisponível.',
+      );
+    }
 
-    // PUT dos bytes da imagem para o URL presigned
+    // Content-Type e Content-Length fazem parte da assinatura: o http envia o
+    // tamanho exato dos bytes, igual ao size_bytes informado.
     final putRes = await http.put(
-      Uri.parse(uploadUrl),
-      headers: {'Content-Type': 'image/$ext'},
-      body: _imagemBytes,
+      Uri.parse(data['upload_url'] as String),
+      headers: {'Content-Type': pedido['content_type'] as String},
+      body: bytes,
     );
-
     if (putRes.statusCode >= 400) {
-      throw Exception('Upload para R2 falhou: HTTP ${putRes.statusCode}');
+      throw ErroDeEnvio(
+        'Não foi possível enviar a foto (HTTP ${putRes.statusCode}). '
+        'Tente novamente.',
+      );
     }
 
-    // Registra o asset e atualiza o status da attempt
-    await _db.from('attempt_assets').insert({
-      'attempt_id': attemptId,
-      'object_path': objectPath,
-      'sha256': 'pending',
-    });
-
-    await _db
-        .from('attempts')
-        .update({'status': 'pending'})
-        .eq('id', attemptId);
+    return (
+      objectPath: data['object_path'] as String,
+      sha256: sha256Hex(bytes),
+    );
   }
 
   void _resetarParaForm() {
@@ -2697,9 +2821,22 @@ class _StatusBadge extends StatelessWidget {
       case 'uploading':
         label = 'Enviando';
         cor = Cores.azul600;
-      case 'error':
+      // Estados do pipeline de IA (attempts_status_check).
+      case 'queued' || 'processing':
+        label = 'Analisando';
+        cor = Cores.azul600;
+      case 'awaiting_review':
+        label = 'Revisar';
+        cor = Cores.laranja700;
+      case 'retryable_failed':
+        label = 'Nova tentativa';
+        cor = Cores.laranja700;
+      case 'dead_letter' || 'error':
         label = 'Erro';
         cor = Cores.vermelho600;
+      case 'cancelled':
+        label = 'Cancelado';
+        cor = Cores.cinza;
       default:
         label = 'Sem tentativa';
         cor = Cores.cinza;
@@ -3038,7 +3175,7 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
       _snack('Exercício atualizado!');
       Navigator.pop(context);
     } catch (e) {
-      _snack('Erro ao salvar: $e', erro: true);
+      _snack(mensagemDeErro(e) ?? 'Erro ao salvar: $e', erro: true);
     } finally {
       if (mounted) setState(() => _salvando = false);
     }
