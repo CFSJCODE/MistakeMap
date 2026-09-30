@@ -12,17 +12,32 @@ export function required(name: string, get: Environment = env): string {
   }
   return value;
 }
-export function cors(req: Request): HeadersInit {
+// `flutter run -d chrome` serves the web app from a random loopback port, so a
+// fixed allow-list cannot cover development. Loopback origins are always
+// accepted; deployed front-ends must be listed in ALLOWED_ORIGINS. CORS is not
+// authentication: every handler still validates the caller's JWT.
+const LOOPBACK_ORIGIN =
+  /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d{1,5})?$/;
+export function originAllowed(origin: string, get: Environment = env): boolean {
+  if (!origin) return false;
+  if (LOOPBACK_ORIGIN.test(origin)) return true;
+  return (get("ALLOWED_ORIGINS") ?? "").split(",").map((s) => s.trim())
+    .filter(Boolean).includes(origin);
+}
+export function cors(req: Request, get: Environment = env): HeadersInit {
   const origin = req.headers.get("Origin") ?? "";
-  const allowed = (env("ALLOWED_ORIGINS") ?? "").split(",").map((s) => s.trim())
-    .filter(Boolean);
-  return {
-    "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : "null",
+  const headers: Record<string, string> = {
     "Access-Control-Allow-Headers":
-      "authorization, apikey, content-type, x-client-info",
+      "authorization, apikey, content-type, x-client-info, x-retry-count, traceparent, tracestate, baggage",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Vary": "Origin",
   };
+  // Origem recusada: sem Allow-Origin. O valor "null" liberaria documentos de
+  // origem opaca (iframes sandbox, data:), que enviam `Origin: null`.
+  if (originAllowed(origin, get)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
 }
 export function json(req: Request, body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
