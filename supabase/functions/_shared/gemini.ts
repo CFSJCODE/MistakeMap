@@ -4,7 +4,7 @@ import { env, type Environment, readLimited, required } from "./ai_http.ts";
 export function aiConfig(get: Environment = env) {
   return {
     key: required("GEMINI_API_KEY", get),
-    model: get("GEMINI_MODEL")?.trim() || "gemini-1.5-flash",
+    model: get("GEMINI_MODEL")?.trim() || "gemini-flash-latest",
   };
 }
 
@@ -108,7 +108,9 @@ export async function structuredResponse(
     );
   }
 
-  const textPart = (responseParts[0] as Record<string, unknown>)?.text;
+  const textPart = (responseParts.find(
+    (p) => typeof (p as Record<string, unknown>)?.text === "string",
+  ) as Record<string, unknown> | undefined)?.text;
   if (typeof textPart !== "string") {
     throw new PublicError(
       502,
