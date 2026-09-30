@@ -1,0 +1,68 @@
+name: Deploy Supabase Edge Functions
+
+# CD: todo push no main que altere supabase/functions publica as Edge Functions,
+# depois que os testes Deno passam. Migrations seguem em supabase-deploy.yml.
+# verify_jwt de cada função vem de supabase/config.toml.
+# Secrets usados: SUPABASE_ACCESS_TOKEN e SUPABASE_PROJECT_ID. As chaves de
+# runtime (GEMINI_API_KEY etc.) ficam só no Supabase (`supabase secrets set`).
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+      - ".github/workflows/supabase-functions-deploy.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-functions-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Testes Deno (portão do deploy)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: supabase/functions
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.x
+
+      - name: Type-check every function entrypoint
+        run: deno check --frozen */index.ts
+
+      - name: Test
+        run: deno test --frozen --allow-env
+
+  deploy:
+    name: Publicar Edge Functions
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.116.0
+
+      # --use-api empacota no servidor do Supabase, sem Docker no runner.
+      - name: Deploy
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID" --use-api --workdir "$GITHUB_WORKSPACE"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+
+      - name: Conferir funções publicadas
+        run: supabase functions list --project-ref "$SUPABASE_PROJECT_ID"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
