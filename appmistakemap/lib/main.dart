@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'ai/analysis_repository.dart';
 import 'ai/ai_material_shell.dart';
+import 'layout/adaptativo.dart';
 import 'theme/blue_palette.dart';
 
 // ─── Cores da identidade visual ──────────────────────────────────────────────
@@ -152,10 +153,12 @@ EdgeInsets _paddingCorpo(
   double base = 24,
 }) {
   final p = MediaQuery.paddingOf(context);
+  // As laterais somam a área segura: recortes de câmera em paisagem e bordas
+  // de dobráveis não cobrem o conteúdo.
   return EdgeInsets.fromLTRB(
-    horizontal,
+    horizontal + p.left,
     p.top + kAlturaBarraSuperior + topo,
-    horizontal,
+    horizontal + p.right,
     p.bottom + base,
   );
 }
@@ -844,16 +847,20 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
         background: const _FundoMica(),
         backgroundColor: kScaffoldBg,
         statusBarStyle: GlassStatusBarStyle.dark,
-        bottomBar: GlassTabBar.bottom(
-          selectedIndex: _indiceAtual,
-          onTabSelected: _selecionar,
-          tabs: _abas,
-          iconSize: 20,
-          indicatorColor: contentBlue.withValues(alpha: 0.18),
-          selectedIconColor: titleBlue,
-          selectedLabelColor: titleBlue,
-          unselectedIconColor: contentBlue,
-          unselectedLabelColor: contentBlue,
+        // Numa tela dupla ou dobrável aberto em modo livro, as abas ficam no
+        // painel da esquerda, nunca sobre a dobradiça.
+        bottomBar: ForaDaDobra(
+          child: GlassTabBar.bottom(
+            selectedIndex: _indiceAtual,
+            onTabSelected: _selecionar,
+            tabs: _abas,
+            iconSize: 20,
+            indicatorColor: contentBlue.withValues(alpha: 0.18),
+            selectedIconColor: titleBlue,
+            selectedLabelColor: titleBlue,
+            unselectedIconColor: contentBlue,
+            unselectedLabelColor: contentBlue,
+          ),
         ),
         body: MediaQuery(
           data: mq.copyWith(
@@ -2774,6 +2781,10 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   List<Exercicio> _exercicios = [];
   bool _carregando = true;
 
+  // Exercício aberto no painel de detalhe quando lista e detalhe cabem lado a
+  // lado (DoisPaineis); em telas compactas o detalhe abre em outra página.
+  String? _selecionadoId;
+
   @override
   void initState() {
     super.initState();
@@ -2889,6 +2900,10 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   }
 
   Future<void> _abrirDetalhe(Exercicio ex) async {
+    if (DoisPaineis.cabe(context)) {
+      setState(() => _selecionadoId = ex.id);
+      return;
+    }
     await Navigator.push(
       context,
       FluentPageRoute(
@@ -2923,7 +2938,39 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           onPressed: carregarExercicios,
         ),
       ],
-      corpo: _corpo(context),
+      corpo: _comDetalhe(context),
+    );
+  }
+
+  Widget _comDetalhe(BuildContext context) {
+    if (!DoisPaineis.cabe(context) || _exercicios.isEmpty) {
+      return _corpo(context);
+    }
+    Exercicio? selecionado;
+    for (final ex in _exercicios) {
+      if (ex.id == _selecionadoId) selecionado = ex;
+    }
+    return DoisPaineis(
+      inicio: _corpo(context),
+      fim: selecionado == null
+          ? Padding(
+              padding: _paddingCorpo(context),
+              child: Center(
+                child: Text(
+                  'Selecione um exercício para ver os detalhes.',
+                  textAlign: TextAlign.center,
+                  style: context.tipo.body?.copyWith(color: contentBlue),
+                ),
+              ),
+            )
+          : TelaDetalheExercicio(
+              key: ValueKey(selecionado.id),
+              exercicio: selecionado,
+              user: widget.user,
+              onAtualizar: carregarExercicios,
+              embutido: true,
+              onFechar: () => setState(() => _selecionadoId = null),
+            ),
     );
   }
 
@@ -3140,11 +3187,18 @@ class TelaDetalheExercicio extends StatelessWidget {
   final AppUser user;
   final VoidCallback onAtualizar;
 
+  /// Exibido ao lado da lista (DoisPaineis), sem barra própria: excluir e
+  /// editar atualizam a lista em vez de fechar a página.
+  final bool embutido;
+  final VoidCallback? onFechar;
+
   const TelaDetalheExercicio({
     super.key,
     required this.exercicio,
     required this.user,
     required this.onAtualizar,
+    this.embutido = false,
+    this.onFechar,
   });
 
   String _fmtData(DateTime dt) =>
@@ -3186,7 +3240,11 @@ class TelaDetalheExercicio extends StatelessWidget {
       }
       if (!context.mounted) return;
       onAtualizar();
-      Navigator.pop(context);
+      if (embutido) {
+        onFechar?.call();
+      } else {
+        Navigator.pop(context);
+      }
       // O toast vai para o Overlay do Navigator, então continua visível na
       // tela anterior depois do pop.
       _avisar(context, 'Exercício excluído.');
@@ -3204,11 +3262,27 @@ class TelaDetalheExercicio extends StatelessWidget {
       ),
     );
     onAtualizar();
-    if (context.mounted) Navigator.pop(context);
+    if (!embutido && context.mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (embutido) {
+      return SingleChildScrollView(
+        padding: _paddingCorpo(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              exercicio.subjectName,
+              style: context.tipo.subtitle?.copyWith(color: titleBlue),
+            ),
+            const SizedBox(height: 16),
+            _conteudo(context),
+          ],
+        ),
+      );
+    }
     return _PaginaVidro(
       titulo: exercicio.subjectName,
       voltar: true,
@@ -3227,112 +3301,114 @@ class TelaDetalheExercicio extends StatelessWidget {
       ],
       corpo: SingleChildScrollView(
         padding: _paddingCorpo(context),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: _conteudo(context),
+      ),
+    );
+  }
+
+  Widget _conteudo(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
+            Text(
+              'Status:',
+              style: context.tipo.bodyStrong?.copyWith(color: contentBlue),
+            ),
+            const SizedBox(width: 8),
+            _StatusBadge(status: exercicio.status),
+          ],
+        ),
+        if (exercicio.createdAt != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Adicionado em ${_fmtData(exercicio.createdAt!)}',
+            style: context.tipo.caption?.copyWith(color: Cores.cinza),
+          ),
+        ],
+        const SizedBox(height: 24),
+        _rotulo(context, 'ASSUNTO'),
+        const SizedBox(height: 8),
+        _DetalheBox(
+          child: Text(
+            exercicio.subjectName,
+            style: context.tipo.bodyStrong?.copyWith(color: titleBlue),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _rotulo(context, 'DESCRIÇÃO DO ERRO'),
+        const SizedBox(height: 8),
+        _DetalheBox(
+          child: Text(
+            exercicio.promptText,
+            style: context.tipo.body?.copyWith(color: contentBlue, height: 1.5),
+          ),
+        ),
+        const SizedBox(height: 32),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            style: _estiloBotao(
+              fundo: contentBlue,
+              texto: Cores.branco,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            ),
+            onPressed: () => _editar(context),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  'Status:',
-                  style: context.tipo.bodyStrong?.copyWith(color: contentBlue),
+                Icon(WindowsIcons.edit, size: 18),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text('Editar exercício', textAlign: TextAlign.center),
                 ),
-                const SizedBox(width: 8),
-                _StatusBadge(status: exercicio.status),
               ],
             ),
-            if (exercicio.createdAt != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Adicionado em ${_fmtData(exercicio.createdAt!)}',
-                style: context.tipo.caption?.copyWith(color: Cores.cinza),
-              ),
-            ],
-            const SizedBox(height: 24),
-            _rotulo(context, 'ASSUNTO'),
-            const SizedBox(height: 8),
-            _DetalheBox(
-              child: Text(
-                exercicio.subjectName,
-                style: context.tipo.bodyStrong?.copyWith(color: titleBlue),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _rotulo(context, 'DESCRIÇÃO DO ERRO'),
-            const SizedBox(height: 8),
-            _DetalheBox(
-              child: Text(
-                exercicio.promptText,
-                style: context.tipo.body?.copyWith(
-                  color: contentBlue,
-                  height: 1.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                style: _estiloBotao(
-                  fundo: contentBlue,
-                  texto: Cores.branco,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: Button(
+            style:
+                _estiloBotao(
+                  texto: Cores.vermelho400,
                   padding: const EdgeInsets.symmetric(
                     vertical: 16,
                     horizontal: 24,
                   ),
-                ),
-                onPressed: () => _editar(context),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(WindowsIcons.edit, size: 18),
-                    SizedBox(width: 8),
-                    Text('Editar exercício'),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: Button(
-                style:
-                    _estiloBotao(
-                      texto: Cores.vermelho400,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                        horizontal: 24,
-                      ),
-                    ).copyWith(
-                      // Realce vermelho em vez do véu preto do _estiloBotao,
-                      // coerente com a ação destrutiva.
-                      backgroundColor: WidgetStateProperty.resolveWith(
-                        (estados) => estados.contains(WidgetState.pressed)
-                            ? Cores.vermelho400.withValues(alpha: 0.12)
-                            : estados.contains(WidgetState.hovered)
-                            ? Cores.vermelho400.withValues(alpha: 0.08)
-                            : Cores.transparente,
-                      ),
-                      shape: WidgetStatePropertyAll(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(kRadiusSm),
-                          side: const BorderSide(color: Cores.vermelho300),
-                        ),
-                      ),
+                ).copyWith(
+                  // Realce vermelho em vez do véu preto do _estiloBotao,
+                  // coerente com a ação destrutiva.
+                  backgroundColor: WidgetStateProperty.resolveWith(
+                    (estados) => estados.contains(WidgetState.pressed)
+                        ? Cores.vermelho400.withValues(alpha: 0.12)
+                        : estados.contains(WidgetState.hovered)
+                        ? Cores.vermelho400.withValues(alpha: 0.08)
+                        : Cores.transparente,
+                  ),
+                  shape: WidgetStatePropertyAll(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kRadiusSm),
+                      side: const BorderSide(color: Cores.vermelho300),
                     ),
-                onPressed: () => _excluir(context),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(WindowsIcons.delete, size: 18),
-                    SizedBox(width: 8),
-                    Text('Excluir exercício'),
-                  ],
+                  ),
                 ),
-              ),
+            onPressed: () => _excluir(context),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(WindowsIcons.delete, size: 18),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text('Excluir exercício', textAlign: TextAlign.center),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -3879,51 +3955,38 @@ class _TelaAdminState extends State<TelaAdmin> {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
+        // 1 coluna no celular, 2 no tablet, 4 em telas largas.
+        GradeAdaptativa(
+          larguraMinimaItem: 160,
           children: [
-            Expanded(
-              child: _CardMetricaAdmin(
-                icone: WindowsIcons.network,
-                titulo: 'Latência PostgREST',
-                valor: '$_latenciaMs ms',
-                subtitulo: _latenciaMs < 200 ? 'Excelente (<200ms)' : 'Estável',
-                corDestaque: _latenciaMs < 200 ? Cores.verde : contentBlue,
-              ),
+            _CardMetricaAdmin(
+              icone: WindowsIcons.network,
+              titulo: 'Latência PostgREST',
+              valor: '$_latenciaMs ms',
+              subtitulo: _latenciaMs < 200 ? 'Excelente (<200ms)' : 'Estável',
+              corDestaque: _latenciaMs < 200 ? Cores.verde : contentBlue,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _CardMetricaAdmin(
-                icone: WindowsIcons.people,
-                titulo: 'Total Usuários',
-                valor: '${_perfis.length}',
-                subtitulo:
-                    '${_perfis.where((p) => p['role'] == 'admin').length} administradores',
-                corDestaque: contentBlue,
-              ),
+            _CardMetricaAdmin(
+              icone: WindowsIcons.people,
+              titulo: 'Total Usuários',
+              valor: '${_perfis.length}',
+              subtitulo:
+                  '${_perfis.where((p) => p['role'] == 'admin').length} administradores',
+              corDestaque: contentBlue,
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _CardMetricaAdmin(
-                icone: WindowsIcons.bulleted_list,
-                titulo: 'Exercícios Criados',
-                valor: '$_totalExercicios',
-                subtitulo: 'Cadastrados no banco',
-                corDestaque: contentBlue,
-              ),
+            _CardMetricaAdmin(
+              icone: WindowsIcons.bulleted_list,
+              titulo: 'Exercícios Criados',
+              valor: '$_totalExercicios',
+              subtitulo: 'Cadastrados no banco',
+              corDestaque: contentBlue,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _CardMetricaAdmin(
-                icone: WindowsIcons.completed,
-                titulo: 'Tentativas & Envios',
-                valor: '$_totalTentativas',
-                subtitulo: 'Resoluções analisadas',
-                corDestaque: contentBlue,
-              ),
+            _CardMetricaAdmin(
+              icone: WindowsIcons.completed,
+              titulo: 'Tentativas & Envios',
+              valor: '$_totalTentativas',
+              subtitulo: 'Resoluções analisadas',
+              corDestaque: contentBlue,
             ),
           ],
         ),
@@ -4253,42 +4316,28 @@ class _TelaAdminState extends State<TelaAdmin> {
             ],
           ),
           const SizedBox(height: 14),
-          Row(
+          GradeAdaptativa(
+            larguraMinimaItem: 140,
             children: [
-              Expanded(
-                child: _MetricaPequena(
-                  label: 'Latência PostgREST',
-                  valor: '$_latenciaMs ms',
-                  detalhe: 'Tempo real round-trip',
-                ),
+              _MetricaPequena(
+                label: 'Latência PostgREST',
+                valor: '$_latenciaMs ms',
+                detalhe: 'Tempo real round-trip',
               ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: _MetricaPequena(
-                  label: 'Edge Function IA',
-                  valor: '~1.25 s',
-                  detalhe: 'Tempo médio OpenAI',
-                ),
+              const _MetricaPequena(
+                label: 'Edge Function IA',
+                valor: '~1.25 s',
+                detalhe: 'Tempo médio OpenAI',
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            children: [
-              Expanded(
-                child: _MetricaPequena(
-                  label: 'Taxa de Sucesso API',
-                  valor: '99.8%',
-                  detalhe: 'Zero erros 5xx hoje',
-                ),
+              const _MetricaPequena(
+                label: 'Taxa de Sucesso API',
+                valor: '99.8%',
+                detalhe: 'Zero erros 5xx hoje',
               ),
-              SizedBox(width: 12),
-              Expanded(
-                child: _MetricaPequena(
-                  label: 'CDN Cloudflare Cache',
-                  valor: '94.2%',
-                  detalhe: 'Hit-rate de assets estáticos',
-                ),
+              const _MetricaPequena(
+                label: 'CDN Cloudflare Cache',
+                valor: '94.2%',
+                detalhe: 'Hit-rate de assets estáticos',
               ),
             ],
           ),

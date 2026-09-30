@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
 import 'package:appmistakemap/main.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -38,6 +39,7 @@ Future<void> _render(
   required Size size,
   double scale = 1,
   double keyboard = 0,
+  List<DisplayFeature> features = const [],
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
@@ -53,6 +55,7 @@ Future<void> _render(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(scale),
             viewInsets: EdgeInsets.only(bottom: keyboard),
+            displayFeatures: features,
           ),
           child: child!,
         ),
@@ -349,5 +352,99 @@ void main() {
     await tester.ensureVisible(find.text('Registrar exercício'));
     expect(find.text('Registrar exercício').hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+  group('layout adaptativo nas telas', () {
+    const prompt =
+        'Descrição longa de um exercício para validar a quebra de linha sem cortes.';
+    const placeholder = 'Selecione um exercício para ver os detalhes.';
+
+    testWidgets('Exercícios em 1280px: lista e detalhe lado a lado', (
+      tester,
+    ) async {
+      await _render(
+        tester,
+        const TelaPrincipal(user: _user),
+        size: const Size(1280, 800),
+      );
+      await _settle(tester);
+      expect(find.text(placeholder), findsOneWidget);
+      await tester.tap(find.text(prompt).first);
+      await _settle(tester);
+      expect(find.text(placeholder), findsNothing);
+      expect(find.text('DESCRIÇÃO DO ERRO'), findsOneWidget);
+      // A lista continua visível ao lado do detalhe.
+      expect(find.text(prompt), findsWidgets);
+      expect(find.text('Meus Exercícios'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Exercícios em 390px: o detalhe abre em outra página', (
+      tester,
+    ) async {
+      await _render(
+        tester,
+        const TelaPrincipal(user: _user),
+        size: const Size(390, 800),
+      );
+      await _settle(tester);
+      expect(find.text(placeholder), findsNothing);
+      await tester.tap(find.text(prompt).first);
+      await _settle(tester);
+      expect(find.text('DESCRIÇÃO DO ERRO'), findsOneWidget);
+      expect(find.byTooltip('Voltar'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'Exercícios em tela dupla: um painel de cada lado da dobradiça',
+      (tester) async {
+        // Duas telas de 360 px e dobradiça de 34 px: classe "média", mas a
+        // dobra separa a tela, então lista e detalhe ficam um de cada lado.
+        const hinge = Rect.fromLTWH(360, 0, 34, 720);
+        await _render(
+          tester,
+          const TelaPrincipal(user: _user),
+          size: const Size(754, 720),
+          features: const [
+            DisplayFeature(
+              bounds: hinge,
+              type: DisplayFeatureType.hinge,
+              state: DisplayFeatureState.postureFlat,
+            ),
+          ],
+        );
+        await _settle(tester);
+        final aviso = tester.getRect(find.text(placeholder));
+        expect(aviso.left, greaterThanOrEqualTo(hinge.right));
+        expect(
+          tester.getRect(find.text(prompt).first).right,
+          lessThanOrEqualTo(hinge.left),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    for (final (largura, colunas) in [(1280.0, 4), (320.0, 1)]) {
+      testWidgets(
+        'Admin em ${largura.toInt()}px mostra as métricas em $colunas coluna(s)',
+        (tester) async {
+          await _render(
+            tester,
+            const TelaAdmin(user: _admin),
+            size: Size(largura, 900),
+          );
+          final titulos = [
+            'Total Usuários',
+            'Exercícios Criados',
+            'Tentativas & Envios',
+          ];
+          final topos = {
+            for (final t in titulos) tester.getTopLeft(find.text(t)).dy,
+          };
+          expect(topos, hasLength(colunas == 1 ? 3 : 1));
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
   });
 }
