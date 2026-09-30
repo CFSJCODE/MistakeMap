@@ -3957,6 +3957,7 @@ class _TelaAdminState extends State<TelaAdmin> {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               const Flexible(
                 child: _Pilula(texto: 'Zero Egress Fees', cor: contentBlue),
               ),
@@ -4093,6 +4094,7 @@ class _TelaAdminState extends State<TelaAdmin> {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               const Flexible(
                 child: _Pilula(texto: 'Nível Gratuito', cor: contentBlue),
               ),
@@ -4244,6 +4246,7 @@ class _TelaAdminState extends State<TelaAdmin> {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               const Flexible(
                 child: _Pilula(texto: 'Alta Disponibilidade', cor: Cores.verde),
               ),
@@ -4370,6 +4373,7 @@ class _TelaAdminState extends State<TelaAdmin> {
                   // seguinte em vez de estourar o cartão.
                   Wrap(
                     spacing: 8,
+                    runSpacing: 4,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
