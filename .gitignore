@@ -41,6 +41,8 @@ app.*.map.json
 !.env.*.example
 *.keystore
 *.jks
+# Chaves de API guardadas localmente em texto (ex.: "Chave API Gemini.txt")
+Chave API*.txt
 
 # IDEs e Editores
 .idea/

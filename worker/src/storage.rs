@@ -24,8 +24,14 @@ pub fn build_client(cfg: &Config) -> Client {
     Client::from_conf(s3_config)
 }
 
-pub async fn ping(client: &Client, bucket: &str) -> Result<(), aws_sdk_s3::Error> {
-    client.head_bucket().bucket(bucket).send().await?;
+// Boxed: aws_sdk_s3::Error passa de 160 bytes (clippy::result_large_err).
+pub async fn ping(client: &Client, bucket: &str) -> Result<(), Box<aws_sdk_s3::Error>> {
+    client
+        .head_bucket()
+        .bucket(bucket)
+        .send()
+        .await
+        .map_err(|e| Box::new(aws_sdk_s3::Error::from(e)))?;
     Ok(())
 }
 

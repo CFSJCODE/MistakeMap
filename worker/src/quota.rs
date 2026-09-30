@@ -159,6 +159,8 @@ pub async fn add_storage_bytes(pool: &PgPool, bytes: i64) -> Result<(), sqlx::Er
 }
 
 // Retorna o uso atual do mês para logs/monitoramento.
+// Ainda sem chamador: o worker está arquivado desde a migração para Edge Functions.
+#[allow(dead_code)]
 pub async fn current_usage(pool: &PgPool) -> Result<UsageSnapshot, sqlx::Error> {
     let period = current_period();
     upsert_period(pool, &period).await?;
@@ -181,6 +183,7 @@ pub async fn current_usage(pool: &PgPool) -> Result<UsageSnapshot, sqlx::Error> 
     })
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct UsageSnapshot {
     pub period: String,

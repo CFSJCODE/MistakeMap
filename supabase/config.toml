@@ -1,0 +1,31 @@
+# Configuração das Edge Functions, lida por `supabase functions deploy` na raiz
+# do repositório (workflow supabase-functions-deploy.yml).
+#
+# Este diretório só publica funções. Migrations e configuração do banco ficam em
+# appmistakemap/database/supabase (workflow supabase-deploy.yml).
+#
+# Sem uma entrada aqui, o deploy liga verify_jwt. Mantenha estes valores iguais
+# aos de produção:
+#   - funções de IA chamadas pelo navegador: verify_jwt = false para que o
+#     handler responda ao preflight OPTIONS. O POST continua exigindo um JWT
+#     válido em authenticate() antes de ler o pedido ou acessar o banco;
+#   - chamadas pelo pg_cron sem JWT (process-batch, health) e o upload-url, que
+#     valida o JWT no próprio código: verify_jwt = false.
+# Diferente do project_id de appmistakemap/database ("MistakeMap"), que nomeia
+# os containers Docker locais do banco.
+project_id = "MistakeMap-functions"
+
+[functions.analyze-attempt]
+verify_jwt = false
+
+[functions.generate-practice]
+verify_jwt = false
+
+[functions.process-batch]
+verify_jwt = false
+
+[functions.upload-url]
+verify_jwt = false
+
+[functions.health]
+verify_jwt = false

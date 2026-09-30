@@ -260,16 +260,20 @@ supabase/functions/
 ├── process-batch/       # POST (X-Cron-Secret) → analisa a fila de tentativas pendentes
 ├── upload-url/          # POST → valida sessão, assina PUT na R2, reserva cota
 │   └── handler.ts       # regras puras e testáveis do contrato de upload
-├── health/              # GET → verifica DB (SELECT 1) e R2 (HEAD bucket) — não implantada
-└── tests/               # deno test (contrato da IA e da upload-url)
+├── health/              # GET → verifica DB (SELECT 1) e R2 (HEAD bucket)
+├── tests/               # deno test (contrato da IA, CORS e upload-url)
+├── deno.json            # import map usado por `deno check`/`deno test` (mesmas versões das funções)
+└── deno.lock
+supabase/config.toml     # verify_jwt de cada função, lido pelo deploy
 ```
 
 Cada função tem `index.ts` (entrypoint), `handler.ts` (lógica) e `deno.json`
-(imports `npm:`). Testes locais:
+(imports `npm:`, iguais aos da raiz). Testes locais, os mesmos do CI:
 
 ```bash
 cd supabase/functions
-deno test --config analyze-attempt/deno.json --allow-env tests/
+deno check --frozen */index.ts
+deno test --frozen --allow-env
 ```
 
 ### Endpoints
@@ -277,12 +281,42 @@ deno test --config analyze-attempt/deno.json --allow-env tests/
 | Método | Função | `verify_jwt` | Autenticação |
 |---|---|---|---|
 | `POST` | `/upload-url` | `false` | Bearer JWT validado pela própria função |
-| `POST` | `/analyze-attempt` | `true` | Bearer JWT do usuário |
-| `POST` | `/generate-practice` | `true` | Bearer JWT do usuário |
+| `POST` | `/analyze-attempt` | `false` | Bearer JWT validado pela própria função |
+| `POST` | `/generate-practice` | `false` | Bearer JWT validado pela própria função |
 | `POST` | `/process-batch` | `false` | Header `x-cron-secret` (pg_cron) |
 | `GET` | `/health` | `false` | Pública (monitor) |
 
 Base: `https://bmdjicshcjpknuaywaph.supabase.co/functions/v1/`
+
+O `verify_jwt` fica em `supabase/config.toml`. As funções de IA usam `false`
+para responder ao preflight `OPTIONS` do navegador; o `POST` só segue depois
+que `authenticate()` valida o JWT em `/auth/v1/user`. Sem entrada no
+`config.toml`, o deploy liga o `verify_jwt` e o pg_cron passa a receber 401.
+
+### IA: Google Gemini (camada gratuita)
+
+`gemini.ts` chama `generateContent` com saída em JSON Schema
+(`generationConfig.responseFormat`), `thinkingLevel` `LOW` e a chave no
+cabeçalho `x-goog-api-key`, nunca na URL. O legado `responseSchema` recusava
+`additionalProperties` e `["boolean","null"]` com HTTP 400. Erros 5xx do
+provedor são repetidos no modelo reserva (`GEMINI_FALLBACK_MODEL`), dentro de
+um prazo total que respeita o limite de 150 s das Edge Functions. O modelo
+realmente usado é gravado em `attempt_analyses.model` e `practice_sets.model`.
+A saída é validada de novo em `ai_contract.ts`, porque o Gemini ignora
+`minLength`/`maxLength`.
+
+> **Privacidade:** na camada gratuita, o Google pode usar prompts, respostas e
+> imagens para melhorar seus produtos, com revisão humana, e os termos pedem
+> para não enviar dados pessoais. Fotos de provas com nome ou matrícula devem
+> ser recortadas, ou deve-se usar a camada paga.
+
+### CORS das funções de IA
+
+Origens de loopback (`http://localhost:<porta>`, `http://127.0.0.1:<porta>`)
+são sempre aceitas, porque o `flutter run -d chrome` usa uma porta aleatória.
+Front-ends publicados precisam estar em `ALLOWED_ORIGINS`, separados por
+vírgula. Origem recusada não recebe `Access-Control-Allow-Origin`. CORS não
+substitui autenticação: todo handler valida o JWT.
 
 ### Body de requisição do `upload-url`
 
@@ -305,9 +339,10 @@ CLOUDFLARE_R2_SECRET_ACCESS_KEY # (R2 API token secret)
 WORKER_CRON_SECRET              # segredo compartilhado para X-Cron-Secret (≥ 24 caracteres)
 GEMINI_API_KEY                  # chave do Google AI Studio (nunca no cliente)
 GEMINI_MODEL                    # opcional; padrão gemini-flash-latest
+GEMINI_FALLBACK_MODEL           # opcional; padrão gemini-3.6-flash (usado após erro 5xx)
 AI_ANALYSES_PER_DAY             # opcional; 1–50 (padrão 50)
 AI_PRACTICE_PER_DAY             # opcional; 1–10 (padrão 10)
-ALLOWED_ORIGINS                 # opcional; origens web aceitas no CORS das funções de IA
+ALLOWED_ORIGINS                 # opcional; origens web publicadas (loopback é sempre aceito)
 ```
 
 > `SUPABASE_URL` e `SUPABASE_ANON_KEY` são injetados automaticamente pelo runtime
@@ -333,16 +368,25 @@ worker/
 
 ## 9. Deploy — Supabase Edge Functions (ativo desde 2026-09-28)
 
-### Comandos
+### CI/CD (GitHub Actions, desde 2026-09-30)
+
+| Workflow | Quando roda | O que faz |
+|---|---|---|
+| `ci.yml` | push no `main` e todo pull request (exceto só `.md`) | `deno check` + `deno test` nas funções; `flutter analyze`, `dart format`, `flutter test`; `cargo check`, `clippy -D warnings`, `cargo test` no worker |
+| `supabase-functions-deploy.yml` | push no `main` que altera `supabase/functions/**` ou `supabase/config.toml` | repete os testes Deno e, se passarem, publica todas as funções com `supabase functions deploy --use-api` |
+| `supabase-deploy.yml` | push no `main` que altera migrations | `supabase db push` (com dry-run antes) a partir de `appmistakemap/database` |
+
+Os workflows usam os secrets do GitHub `SUPABASE_ACCESS_TOKEN`,
+`SUPABASE_PROJECT_ID` e `SUPABASE_DB_PASSWORD`. As chaves de runtime (Gemini,
+R2) ficam só nos secrets do Supabase. Com o CD, nada precisa ser publicado à
+mão: basta fazer merge no `main`.
+
+### Comandos manuais (fallback)
 
 ```bash
-# Individualmente, preservando o verify_jwt de produção (tabela da seção 8).
-# Sem --no-verify-jwt o gateway exigiria JWT e quebraria o pg_cron e o monitor.
-supabase functions deploy upload-url        --project-ref bmdjicshcjpknuaywaph --no-verify-jwt
-supabase functions deploy process-batch     --project-ref bmdjicshcjpknuaywaph --no-verify-jwt
-supabase functions deploy health            --project-ref bmdjicshcjpknuaywaph --no-verify-jwt
-supabase functions deploy analyze-attempt   --project-ref bmdjicshcjpknuaywaph
-supabase functions deploy generate-practice --project-ref bmdjicshcjpknuaywaph
+# Todas as funções; o verify_jwt de cada uma vem de supabase/config.toml.
+# --use-api empacota no servidor do Supabase, sem Docker.
+supabase functions deploy --project-ref bmdjicshcjpknuaywaph --use-api
 
 # Configurar secrets (uma vez; não ficam no repositório)
 supabase secrets set --project-ref bmdjicshcjpknuaywaph \
@@ -399,9 +443,9 @@ O job `worker-health-monitor` agenda `GET /functions/v1/health` a cada 5 min,
 com histórico em `net._http_response`. A migração já consta do histórico remoto
 e agora está no diretório canônico.
 
-⚠️ Em 30/09/2026 a função `health` **ainda não estava implantada**, então o job
-recebe 404 a cada execução. Implante-a com `--no-verify-jwt` (comando acima) ou
-desagende o job com uma nova migração. Consulte
+Até 30/09/2026 a função `health` não estava implantada, e o job recebia 404 a
+cada execução. Ela passa a ser publicada pelo CD com `verify_jwt = false`
+(`supabase/config.toml`), já que o pg_cron não envia JWT. Consulte
 [o procedimento de migrações](appmistakemap/database/README.md).
 
 ---
@@ -451,8 +495,15 @@ Armadilhas documentadas do primeiro deploy estão preservadas no histórico git
 - [x] Client Flutter: auth, telas, upload com SHA-256 no contrato da `upload-url`
 - [x] Versionar no repositório as migrações e Edge Functions aplicadas em produção (30/09/2026)
 - [ ] Exibir no Flutter o diagnóstico (`attempt_analyses`, `error_events`) e chamar `generate-practice`
-- [ ] Implantar `health` com `--no-verify-jwt` (o monitor recebe 404 hoje) ou desagendar o job
+- [x] CI/CD no GitHub Actions: `ci.yml` e `supabase-functions-deploy.yml`, que também publica a `health` (30/09/2026)
 - [ ] Mover o `x-cron-secret` do job `process-batch-every-minute` para o Vault e rotacioná-lo
+- [ ] Rate limit das escritas do servidor: os triggers `enforce_rate_limit` usam
+      `auth.uid()`, que é NULL na conexão das Edge Functions. Todas as análises
+      dividem o balde `user:anon` (300 inserts/min), e cada análise faz até ~42
+      inserts. Criar uma migration que isente o role do servidor ou aplique o
+      limite pelo `user_id`.
+- [ ] Reservar a cota diária só depois das validações locais (texto, imagens),
+      para que erros determinísticos não consumam análises do aluno
 - [ ] Remover da R2 os objetos de tentativas excluídas (hoje ficam órfãos)
 - [ ] Criar signed URLs para leitura de assets pelo Flutter
 - [ ] Implementar cálculo de prioridade: `F×R×I×(1-M)` como função PostgreSQL

@@ -1,0 +1,98 @@
+name: CI
+
+# Roda os critérios de aceitação do CLAUDE.md em todo pull request e em push no
+# main. O deploy das Edge Functions (supabase-functions-deploy.yml) repete a
+# etapa Deno como portão próprio antes de publicar.
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  edge-functions:
+    name: Edge Functions (Deno)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: supabase/functions
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.x
+
+      - name: Type-check every function entrypoint
+        run: deno check --frozen */index.ts
+
+      - name: Test
+        run: deno test --frozen --allow-env
+
+  flutter:
+    name: Flutter (analyze, format, test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: appmistakemap
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.2
+          cache: true
+
+      - run: flutter pub get
+
+      - name: AC2 — flutter analyze
+        run: flutter analyze
+
+      - name: AC3 — dart format
+        run: dart format --output=none --set-exit-if-changed lib/
+
+      - name: AC1 — flutter test
+        run: flutter test --reporter compact
+
+  worker:
+    name: Worker Rust (check, clippy, test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v5
+
+      # Fixado na versão local para que lints novos do clippy não quebrem o CI
+      # sem aviso; atualize junto com a toolchain de desenvolvimento.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.98.1
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: worker
+
+      - name: AC3 — cargo check
+        run: cargo check --all-targets
+
+      - name: AC2 — cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: AC1 — cargo test
+        run: cargo test

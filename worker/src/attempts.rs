@@ -14,6 +14,8 @@ pub struct AssetRow {
 #[derive(Debug, sqlx::FromRow)]
 pub struct AttemptRow {
     pub id: Uuid,
+    // Vem do RETURNING e aparece nos logs via Debug; nenhum código lê o campo.
+    #[allow(dead_code)]
     pub status: String,
     pub version: i32,
 }
