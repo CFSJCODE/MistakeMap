@@ -31,7 +31,12 @@ export async function handler(req: Request): Promise<Response> {
       em_processamento: 0,
       falhas: 0,
     };
+    // Um `attempt_changed` depois da chamada ao modelo leva à próxima linha.
+    // Passado este prazo, não arrisca uma segunda chamada: o limite de wall
+    // clock da função é 150 s e o timeout do Gemini é 80 s.
+    const started = Date.now();
     for (const row of rows) {
+      if (Date.now() - started > 20_000) break;
       try {
         const result = await analyzeAttempt(sql, row.id, row.user_id);
         if (result.status === "completed") summary.concluidas++;
@@ -50,7 +55,11 @@ export async function handler(req: Request): Promise<Response> {
             code: error instanceof PublicError ? error.code : "internal_error",
           }),
         );
-        if (error instanceof PublicError && [400, 404].includes(error.status)) {
+        // Erros determinísticos (dados inválidos, recusa da IA) não melhoram
+        // com nova tentativa: consumiriam cota e chamadas até dead_letter.
+        if (
+          error instanceof PublicError && [400, 404, 422].includes(error.status)
+        ) {
           await sql`UPDATE public.attempts SET status='dead_letter',version=version+1 WHERE id=${row.id} AND status IN ('pending','retryable_failed')`;
           continue;
         }

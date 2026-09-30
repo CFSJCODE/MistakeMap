@@ -1,6 +1,7 @@
 {
   "imports": {
-    "aws4fetch": "npm:aws4fetch@1.0.20",
-    "postgresjs": "npm:postgres@3.4.4"
-  }
+    "postgresjs": "npm:postgres@3.4.7",
+    "aws4fetch": "npm:aws4fetch@1.0.20"
+  },
+  "compilerOptions": { "strict": true }
 }

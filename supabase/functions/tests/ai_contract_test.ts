@@ -12,10 +12,13 @@ import {
 import {
   authenticate,
   body,
+  cors,
   cronAuthorized,
+  originAllowed,
   readLimited,
 } from "../_shared/ai_http.ts";
 import { structuredResponse } from "../_shared/gemini.ts";
+import { analysisRetryExhausted } from "../_shared/ai_service.ts";
 import { handler as analyzeHandler } from "../analyze-attempt/handler.ts";
 import { handler as practiceHandler } from "../generate-practice/handler.ts";
 import { handler as batchHandler } from "../process-batch/handler.ts";
@@ -68,6 +71,11 @@ function fetchMock(
 
 Deno.test("runtime accepts a coherent error with evidence", () => {
   assert.deepEqual(validateAnalysis(sample()), sample());
+});
+Deno.test("provider outages do not permanently block attempt analysis", () => {
+  assert.equal(analysisRetryExhausted("ai_unavailable", 3), false);
+  assert.equal(analysisRetryExhausted("ai_rate_limited", 10), false);
+  assert.equal(analysisRetryExhausted("invalid_asset", 3), true);
 });
 Deno.test("runtime rejects unrecognized categories, fields and concepts", () => {
   assert.throws(
@@ -152,6 +160,11 @@ Deno.test("practice requires three to five distinct complete exercises", () => {
     }),
   );
   assert.equal(validatePractice({ exercises }, 3).length, 3);
+  assert.equal(validatePractice({ exercises }, 3, ["Adição"]).length, 3);
+  assert.throws(
+    () => validatePractice({ exercises }, 3, ["Frações"]),
+    PublicError,
+  );
   assert.throws(() => validatePractice({ exercises }, 4), PublicError);
   assert.throws(
     () =>
@@ -268,28 +281,124 @@ Deno.test("cron fails closed when unconfigured and with incorrect tokens", () =>
   assert.equal(cronAuthorized("x".repeat(32), "y".repeat(32)), false);
   assert.equal(cronAuthorized("x".repeat(32), "x".repeat(32)), true);
 });
-Deno.test("generateContent uses JSON schema, system instruction and server-side key", async () => {
+Deno.test("CORS accepts loopback dev ports and configured origins only", () => {
+  const origins = (list?: string) => (name: string) =>
+    name === "ALLOWED_ORIGINS" ? list : undefined;
+  for (
+    const origin of [
+      "http://127.0.0.1:65360",
+      "http://localhost:5000",
+      "http://localhost",
+      "http://[::1]:8080",
+    ]
+  ) assert.equal(originAllowed(origin, origins()), true, origin);
+  for (
+    const origin of [
+      "",
+      "null",
+      "https://evil.example",
+      "http://localhost.evil.example",
+      "http://127.0.0.1.nip.io",
+      "http://127.0.0.1:65360/path",
+    ]
+  ) assert.equal(originAllowed(origin, origins()), false, origin);
+  const configured = origins(" https://app.example , https://b.example");
+  assert.equal(originAllowed("https://app.example", configured), true);
+  assert.equal(originAllowed("https://c.example", configured), false);
+  const headers = (origin: string) =>
+    new Headers(
+      cors(
+        new Request("https://example.invalid", { headers: { Origin: origin } }),
+        origins(),
+      ),
+    ).get("Access-Control-Allow-Origin");
+  assert.equal(headers("http://127.0.0.1:65360"), "http://127.0.0.1:65360");
+  // Refused origins get no Allow-Origin at all; "null" would admit opaque
+  // origins (sandboxed iframes), which send `Origin: null`.
+  assert.equal(headers("https://evil.example"), null);
+  assert.equal(headers("null"), null);
+});
+Deno.test("generateContent sends JSON Schema output, low thinking and the key only in a header", async () => {
   const result = await structuredResponse(
-    options,
+    { ...options, images: ["data:image/png;base64,AAAA"] },
     config,
     fetchMock((url, init) => {
-      assert.ok(
-        String(url).startsWith(
-          "https://generativelanguage.googleapis.com/v1beta/models/test-model:generateContent?key=",
-        ),
-      );
-      const request = JSON.parse(String(init?.body));
       assert.equal(
-        request.generationConfig.response_mime_type,
-        "application/json",
+        String(url),
+        "https://generativelanguage.googleapis.com/v1beta/models/test-model:generateContent",
       );
-      assert.equal(request.generationConfig.maxOutputTokens, 6000);
-      assert.ok(request.system_instruction?.parts?.[0]?.text);
+      const headers = new Headers(init?.headers);
+      assert.equal(headers.get("x-goog-api-key"), "test-only-placeholder");
+      const request = JSON.parse(String(init?.body));
+      // responseFormat accepts additionalProperties and ["boolean","null"];
+      // the legacy responseSchema rejects both with HTTP 400.
+      assert.deepEqual(request.generationConfig.responseFormat, {
+        text: { mimeType: "APPLICATION_JSON", schema: analysisSchema },
+      });
+      assert.equal(request.generationConfig.responseSchema, undefined);
+      assert.equal(request.generationConfig.response_schema, undefined);
+      assert.equal(request.generationConfig.maxOutputTokens, 12000);
+      assert.deepEqual(request.generationConfig.thinkingConfig, {
+        thinkingLevel: "LOW",
+      });
+      assert.equal(request.systemInstruction.parts[0].text, "Tutor");
       assert.equal(request.contents[0].parts[0].text, options.text);
+      assert.deepEqual(request.contents[0].parts[1], {
+        inlineData: { mimeType: "image/png", data: "AAAA" },
+      });
+      assert.ok(!String(init?.body).includes("test-only-placeholder"));
       return wrapped(sample());
     }),
   );
   assert.deepEqual(validateAnalysis(result), sample());
+});
+Deno.test("thought parts are skipped and split text parts are joined", async () => {
+  const json = JSON.stringify(sample());
+  const result = await structuredResponse(
+    options,
+    config,
+    fetchMock(() =>
+      new Response(JSON.stringify({
+        candidates: [{
+          content: {
+            parts: [
+              { text: "raciocínio interno", thought: true },
+              { text: json.slice(0, 20) },
+              { text: json.slice(20) },
+            ],
+            role: "model",
+          },
+          finishReason: "STOP",
+        }],
+      }))
+    ),
+  );
+  assert.deepEqual(validateAnalysis(result), sample());
+});
+Deno.test("transient overload retries on a stable model and reports the model used", async () => {
+  const urls: string[] = [];
+  const used: string[] = [];
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    const result = await structuredResponse(
+      { ...options, onModelUsed: (model) => used.push(model) },
+      config,
+      fetchMock((url) => {
+        urls.push(String(url));
+        return urls.length === 1
+          ? new Response("", { status: 503 })
+          : wrapped(sample());
+      }),
+    );
+    assert.deepEqual(validateAnalysis(result), sample());
+  } finally {
+    console.warn = warn;
+  }
+  assert.equal(urls.length, 2);
+  assert.ok(urls[0].includes("/test-model:generateContent"));
+  assert.ok(urls[1].includes("/gemini-3.6-flash:generateContent"));
+  assert.deepEqual(used, ["gemini-3.6-flash"]);
 });
 Deno.test("missing API key makes no provider call", async () => {
   let called = false;
@@ -308,20 +417,48 @@ Deno.test("missing API key makes no provider call", async () => {
   assert.equal(called, false);
 });
 Deno.test("provider errors never echo upstream body", async () => {
-  for (const status of [401, 429, 500]) {
-    try {
-      await structuredResponse(
+  const logged: string[] = [];
+  const warn = console.warn;
+  console.warn = (...args: unknown[]) => logged.push(args.join(" "));
+  try {
+    for (const status of [401, 429, 500]) {
+      try {
+        await structuredResponse(
+          options,
+          config,
+          fetchMock(() =>
+            new Response("SENSITIVE_PROVIDER_DETAIL", { status })
+          ),
+        );
+        assert.fail("must reject");
+      } catch (error) {
+        assert.ok(error instanceof PublicError);
+        assert.ok(!error.publicMessage.includes("SENSITIVE"));
+        assert.equal(error.status, status === 429 ? 429 : 502);
+      }
+    }
+    // Structured provider errors are logged (field names only) for diagnosis.
+    await assert.rejects(() =>
+      structuredResponse(
         options,
         config,
-        fetchMock(() => new Response("SENSITIVE_PROVIDER_DETAIL", { status })),
-      );
-      assert.fail("must reject");
-    } catch (error) {
-      assert.ok(error instanceof PublicError);
-      assert.ok(!error.publicMessage.includes("SENSITIVE"));
-      assert.equal(error.status, status === 429 ? 429 : 502);
-    }
+        fetchMock(() =>
+          new Response(
+            JSON.stringify({
+              error: {
+                status: "INVALID_ARGUMENT",
+                message: 'Unknown name "additionalProperties"',
+              },
+            }),
+            { status: 400 },
+          )
+        ),
+      ), { code: "ai_unavailable" });
+  } finally {
+    console.warn = warn;
   }
+  assert.ok(logged.every((line) => !line.includes("SENSITIVE")));
+  assert.ok(logged.some((line) => line.includes("INVALID_ARGUMENT")));
 });
 Deno.test("provider network failure produces a sanitized retryable error", async () => {
   await assert.rejects(
@@ -336,6 +473,31 @@ Deno.test("provider network failure produces a sanitized retryable error", async
     { code: "ai_unavailable" },
   );
 });
+Deno.test("provider refusals and blocked prompts map to 422 ai_refusal", async () => {
+  const text = JSON.stringify(sample());
+  const cases = [
+    { promptFeedback: { blockReason: "SAFETY" } },
+    ...["SAFETY", "RECITATION", "PROHIBITED_CONTENT", "IMAGE_SAFETY"].map((
+      finishReason,
+    ) => ({
+      candidates: [{
+        content: { parts: [{ text }], role: "model" },
+        finishReason,
+      }],
+    })),
+  ];
+  for (const value of cases) {
+    await assert.rejects(
+      () =>
+        structuredResponse(
+          options,
+          config,
+          fetchMock(() => new Response(JSON.stringify(value))),
+        ),
+      { code: "ai_refusal", status: 422 },
+    );
+  }
+});
 Deno.test("refusals, incomplete results and malformed JSON cannot be persisted", async () => {
   const cases = [
     // Safety block
@@ -343,6 +505,30 @@ Deno.test("refusals, incomplete results and malformed JSON cannot be persisted",
       candidates: [{
         content: { parts: [], role: "model" },
         finishReason: "SAFETY",
+      }],
+    },
+    // Thinking consumed the budget: truncated JSON must not be parsed
+    {
+      candidates: [{
+        content: { parts: [{ text: '{"is_correct": fal' }], role: "model" },
+        finishReason: "MAX_TOKENS",
+      }],
+    },
+    // Unknown or unexpected finish reason, even with complete JSON
+    {
+      candidates: [{
+        content: {
+          parts: [{ text: JSON.stringify(sample()) }],
+          role: "model",
+        },
+        finishReason: "OTHER",
+      }],
+    },
+    // Only thought parts
+    {
+      candidates: [{
+        content: { parts: [{ text: "{}", thought: true }], role: "model" },
+        finishReason: "STOP",
       }],
     },
     // Empty candidates
@@ -384,12 +570,19 @@ Deno.test("handlers deny unauthenticated calls before touching database or API",
   assert.equal((await batchHandler(request())).status, 401);
 });
 Deno.test("handlers accept preflight and reject unsupported methods", async () => {
-  assert.equal(
-    (await analyzeHandler(
-      new Request("https://example.invalid", { method: "OPTIONS" }),
-    )).status,
-    204,
-  );
+  for (const handler of [analyzeHandler, practiceHandler]) {
+    const response = await handler(
+      new Request("https://example.invalid", {
+        method: "OPTIONS",
+        headers: { Origin: "http://localhost:62159" },
+      }),
+    );
+    assert.equal(response.status, 204);
+    assert.equal(
+      response.headers.get("Access-Control-Allow-Origin"),
+      "http://localhost:62159",
+    );
+  }
   assert.equal(
     (await practiceHandler(new Request("https://example.invalid"))).status,
     405,

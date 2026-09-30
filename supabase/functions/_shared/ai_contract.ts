@@ -211,7 +211,11 @@ export function validateAnalysis(value: unknown): Analysis {
     concepts,
   };
 }
-export function validatePractice(value: unknown, count: number): Practice[] {
+export function validatePractice(
+  value: unknown,
+  count: number,
+  targetConcepts: string[] = [],
+): Practice[] {
   const a = object(value, ["exercises"]);
   if (!Array.isArray(a.exercises) || a.exercises.length !== count) {
     throw new PublicError(
@@ -248,6 +252,16 @@ export function validatePractice(value: unknown, count: number): Practice[] {
       502,
       "invalid_ai_output",
       "A IA retornou exercícios repetidos.",
+    );
+  }
+  if (
+    targetConcepts.length &&
+    list.some((e) => !targetConcepts.includes(e.focus_concept))
+  ) {
+    throw new PublicError(
+      502,
+      "invalid_ai_output",
+      "A IA não focou nos conceitos que precisam de reforço. Tente novamente.",
     );
   }
   return list;
