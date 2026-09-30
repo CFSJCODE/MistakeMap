@@ -1,6 +1,6 @@
 # MistakeMap — Decisões e Arquitetura do Backend
 
-> Documento vivo. Atualizado em: 2026-09-28
+> Documento vivo. Atualizado em: 2026-09-30
 
 ---
 
@@ -69,12 +69,6 @@ justifique uma VM. O cold start de ~500ms é aceitável para um job de cron.
 - Supabase Storage free tier: 1 GB storage + egress cobrado
 - Flutter não pode guardar credenciais do R2 → padrão de presigned URL via Edge Function
 
-### Por que Cloudflare R2 e não Supabase Storage?
-
-- R2 free tier: **10 GB storage + egress gratuito**
-- Supabase Storage free tier: 1 GB storage + egress cobrado
-- Flutter não pode guardar credenciais do R2 → padrão de presigned URL via worker
-
 ---
 
 ## 3. Autenticação e JWT
@@ -108,26 +102,34 @@ WORKER_CRON_SECRET             # segredo do header X-Cron-Secret em POST /proces
 O Flutter **nunca** guarda credenciais do R2. O padrão é:
 
 ```
-Flutter                    Worker (Fly.io)              Cloudflare R2
+Flutter                 Edge Function upload-url         Cloudflare R2
   │                              │                            │
   │── POST /upload-url ─────────►│                            │
-  │   Authorization: Bearer JWT  │                            │
-  │                              │── valida JWT ES256         │
-  │                              │── verifica cota R2 (95%)   │
-  │                              │── gera presigned PUT URL ──►│
-  │◄── { url, object_path } ─────│                            │
-  │                              │                            │
-  │── PUT {url} com bytes ───────────────────────────────────►│
-  │                              │                            │
-  │── RPC finalizar_tentativa ──►│ (via Supabase, salva       │
-  │   { attempt_id, object_path }│  object_path em attempt_   │
-  │                              │  assets)                   │
+  │   Authorization: Bearer JWT  │── valida sessão (/auth/v1/user)
+  │   {filename, content_type,   │── assina PUT (15 min)      │
+  │    size_bytes}               │── reserva cota R2          │
+  │◄── {upload_url, object_path, │                            │
+  │     content_type, expires_in}│                            │
+  │── PUT upload_url (bytes, mesmo Content-Type) ────────────►│
+  │                                                           │
+  │── INSERT exercises / attempts(status='uploading') ──► Supabase (RLS)
+  │── INSERT attempt_assets {object_path, sha256} ─────► Supabase (RLS)
+  │── UPDATE attempts SET status='pending' ────────────► Supabase (trigger)
 ```
 
-- Presigned URL expira em **15 minutos**
-- Extensões permitidas: `jpg`, `jpeg`, `png`, `webp`, `pdf`
+- Presigned URL expira em **15 minutos**; `Content-Type` e `Content-Length`
+  fazem parte da assinatura, então o PUT repete o `content_type` devolvido
+  (`image/jpeg`, nunca `image/jpg`) e exatamente `size_bytes` bytes
+- Formatos aceitos: `jpg`/`jpeg` → `image/jpeg`, `png`, `webp`; até **8 MB**
 - Caminho no R2: `uploads/{user_id}/{uuid}.{ext}`
-- ⚠️ A RPC `finalizar_tentativa` do diagrama **ainda não existe** — hoje nada cria linhas em `attempt_assets` nem move `attempts` para `pending`
+- A política `attempt_assets_owner_insert` só aceita o anexo com a tentativa em
+  `uploading`, caminho do próprio usuário e `sha256` com 64 caracteres
+  hexadecimais; a análise confere esse hash antes de enviar a imagem à IA
+- O trigger `guard_attempt_ai_state` só deixa o cliente criar tentativas em
+  `uploading`/`pending` e mover `uploading → pending`; os demais estados são do
+  servidor
+- O Flutter envia a foto antes de gravar no banco e desfaz o exercício parcial
+  se algo falhar (`TelaAdicionarExercicio._continuar`)
 
 ---
 
@@ -169,11 +171,17 @@ Cada `UPDATE` de status usa `WHERE id = $1 AND version = $2` — se outra instâ
 
 ### Fases do pipeline (roadmap)
 
+> A tabela e a máquina de estados acima descrevem o worker Rust. Nas Edge
+> Functions (ativas), `process-batch` e `analyze-attempt` compartilham
+> `_shared/ai_service.ts`: lease de 180 s em `processing_runs`, até 3 tentativas
+> por `pipeline_version` e cota diária por usuário em `ai_daily_usage`.
+
 | Fase | Status | Descrição |
 |---|---|---|
-| Download R2 | ✅ Implementado | `storage::download_asset` via aws-sdk-s3 |
-| OCR matemático | 🔲 P1 (TODO) | `ocr.rs` — TODO em `pipeline.rs::process_attempt` |
-| LLM classificação | 🔲 P1 (TODO) | `llm.rs` — classificar erros, gravar `error_events` |
+| Download R2 | ✅ Implementado | `_shared/ai_service.ts::imageInputs` (confere SHA-256 e formato) |
+| Transcrição + classificação | ✅ Implementado | Gemini multimodal (`_shared/gemini.ts`), saída em JSON Schema validada por `_shared/ai_contract.ts`; grava `attempt_analyses`, `corrections`, `concepts`, `error_events` e `mastery_events` |
+| Exercícios direcionados | ✅ Implementado | `generate-practice` cria `practice_sets` e guarda o gabarito só no servidor (`practice_answer_keys`) |
+| Exibir análise no Flutter | 🔲 Pendente | O app ainda não lê `attempt_analyses`/`error_events` nem chama `generate-practice` |
 | Signed URLs (leitura) | 🔲 Pendente | Para Flutter visualizar assets salvos |
 
 ---
@@ -218,14 +226,23 @@ Cada `UPDATE` de status usa `WHERE id = $1 AND version = $2` — se outra instâ
 | `error_events` | Eventos finais / predições de erro do LLM |
 | `audit_log` | Trilha append-only de mutações sensíveis |
 | `r2_quota_usage` | Rastreamento mensal de operações R2 |
+| `attempt_analyses` | Diagnóstico da IA por tentativa (JSON validado, modelo, `pipeline_version`) |
+| `practice_sets` | Conjuntos de exercícios gerados pela IA a partir dos erros |
+| `practice_answer_keys` | Gabaritos gerados — **sem acesso do cliente** |
+| `ai_daily_usage` | Cota diária de análises e gerações por usuário |
 
 ### RLS (Row Level Security)
 
 - Todas as tabelas com RLS habilitado
-- `attempts`: `auth.uid() = student_id` — aluno só vê suas próprias tentativas
-- `error_events`: INSERT/UPDATE apenas pela `service_role` (worker)
-- `processing_runs` e `r2_quota_usage`: sem acesso ao cliente Flutter
+- `attempts`: `auth.uid() = user_id` — aluno só vê suas próprias tentativas
+- `error_events`, `corrections`, `mastery_events`, `attempt_analyses`,
+  `practice_sets`: somente leitura para o dono; escrita só pela `service_role`
+- `processing_runs`, `practice_answer_keys` e `ai_daily_usage`: sem acesso ao cliente Flutter
+- `r2_quota_usage`: leitura para usuários autenticados, escrita pela `service_role`
 - `audit_log`: append-only, consulta apenas administrativa
+- `profiles`: dono lê e edita o próprio perfil (sem alterar `role`); administrador
+  lê e atualiza qualquer perfil via `public.is_admin()` (`SECURITY DEFINER`, evita
+  recursão de RLS — migração `20260929112200`)
 
 ---
 
@@ -233,32 +250,49 @@ Cada `UPDATE` de status usa `WHERE id = $1 AND version = $2` — se outra instâ
 
 ```
 supabase/functions/
-├── health/
-│   ├── deno.json        # imports: aws4fetch, postgresjs
-│   └── index.ts         # GET → verifica DB (SELECT 1) e R2 (HEAD bucket) em paralelo
-├── upload-url/
-│   ├── deno.json        # imports: @supabase/supabase-js, aws4fetch, postgresjs
-│   └── index.ts         # POST → valida JWT Supabase, verifica cota, gera presigned URL
-└── process-batch/
-    ├── deno.json        # imports: aws4fetch, postgresjs
-    └── index.ts         # POST → X-Cron-Secret, busca pending, baixa R2, TODO OCR→LLM
+├── _shared/
+│   ├── ai_contract.ts   # JSON Schemas, validação da saída da IA, PublicError
+│   ├── ai_http.ts       # CORS, corpo limitado, autenticação, segredo do cron
+│   ├── ai_service.ts    # análise (claim/lease/cota), leitura da R2, geração de exercícios
+│   └── gemini.ts        # cliente generateContent (JSON Schema, imagens inline)
+├── analyze-attempt/     # POST {attempt_id} → analisa ou devolve o diagnóstico em cache
+├── generate-practice/   # POST {subject_id, count 3–5} → exercícios direcionados
+├── process-batch/       # POST (X-Cron-Secret) → analisa a fila de tentativas pendentes
+├── upload-url/          # POST → valida sessão, assina PUT na R2, reserva cota
+│   └── handler.ts       # regras puras e testáveis do contrato de upload
+├── health/              # GET → verifica DB (SELECT 1) e R2 (HEAD bucket) — não implantada
+└── tests/               # deno test (contrato da IA e da upload-url)
+```
+
+Cada função tem `index.ts` (entrypoint), `handler.ts` (lógica) e `deno.json`
+(imports `npm:`). Testes locais:
+
+```bash
+cd supabase/functions
+deno test --config analyze-attempt/deno.json --allow-env tests/
 ```
 
 ### Endpoints
 
-| Método | Função | URL |
-|---|---|---|
-| `GET` | `/health` | `https://bmdjicshcjpknuaywaph.supabase.co/functions/v1/health` |
-| `POST` | `/upload-url` | `https://bmdjicshcjpknuaywaph.supabase.co/functions/v1/upload-url` |
-| `POST` | `/process-batch` | `https://bmdjicshcjpknuaywaph.supabase.co/functions/v1/process-batch` |
+| Método | Função | `verify_jwt` | Autenticação |
+|---|---|---|---|
+| `POST` | `/upload-url` | `false` | Bearer JWT validado pela própria função |
+| `POST` | `/analyze-attempt` | `true` | Bearer JWT do usuário |
+| `POST` | `/generate-practice` | `true` | Bearer JWT do usuário |
+| `POST` | `/process-batch` | `false` | Header `x-cron-secret` (pg_cron) |
+| `GET` | `/health` | `false` | Pública (monitor) |
+
+Base: `https://bmdjicshcjpknuaywaph.supabase.co/functions/v1/`
 
 ### Body de requisição do `upload-url`
 
 ```json
-{ "filename": "foto.jpg", "content_type": "image/jpeg" }
+{ "filename": "exercicio.jpg", "content_type": "image/jpeg", "size_bytes": 482133 }
 ```
 
-**Autenticação:** `Authorization: Bearer <supabase-jwt>` (token do usuário autenticado).
+Resposta `200`: `{ "upload_url", "object_path", "content_type", "expires_in": 900 }`.
+Erros: `400 invalid_upload`, `401 unauthorized`, `429 storage_quota_exceeded`,
+`503 upload_unavailable`.
 
 ### Secrets necessários (configurar via `supabase secrets set`)
 
@@ -268,7 +302,12 @@ CLOUDFLARE_R2_S3_ENDPOINT       # https://954f3233c7c998b8e862c1a59673d9a0.r2.cl
 CLOUDFLARE_R2_BUCKET            # mistakemap
 CLOUDFLARE_R2_ACCESS_KEY_ID     # (R2 API token)
 CLOUDFLARE_R2_SECRET_ACCESS_KEY # (R2 API token secret)
-WORKER_CRON_SECRET              # segredo compartilhado para X-Cron-Secret
+WORKER_CRON_SECRET              # segredo compartilhado para X-Cron-Secret (≥ 24 caracteres)
+GEMINI_API_KEY                  # chave do Google AI Studio (nunca no cliente)
+GEMINI_MODEL                    # opcional; padrão gemini-flash-latest
+AI_ANALYSES_PER_DAY             # opcional; 1–50 (padrão 50)
+AI_PRACTICE_PER_DAY             # opcional; 1–10 (padrão 10)
+ALLOWED_ORIGINS                 # opcional; origens web aceitas no CORS das funções de IA
 ```
 
 > `SUPABASE_URL` e `SUPABASE_ANON_KEY` são injetados automaticamente pelo runtime
@@ -297,13 +336,13 @@ worker/
 ### Comandos
 
 ```bash
-# Deployar todas as funções de uma vez
-supabase functions deploy --project-ref bmdjicshcjpknuaywaph
-
-# Ou individualmente
-supabase functions deploy health        --project-ref bmdjicshcjpknuaywaph
-supabase functions deploy upload-url    --project-ref bmdjicshcjpknuaywaph
-supabase functions deploy process-batch --project-ref bmdjicshcjpknuaywaph
+# Individualmente, preservando o verify_jwt de produção (tabela da seção 8).
+# Sem --no-verify-jwt o gateway exigiria JWT e quebraria o pg_cron e o monitor.
+supabase functions deploy upload-url        --project-ref bmdjicshcjpknuaywaph --no-verify-jwt
+supabase functions deploy process-batch     --project-ref bmdjicshcjpknuaywaph --no-verify-jwt
+supabase functions deploy health            --project-ref bmdjicshcjpknuaywaph --no-verify-jwt
+supabase functions deploy analyze-attempt   --project-ref bmdjicshcjpknuaywaph
+supabase functions deploy generate-practice --project-ref bmdjicshcjpknuaywaph
 
 # Configurar secrets (uma vez; não ficam no repositório)
 supabase secrets set --project-ref bmdjicshcjpknuaywaph \
@@ -328,6 +367,12 @@ da transação.
 
 ### Configuração do pg_cron (aplicar no SQL Editor do Supabase)
 
+> **Estado em 30/09/2026:** o projeto já tem o job `process-batch-every-minute`
+> (`* * * * *`), criado manualmente fora das migrações. Ele guarda o valor do
+> `x-cron-secret` em texto puro no comando do `cron.job`. Recomenda-se recriá-lo
+> lendo o segredo do Supabase Vault (`vault.decrypted_secrets`) e rotacionar
+> `WORKER_CRON_SECRET`. O modelo abaixo é a referência original.
+
 ```sql
 -- Configuração separada: a migration de monitoramento abaixo não cria este job.
 -- Chamar process-batch a cada N minutos (ex: a cada 1 min para MVP)
@@ -348,16 +393,16 @@ SELECT cron.schedule(
 
 > Antes de executar: `ALTER DATABASE postgres SET app.worker_cron_secret = '<valor>';`
 
-### Monitor de saúde (migration já criada)
+### Monitor de saúde (migration `20260928120000`, aplicada)
 
-O SQL proposto para `worker-health-monitor` (migration `20260928120000`) agenda
-`GET /functions/v1/health` a cada 5 min, com histórico em `net._http_response`.
+O job `worker-health-monitor` agenda `GET /functions/v1/health` a cada 5 min,
+com histórico em `net._http_response`. A migração já consta do histórico remoto
+e agora está no diretório canônico.
 
-Ele permanece pendente em `supabase/migrations/`, fora do diretório do deploy.
-Na verificação de 29/09/2026, a função `health` não estava implantada e a URL
-retornava HTTP 404. Implante e valide a função antes de promover esse SQL para
-`appmistakemap/database/supabase/migrations/`, com uma nova versão posterior à
-última aplicada. Consulte [o procedimento de migrações](appmistakemap/database/README.md).
+⚠️ Em 30/09/2026 a função `health` **ainda não estava implantada**, então o job
+recebe 404 a cada execução. Implante-a com `--no-verify-jwt` (comando acima) ou
+desagende o job com uma nova migração. Consulte
+[o procedimento de migrações](appmistakemap/database/README.md).
 
 ---
 
@@ -401,10 +446,14 @@ Armadilhas documentadas do primeiro deploy estão preservadas no histórico git
 
 - [x] Criar `Dockerfile` multi-stage para o worker Rust
 - [x] Criar `fly.toml` e fazer primeiro deploy no Fly.io
-- [ ] Implementar `ocr.rs` (Fase P1) — integração com API de OCR matemático
-- [ ] Implementar `llm.rs` (Fase P1) — classificação de erros via LLM
+- [x] Transcrição e classificação de erros por IA (Gemini multimodal nas Edge Functions)
+- [x] Taxonomia base de `error_types` (7 categorias, migração `20260929052429`)
+- [x] Client Flutter: auth, telas, upload com SHA-256 no contrato da `upload-url`
+- [x] Versionar no repositório as migrações e Edge Functions aplicadas em produção (30/09/2026)
+- [ ] Exibir no Flutter o diagnóstico (`attempt_analyses`, `error_events`) e chamar `generate-practice`
+- [ ] Implantar `health` com `--no-verify-jwt` (o monitor recebe 404 hoje) ou desagendar o job
+- [ ] Mover o `x-cron-secret` do job `process-batch-every-minute` para o Vault e rotacioná-lo
+- [ ] Remover da R2 os objetos de tentativas excluídas (hoje ficam órfãos)
 - [ ] Criar signed URLs para leitura de assets pelo Flutter
-- [ ] Implementar `seed.sql` com taxonomia real (`error_types`, `subjects`)
 - [ ] Implementar cálculo de prioridade: `F×R×I×(1-M)` como função PostgreSQL
 - [ ] Autorizar MCPs Cloudflare no terminal interativo (`/mcp` em sessão `claude`)
-- [ ] Iniciar client Flutter (auth, screens, upload flow, visualização)
