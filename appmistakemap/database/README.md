@@ -2,9 +2,13 @@
 
 O diretório canônico é `appmistakemap/database/supabase/migrations/`.
 Execute a CLI a partir de `appmistakemap/database`, onde está `supabase/config.toml`.
-O diretório `supabase/` na raiz continua contendo as Edge Functions e uma proposta
-de monitoramento ainda pendente; novas migrações de banco devem usar o diretório
-canônico, pois o workflow não lê migrações na raiz.
+O diretório `supabase/` na raiz contém apenas as Edge Functions; novas migrações
+de banco devem usar o diretório canônico, pois o workflow não lê migrações na raiz.
+
+Toda versão registrada no histórico remoto precisa existir aqui. Se faltar uma,
+`supabase db push` recusa a publicação ("Remote migration versions not found in
+local migrations directory"). Mudanças aplicadas direto no projeto (SQL Editor,
+MCP ou `apply_migration`) devem ser trazidas para este diretório na mesma versão.
 
 ## Publicação
 
@@ -62,3 +66,29 @@ em backup local de manutenção. Não publique essa cópia: ela contém o SQL or
 com dados pessoais. A reconstrução em banco vazio não foi validada; a migração
 histórica de seed depende de um usuário pré-existente em `auth.users`. Este reparo
 valida a continuidade do banco existente, não um bootstrap completo de ambiente.
+
+## Reconciliação de 30/09/2026
+
+Três versões haviam sido aplicadas no projeto em 28–29/09/2026 sem chegar ao
+repositório. Seus SQLs foram recuperados de `supabase_migrations.schema_migrations`
+e conferidos instrução por instrução (MD5) contra o registro remoto:
+
+- `20260928120000_worker_keepalive_cron.sql`: o monitor que estava na raiz em
+  `supabase/migrations/` já tinha sido aplicado com essa versão; o arquivo foi
+  movido sem alteração. A função `health` continua ausente e o job recebe 404 a
+  cada 5 minutos até ela ser implantada.
+- `20260929052429_openai_error_analysis.sql`: tabelas `attempt_analyses`,
+  `practice_sets`, `practice_answer_keys` e `ai_daily_usage`; taxonomia base de
+  `error_types`; políticas somente leitura para resultados da IA; política de
+  `attempt_assets` que exige SHA-256; triggers `guard_attempt_ai_state` e
+  `guard_analyzed_exercise`. O nome cita OpenAI por histórico; o pipeline atual
+  usa Gemini.
+- `20260929112200_fix_profiles_rls_recursion.sql`: `public.is_admin()` como
+  `SECURITY DEFINER` para eliminar a recursão das políticas de `profiles`.
+
+Os arquivos recuperados receberam só um cabeçalho de comentário. Como as versões
+já estão registradas, a publicação não os executa de novo.
+
+O job `process-batch-every-minute` foi criado manualmente e não pertence a
+nenhuma migração. Ele guarda o segredo do cron em texto puro em `cron.job`;
+recriá-lo lendo do Vault exige uma nova migração e a rotação do segredo.
