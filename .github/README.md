@@ -1778,7 +1778,7 @@ dependencies:
 | `ci.yml` | Push e pull request no `main` | `deno check`/`deno test` das funções, `flutter analyze`, `dart format` e `flutter test` |
 | `supabase-functions-deploy.yml` | Push no `main` que altera `supabase/` | Publica as Edge Functions |
 | `supabase-deploy.yml` | Push no `main` que altera migrações | Publica as migrações em `appmistakemap/database/` |
-| `sync-repository-metadata.yml` | Push no `main` que altera `.github/LICENSE` ou `.github/CITATION.cff` | Copia esses arquivos para a raiz |
+| `sync-repository-metadata.yml` | Pull request e push que alteram `LICENSE` ou `CITATION.cff` | Confere se as cópias da raiz são iguais às versões canônicas em `.github/` (atualize as duas no mesmo PR) |
 
 ---
 
