@@ -1,0 +1,77 @@
+name: Deploy web (Vercel)
+
+# Publica a versão web do aplicativo na Vercel a cada push no main que altera
+# o cliente Flutter. O main é protegido, então o código já passou pelo CI
+# (analyze, format e test) no pull request antes de chegar aqui.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "appmistakemap/**"
+      - "!appmistakemap/database/**"
+      - "!appmistakemap/**/*.md"
+      - ".github/workflows/web-deploy-vercel.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# Um deploy por vez; um push novo cancela o build anterior ainda em andamento.
+concurrency:
+  group: web-deploy-vercel
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build Flutter web e publicar na Vercel
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://mistakemap-tau.vercel.app
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+    defaults:
+      run:
+        working-directory: appmistakemap
+    steps:
+      - name: Verificar configuração da Vercel
+        working-directory: .
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          missing=0
+          [ -n "$VERCEL_TOKEN" ] || { echo "::error::Falta o secret VERCEL_TOKEN (Settings → Secrets and variables → Actions)."; missing=1; }
+          [ -n "$VERCEL_ORG_ID" ] || { echo "::error::Falta a variável VERCEL_ORG_ID."; missing=1; }
+          [ -n "$VERCEL_PROJECT_ID" ] || { echo "::error::Falta a variável VERCEL_PROJECT_ID."; missing=1; }
+          exit "$missing"
+
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.2
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Build web (release)
+        run: flutter build web --release
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Publicar na Vercel (produção)
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          url=$(npx --yes vercel@latest deploy build/web --prod --yes --token "$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "### Versão web publicada" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Produção: https://mistakemap-tau.vercel.app" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deploy: $url (acesso restrito à equipe da Vercel)" >> "$GITHUB_STEP_SUMMARY"
