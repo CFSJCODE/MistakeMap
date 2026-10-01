@@ -1433,19 +1433,12 @@ class _TelaInicialState extends State<TelaInicial> {
     return SizedBox(
       width: double.infinity,
       child: MistakeMapButton(
-        style:
-            _estiloBotao(
-              fundo: const Color(0xFFE7EBE8),
-              texto: contentBlue,
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            ).copyWith(
-              shape: WidgetStatePropertyAll(
-                RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(kRadiusSm),
-                  side: const BorderSide(color: contentBlue),
-                ),
-              ),
-            ),
+        // Mesma superfície e mesmos cantos dos cards de resumo acima.
+        style: _estiloBotao(
+          raio: kRadiusSm,
+          texto: contentBlue,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        ),
         onPressed:
             widget.onAbout ??
             () {
@@ -2941,53 +2934,58 @@ class _ExercicioCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: _CartaoFluent(
         onPressed: onTap,
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        // O botão centraliza o conteúdo; o texto do card segue alinhado à
+        // esquerda, como a data.
         child: Builder(
-          builder: (context) => Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            exercicio.subjectName,
-                            style: context.tipo.bodyStrong?.copyWith(
-                              color: DefaultTextStyle.of(context).style.color,
+          builder: (context) => DefaultTextStyle.merge(
+            textAlign: TextAlign.start,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              exercicio.subjectName,
+                              style: context.tipo.bodyStrong?.copyWith(
+                                color: DefaultTextStyle.of(context).style.color,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        _StatusBadge(status: exercicio.status),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      exercicio.promptText,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.tipo.body?.copyWith(
-                        color: DefaultTextStyle.of(context).style.color,
+                          const SizedBox(width: 8),
+                          _StatusBadge(status: exercicio.status),
+                        ],
                       ),
-                    ),
-                    if (exercicio.createdAt != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        _fmtData(exercicio.createdAt!),
-                        style: context.tipo.caption?.copyWith(
+                        exercicio.promptText,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.tipo.body?.copyWith(
                           color: DefaultTextStyle.of(context).style.color,
                         ),
                       ),
+                      if (exercicio.createdAt != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _fmtData(exercicio.createdAt!),
+                          style: context.tipo.caption?.copyWith(
+                            color: DefaultTextStyle.of(context).style.color,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              _menu(),
-            ],
+                const SizedBox(width: 12),
+                _menu(),
+              ],
+            ),
           ),
         ),
       ),
@@ -2999,12 +2997,12 @@ class _ExercicioCard extends StatelessWidget {
       placement: FlyoutPlacementMode.bottomRight,
       menuShape: MistakeMapControls.menuShape,
       menuColor: MistakeMapDesign.surface,
-      buttonBuilder: (context, abrir) => Tooltip(
-        message: 'Opções',
-        child: MistakeMapIconButton(
-          icon: const _IconeBotao(WindowsIcons.more),
-          onPressed: abrir,
-        ),
+      // Mesmo controle quadrado de 40 px das barras superiores.
+      buttonBuilder: (context, abrir) => _BotaoBarra(
+        icone: WindowsIcons.more,
+        dica: 'Opções',
+        cor: contentBlue,
+        onPressed: abrir,
       ),
       items: [
         _itemMenu(
@@ -3744,12 +3742,11 @@ class _TelaAdminState extends State<TelaAdmin> {
       placement: FlyoutPlacementMode.bottomRight,
       menuShape: MistakeMapControls.menuShape,
       menuColor: MistakeMapDesign.surface,
-      buttonBuilder: (context, onOpen) => Tooltip(
-        message: 'Gerenciar papel',
-        child: MistakeMapIconButton(
-          icon: const _IconeBotao(WindowsIcons.more),
-          onPressed: onOpen,
-        ),
+      buttonBuilder: (context, onOpen) => _BotaoBarra(
+        icone: WindowsIcons.more,
+        dica: 'Gerenciar papel',
+        cor: contentBlue,
+        onPressed: onOpen,
       ),
       items: [
         _itemMenu(
