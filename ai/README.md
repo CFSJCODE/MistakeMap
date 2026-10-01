@@ -15,11 +15,11 @@
 | **Reversa** — estado | [`/.reversa/`](../.reversa/) | Estado, config e hooks do framework Reversa |
 | **Reversa** — skills Claude | [`/.claude/skills/`](../.claude/skills/) | 63 agentes para Claude Code |
 | **Reversa** — skills outros | [`/.agents/skills/`](../.agents/skills/) | 63 agentes para Codex e outros engines |
-| **Artefatos Discovery** | `/_reversa_sdd/` | Especificações extraídas do código |
-| **Artefatos Forward** | `/_reversa_forward/` | Features em desenvolvimento |
-| **Artefatos Bugs** | `/_reversa_bugs/` | Registro de defeitos |
-| **Artefatos Docs** | `/_reversa_docs/` | Mini-site de documentação visual |
-| **Artefatos Refactor** | `/_reversa_refactor/` | Oportunidades de melhoria |
+| **Artefatos Discovery** | `/_reversa_sdd/` | Especificações extraídas do código *(criada ao rodar `/reversa`)* |
+| **Artefatos Forward** | [`/_reversa_forward/`](../_reversa_forward/) | Requisitos, planos e verificações das features entregues |
+| **Artefatos Bugs** | [`/_reversa_bugs/`](../_reversa_bugs/) | Registro de defeitos |
+| **Artefatos Docs** | `/_reversa_docs/` | Mini-site de documentação visual *(criada ao rodar `/reversa-docs`)* |
+| **Artefatos Refactor** | `/_reversa_refactor/` | Oportunidades de melhoria *(criada ao rodar `/reversa-refactor`)* |
 
 > **Por que os arquivos funcionais não estão aqui?**  
 > Claude Code, Codex, Gemini CLI e o framework Reversa lêem seus arquivos em caminhos fixos e obrigatórios (raiz do projeto). Mover quebraria todas as ferramentas. Esta pasta é o portal de documentação e configuração — não substitui os caminhos de convenção.
@@ -122,7 +122,14 @@ flutter analyze                   # AC2 — No issues found
 dart format --set-exit-if-changed lib/  # AC3 — exit 0
 ```
 
-**Worker Rust**
+**Edge Functions (backend ativo)**
+```bash
+cd supabase/functions
+deno check --frozen */index.ts   # AC1
+deno test --frozen --allow-env   # AC2
+```
+
+**Worker Rust** *(arquivado desde 28/09/2026; só se for reativado)*
 ```bash
 cargo test          # AC1
 cargo clippy -- -D warnings  # AC2

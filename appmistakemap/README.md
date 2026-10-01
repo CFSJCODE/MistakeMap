@@ -11,9 +11,10 @@ Cliente móvel e desktop da plataforma **MistakeMap**, desenvolvido em Flutter p
 <br>
 
 [![GitHub](https://img.shields.io/badge/GitHub-CFSJCODE%2FMISTAKEMAP-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/CFSJCODE/MISTAKEMAP)
-[![Flutter](https://img.shields.io/badge/Flutter-^3.13-02569B?style=flat-square&logo=flutter&logoColor=white)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-^3.0-0175C2?style=flat-square&logo=dart&logoColor=white)](https://dart.dev)
-![Status](https://img.shields.io/badge/Status-Desenvolvimento%20%2F%20MVP-F59E0B?style=flat-square)
+[![Flutter](https://img.shields.io/badge/Flutter-3.47-02569B?style=flat-square&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-^3.13-0175C2?style=flat-square&logo=dart&logoColor=white)](https://dart.dev)
+![Versão](https://img.shields.io/badge/Versão-1.0.0-0A7F5A?style=flat-square)
+![Status](https://img.shields.io/badge/Status-MVP%20funcional-F59E0B?style=flat-square)
 ![PUC Minas](https://img.shields.io/badge/PUC%20Minas-Engenharia%20de%20Computação-003B71?style=flat-square)
 
 <br>
@@ -40,6 +41,7 @@ Cliente móvel e desktop da plataforma **MistakeMap**, desenvolvido em Flutter p
 - [Sobre o Módulo](#sobre-o-modulo)
 - [Identificação Acadêmica](#identificacao-academica)
 - [Stack Tecnológica](#stack-tecnologica)
+- [Funcionalidades](#funcionalidades)
 - [Arquitetura de Software](#arquitetura-de-software)
 - [Estrutura de Diretórios](#estrutura-de-diretorios)
 - [Como Executar o Projeto](#como-executar-o-projeto)
@@ -56,12 +58,15 @@ Cliente móvel e desktop da plataforma **MistakeMap**, desenvolvido em Flutter p
 
 ## 🎯 Sobre o Módulo
 
-O diretório `appmistakemap/` contém a aplicação cliente frontend do **MistakeMap**. O aplicativo é projetado para operar com suporte *offline-first*, permitindo que o estudante:
+O diretório `appmistakemap/` contém a aplicação cliente frontend do **MistakeMap**. O aplicativo permite que o estudante:
 
-1. **Capture e Registre**: Fotografar resoluções de exercícios e correções mesmo sem conexão com a internet.
-2. **Revise com Human-in-the-Loop**: Conferir e editar transcrições de OCR e sugestões de erro da IA antes de qualquer confirmação.
-3. **Navegue no Grafo de Erros**: Visualizar nós de conceitos prioritários, histórico de tentativas e evidências de recuperação ao longo do tempo.
-4. **Priorize Estudos**: Consultar a fila de revisão explicável baseada em recência e recorrência de falhas conceituais.
+1. **Capture e Registre**: Cadastrar exercícios e fotografar a resolução para envio à análise.
+2. **Receba a Análise da IA**: Ver a transcrição, os erros por categoria, o conceito envolvido, a evidência e a confiança de cada sugestão.
+3. **Navegue no Mapa de Erros**: Visualizar o grafo de conceitos, a frequência de cada categoria de erro e o histórico de tentativas.
+4. **Pratique**: Pedir de 3 a 5 exercícios direcionados aos erros mais recentes de uma disciplina.
+
+> [!NOTE]
+> Modo *offline-first*, confirmação manual de cada erro sugerido e fila de revisão por prioridade fazem parte do roadmap e ainda não estão implementados. O estado completo está no [README principal](../.github/README.md#estado-atual).
 
 > [!IMPORTANT]
 > **Privacidade e Segurança**: Nenhuma chave com privilégios administrativos (`service_role`) deve ser incluída no bundle do aplicativo. Todo o controle de acesso e isolamento entre usuários é garantido via Row Level Security (RLS) no backend.
@@ -123,11 +128,14 @@ O diretório `appmistakemap/` contém a aplicação cliente frontend do **Mistak
 
 | Camada | Tecnologia / Padrão | Responsabilidade |
 |:---|:---|:---|
-| **Interface / Componentes** | Flutter (Fluent UI) | Renderização de telas, formulários, captura de câmera e gráficos |
-| **Gerenciamento de Estado** | Riverpod | Injeção de dependências reativa e controle de ciclo de vida de dados |
-| **Roteamento** | GoRouter | Navegação declarativa, tratamento de histórico e deep links |
-| **Integração de Backend** | `supabase_flutter` | Autenticação e sincronização de banco de dados |
-| **Armazenamento de Arquivos** | Cloudflare R2 (S3-compatível) | Upload e armazenamento de fotos de exercícios (10GB grátis, egress zero) |
+| **Interface / Componentes** | Flutter (`fluent_ui`) | Renderização de telas, formulários, captura de câmera e gráficos |
+| **Camada Flutuante** | `liquid_glass_widgets` | Barras superiores, botões da barra e avisos (toasts) |
+| **Telas de IA** | Material 3 isolado (`AiMaterialShell`) | Envio, mapa de erros, correção e prática, com os tokens da marca |
+| **Gerenciamento de Estado** | `StatefulWidget` + `setState` | Estado local por tela |
+| **Roteamento** | `Navigator` + `AppNavigationShell` | Barra inferior no celular e menu lateral a partir de 840 px |
+| **Integração de Backend** | `supabase_flutter` | Autenticação (e-mail/senha e Google), banco e chamadas às Edge Functions |
+| **Captura de Imagem** | `image_picker` + `crypto` | Câmera/galeria e hash SHA-256 exigido pelo contrato de upload |
+| **Armazenamento de Arquivos** | Cloudflare R2 (S3-compatível) | Upload via URL pré-assinada pela função `upload-url` (10GB grátis, egress zero) |
 | **Padronização e Qualidade** | `flutter_lints` / `analysis_options.yaml` | Análise estática contínua de código |
 
 <br>
@@ -136,37 +144,70 @@ O diretório `appmistakemap/` contém a aplicação cliente frontend do **Mistak
 
 <br>
 
-<a id="arquitetura-of-software"></a>
+<a id="funcionalidades"></a>
+
+## ✨ Funcionalidades
+
+| Tela | O que faz |
+|:---|:---|
+| **Login / Cadastro** | E-mail e senha ou conta Google; cria o perfil com papel `user` |
+| **Início** | Resumo de exercícios, itens para revisar e evolução |
+| **Lista** | Exercícios do estudante com status; ver detalhes, editar ou excluir |
+| **Mapa** | Frequência por disciplina; abre o mapa de erros da IA |
+| **Novo** | Cadastro de exercício com disciplina, enunciado, resposta e foto |
+| **Analisar com IA** | Envio da tentativa e acompanhamento da análise |
+| **Correção e evidências** | Transcrição, erros identificados e nova tentativa de análise |
+| **Prática** | Exercícios gerados a partir dos erros, com gabarito |
+| **Admin** | Papéis de usuários e uso das cotas de IA por modelo (somente administradores) |
+| **Sobre** | Missão, equipe e stack do projeto |
+
+<br>
+
+---
+
+<br>
+
+<a id="arquitetura-de-software"></a>
 
 ## 🏛️ Arquitetura de Software
 
-O código em `lib/` adota o padrão **Feature-First**, garantindo alta modularidade, facilidade de manutenção e isolamento de responsabilidades:
+O cliente não contém lógica de negócio de IA: transcrição, classificação de erros e geração de exercícios rodam nas **Supabase Edge Functions**, que chamam o Google Gemini. O aplicativo autentica o usuário, grava exercícios e tentativas no PostgreSQL (com RLS), envia a foto direto para a R2 com uma URL pré-assinada e exibe os resultados.
+
+```text
+Flutter ──► Supabase Auth / PostgreSQL (RLS)
+   │
+   ├──► upload-url ──► URL pré-assinada ──► PUT da foto na Cloudflare R2
+   ├──► analyze-attempt ──► Gemini ──► attempt_analyses + error_events
+   └──► generate-practice ──► Gemini ──► practice_sets
+```
+
+<br>
+
+<a id="estrutura-de-diretorios"></a>
+
+## 📂 Estrutura de Diretórios
+
+O MVP concentra as telas Fluent em `main.dart` e separa em pastas os módulos mais novos. A evolução prevista é extrair as telas para uma estrutura **Feature-First** (descrita no [README principal](../.github/README.md#arquitetura-flutter)).
 
 ```text
 lib/
-├── app/                  # Configurações globais da aplicação
-│   ├── bootstrap/        # Inicialização assíncrona (Supabase, configs locais)
-│   ├── router/           # Definição centralizada de rotas (GoRouter)
-│   └── theme/            # Definições de tema e cores Fluent UI
+├── main.dart                 # Bootstrap do Supabase, AuthGate e telas Fluent
 │
-├── core/                 # Componentes compartilhados transversais
-│   ├── errors/           # Classes de tratamento de exceções e falhas
-│   ├── services/         # Clientes de rede, armazenamento local e câmera
-│   ├── utils/            # Formatadores, constantes e extensões
-│   └── widgets/          # Componentes visuais atômicos reutilizáveis
-│
-├── features/             # Módulos de domínio e funcionalidades de negócio
-│   ├── auth/             # Login, cadastro e controle de sessão
-│   ├── subjects/         # Gestão de disciplinas e áreas de conhecimento
-│   ├── concepts/         # Grafo e catálogo de conceitos
-│   ├── exercises/        # Enunciados e registros de problemas
-│   ├── capture/          # Captura por câmera e processamento OCR
-│   ├── attempts/         # Resoluções e correções de exercícios
-│   ├── mistake_map/      # Visualização do mapa de fragilidades e conexões
-│   ├── review/           # Fila de revisão e priorização de tópicos
-│   └── settings/         # Preferências do usuário e exportação
-│
-└── main.dart             # Ponto de entrada (entrypoint) da aplicação
+├── about/                    # Botão do LinkedIn e abertura de perfis externos
+├── admin/                    # Painel de métricas, cotas por modelo e política de atualização
+├── ai/                       # Fluxo de IA (rota Material isolada)
+│   ├── ai_material_shell.dart        # Tema Material com os tokens da marca
+│   ├── analysis_repository.dart      # Contrato com Supabase e Edge Functions
+│   ├── analysis_models.dart          # Tentativas, análises, erros e prática
+│   ├── exercise_submission_view.dart # Envio da tentativa e da foto
+│   └── insights_view.dart            # Mapa de erros, correção e prática
+├── assets/                   # Foto de perfil embutida
+├── auth/                     # Login com Google e verificação do OAuth
+├── layout/                   # Classes de largura, dobráveis e shell de navegação
+└── theme/                    # Tokens de design, paleta, estilos de controles e movimento
+
+test/                         # Testes de widget, contrato, layout e prévias visuais
+database/                     # Migrações canônicas do Supabase (ver database/README.md)
 ```
 
 <br>
@@ -181,9 +222,12 @@ lib/
 
 ### Pré-requisitos
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (versão compatível com Dart 3.x)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) estável (validado com Flutter 3.47 / Dart 3.13)
 - Android Studio / VS Code com extensões Flutter e Dart
 - Dispositivo Android (ou emulador AVD) / Navegador Chrome / SDK Windows Desktop
+
+> [!TIP]
+> No Windows, mantenha o projeto em um caminho **sem acentos** (por exemplo, `D:\MistakeMap`). Caminhos com acentos fazem `flutter analyze` e o build AOT falharem.
 
 ### Passos de Instalação
 
@@ -235,17 +279,34 @@ Execute o analisador do Dart para verificar advertências e conformidade com as 
 flutter analyze
 ```
 
+### Formatação
+```bash
+dart format --set-exit-if-changed lib/
+```
+
 ### Executar Testes Automatizados
 ```bash
-# Executa todos os testes unitários e de widgets
-flutter test
+# Executa todos os testes unitários e de widgets (o mesmo comando do CI)
+flutter test --reporter compact
 
 # Executa testes com relatório de cobertura
 flutter test --coverage
+
+# Regenera as prévias visuais em test/previews/ (não versionadas)
+flutter test test/responsive_test.dart --update-goldens --dart-define=GENERATE_PREVIEWS=true --plain-name "Prévias"
 ```
 
+| Arquivo de teste | Cobertura |
+|:---|:---|
+| `analysis_test.dart`, `repository_contract_test.dart`, `upload_contract_test.dart` | Modelos da IA e contratos com Supabase e Edge Functions |
+| `ai_navigation_test.dart`, `navigation_shell_test.dart` | Navegação entre telas Fluent e telas de IA |
+| `responsive_test.dart`, `layout_adaptativo_test.dart` | Layout de 320 a 1440 px, dobráveis e telas duplas |
+| `hover_color_test.dart`, `motion_test.dart` | Contraste do texto no hover e animações |
+| `metrics_panel_test.dart`, `metrics_policy_test.dart`, `model_quota_card_test.dart` | Painel administrativo |
+| `google_sign_in_test.dart`, `external_profile_test.dart`, `linkedin_profile_button_test.dart` | Login com Google e links externos |
+
 > [!TIP]
-> **Cobertura Recomendada**: Priorize testes unitários nas regras de pontuação/prioridade e nos modelos de dados, além de testes de widget para os fluxos de captura e revisão de erros.
+> O CI (`.github/workflows/ci.yml`) roda `flutter analyze`, `dart format` e `flutter test` em todo pull request. Os três precisam passar para o merge no `main`.
 
 <br>
 
@@ -257,9 +318,13 @@ flutter test --coverage
 
 ## 📋 Diretrizes de Desenvolvimento
 
-- **Offline-First**: Operações de escrita devem salvar rascunhos localmente antes de disparar sincronizações com o backend.
-- **Transparência na IA**: Toda inferência de conceitos e classificação de erros deve ser apresentada ao estudante como uma hipótese pendente de validação manual.
-- **Clean Code**: Mantenha widgets desacoplados de regras de acesso a dados diretas, utilizando providers do Riverpod.
+- **Sem lógica de IA no cliente**: OCR, LLM e regras de análise ficam nas Edge Functions; o aplicativo só chama as funções e exibe o resultado.
+- **Sem segredos no bundle**: o cliente usa apenas a chave pública (`anon`) do Supabase; `service_role` e chaves de IA ficam nos segredos do backend.
+- **Transparência na IA**: Toda inferência de conceitos e classificação de erros deve ser apresentada ao estudante como uma hipótese, com evidência e confiança visíveis.
+- **Design System único**: telas novas usam os tokens de `lib/theme/` (cores, raios, espaçamento em ritmo de 4/8 px e movimento), inclusive na rota Material das telas de IA.
+- **Clean Code**: Mantenha widgets desacoplados do acesso a dados; novas integrações seguem o padrão de repositório de `lib/ai/analysis_repository.dart`.
+- **Qualidade**: Todo arquivo Dart deve passar em `flutter analyze` sem avisos.
+- **Offline-First** *(roadmap)*: Operações de escrita deverão salvar rascunhos localmente antes de sincronizar com o backend.
 
 <br>
 
@@ -267,6 +332,6 @@ flutter test --coverage
 
 <div align="center">
 
-Desenvolvido para o **MistakeMap** · [Voltar para a raiz do repositório](../README.md)
+Desenvolvido para o **MistakeMap** · [Voltar para a raiz do repositório](../.github/README.md)
 
 </div>
