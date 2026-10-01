@@ -261,6 +261,9 @@ database/                     # Migrações canônicas do Supabase (ver database
      flutter run -d windows
      ```
 
+> [!NOTE]
+> **Versão web publicada:** [mistakemap-tau.vercel.app](https://mistakemap-tau.vercel.app). O workflow `.github/workflows/web-deploy-vercel.yml` gera `flutter build web --release` e publica na Vercel a cada push no `main` que altera `appmistakemap/`. Os cabeçalhos e o roteamento ficam em `web/vercel.json`.
+
 <br>
 
 ---
