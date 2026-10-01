@@ -9,10 +9,11 @@
 Plataforma de aprendizagem orientada a erros que transforma exercícios corrigidos em uma estrutura navegável de **conceitos, padrões recorrentes, evidências de recuperação e evolução**.
 
 [![GitHub](https://img.shields.io/badge/GitHub-CFSJCODE%2FMISTAKEMAP-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/CFSJCODE/MISTAKEMAP)
-![Status](https://img.shields.io/badge/Status-Concepção%20%2F%20MVP-F59E0B?style=flat-square)
-![Versão](https://img.shields.io/badge/Versão-1.0-0A7F5A?style=flat-square)
+![Status](https://img.shields.io/badge/Status-MVP%20funcional-F59E0B?style=flat-square)
+![Versão](https://img.shields.io/badge/Versão-1.0.0-0A7F5A?style=flat-square)
 ![PUC Minas](https://img.shields.io/badge/Projeto%20Acadêmico-PUC%20Minas-003B71?style=flat-square)
 ![Fluent UI](https://img.shields.io/badge/Design%20System-Fluent%20UI-0078D4?style=flat-square&logo=windows11&logoColor=white)
+[![CI](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml/badge.svg)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml)
 
 **MistakeMap não é apenas um corretor de certo ou errado.**  
 Ele procura responder a uma pergunta mais útil:
@@ -66,7 +67,7 @@ flowchart LR
 | **Disciplina** | Projeto Integrado I: Desenvolvimento Móvel |
 | **Discentes** | **Cláudio Francisco Dos Santos Júnior** · **Lucas Emanuel Simão Silva** |
 | **Orientação** | **Ilo Amy Saldanha Rivero** |
-| **Versão do documento** | 1.0 — Agosto de 2026 |
+| **Versão do documento** | 1.1 — Outubro de 2026 |
 
 > [!NOTE]
 > O projeto é desenvolvido no contexto acadêmico da disciplina **Projeto Integrado I: Desenvolvimento Móvel**, articulando engenharia de software, experiência do usuário, modelagem de dados e inteligência artificial aplicada à aprendizagem.
@@ -83,8 +84,8 @@ flowchart LR
   <img src="https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter">
   <img src="https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart">
   <img src="https://img.shields.io/badge/Fluent_UI-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Fluent UI">
-  <img src="https://img.shields.io/badge/Riverpod-6C63FF?style=flat-square&logo=flutter&logoColor=white" alt="Riverpod">
-  <img src="https://img.shields.io/badge/GoRouter-02569B?style=flat-square&logo=flutter&logoColor=white" alt="GoRouter">
+  <img src="https://img.shields.io/badge/Liquid_Glass-Barras%20e%20toasts-5B8DEF?style=flat-square&logo=flutter&logoColor=white" alt="Liquid Glass">
+  <img src="https://img.shields.io/badge/Layout-Adaptativo-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Layout adaptativo">
 </p>
 
 ### Design System
@@ -123,6 +124,8 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
 > **Material Design não constitui a linguagem visual principal do MistakeMap.**
 >
 > O projeto utiliza Flutter como framework de interface, porém sua identidade visual e seus componentes de apresentação são baseados em **Fluent UI**.
+>
+> A única exceção são as telas de análise por IA (envio, mapa de erros, correção e prática), que rodam em uma rota Material 3 isolada (`AiMaterialShell`) para usar gráficos e formulários. Elas recebem os mesmos tokens de cor, raio e movimento da marca (`lib/theme/`), e nenhuma tela Fluent depende dessa rota.
 
 ### Backend e dados
 
@@ -130,12 +133,14 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
   <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/RLS-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="Row Level Security">
+  <img src="https://img.shields.io/badge/Edge_Functions-Deno-000000?style=flat-square&logo=deno&logoColor=white" alt="Edge Functions">
   <img src="https://img.shields.io/badge/Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white" alt="Cloudflare R2">
 </p>
 
 ### Inteligência e processamento
 
 <p>
+  <img src="https://img.shields.io/badge/Google_Gemini-Multimodal-8E75B2?style=flat-square&logo=googlegemini&logoColor=white" alt="Google Gemini">
   <img src="https://img.shields.io/badge/OCR-Revisão%20manual-4B5563?style=flat-square" alt="OCR">
   <img src="https://img.shields.io/badge/LLM-Backend-6A5ACD?style=flat-square" alt="LLM">
   <img src="https://img.shields.io/badge/Grafo-Conceitual-7C3AED?style=flat-square" alt="Grafo conceitual">
@@ -187,15 +192,18 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
 | **Design System** | `fluent_ui` | Linguagem visual e componentes da aplicação |
 | **Aplicação raiz** | `FluentApp` | Configuração global da camada visual |
 | **Tema** | `FluentThemeData` | Cores, brilho, tipografia e comportamento visual |
-| **Iconografia** | `FluentIcons` | Iconografia consistente com Fluent Design |
-| **Estado** | Riverpod | Gerenciamento de estado e injeção de dependências |
-| **Navegação** | GoRouter | Rotas e deep links |
-| **Backend** | Supabase | Auth, banco e jobs |
-| **Banco** | PostgreSQL | Eventos e grafo conceitual via tabelas |
-| **Armazenamento de arquivos** | Cloudflare R2 | Fotos de exercícios (10GB grátis, compatível S3, egress zero) |
-| **OCR** | Motor compatível | Texto/matemática com revisão manual |
-| **IA** | LLM em backend | Sugestão de conceitos e erros |
-| **Visualização** | `CustomPaint` / graph library | Mapa conceitual e evolução |
+| **Iconografia** | `WindowsIcons` (`fluent_ui`) | Iconografia consistente com Fluent Design |
+| **Camada flutuante** | `liquid_glass_widgets` | Barras, botões da barra e avisos (toasts) |
+| **Telas de IA** | Material 3 isolado (`AiMaterialShell`) | Envio, mapa de erros, correção e prática |
+| **Estado** | `StatefulWidget` + `setState` | Estado local por tela, sem framework externo |
+| **Navegação** | `Navigator` + shell adaptativo | Barra inferior no celular e menu lateral a partir de 840 px |
+| **Autenticação** | Supabase Auth | E-mail e senha, e login com Google (OAuth) |
+| **Backend** | Supabase | Auth, banco, Edge Functions e jobs (`pg_cron` + `pg_net`) |
+| **Banco** | PostgreSQL | Eventos e grafo conceitual via tabelas, com RLS |
+| **Armazenamento de arquivos** | Cloudflare R2 | Fotos de exercícios via URL pré-assinada (10GB grátis, compatível S3, egress zero) |
+| **OCR** | Google Gemini (multimodal) | Transcrição da foto com revisão manual |
+| **IA** | Gemini nas Edge Functions | Sugestão de conceitos, erros e exercícios de prática |
+| **Visualização** | `CustomPaint` | Grafo de conceitos e barras de frequência |
 
 ---
 
@@ -208,13 +216,42 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
 | **Projeto** | MistakeMap |
 | **Documento-base** | Concepção, Arquitetura e Roadmap de Implementação |
 | **Contexto de aplicação** | Estudo individual, matemática, física, computação, engenharias e disciplinas baseadas em resolução de problemas |
-| **Stack principal** | Flutter + Dart + Fluent UI + Supabase/PostgreSQL + Cloudflare R2 + OCR/LLM + grafo conceitual |
+| **Stack principal** | Flutter + Dart + Fluent UI + Supabase/PostgreSQL + Edge Functions + Cloudflare R2 + Gemini + grafo conceitual |
 | **Design System** | Fluent UI / Fluent Design |
-| **Pacote de interface** | `fluent_ui` |
+| **Pacote de interface** | `fluent_ui` + `liquid_glass_widgets` |
 | **Plataformas** | Android, Windows e Web |
-| **Versão** | **1.0 — Agosto de 2026** |
-| **Status** | Concepção / MVP |
+| **Versão** | **1.0.0 — Outubro de 2026** |
+| **Status** | MVP funcional |
 | **Repositório** | [`CFSJCODE/MISTAKEMAP`](https://github.com/CFSJCODE/MISTAKEMAP) |
+
+---
+
+<a id="estado-atual"></a>
+
+## Estado atual da implementação
+
+O núcleo do MVP está implementado e publicado: o estudante cadastra exercícios, envia a foto da tentativa, recebe uma análise de erros com evidências, navega pelo mapa de erros e pratica com exercícios direcionados.
+
+| Área | Situação | Onde está |
+|:---|:---:|:---|
+| **Login e cadastro** (e-mail/senha e Google) | ✅ | `appmistakemap/lib/main.dart`, `lib/auth/` |
+| **Exercícios** (criar, listar, editar, excluir e detalhar) | ✅ | `appmistakemap/lib/main.dart` |
+| **Envio da foto** para a R2 via URL pré-assinada, com SHA-256 | ✅ | `lib/ai/analysis_repository.dart`, função `upload-url` |
+| **Análise por IA** (transcrição, erros por categoria, conceito, evidência e confiança) | ✅ | função `analyze-attempt`, `lib/ai/insights_view.dart` |
+| **Mapa de erros** (grafo de conceitos e frequência por categoria) | ✅ | `lib/ai/insights_view.dart` |
+| **Exercícios de prática** gerados a partir dos erros (3 a 5 por pedido) | ✅ | função `generate-practice` |
+| **Fila em lote** processada pelo `pg_cron` | ✅ | função `process-batch` |
+| **Painel administrativo** (papéis, uso e cotas da IA por modelo) | ✅ | `lib/admin/`, tela Admin |
+| **Layout adaptativo** (celular, tablet, desktop, dobráveis e telas duplas) | ✅ | `lib/layout/` |
+| **Fórmula de prioridade** $P = F \times R \times I \times (1 - M)$ | 🔜 | prevista como função PostgreSQL |
+| **Validação humana** dos erros sugeridos (confirmar, corrigir, rejeitar) | 🔜 | hoje a análise é exibida, ainda sem confirmação por evento |
+| **Modo offline** e fila local de envio | 🔜 | não iniciado |
+| **Relatórios** PDF/CSV | 🔜 | não iniciado |
+
+A taxonomia de erros usada pela IA tem 7 categorias: `calculo`, `conceito`, `sinal`, `interpretacao`, `procedimento`, `unidade` e `outro`. Cada usuário tem um limite diário de análises e de pedidos de prática, controlado no banco (`ai_daily_usage`).
+
+> [!NOTE]
+> O worker Rust em `worker/` foi a primeira implementação do pipeline e está **arquivado**: desde 28/09/2026 o processamento roda nas Supabase Edge Functions. Os detalhes de backend, deploy e pendências estão em [`BACKEND.md`](../BACKEND.md), e as migrações em [`appmistakemap/database/README.md`](../appmistakemap/database/README.md).
 
 ---
 
@@ -229,6 +266,7 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
 - [Identificação acadêmica](#identificacao-academica)
 - [Tecnologias](#stack-tecnologica)
 - [Informações do projeto](#metadados)
+- [Estado atual da implementação](#estado-atual)
 - [Visão Executiva](#visao-executiva)
 - [Objetivos](#objetivos)
 - [Problema e Cenário de Uso](#problema-e-cenario-de-uso)
@@ -407,11 +445,11 @@ Isso significa que:
 
 ## Objetivos
 
-- [ ] Registrar exercícios corrigidos e a solução produzida pelo estudante.
-- [ ] Classificar erros por conceito, operação cognitiva e padrão recorrente.
-- [ ] Construir mapa de fragilidades com evidências navegáveis.
+- [x] Registrar exercícios corrigidos e a solução produzida pelo estudante.
+- [x] Classificar erros por conceito, operação cognitiva e padrão recorrente.
+- [x] Construir mapa de fragilidades com evidências navegáveis.
 - [ ] Priorizar revisão com base em frequência, recência, importância e recuperação.
-- [ ] Distinguir erro conceitual, algébrico, aritmético, de unidade, leitura e atenção quando possível.
+- [x] Distinguir erro conceitual, algébrico, aritmético, de unidade, leitura e atenção quando possível.
 - [ ] Acompanhar evolução sem transformar o mapa em diagnóstico psicológico ou nota definitiva.
 
 ---
@@ -598,28 +636,27 @@ Alta prioridade de revisão
 - feedback visual;
 - identidade de interface consistente.
 
-**Riverpod** oferece:
+**Estado e navegação** usam os recursos nativos do Flutter:
 
-- gerenciamento de estado;
-- injeção de dependências;
-- gerenciamento de estados assíncronos;
-- desacoplamento entre apresentação e domínio.
+- `StatefulWidget` + `setState` para o estado de cada tela;
+- `Navigator` para abrir detalhes, edição, Sobre e as telas de IA;
+- um shell adaptativo (`lib/layout/navigation_shell.dart`) que troca a barra inferior pelo menu lateral em telas largas;
+- um repositório (`AnalysisRepository`) que isola as chamadas ao Supabase nas telas de IA.
 
-**GoRouter** oferece:
-
-- navegação declarativa;
-- rotas;
-- deep links.
+> [!NOTE]
+> Riverpod e GoRouter estavam previstos na concepção, mas não foram adotados no MVP. A adoção continua possível quando o número de telas justificar estado compartilhado e deep links.
 
 **Supabase** armazena:
 
 - exercícios;
-- imagens;
 - taxonomia;
 - eventos;
-- histórico.
+- histórico;
+- análises da IA e uso diário.
 
-OCR/LLM ficam em **backend seguro**.
+As **imagens** ficam na **Cloudflare R2**, e o banco guarda apenas o caminho e o hash de cada arquivo.
+
+OCR/LLM ficam em **backend seguro**: as Supabase Edge Functions chamam o Google Gemini, e a chave da IA nunca chega ao aplicativo.
 
 O grafo pode ser modelado relacionalmente com `concept_edges` no PostgreSQL, sem exigir banco de grafos no MVP.
 
@@ -629,10 +666,10 @@ O grafo pode ser modelado relacionalmente com `concept_edges` no PostgreSQL, sem
 flowchart TB
     UX["CAMADA DE EXPERIÊNCIA<br/>Flutter + Fluent UI<br/>captura, exercício, revisão, mapa e fila de estudo"]
     FLUENT["DESIGN SYSTEM<br/>FluentApp + FluentThemeData + NavigationView<br/>InfoBar + ContentDialog + FluentIcons"]
-    STATE["ESTADO E NAVEGAÇÃO<br/>Riverpod + GoRouter"]
+    STATE["ESTADO E NAVEGAÇÃO<br/>setState + Navigator + shell adaptativo"]
     DOMAIN["DOMÍNIO<br/>Disciplinas, conceitos, exercícios, tentativas, erros, revisões e domínio"]
-    AI["IA EDUCACIONAL<br/>OCR + parsing + LLM para sugestões com evidência"]
-    SB["SUPABASE<br/>Auth + PostgreSQL + RLS + Edge Functions"]
+    AI["IA EDUCACIONAL<br/>Edge Functions + Google Gemini<br/>transcrição, erros com evidência e prática"]
+    SB["SUPABASE<br/>Auth + PostgreSQL + RLS + pg_cron"]
     R2["CLOUDFLARE R2<br/>Armazenamento de fotos (S3-compatível)"]
     ANALYSIS["ANÁLISE<br/>Agregações por conceito, tipo de erro, recência e recuperação"]
 
@@ -1043,6 +1080,9 @@ MaterialApp(
 > [!NOTE]
 > Isso não remove Flutter da arquitetura. Flutter continua responsável pela composição, layout e renderização. **Fluent UI define o Design System e os componentes utilizados na camada visual.**
 
+> [!WARNING]
+> **Exceção documentada:** as telas de IA usam `MaterialApp`, `Scaffold` e `AppBar` dentro da rota isolada `AiMaterialShell`. O tema dessa rota é construído a partir dos mesmos tokens da marca (`lib/theme/design_tokens.dart`, `lib/ai/material_control_styles.dart`), para que botões, cores, raios e movimento fiquem iguais aos das telas Fluent.
+
 ---
 
 <a id="fluxos-operacionais"></a>
@@ -1116,7 +1156,26 @@ Exportações devem favorecer **metacognição**.
 
 ## Arquitetura Flutter
 
-A base de código deve seguir arquitetura **feature-first**, com separação clara entre apresentação, domínio e dados.
+### Estrutura atual
+
+O MVP concentra as telas Fluent em `main.dart` e separa em pastas os módulos mais novos:
+
+```text
+appmistakemap/lib/
+├── main.dart                    # Bootstrap, Auth, telas Fluent (início, lista, mapa, novo, detalhe, edição, admin, sobre)
+│
+├── about/                       # Botão de perfil do LinkedIn e abertura de links externos
+├── admin/                       # Painel de métricas, cotas por modelo e política de atualização
+├── ai/                          # Fluxo de IA: shell Material, repositório, envio, mapa, correção e prática
+├── assets/                      # Foto de perfil embutida
+├── auth/                        # Login com Google e verificação da configuração OAuth
+├── layout/                      # Classes de largura, dobráveis e shell de navegação adaptativo
+└── theme/                       # Tokens de design, paleta, estilos de controles e movimento
+```
+
+### Estrutura alvo
+
+A base de código deve evoluir para arquitetura **feature-first**, com separação clara entre apresentação, domínio e dados, à medida que as telas de `main.dart` forem extraídas.
 
 ```text
 lib/
@@ -1193,11 +1252,11 @@ features/
 | **Biblioteca visual** | `fluent_ui` |
 | **Aplicação raiz** | `FluentApp` |
 | **Tema** | `FluentThemeData` |
-| **Iconografia** | `FluentIcons` |
-| **Gerenciamento de estado** | Riverpod |
-| **Injeção de dependências** | Riverpod |
-| **Navegação** | GoRouter |
-| **Deep links** | GoRouter |
+| **Iconografia** | `WindowsIcons` |
+| **Gerenciamento de estado** | `setState` hoje; Riverpod quando houver estado compartilhado |
+| **Injeção de dependências** | Repositórios passados por construtor (`AnalysisRepository`) |
+| **Navegação** | `Navigator` + `AppNavigationShell` |
+| **Deep links** | Não implementado; GoRouter é a opção prevista |
 | **Backend** | Supabase |
 | **Banco** | PostgreSQL |
 | **Alternativa de estado válida** | Bloc, desde que o projeto adote um único padrão principal |
@@ -1287,16 +1346,16 @@ Fotografar e anotar exercício deve funcionar durante aula ou estudo **sem inter
 
 ## Roadmap
 
-| Fase | Entregas | Critério de conclusão |
-|:---|:---|:---|
-| **Fase 0 — Fundação** | Flutter, Fluent UI, Supabase, Auth e Storage | Aplicação base Fluent, login e dados privados |
-| **Fase 1 — Disciplinas** | Conceitos, relações e exercícios | Grafo manual navegável |
-| **Fase 2 — Tentativas** | Soluções, correções e anexos | Histórico de estudo completo |
-| **Fase 3 — Erros** | Taxonomia e eventos manuais | Mapa funciona sem IA |
-| **Fase 4 — IA** | OCR, conceitos e erros sugeridos | Sugestões revisáveis com evidência |
-| **Fase 5 — Prioridade** | Agregação, recência e `mastery_events` | Fila de revisão explicável |
-| **Fase 6 — Relatórios** | PDF/CSV e compartilhamento seletivo | Portabilidade garantida |
-| **Fase 7 — Hardening** | RLS, acessibilidade, testes e avaliação educacional | Release estável |
+| Fase | Entregas | Critério de conclusão | Situação |
+|:---|:---|:---|:---:|
+| **Fase 0 — Fundação** | Flutter, Fluent UI, Supabase, Auth e Storage | Aplicação base Fluent, login e dados privados | ✅ |
+| **Fase 1 — Disciplinas** | Conceitos, relações e exercícios | Grafo manual navegável | 🟡 disciplinas e exercícios prontos; conceitos criados pela IA |
+| **Fase 2 — Tentativas** | Soluções, correções e anexos | Histórico de estudo completo | ✅ |
+| **Fase 3 — Erros** | Taxonomia e eventos manuais | Mapa funciona sem IA | 🟡 taxonomia pronta; eventos vêm da IA |
+| **Fase 4 — IA** | OCR, conceitos e erros sugeridos | Sugestões revisáveis com evidência | 🟡 sugestões com evidência; falta a revisão por evento |
+| **Fase 5 — Prioridade** | Agregação, recência e `mastery_events` | Fila de revisão explicável | 🔜 |
+| **Fase 6 — Relatórios** | PDF/CSV e compartilhamento seletivo | Portabilidade garantida | 🔜 |
+| **Fase 7 — Hardening** | RLS, acessibilidade, testes e avaliação educacional | Release estável | 🟡 RLS, CI e testes ativos |
 
 ### Visão do roadmap
 
@@ -1322,14 +1381,14 @@ O MVP deve permitir que o estudante **registre e classifique erros manualmente**
 > [!TIP]
 > A IA entra como **acelerador**, não como dependência estrutural do valor inicial do produto.
 
-- [ ] Estrutura Flutter com `FluentApp`.
-- [ ] Design System configurado com `FluentThemeData`.
-- [ ] Navegação Fluent responsiva.
-- [ ] Disciplinas, conceitos e relações.
-- [ ] Exercícios/tentativas com imagens.
-- [ ] Taxonomia inicial de erros.
-- [ ] Classificação manual + sugestão de IA.
-- [ ] MistakeMap agregado.
+- [x] Estrutura Flutter com `FluentApp`.
+- [x] Design System configurado com `FluentThemeData`.
+- [x] Navegação Fluent responsiva.
+- [ ] Disciplinas, conceitos e relações. *(disciplinas prontas; conceitos vêm da IA; falta editar as relações)*
+- [x] Exercícios/tentativas com imagens.
+- [x] Taxonomia inicial de erros.
+- [ ] Classificação manual + sugestão de IA. *(a sugestão de IA está pronta; falta a classificação manual)*
+- [x] MistakeMap agregado.
 - [ ] Fila de revisão por prioridade.
 - [ ] PDF/CSV de histórico.
 
@@ -1642,23 +1701,22 @@ prioridade:
 ## Execução
 
 > [!NOTE]
-> O documento de concepção define a arquitetura e o roadmap, mas não fornece instruções formais de build ou implantação. Os comandos abaixo representam apenas o **fluxo padrão esperado para um projeto Flutter**.
+> O aplicativo fica em `appmistakemap/`. O cliente já aponta para o projeto Supabase publicado; nenhuma chave privada é necessária para executá-lo. O backend (Edge Functions, migrações e segredos) é descrito em [`BACKEND.md`](../BACKEND.md).
 
 ### Pré-requisitos
 
-- [ ] Flutter SDK
-- [ ] Dart SDK
-- [ ] Projeto Supabase configurado
-- [ ] Ambiente compatível com a plataforma de destino
-- [ ] Dependência `fluent_ui`
-- [ ] Dependência Riverpod
-- [ ] Dependência GoRouter
+- [ ] Flutter SDK estável (validado com Flutter 3.47 / Dart 3.13)
+- [ ] Ambiente compatível com a plataforma de destino (Android SDK, Visual Studio para Windows ou Chrome)
+- [ ] Deno 2, apenas para testar as Edge Functions
+
+> [!TIP]
+> No Windows, clone o repositório em um caminho **sem acentos** (por exemplo, `D:\MistakeMap`). Caminhos com acentos fazem `flutter analyze` e o build AOT falharem.
 
 ### 1. Clonar o repositório
 
 ```bash
 git clone https://github.com/CFSJCODE/MISTAKEMAP.git
-cd MISTAKEMAP
+cd MISTAKEMAP/appmistakemap
 ```
 
 ### 2. Instalar dependências
@@ -1676,10 +1734,26 @@ flutter doctor
 ### 4. Executar
 
 ```bash
-flutter run
+flutter run -d android    # ou: -d windows / -d chrome
 ```
 
-### Dependências arquiteturais esperadas
+### 5. Validar como o CI
+
+```bash
+flutter analyze
+dart format --set-exit-if-changed lib/
+flutter test --reporter compact
+```
+
+As Edge Functions têm seus próprios testes:
+
+```bash
+cd ../supabase/functions
+deno check --frozen */index.ts
+deno test --frozen --allow-env
+```
+
+### Dependências do aplicativo
 
 ```yaml
 dependencies:
@@ -1687,13 +1761,24 @@ dependencies:
     sdk: flutter
 
   fluent_ui:
-  flutter_riverpod:
-  go_router:
+  liquid_glass_widgets:
   supabase_flutter:
+  image_picker:
+  http:
+  crypto:
 ```
 
 > [!WARNING]
-> As versões das dependências devem ser definidas no `pubspec.yaml` de acordo com a versão de Flutter utilizada e com a compatibilidade validada no projeto. O README não deve fixar versões arbitrárias sem testes no ambiente real.
+> As versões das dependências ficam no `pubspec.yaml` e são validadas pelo CI. O README não fixa versões para não divergir do arquivo real.
+
+### Integração contínua
+
+| Workflow | Quando roda | O que faz |
+|:---|:---|:---|
+| `ci.yml` | Push e pull request no `main` | `deno check`/`deno test` das funções, `flutter analyze`, `dart format` e `flutter test` |
+| `supabase-functions-deploy.yml` | Push no `main` que altera `supabase/` | Publica as Edge Functions |
+| `supabase-deploy.yml` | Push no `main` que altera migrações | Publica as migrações em `appmistakemap/database/` |
+| `sync-repository-metadata.yml` | Push no `main` que altera `.github/LICENSE` ou `.github/CITATION.cff` | Copia esses arquivos para a raiz |
 
 ---
 
@@ -1712,15 +1797,17 @@ Dart
    +
 Fluent UI
    +
-Riverpod
-   +
-GoRouter
+Liquid Glass
    +
 Supabase
    +
 PostgreSQL
    +
-OCR / LLM
+Edge Functions
+   +
+Cloudflare R2
+   +
+Google Gemini (OCR / LLM)
    +
 Grafo Conceitual
 ```
@@ -1747,10 +1834,12 @@ para construir uma aplicação educacional na qual a interface não apenas apres
   <img src="https://img.shields.io/badge/Fluent_UI-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Fluent UI">
   <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white" alt="Cloudflare R2">
+  <img src="https://img.shields.io/badge/Google_Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white" alt="Google Gemini">
 </p>
 
 <p align="center">
-  <sub>Flutter · Dart · Fluent UI · Riverpod · GoRouter · Supabase · PostgreSQL</sub>
+  <sub>Flutter · Dart · Fluent UI · Liquid Glass · Supabase · PostgreSQL · Edge Functions · Cloudflare R2 · Gemini</sub>
 </p>
 
-<p align="center"><sub>Versão 1.0 · Agosto de 2026</sub></p>
+<p align="center"><sub>Versão 1.0.0 · Outubro de 2026</sub></p>

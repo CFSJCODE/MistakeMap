@@ -1,20 +1,22 @@
 # MistakeMap — Decisões e Arquitetura do Backend
 
-> Documento vivo. Atualizado em: 2026-09-30
+> Documento vivo. Atualizado em: 2026-10-01
 
 ---
 
 ## 1. Visão Geral da Arquitetura
 
 ```
-Flutter (cliente móvel)
+Flutter (cliente Android, Windows e Web)
     │
     ├── Auth / RPC / DB queries ──► Supabase (PostgreSQL + Auth)
     │
     └── POST /upload-url ──────────► Supabase Edge Functions
-    │   POST /process-batch             ├── upload-url   → gera presigned URL → R2
-    │   GET  /health                    ├── process-batch → baixa R2 → OCR → LLM
-    │                                   └── health        → verifica DB + R2
+    │   POST /analyze-attempt           ├── upload-url        → gera presigned URL → R2
+    │   POST /generate-practice         ├── analyze-attempt   → baixa R2 → Gemini (OCR + erros)
+    │   POST /process-batch             ├── generate-practice → Gemini (exercícios de prática)
+    │   GET  /health                    ├── process-batch     → fila de tentativas pendentes
+    │                                   └── health            → verifica DB + R2
     │
     └── Upload de imagens ─────────► Cloudflare R2 (via presigned URL)
                                           ▲
@@ -27,10 +29,11 @@ Flutter (cliente móvel)
 
 | Componente | Plataforma | Função |
 |---|---|---|
-| **Flutter** | Mobile (Android/iOS) | Cliente — autenticação, upload, visualização |
+| **Flutter** | Android, Windows e Web | Cliente — autenticação (e-mail/senha e Google), upload, análise, mapa de erros, prática e painel admin |
 | **Supabase** | Supabase Cloud (free tier) | Auth (JWT ES256), PostgreSQL, RLS, RPCs, Edge Functions |
 | **Cloudflare R2** | Cloudflare (free tier) | Storage de imagens e assets dos alunos |
-| **Edge Functions** | Supabase (Deno/TypeScript) | `upload-url`, `process-batch`, `health` — sem VM, sem custo fixo |
+| **Edge Functions** | Supabase (Deno/TypeScript) | `upload-url`, `analyze-attempt`, `generate-practice`, `process-batch`, `health` — sem VM, sem custo fixo |
+| **Google Gemini** | Google AI Studio (camada gratuita) | OCR multimodal, classificação de erros e geração de exercícios |
 
 > **Nota histórica:** o backend foi originalmente implementado como um worker Rust
 > rodando no Fly.io (ver `worker/`). Migrado para Supabase Edge Functions em
@@ -470,7 +473,7 @@ Armadilhas documentadas do primeiro deploy estão preservadas no histórico git
 
 ---
 
-## 10. Dados de Teste
+## 11. Dados de Teste
 
 ### Bucket R2 `mistakemap`
 
@@ -486,7 +489,7 @@ Armadilhas documentadas do primeiro deploy estão preservadas no histórico git
 
 ---
 
-## 11. Pendências e Próximos Passos
+## 12. Pendências e Próximos Passos
 
 - [x] Criar `Dockerfile` multi-stage para o worker Rust
 - [x] Criar `fly.toml` e fazer primeiro deploy no Fly.io
@@ -494,7 +497,9 @@ Armadilhas documentadas do primeiro deploy estão preservadas no histórico git
 - [x] Taxonomia base de `error_types` (7 categorias, migração `20260929052429`)
 - [x] Client Flutter: auth, telas, upload com SHA-256 no contrato da `upload-url`
 - [x] Versionar no repositório as migrações e Edge Functions aplicadas em produção (30/09/2026)
-- [ ] Exibir no Flutter o diagnóstico (`attempt_analyses`, `error_events`) e chamar `generate-practice`
+- [x] Exibir no Flutter o diagnóstico (`attempt_analyses`, `error_events`) e chamar `generate-practice` (PR #9, 30/09/2026)
+- [x] Painel administrativo com papéis e uso das cotas de IA por modelo (PR #11, 01/10/2026)
+- [ ] Tela de validação humana dos erros sugeridos (confirmar, corrigir ou rejeitar cada `error_event`)
 - [x] CI/CD no GitHub Actions: `ci.yml` e `supabase-functions-deploy.yml`, que também publica a `health` (30/09/2026)
 - [ ] Mover o `x-cron-secret` do job `process-batch-every-minute` para o Vault e rotacioná-lo
 - [ ] Rate limit das escritas do servidor: os triggers `enforce_rate_limit` usam
