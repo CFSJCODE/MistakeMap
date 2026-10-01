@@ -220,6 +220,7 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
 | **Design System** | Fluent UI / Fluent Design |
 | **Pacote de interface** | `fluent_ui` + `liquid_glass_widgets` |
 | **Plataformas** | Android, Windows e Web |
+| **Versão web** | [mistakemap-tau.vercel.app](https://mistakemap-tau.vercel.app) (publicada a cada push no `main`) |
 | **Versão** | **1.0.0 — Outubro de 2026** |
 | **Status** | MVP funcional |
 | **Repositório** | [`CFSJCODE/MISTAKEMAP`](https://github.com/CFSJCODE/MISTAKEMAP) |
@@ -1778,6 +1779,7 @@ dependencies:
 | `ci.yml` | Push e pull request no `main` | `deno check`/`deno test` das funções, `flutter analyze`, `dart format` e `flutter test` |
 | `supabase-functions-deploy.yml` | Push no `main` que altera `supabase/` | Publica as Edge Functions |
 | `supabase-deploy.yml` | Push no `main` que altera migrações | Publica as migrações em `appmistakemap/database/` |
+| `web-deploy-vercel.yml` | Push no `main` que altera `appmistakemap/` | Gera `flutter build web` e publica na Vercel: [mistakemap-tau.vercel.app](https://mistakemap-tau.vercel.app) |
 | `sync-repository-metadata.yml` | Pull request e push que alteram `LICENSE` ou `CITATION.cff` | Confere se as cópias da raiz são iguais às versões canônicas em `.github/` (atualize as duas no mesmo PR) |
 
 ---
