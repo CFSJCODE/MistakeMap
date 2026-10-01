@@ -232,11 +232,15 @@ class _MistakeMapButtonState extends State<BaseButton> {
                   shadowColor:
                       style.shadowColor?.resolve(states) ?? Colors.black,
                   elevation: style.elevation?.resolve(states) ?? 0,
-                  borderRadius:
-                      shape is RoundedRectangleBorder &&
-                          shape.borderRadius is BorderRadius
-                      ? shape.borderRadius as BorderRadius
-                      : BorderRadius.zero,
+                  // The shadow must follow the rounded corners of either
+                  // border type; a square shadow shows behind rounded cards.
+                  borderRadius: switch (shape) {
+                    RoundedRectangleBorder(:final BorderRadius borderRadius) ||
+                    RoundedRectangleGradientBorder(
+                      :final BorderRadius borderRadius,
+                    ) => borderRadius,
+                    _ => BorderRadius.zero,
+                  },
                   child: DecoratedBox(
                     decoration: ShapeDecoration(
                       color: background,

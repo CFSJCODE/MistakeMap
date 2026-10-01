@@ -273,7 +273,10 @@ class AppNavigationShell extends StatelessWidget {
                   Text(
                     selectedIndex == 4 ? 'Admin' : 'Mais',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -438,10 +441,13 @@ class AppNavigationShell extends StatelessWidget {
               ),
               child: SafeArea(
                 top: false,
+                // Same 8px rhythm around and between the buttons, so each
+                // destination reads as its own control.
                 child: Padding(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 8,
                     children: [
                       for (var i = 0; i < 4; i++)
                         Expanded(
