@@ -5,12 +5,15 @@ import 'package:image_picker/image_picker.dart';
 
 import 'analysis_models.dart';
 import 'analysis_repository.dart';
+import 'material_control_styles.dart';
 import 'insights_view.dart';
+import '../theme/design_tokens.dart';
+import '../theme/motion.dart';
 
-const mapTitleBlue = Color.fromARGB(255, 30, 92, 167);
-const mapContentBlue = Color.fromARGB(255, 33, 69, 114);
-const mapBackground = Color(0xFFF4F6F4);
-const mapSurface = Color(0xFFE7EBE8);
+const mapTitleBlue = MistakeMapDesign.primary;
+const mapContentBlue = MistakeMapDesign.content;
+const mapBackground = MistakeMapDesign.background;
+const mapSurface = MistakeMapDesign.surface;
 
 class ExerciseSubmissionView extends StatefulWidget {
   final String userId;
@@ -41,6 +44,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
   String? _error;
   bool _busy = false;
   bool _uploaded = false;
+  String _stage = 'Salvando exercício…';
 
   @override
   void initState() {
@@ -63,15 +67,23 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
       builder: (ctx) => SafeArea(
         child: Wrap(
           children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Tirar uma foto'),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: MenuItemButton(
+                leadingIcon: const Icon(Icons.photo_camera_outlined),
+                onPressed: () => Navigator.pop(ctx, ImageSource.camera),
+                child: const Text('Tirar uma foto'),
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Escolher da galeria'),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: MenuItemButton(
+                leadingIcon: const Icon(Icons.photo_library_outlined),
+                onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
+                child: const Text('Escolher da galeria'),
+              ),
             ),
           ],
         ),
@@ -108,6 +120,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
     setState(() {
       _busy = true;
       _error = null;
+      _stage = 'Salvando exercício…';
     });
     try {
       _attemptId ??= await widget.repository.createAttempt(
@@ -120,6 +133,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
         practice: widget.practice,
       );
       if (_imageBytes != null && !_uploaded) {
+        if (mounted) setState(() => _stage = 'Enviando imagem…');
         await widget.repository.uploadImage(
           _attemptId!,
           _imageName!,
@@ -128,6 +142,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
         _uploaded = true;
       }
       // Once saved, keep the ID on retries instead of creating a duplicate attempt.
+      if (mounted) setState(() => _stage = 'IA analisando sua resposta…');
       try {
         await widget.repository.analyze(_attemptId!);
       } catch (error) {
@@ -137,7 +152,8 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
       }
       if (!mounted) return;
       await Navigator.of(context).push(
-        MaterialPageRoute<void>(
+        MistakeMapPageRoute<void>(
+          context: context,
           builder: (_) => AttemptDetailView(
             userId: widget.userId,
             attemptId: _attemptId!,
@@ -278,14 +294,16 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                     onPressed: locked ? null : _pickImage,
                     icon: const Icon(Icons.add_photo_alternate_outlined),
                     label: const Text('Adicionar foto do exercício'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: mapContentBlue,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: mapContentBlue),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
+                    style:
+                        MistakeMapMaterialControls.button(
+                          context,
+                          radius: 10,
+                          border: const BorderSide(color: mapContentBlue),
+                        ).copyWith(
+                          padding: const WidgetStatePropertyAll(
+                            EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        ),
                   )
                 else ...[
                   ClipRRect(
@@ -346,19 +364,22 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                       : const Icon(Icons.check),
                   label: Text(
                     _busy
-                        ? 'Salvando e analisando…'
+                        ? _stage
                         : _attemptId == null
                         ? 'Registrar e analisar'
                         : 'Tentar novamente',
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mapContentBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
+                  style:
+                      MistakeMapMaterialControls.button(
+                        context,
+                        background: mapContentBlue,
+                        foreground: Colors.white,
+                        radius: 10,
+                      ).copyWith(
+                        padding: const WidgetStatePropertyAll(
+                          EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
                 ),
                 if (_attemptId != null && !_busy && widget.practice == null)
                   TextButton(
