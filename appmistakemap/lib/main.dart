@@ -1,22 +1,32 @@
-import 'dart:async';
 import 'dart:typed_data';
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart' show CupertinoSliverRefreshControl;
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'ai/analysis_repository.dart';
-import 'ai/ai_material_shell.dart';
+import 'theme/design_tokens.dart';
+import 'theme/control_styles.dart';
+import 'theme/motion.dart';
 import 'layout/adaptativo.dart';
-import 'theme/blue_palette.dart';
+import 'layout/navigation_shell.dart';
+import 'auth/google_sign_in.dart';
+import 'ai/ai_material_shell.dart';
+import 'ai/analysis_repository.dart';
+import 'admin/metrics_panel.dart';
+import 'assets/profile_photo.dart';
+import 'about/external_profile.dart';
+import 'about/linkedin_profile_button.dart';
 
 // ─── Cores da identidade visual ──────────────────────────────────────────────
-const Color titleBlue = Color.fromARGB(255, 30, 92, 167);
-const Color contentBlue = Color.fromARGB(255, 33, 69, 114);
+const Color titleBlue = MistakeMapDesign.primary;
+const Color contentBlue = MistakeMapDesign.content;
 
 // Tons da paleta Material com os valores exatos do SDK: a classe Colors do
 // Fluent UI tem outros valores, e as cores já adotadas devem ser mantidas.
@@ -44,17 +54,17 @@ abstract final class Cores {
 }
 
 // ─── Fluent UI + Liquid Glass — tokens ───────────────────────────────────────
-const Color kGlassBg = Color(0xCCFFFFFF); // branco 80 %
-const Color kGlassBorder = Color(0xB3FFFFFF); // borda 70 %
-const Color kScaffoldBg = Color(0xFFE8EFF2); // fundo ligeiramente azulado
+const Color kGlassBg = MistakeMapDesign.surface;
+const Color kGlassBorder = MistakeMapDesign.border;
+const Color kScaffoldBg = MistakeMapDesign.background;
 const double kRadius = 16;
 const double kRadiusSm = 10;
-const double kAlturaBarraSuperior = 44;
-// GlassTabBar.bottom: cápsula de 64 + margem vertical de 20 em cima e embaixo.
-const double kAlturaBarraAbas = 104;
-
-// Largura máxima de leitura do conteúdo em telas largas.
-const double kLarguraLeitura = 1120;
+const double kAlturaBarraSuperior = 64;
+double _alturaBarraSuperior(BuildContext context) =>
+    (MediaQuery.textScalerOf(context).scale(20) * 2.8 + 8).clamp(
+      kAlturaBarraSuperior,
+      double.infinity,
+    );
 
 // Gradiente de fundo (efeito Mica) que dá profundidade às camadas de vidro.
 const BoxDecoration kBgGradient = BoxDecoration(
@@ -70,11 +80,33 @@ final FluentThemeData temaFluent = FluentThemeData(
   accentColor: contentBlue.toAccentColor(),
   scaffoldBackgroundColor: kScaffoldBg,
   cardColor: kGlassBg,
+  menuColor: MistakeMapDesign.surface,
+  fasterAnimationDuration: MistakeMapMotion.hover,
+  fastAnimationDuration: MistakeMapMotion.controls,
+  mediumAnimationDuration: MistakeMapMotion.page,
+  animationCurve: MistakeMapMotion.curve,
+  buttonTheme: ButtonThemeData(
+    defaultButtonStyle: MistakeMapControls.button(),
+    outlinedButtonStyle: MistakeMapControls.button(),
+    filledButtonStyle: MistakeMapControls.button(
+      background: titleBlue,
+      foreground: Cores.branco,
+    ),
+    iconButtonStyle: MistakeMapControls.button(
+      padding: const EdgeInsets.all(14),
+    ),
+    hyperlinkButtonStyle: MistakeMapControls.button(
+      background: Cores.transparente,
+      padding: kDefaultButtonPadding,
+      fontSize: 14,
+    ),
+  ),
 );
 
 // As cores semânticas do vidro (toasts, brilhos) seguem a paleta do app.
 const GlassThemeData temaVidro = GlassThemeData(
   brightness: Brightness.light,
+  interaction: GlassInteractionSettings(stretch: 0, interactionScale: 0.98),
   light: GlassThemeVariant(
     quality: GlassQuality.standard,
     glowColors: GlassGlowColors(
@@ -102,26 +134,6 @@ const String _supabaseAnonKey =
 // Atalho para o cliente Supabase
 SupabaseClient get _db => Supabase.instance.client;
 
-// As telas de IA usam uma rota Material isolada para oferecer gráficos e
-// formulários sem alterar os componentes Fluent das telas já existentes.
-Future<void> _abrirTelaIa(
-  BuildContext context, {
-  required AppUser user,
-  required bool mapa,
-}) {
-  final repository = SupabaseAnalysisRepository(_db);
-  return Navigator.of(context).push<void>(
-    FluentPageRoute(
-      builder: (_) => AiMaterialShell(
-        userId: user.id,
-        repository: repository,
-        showMap: mapa,
-        onClose: () => Navigator.of(context).pop(),
-      ),
-    ),
-  );
-}
-
 // ─── Design system: Fluent UI + Liquid Glass ─────────────────────────────────
 // Liquid Glass (Apple): estrutura e camada flutuante — scaffold, barras,
 // botões da barra, painéis de destaque e toasts.
@@ -144,21 +156,18 @@ class _FundoMica extends StatelessWidget {
   }
 }
 
-// Espaço do conteúdo abaixo da barra superior de vidro e acima da barra de
-// abas (o shell soma kAlturaBarraAbas ao padding inferior do MediaQuery).
+// A barra superior acompanha a fonte; a navegação ocupa espaço fora do corpo.
 EdgeInsets _paddingCorpo(
   BuildContext context, {
   double horizontal = 16,
-  double topo = 24,
+  double topo = 16,
   double base = 24,
 }) {
   final p = MediaQuery.paddingOf(context);
-  // As laterais somam a área segura: recortes de câmera em paisagem e bordas
-  // de dobráveis não cobrem o conteúdo.
   return EdgeInsets.fromLTRB(
-    horizontal + p.left,
-    p.top + kAlturaBarraSuperior + topo,
-    horizontal + p.right,
+    horizontal,
+    p.top + _alturaBarraSuperior(context) + topo,
+    horizontal,
     p.bottom + base,
   );
 }
@@ -169,48 +178,37 @@ class _PaginaVidro extends StatelessWidget {
     required this.corpo,
     this.acoes = const [],
     this.voltar = false,
-    this.onVoltar,
   });
 
   final String titulo;
   final Widget corpo;
   final List<Widget> acoes;
   final bool voltar;
-  final VoidCallback? onVoltar;
 
   @override
   Widget build(BuildContext context) {
-    void tratarVoltar() {
-      if (onVoltar != null) {
-        onVoltar!();
-      } else if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      } else {
-        Navigator.of(context).maybePop();
-      }
-    }
-
     return GlassScaffold(
       background: const _FundoMica(),
+      enableBackgroundSampling: false,
       backgroundColor: kScaffoldBg,
       statusBarStyle: GlassStatusBarStyle.dark,
-      // Desfoque progressivo: o esmaecimento suave deixa o texto rolado
-      // legível atrás do título da barra.
-      edgeStyle: GlassScrollEdgeStyle.blur,
+      // Conteúdo e títulos permanecem nítidos; vidro apenas nos controles.
+      edgeFade: false,
       appBar: GlassAppBar(
+        backgroundColor: kScaffoldBg,
         centerTitle: false,
-        toolbarHeight: kAlturaBarraSuperior,
+        toolbarHeight: _alturaBarraSuperior(context),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         leading: voltar
             ? _BotaoBarra(
                 icone: WindowsIcons.back,
                 dica: 'Voltar',
-                onPressed: tratarVoltar,
+                onPressed: () => Navigator.of(context).maybePop(),
               )
             : null,
         title: Text(
           titulo,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: context.tipo.subtitle?.copyWith(color: titleBlue),
         ),
@@ -238,14 +236,31 @@ class _BotaoBarra extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: dica,
-      child: GlassIconButton(
-        size: 40,
-        semanticLabel: dica,
-        icon: Icon(icone, size: 18, color: cor),
-        onPressed: onPressed,
+      child: SizedBox.square(
+        dimension: 40,
+        child: MistakeMapIconButton(
+          style: MistakeMapControls.button(
+            padding: const EdgeInsets.all(11),
+            foreground: cor,
+          ),
+          icon: _IconeBotao(icone, size: 18),
+          onPressed: onPressed,
+        ),
       ),
     );
   }
+}
+
+// Ícones seguem a mesma interpolação de cor dos rótulos dos botões.
+class _IconeBotao extends StatelessWidget {
+  const _IconeBotao(this.icone, {this.size = 16});
+
+  final IconData icone;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) =>
+      Icon(icone, size: size, color: DefaultTextStyle.of(context).style.color);
 }
 
 // Lista com "puxar para atualizar" no estilo Apple, respeitando as barras de vidro.
@@ -279,8 +294,7 @@ class _ListaAtualizavel extends StatelessWidget {
   }
 }
 
-// Painel flutuante de vidro líquido: resumos, destaques e formulários soltos.
-// Não coloque GlassButton/GlassIconButton dentro dele (vidro dentro de vidro).
+// Superfície estável para resumos e formulários: nenhum filtro sobre o conteúdo.
 class _PainelVidro extends StatelessWidget {
   const _PainelVidro({
     required this.child,
@@ -294,13 +308,19 @@ class _PainelVidro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
+    return Container(
       padding: padding,
-      shape: LiquidRoundedSuperellipse(borderRadius: raio),
-      settings: const LiquidGlassSettings(
-        glassColor: Color(0x59FFFFFF),
-        thickness: 18,
-        blur: 8,
+      decoration: BoxDecoration(
+        color: kGlassBg,
+        borderRadius: BorderRadius.circular(raio),
+        border: Border.all(color: kGlassBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A142A4A),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: child,
     );
@@ -347,18 +367,14 @@ class _CartaoFluent extends StatelessWidget {
   Widget build(BuildContext context) {
     final acao = onPressed;
     if (acao == null) return _card(cor);
-    return HoverButton(
+    return MistakeMapButton(
       onPressed: acao,
-      builder: (context, estados) {
-        final pressionado = estados.contains(WidgetState.pressed);
-        final sobre = estados.contains(WidgetState.hovered);
-        final fundo = pressionado
-            ? Color.alphaBlend(contentBlue.withValues(alpha: 0.08), cor)
-            : sobre
-            ? Color.alphaBlend(contentBlue.withValues(alpha: 0.04), cor)
-            : cor;
-        return _card(fundo);
-      },
+      style: MistakeMapControls.button(
+        radius: kRadius,
+        padding: padding,
+        background: cor,
+      ),
+      child: child,
     );
   }
 }
@@ -387,22 +403,18 @@ class _Pilula extends StatelessWidget {
         borderRadius: BorderRadius.circular(kRadiusSm),
         border: solida ? null : Border.all(color: cor.withValues(alpha: 0.4)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           if (icone != null) ...[
             Icon(icone, size: 12, color: frente),
             const SizedBox(width: 4),
           ],
-          // Flexible: em telas estreitas ou com fonte ampliada o texto quebra
-          // dentro da pílula em vez de estourar a linha.
-          Flexible(
-            child: Text(
-              texto,
-              style: context.tipo.caption?.copyWith(
-                color: frente,
-                fontWeight: FontWeight.w600,
-              ),
+          Text(
+            texto,
+            style: context.tipo.caption?.copyWith(
+              color: frente,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -419,7 +431,6 @@ class _BannerDemo extends StatelessWidget {
     if (!kModoDemo) return const SizedBox.shrink();
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
         color: Cores.vermelho600,
@@ -440,7 +451,7 @@ class _BannerDemo extends StatelessWidget {
 
 // Padding, cantos e texto padronizados para Button/FilledButton do Fluent.
 ButtonStyle _estiloBotao({
-  double raio = kRadiusSm,
+  double raio = 12,
   EdgeInsetsGeometry padding = const EdgeInsets.symmetric(
     vertical: 12,
     horizontal: 20,
@@ -448,27 +459,13 @@ ButtonStyle _estiloBotao({
   double fonte = 16,
   Color? fundo,
   Color? texto,
-}) {
-  return ButtonStyle(
-    padding: WidgetStatePropertyAll(padding),
-    shape: WidgetStatePropertyAll(
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(raio)),
-    ),
-    textStyle: WidgetStatePropertyAll(
-      TextStyle(fontSize: fonte, fontWeight: FontWeight.w600),
-    ),
-    backgroundColor: fundo == null
-        ? null
-        : WidgetStateProperty.resolveWith(
-            (estados) => estados.contains(WidgetState.disabled)
-                ? fundo.withValues(alpha: 0.45)
-                : estados.contains(WidgetState.pressed)
-                ? Color.alphaBlend(const Color(0x33000000), fundo)
-                : fundo,
-          ),
-    foregroundColor: texto == null ? null : WidgetStatePropertyAll(texto),
-  );
-}
+}) => MistakeMapControls.button(
+  radius: raio,
+  padding: padding,
+  fontSize: fonte,
+  background: fundo,
+  foreground: texto,
+);
 
 // Aviso flutuante: sucesso em contentBlue e erro em vermelho 700 (cores
 // semânticas definidas no temaVidro).
@@ -477,10 +474,69 @@ void _avisar(BuildContext context, String mensagem, {bool erro = false}) {
     context,
     message: mensagem,
     type: erro ? GlassToastType.error : GlassToastType.success,
-    position: GlassToastPosition.bottom,
+    position: GlassToastPosition.top,
     icon: Icon(erro ? WindowsIcons.error_badge : WindowsIcons.completed),
   );
 }
+
+MenuFlyoutItemBuilder _itemMenu({
+  required IconData icone,
+  required String texto,
+  required VoidCallback? onPressed,
+  Color cor = contentBlue,
+}) => MenuFlyoutItemBuilder(
+  builder: (context) => MistakeMapButton(
+    style:
+        MistakeMapControls.button(
+          radius: 4,
+          background: Cores.transparente,
+          foreground: cor,
+          fontSize: 14,
+          padding: const EdgeInsetsDirectional.only(
+            top: 4,
+            bottom: 4,
+            start: 10,
+            end: 8,
+          ),
+        ).copyWith(
+          backgroundColor: const WidgetStatePropertyAll(Cores.transparente),
+          textStyle: const WidgetStatePropertyAll(
+            TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              letterSpacing: -0.15,
+            ),
+          ),
+          shape: const WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(4)),
+            ),
+          ),
+          elevation: const WidgetStatePropertyAll(0),
+        ),
+    onPressed: onPressed == null
+        ? null
+        : () {
+            Navigator.of(context).maybePop();
+            onPressed();
+          },
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.only(end: 10),
+          child: _IconeBotao(icone),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(end: 10),
+            child: Text(texto, textAlign: TextAlign.start),
+          ),
+        ),
+      ],
+    ),
+  ),
+);
 
 Future<bool> _confirmar(
   BuildContext context, {
@@ -497,12 +553,12 @@ Future<bool> _confirmar(
       title: Text(titulo),
       content: Text(mensagem),
       actions: [
-        Button(
+        MistakeMapButton(
           style: _estiloBotao(fonte: 14),
           onPressed: () => Navigator.of(ctx).pop(false),
           child: Text(cancelar),
         ),
-        FilledButton(
+        MistakeMapFilledButton(
           style: _estiloBotao(
             fonte: 14,
             fundo: destrutivo ? Cores.vermelho700 : null,
@@ -618,46 +674,24 @@ class AppUser {
 
   const AppUser({required this.id, required this.email, required this.role});
 
-  bool get isAdmin => role == 'admin' || _isAdminEmail(email);
-
-  static bool _isAdminEmail(String? email) {
-    if (email == null) return false;
-    final clean = email.trim().toLowerCase();
-    return clean == 'claudiofranciscojunior2006@gmail.com' ||
-        clean == 'claudiojunior2006@gmail.com';
-  }
+  bool get isAdmin => role == 'admin';
 }
 
 // Carrega o perfil do Supabase e constrói um AppUser
 Future<AppUser> _carregarPerfil(User supaUser) async {
-  final email = supaUser.email ?? '';
-  final isSuperAdmin = AppUser._isAdminEmail(email);
   try {
     final data = await _db
         .from('profiles')
         .select('role')
         .eq('id', supaUser.id)
         .maybeSingle();
-    final roleFromDb = data?['role'] as String?;
-    final role = (isSuperAdmin || roleFromDb == 'admin')
-        ? 'admin'
-        : (roleFromDb ?? 'user');
-
-    if (isSuperAdmin && roleFromDb != 'admin') {
-      _db
-          .from('profiles')
-          .update({'role': 'admin'})
-          .eq('id', supaUser.id)
-          .then((_) {}, onError: (_) {});
-    }
-
-    return AppUser(id: supaUser.id, email: email, role: role);
-  } catch (_) {
     return AppUser(
       id: supaUser.id,
-      email: email,
-      role: isSuperAdmin ? 'admin' : 'user',
+      email: supaUser.email ?? '',
+      role: data?['role'] as String? ?? 'user',
     );
+  } catch (_) {
+    return AppUser(id: supaUser.id, email: supaUser.email ?? '', role: 'user');
   }
 }
 
@@ -691,11 +725,22 @@ class MistakeMapApp extends StatelessWidget {
       theme: temaFluent,
       // O app é só claro; sem isso, os textos Cupertino dos overlays de vidro
       // (toasts) seguem o modo escuro do sistema e somem sobre o vidro claro.
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context)
-            .copyWith(platformBrightness: Brightness.light),
-        child: child!,
-      ),
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        return FluentTheme(
+          data: media.disableAnimations
+              ? temaFluent.copyWith(
+                  fasterAnimationDuration: Duration.zero,
+                  fastAnimationDuration: Duration.zero,
+                  mediumAnimationDuration: Duration.zero,
+                )
+              : temaFluent,
+          child: MediaQuery(
+            data: media.copyWith(platformBrightness: Brightness.light),
+            child: child!,
+          ),
+        );
+      },
       home: const AuthGate(),
     );
   }
@@ -767,7 +812,8 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
 // ─── Navegação principal ──────────────────────────────────────────────────────
 class TelaNavegacao extends StatefulWidget {
   final AppUser user;
-  const TelaNavegacao({super.key, required this.user});
+  final AnalysisRepository? analysisRepository;
+  const TelaNavegacao({super.key, required this.user, this.analysisRepository});
 
   @override
   State<TelaNavegacao> createState() => _TelaNavegacaoState();
@@ -775,100 +821,85 @@ class TelaNavegacao extends StatefulWidget {
 
 class _TelaNavegacaoState extends State<TelaNavegacao> {
   int _indiceAtual = 0;
-  int _indiceAnterior = 0;
-  final _inicioKey = GlobalKey<_TelaInicialState>();
+  bool _paginaAberta = false;
   final _listaKey = GlobalKey<_TelaPrincipalState>();
   final _mapaKey = GlobalKey<_TelaMapaConceitualState>();
+  late final AnalysisRepository _analysisRepository =
+      widget.analysisRepository ?? SupabaseAnalysisRepository(_db);
 
-  void _irParaExercicios() {
-    _selecionar(1);
-  }
-
-  void _irParaAdmin() {
-    if (widget.user.isAdmin) {
-      _selecionar(4);
+  Future<void> _abrirIa({bool mapa = false}) async {
+    if (_paginaAberta) return;
+    setState(() => _paginaAberta = true);
+    try {
+      await Navigator.of(context).push(
+        MistakeMapPageRoute(
+          context: context,
+          builder: (_) => AiMaterialShell(
+            userId: widget.user.id,
+            repository: _analysisRepository,
+            showMap: mapa,
+            onClose: () => Navigator.of(context).pop(),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _paginaAberta = false);
     }
   }
 
-  void _voltarDeAdmin() {
-    _selecionar(_indiceAnterior == 4 ? 0 : _indiceAnterior);
+  Future<void> _abrirSobre() async {
+    if (_paginaAberta) return;
+    setState(() => _paginaAberta = true);
+    try {
+      await Navigator.of(context).push(
+        MistakeMapPageRoute(
+          context: context,
+          builder: (_) => const TelaSobre(),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _paginaAberta = false);
+    }
+  }
+
+  void _irParaMapa() {
+    _selecionar(2);
   }
 
   void _selecionar(int i) {
-    if (_indiceAtual != i) {
-      _indiceAnterior = _indiceAtual;
-    }
+    if (i == _indiceAtual) return;
     setState(() => _indiceAtual = i);
-    if (i == 0) _inicioKey.currentState?._carregarEstatisticas();
     if (i == 1) _listaKey.currentState?.carregarExercicios();
     if (i == 2) _mapaKey.currentState?.carregar();
   }
 
   List<Widget> get _telas => [
-    TelaInicial(
-      key: _inicioKey,
-      user: widget.user,
-      onAbrirAdmin: widget.user.isAdmin ? _irParaAdmin : null,
-    ),
+    TelaInicial(user: widget.user, onAnalysis: _abrirIa, onAbout: _abrirSobre),
     TelaPrincipal(key: _listaKey, user: widget.user),
     TelaMapaConceitual(key: _mapaKey, user: widget.user),
-    TelaAdicionarExercicio(user: widget.user, onIrParaMapa: _irParaExercicios),
+    TelaAdicionarExercicio(user: widget.user, onIrParaMapa: _irParaMapa),
     if (widget.user.isAdmin)
-      TelaAdmin(user: widget.user, onVoltar: _voltarDeAdmin),
-  ];
-
-  List<GlassTab> get _abas => [
-    const GlassTab(
-      icon: Icon(WindowsIcons.home),
-      activeIcon: Icon(WindowsIcons.home_solid),
-      label: 'Início',
-    ),
-    const GlassTab(icon: Icon(WindowsIcons.bulleted_list), label: 'Exercícios'),
-    const GlassTab(icon: Icon(WindowsIcons.relationship), label: 'Mapa'),
-    const GlassTab(icon: Icon(WindowsIcons.add), label: 'Adicionar'),
-    if (widget.user.isAdmin)
-      const GlassTab(icon: Icon(WindowsIcons.admin), label: 'Admin'),
+      TelaAdmin(user: widget.user, active: _indiceAtual == 4 && !_paginaAberta),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    return PopScope(
-      canPop: _indiceAtual == 0,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (_indiceAtual == 4) {
-          _voltarDeAdmin();
-        } else {
-          _selecionar(0);
-        }
-      },
-      child: GlassScaffold(
-        background: const _FundoMica(),
-        backgroundColor: kScaffoldBg,
-        statusBarStyle: GlassStatusBarStyle.dark,
-        // Numa tela dupla ou dobrável aberto em modo livro, as abas ficam no
-        // painel da esquerda, nunca sobre a dobradiça.
-        bottomBar: ForaDaDobra(
-          child: GlassTabBar.bottom(
-            selectedIndex: _indiceAtual,
-            onTabSelected: _selecionar,
-            tabs: _abas,
-            iconSize: 20,
-            indicatorColor: contentBlue.withValues(alpha: 0.18),
-            selectedIconColor: titleBlue,
-            selectedLabelColor: titleBlue,
-            unselectedIconColor: contentBlue,
-            unselectedLabelColor: contentBlue,
-          ),
-        ),
-        body: MediaQuery(
-          data: mq.copyWith(
-            padding: mq.padding.copyWith(
-              bottom: mq.padding.bottom + kAlturaBarraAbas,
-            ),
-          ),
-          child: IndexedStack(index: _indiceAtual, children: _telas),
+    return AppNavigationShell(
+      selectedIndex: _indiceAtual,
+      onSelected: _selecionar,
+      hasAdmin: widget.user.isAdmin,
+      onAnalysis: _abrirIa,
+      onErrorMap: () => _abrirIa(mapa: true),
+      onAbout: _abrirSobre,
+      child: PopScope(
+        canPop: _indiceAtual == 0,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && _indiceAtual != 0) _selecionar(0);
+        },
+        child: NavigationPages(
+          index: _indiceAtual,
+          active: !_paginaAberta,
+          children: _telas,
         ),
       ),
     );
@@ -929,14 +960,39 @@ class _TelaCadastroState extends State<TelaCadastro> {
   }
 
   Future<void> _entrarComGoogle() async {
+    if (_carregando) return;
     setState(() => _carregando = true);
     try {
-      await _db.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: 'io.supabase.mistakemap://login-callback/',
-      );
+      final launched = await _db.auth
+          .signInWithOAuth(
+            OAuthProvider.google,
+            redirectTo: googleOAuthRedirect(
+              isWeb: kIsWeb,
+              currentUri: Uri.base,
+            ),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (!launched && mounted) {
+        _snack('Não foi possível abrir o Google. Tente novamente.', erro: true);
+      }
+    } on TimeoutException {
+      if (mounted) {
+        _snack(
+          'O Google demorou para abrir. Verifique a conexão e tente novamente.',
+          erro: true,
+        );
+      }
+    } on GoogleSignInException catch (e) {
+      if (mounted) _snack(e.message, erro: true);
     } on AuthException catch (e) {
-      _snack(e.message, erro: true);
+      if (mounted) _snack(e.message, erro: true);
+    } catch (_) {
+      if (mounted) {
+        _snack(
+          'Não foi possível iniciar o login com Google. Tente novamente.',
+          erro: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _carregando = false);
     }
@@ -960,8 +1016,10 @@ class _TelaCadastroState extends State<TelaCadastro> {
     // Fora do shell: sem barra superior nem barra de abas.
     return GlassScaffold(
       background: const _FundoMica(),
+      enableBackgroundSampling: false,
       backgroundColor: kScaffoldBg,
       statusBarStyle: GlassStatusBarStyle.dark,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -1067,11 +1125,10 @@ class _TelaCadastroState extends State<TelaCadastro> {
             padding: const EdgeInsetsDirectional.only(end: 4),
             child: Tooltip(
               message: _senhaVisivel ? 'Ocultar senha' : 'Mostrar senha',
-              child: IconButton(
-                icon: Icon(
+              child: MistakeMapIconButton(
+                icon: _IconeBotao(
                   _senhaVisivel ? WindowsIcons.hide : WindowsIcons.red_eye,
                   size: 16,
-                  color: contentBlue,
                 ),
                 onPressed: () => setState(() => _senhaVisivel = !_senhaVisivel),
               ),
@@ -1080,7 +1137,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
         ),
         const SizedBox(height: 16),
         // Botão principal
-        FilledButton(
+        MistakeMapFilledButton(
           style: _estiloBotao(
             fundo: contentBlue,
             texto: Cores.branco,
@@ -1099,16 +1156,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
               : Text(_modoCadastro ? 'Criar conta' : 'Entrar'),
         ),
         const SizedBox(height: 8),
-        HyperlinkButton(
-          style: ButtonStyle(
-            foregroundColor: WidgetStateProperty.resolveWith(
-              (estados) =>
-                  estados.contains(WidgetState.hovered) ||
-                      estados.contains(WidgetState.pressed)
-                  ? titleBlue
-                  : contentBlue,
-            ),
-          ),
+        MistakeMapHyperlinkButton(
           onPressed: () => setState(() => _modoCadastro = !_modoCadastro),
           child: Text(
             _modoCadastro
@@ -1133,7 +1181,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
         ),
         const SizedBox(height: 16),
         // Botão Google
-        Button(
+        MistakeMapButton(
           style:
               _estiloBotao(
                 fundo: Cores.cinza100,
@@ -1156,13 +1204,15 @@ class _TelaCadastroState extends State<TelaCadastro> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Não há ícone do Google em WindowsIcons: usa-se a letra "G".
-              ExcludeSemantics(
-                child: Text(
-                  'G',
-                  style: context.tipo.subtitle?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: contentBlue,
-                    height: 1,
+              Builder(
+                builder: (context) => ExcludeSemantics(
+                  child: Text(
+                    'G',
+                    style: context.tipo.subtitle?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: DefaultTextStyle.of(context).style.color,
+                      height: 1,
+                    ),
                   ),
                 ),
               ),
@@ -1204,8 +1254,14 @@ class _TelaCadastroState extends State<TelaCadastro> {
 // ─── Tela inicial (dashboard) ─────────────────────────────────────────────────
 class TelaInicial extends StatefulWidget {
   final AppUser user;
-  final VoidCallback? onAbrirAdmin;
-  const TelaInicial({super.key, required this.user, this.onAbrirAdmin});
+  final VoidCallback? onAnalysis;
+  final VoidCallback? onAbout;
+  const TelaInicial({
+    super.key,
+    required this.user,
+    this.onAnalysis,
+    this.onAbout,
+  });
 
   @override
   State<TelaInicial> createState() => _TelaInicialState();
@@ -1221,15 +1277,6 @@ class _TelaInicialState extends State<TelaInicial> {
   void initState() {
     super.initState();
     _carregarEstatisticas();
-  }
-
-  void _navegarParaAdmin() {
-    if (widget.onAbrirAdmin != null) {
-      widget.onAbrirAdmin!();
-    } else {
-      Navigator.of(context)
-          .push(FluentPageRoute(builder: (_) => TelaAdmin(user: widget.user)));
-    }
   }
 
   Future<void> _carregarEstatisticas() async {
@@ -1269,12 +1316,6 @@ class _TelaInicialState extends State<TelaInicial> {
     return _PaginaVidro(
       titulo: 'Início — Resumo',
       acoes: [
-        if (widget.user.isAdmin)
-          _BotaoBarra(
-            icone: WindowsIcons.admin,
-            dica: 'Painel Administrativo',
-            onPressed: _navegarParaAdmin,
-          ),
         _BotaoBarra(
           icone: WindowsIcons.sign_out,
           dica: 'Sair',
@@ -1283,83 +1324,65 @@ class _TelaInicialState extends State<TelaInicial> {
       ],
       corpo: _carregando
           ? const Center(child: ProgressRing())
-          : LayoutBuilder(
-              builder: (context, constraints) {
-                final padding = _paddingCorpo(
-                  context,
-                  horizontal: 24,
-                  topo: 28,
-                );
-                // Em telas largas o conteúdo fica numa coluna de leitura
-                // centralizada, em vez de esticar até a borda da janela.
-                return Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: kLarguraLeitura,
-                    ),
-                    child: SingleChildScrollView(
-                      padding: padding,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: (constraints.maxHeight - padding.vertical)
-                              .clamp(0, double.infinity),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _cabecalho(context),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 24),
-                              child: _resumo(context),
-                            ),
-                            _botoesAcao(context),
-                          ],
-                        ),
+          : Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1120),
+                child: SingleChildScrollView(
+                  padding: _paddingCorpo(context, horizontal: 24, topo: 8),
+                  child: Column(
+                    children: [
+                      _cabecalho(context),
+                      const SizedBox(height: 24),
+                      _resumo(context),
+                      const SizedBox(height: 24),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 480),
+                        child: _botaoSobre(context),
                       ),
-                    ),
+                    ],
                   ),
-                );
-              },
+                ),
+              ),
             ),
     );
   }
 
   // Cabeçalho com nome/email e badge de admin
   Widget _cabecalho(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          'MistakeMap',
-          style: context.tipo.title?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: titleBlue,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          widget.user.email,
-          style: context.tipo.caption?.copyWith(color: contentBlue),
-        ),
-        if (widget.user.isAdmin) ...[
-          const SizedBox(height: 8),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: _navegarParaAdmin,
-              child: const Tooltip(
-                message: 'Toque para acessar o Painel Administrativo',
-                child: _Pilula(
-                  texto: 'Administrador (Acessar Painel)',
-                  cor: contentBlue,
-                  icone: WindowsIcons.admin,
-                  solida: true,
-                ),
-              ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: MistakeMapDesign.hero,
+        borderRadius: BorderRadius.circular(kRadius),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'MistakeMap',
+            style: context.tipo.title?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Cores.branco,
             ),
           ),
+          const SizedBox(height: 4),
+          Text(
+            widget.user.email,
+            textAlign: TextAlign.center,
+            style: context.tipo.body?.copyWith(color: Cores.branco),
+          ),
+          if (widget.user.isAdmin) ...[
+            const SizedBox(height: 8),
+            const _Pilula(
+              texto: 'Administrador',
+              cor: contentBlue,
+              icone: WindowsIcons.admin,
+              solida: true,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -1380,111 +1403,28 @@ class _TelaInicialState extends State<TelaInicial> {
           style: context.tipo.body?.copyWith(color: contentBlue),
         ),
         const SizedBox(height: 24),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final cards = [
-              _ResumoCard(
-                icone: WindowsIcons.bulleted_list,
-                label: 'Exercícios',
-                value: '$_totalExercicios',
-              ),
-              _ResumoCard(
-                icone: WindowsIcons.history,
-                label: 'Para revisar',
-                value: '$_paraRevisar',
-              ),
-              _ResumoCard(
-                icone: WindowsIcons.education,
-                label: 'Evolução',
-                value: _evolucao,
-              ),
-            ];
-            // Três colunas só enquanto cada card mantém a largura mínima na
-            // escala de fonte atual; abaixo disso, os indicadores empilham.
-            final escala = MediaQuery.textScalerOf(context).scale(1);
-            final larguraCard = (constraints.maxWidth - 2 * 12) / cards.length;
-            if (larguraCard >= _kLarguraMinimaCardResumo * escala) {
-              return Row(
-                children: [
-                  for (var i = 0; i < cards.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 12),
-                    Expanded(child: cards[i]),
-                  ],
-                ],
-              );
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < cards.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 12),
-                  cards[i],
-                ],
-              ],
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  // Botões de ação inferiores: Admin (se autorizado) e Sobre o App
-  Widget _botoesAcao(BuildContext context) {
-    return Align(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        GradeAdaptativa(
+          larguraMinimaItem: MediaQuery.sizeOf(context).width < 600 ? 320 : 160,
+          maxColunas: 3,
           children: [
-            if (widget.user.isAdmin) ...[
-              SizedBox(
-                width: double.infinity,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _navegarParaAdmin,
-                  child: Button(
-                    style:
-                        _estiloBotao(
-                          fundo: contentBlue,
-                          texto: Cores.branco,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 24,
-                          ),
-                        ).copyWith(
-                          shape: WidgetStatePropertyAll(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(kRadiusSm),
-                            ),
-                          ),
-                        ),
-                    onPressed: _navegarParaAdmin,
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(WindowsIcons.admin, size: 18, color: Cores.branco),
-                        SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            'Painel Administrativo',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Cores.branco,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            _botaoSobre(context),
+            _ResumoCard(
+              icone: WindowsIcons.bulleted_list,
+              label: 'Exercícios',
+              value: '$_totalExercicios',
+            ),
+            _ResumoCard(
+              icone: WindowsIcons.history,
+              label: 'Para revisar',
+              value: '$_paraRevisar',
+            ),
+            _ResumoCard(
+              icone: WindowsIcons.education,
+              label: 'Evolução',
+              value: _evolucao,
+            ),
           ],
         ),
-      ),
+      ],
     );
   }
 
@@ -1492,10 +1432,10 @@ class _TelaInicialState extends State<TelaInicial> {
   Widget _botaoSobre(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: Button(
+      child: MistakeMapButton(
         style:
             _estiloBotao(
-              fundo: Azuis.gelo,
+              fundo: const Color(0xFFE7EBE8),
               texto: contentBlue,
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
             ).copyWith(
@@ -1506,9 +1446,17 @@ class _TelaInicialState extends State<TelaInicial> {
                 ),
               ),
             ),
-        onPressed: () =>
-            Navigator.of(context)
-                .push(FluentPageRoute(builder: (_) => const TelaSobre())),
+        onPressed:
+            widget.onAbout ??
+            () {
+              if (ModalRoute.of(context)?.isCurrent != true) return;
+              Navigator.of(context).push(
+                MistakeMapPageRoute(
+                  context: context,
+                  builder: (_) => const TelaSobre(),
+                ),
+              );
+            },
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1522,9 +1470,6 @@ class _TelaInicialState extends State<TelaInicial> {
   }
 }
 
-// Largura mínima de cada indicador do resumo para exibi-los lado a lado.
-const double _kLarguraMinimaCardResumo = 96;
-
 class _ResumoCard extends StatelessWidget {
   const _ResumoCard({
     required this.icone,
@@ -1536,7 +1481,6 @@ class _ResumoCard extends StatelessWidget {
   final String label;
   final String value;
 
-  // O layout (linha ou coluna) é decidido por _resumo, conforme a largura.
   @override
   Widget build(BuildContext context) {
     return _PainelVidro(
@@ -1798,20 +1742,13 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
     setState(() => _sucesso = false);
   }
 
-  // Botão contornado: fundo transparente e borda contentBlue, com leve realce
-  // em hover/press.
+  // O contorno mantém a identidade; o preenchimento usa o hover compartilhado.
   ButtonStyle get _estiloContorno {
     return _estiloBotao(
+      fundo: Cores.transparente,
       texto: contentBlue,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
     ).copyWith(
-      backgroundColor: WidgetStateProperty.resolveWith(
-        (estados) => estados.contains(WidgetState.pressed)
-            ? contentBlue.withValues(alpha: 0.08)
-            : estados.contains(WidgetState.hovered)
-            ? contentBlue.withValues(alpha: 0.04)
-            : Cores.transparente,
-      ),
       shape: WidgetStatePropertyAll(
         RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kRadiusSm),
@@ -1884,7 +1821,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                         style: context.tipo.body?.copyWith(color: contentBlue),
                       ),
                       const SizedBox(height: 32),
-                      FilledButton(
+                      MistakeMapFilledButton(
                         style: _estiloBotao(
                           fundo: contentBlue,
                           texto: Cores.branco,
@@ -1904,7 +1841,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Button(
+                      MistakeMapButton(
                         style: _estiloContorno,
                         onPressed: () {
                           _resetarParaForm();
@@ -1947,25 +1884,6 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                   textAlign: TextAlign.center,
                   style: context.tipo.bodyLarge?.copyWith(color: contentBlue),
                 ),
-                const SizedBox(height: 16),
-                Button(
-                  style: _estiloContorno,
-                  onPressed: () =>
-                      _abrirTelaIa(context, user: widget.user, mapa: false),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(WindowsIcons.edit, size: 18),
-                      SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'Corrigir resposta com IA',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 const SizedBox(height: 24),
                 _CartaoFluent(
                   padding: const EdgeInsets.all(20),
@@ -1993,7 +1911,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                       ),
                       const SizedBox(height: 24),
                       if (_imagemBytes == null)
-                        Button(
+                        MistakeMapButton(
                           style: _estiloContorno,
                           onPressed: _mostrarOpcoesDeImagem,
                           child: const Row(
@@ -2004,7 +1922,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                               Flexible(
                                 child: Text(
                                   'Adicionar foto do exercício',
-                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
                                 ),
                               ),
                             ],
@@ -2024,7 +1942,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                             ),
                             const SizedBox(height: 8),
                             Center(
-                              child: HyperlinkButton(
+                              child: MistakeMapHyperlinkButton(
                                 onPressed: () => setState(() {
                                   _imagemSelecionada = null;
                                   _imagemBytes = null;
@@ -2045,7 +1963,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                FilledButton(
+                MistakeMapFilledButton(
                   style: _estiloBotao(
                     fundo: contentBlue,
                     texto: Cores.branco,
@@ -2073,7 +1991,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                       Flexible(
                         child: Text(
                           _enviando ? 'Enviando…' : 'Registrar exercício',
-                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ],
@@ -2245,17 +2163,12 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
       titulo: 'Mapa Conceitual',
       acoes: [
         _BotaoBarra(
-          icone: WindowsIcons.relationship,
-          dica: 'Mapa de erros da IA',
-          onPressed: () => _abrirTelaIa(context, user: widget.user, mapa: true),
-        ),
-        _BotaoBarra(
           icone: WindowsIcons.refresh,
           dica: 'Atualizar',
           onPressed: carregar,
         ),
       ],
-      corpo: _carregando
+      corpo: _carregando && _stats.isEmpty
           ? _estadoFixo(const ProgressRing())
           : _stats.isEmpty
           ? _estadoFixo(_buildVazio())
@@ -2266,20 +2179,6 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
                   const _BannerDemo(),
                   const SizedBox(height: 16),
                 ],
-                FilledButton(
-                  style: _estiloBotao(
-                    fundo: contentBlue,
-                    texto: Cores.branco,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 20,
-                    ),
-                  ),
-                  onPressed: () =>
-                      _abrirTelaIa(context, user: widget.user, mapa: true),
-                  child: const Text('Explorar erros com IA'),
-                ),
-                const SizedBox(height: 16),
                 _buildResumo(),
                 const SizedBox(height: 16),
                 _buildGrafo(),
@@ -2331,12 +2230,6 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
             'Adicione exercícios para visualizar seu mapa conceitual.',
             textAlign: TextAlign.center,
             style: context.tipo.body?.copyWith(color: contentBlue),
-          ),
-          const SizedBox(height: 24),
-          Button(
-            onPressed: () =>
-                _abrirTelaIa(context, user: widget.user, mapa: true),
-            child: const Text('Abrir mapa de erros com IA'),
           ),
         ],
       ),
@@ -2402,7 +2295,9 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
               runSpacing: 16,
               alignment: WrapAlignment.center,
               children: _stats.map((s) {
-                final size = 56.0 + (s.total / maxT) * 28.0;
+                final size =
+                    (56.0 + (s.total / maxT) * 28.0) *
+                    InfoTela.escalaDeTexto(context);
                 final color = Color.lerp(
                   Cores.vermelho400,
                   Cores.verde,
@@ -2426,30 +2321,25 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
                         ],
                       ),
                       alignment: Alignment.center,
-                      // O círculo tem tamanho fixo: com fonte ampliada o texto
-                      // é reduzido para caber, em vez de estourar a borda.
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${(s.taxaConclusao * 100).round()}%',
+                            style: context.tipo.body?.copyWith(
+                              color: Cores.branco,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (size > 66)
                             Text(
-                              '${(s.taxaConclusao * 100).round()}%',
-                              style: context.tipo.body?.copyWith(
-                                color: Cores.branco,
-                                fontWeight: FontWeight.bold,
+                              '${s.total} ex.',
+                              // Valor exato de Colors.white70 do Material.
+                              style: context.tipo.caption?.copyWith(
+                                color: const Color(0xB3FFFFFF),
                               ),
                             ),
-                            if (size > 66)
-                              Text(
-                                '${s.total} ex.',
-                                // Valor exato de Colors.white70 do Material.
-                                style: context.tipo.caption?.copyWith(
-                                  color: const Color(0xB3FFFFFF),
-                                ),
-                              ),
-                          ],
-                        ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -2779,11 +2669,8 @@ class TelaPrincipal extends StatefulWidget {
 
 class _TelaPrincipalState extends State<TelaPrincipal> {
   List<Exercicio> _exercicios = [];
+  Exercicio? _selecionado;
   bool _carregando = true;
-
-  // Exercício aberto no painel de detalhe quando lista e detalhe cabem lado a
-  // lado (DoisPaineis); em telas compactas o detalhe abre em outra página.
-  String? _selecionadoId;
 
   @override
   void initState() {
@@ -2808,6 +2695,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         if (mounted) {
           setState(() {
             _exercicios = [];
+            _selecionado = null;
             _carregando = false;
           });
         }
@@ -2846,6 +2734,11 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
       if (mounted) {
         setState(() {
           _exercicios = lista;
+          if (_selecionado != null) {
+            _selecionado = lista
+                .where((e) => e.id == _selecionado!.id)
+                .firstOrNull;
+          }
           _carregando = false;
         });
       }
@@ -2901,12 +2794,13 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 
   Future<void> _abrirDetalhe(Exercicio ex) async {
     if (DoisPaineis.cabe(context)) {
-      setState(() => _selecionadoId = ex.id);
+      setState(() => _selecionado = ex);
       return;
     }
     await Navigator.push(
       context,
-      FluentPageRoute(
+      MistakeMapPageRoute(
+        context: context,
         builder: (_) => TelaDetalheExercicio(
           exercicio: ex,
           user: widget.user,
@@ -2920,7 +2814,8 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   Future<void> _abrirEdicao(Exercicio ex) async {
     await Navigator.push(
       context,
-      FluentPageRoute(
+      MistakeMapPageRoute(
+        context: context,
         builder: (_) => TelaEditarExercicio(exercicio: ex, user: widget.user),
       ),
     );
@@ -2929,7 +2824,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 
   @override
   Widget build(BuildContext context) {
-    return _PaginaVidro(
+    final lista = _PaginaVidro(
       titulo: 'Meus Exercícios',
       acoes: [
         _BotaoBarra(
@@ -2938,44 +2833,31 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           onPressed: carregarExercicios,
         ),
       ],
-      corpo: _comDetalhe(context),
+      corpo: _corpo(context),
     );
-  }
-
-  Widget _comDetalhe(BuildContext context) {
-    if (!DoisPaineis.cabe(context) || _exercicios.isEmpty) {
-      return _corpo(context);
-    }
-    Exercicio? selecionado;
-    for (final ex in _exercicios) {
-      if (ex.id == _selecionadoId) selecionado = ex;
-    }
     return DoisPaineis(
-      inicio: _corpo(context),
-      fim: selecionado == null
-          ? Padding(
-              padding: _paddingCorpo(context),
+      inicio: lista,
+      fim: _selecionado == null
+          ? const Padding(
+              padding: EdgeInsets.all(24),
               child: Center(
                 child: Text(
                   'Selecione um exercício para ver os detalhes.',
                   textAlign: TextAlign.center,
-                  style: context.tipo.body?.copyWith(color: contentBlue),
                 ),
               ),
             )
           : TelaDetalheExercicio(
-              key: ValueKey(selecionado.id),
-              exercicio: selecionado,
+              exercicio: _selecionado!,
               user: widget.user,
               onAtualizar: carregarExercicios,
-              embutido: true,
-              onFechar: () => setState(() => _selecionadoId = null),
+              onFechar: () => setState(() => _selecionado = null),
             ),
     );
   }
 
   Widget _corpo(BuildContext context) {
-    if (_carregando) {
+    if (_carregando && _exercicios.isEmpty) {
       return Padding(
         padding: _paddingCorpo(context),
         child: const Center(child: ProgressRing()),
@@ -3060,47 +2942,53 @@ class _ExercicioCard extends StatelessWidget {
       child: _CartaoFluent(
         onPressed: onTap,
         padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          exercicio.subjectName,
-                          style: context.tipo.bodyStrong?.copyWith(
-                            color: titleBlue,
+        child: Builder(
+          builder: (context) => Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            exercicio.subjectName,
+                            style: context.tipo.bodyStrong?.copyWith(
+                              color: DefaultTextStyle.of(context).style.color,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      _StatusBadge(status: exercicio.status),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    exercicio.promptText,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.tipo.body?.copyWith(color: contentBlue),
-                  ),
-                  if (exercicio.createdAt != null) ...[
+                        const SizedBox(width: 8),
+                        _StatusBadge(status: exercicio.status),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Text(
-                      _fmtData(exercicio.createdAt!),
-                      style: context.tipo.caption?.copyWith(color: Cores.cinza),
+                      exercicio.promptText,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.tipo.body?.copyWith(
+                        color: DefaultTextStyle.of(context).style.color,
+                      ),
                     ),
+                    if (exercicio.createdAt != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _fmtData(exercicio.createdAt!),
+                        style: context.tipo.caption?.copyWith(
+                          color: DefaultTextStyle.of(context).style.color,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(width: 4),
-            _menu(),
-          ],
+              const SizedBox(width: 4),
+              _menu(),
+            ],
+          ),
         ),
       ),
     );
@@ -3109,27 +2997,30 @@ class _ExercicioCard extends StatelessWidget {
   Widget _menu() {
     return DropDownButton(
       placement: FlyoutPlacementMode.bottomRight,
+      menuShape: MistakeMapControls.menuShape,
+      menuColor: MistakeMapDesign.surface,
       buttonBuilder: (context, abrir) => Tooltip(
         message: 'Opções',
-        child: IconButton(
-          icon: const Icon(WindowsIcons.more, size: 16, color: contentBlue),
+        child: MistakeMapIconButton(
+          icon: const _IconeBotao(WindowsIcons.more),
           onPressed: abrir,
         ),
       ),
       items: [
-        MenuFlyoutItem(
-          leading: const Icon(WindowsIcons.view),
-          text: const Text('Ver detalhes'),
+        _itemMenu(
+          icone: WindowsIcons.view,
+          texto: 'Ver detalhes',
           onPressed: onTap,
         ),
-        MenuFlyoutItem(
-          leading: const Icon(WindowsIcons.edit),
-          text: const Text('Editar'),
+        _itemMenu(
+          icone: WindowsIcons.edit,
+          texto: 'Editar',
           onPressed: onEditar,
         ),
-        MenuFlyoutItem(
-          leading: const Icon(WindowsIcons.delete, color: Cores.vermelho),
-          text: const Text('Excluir', style: TextStyle(color: Cores.vermelho)),
+        _itemMenu(
+          icone: WindowsIcons.delete,
+          texto: 'Excluir',
+          cor: Cores.vermelho700,
           onPressed: onExcluir,
         ),
       ],
@@ -3186,10 +3077,6 @@ class TelaDetalheExercicio extends StatelessWidget {
   final Exercicio exercicio;
   final AppUser user;
   final VoidCallback onAtualizar;
-
-  /// Exibido ao lado da lista (DoisPaineis), sem barra própria: excluir e
-  /// editar atualizam a lista em vez de fechar a página.
-  final bool embutido;
   final VoidCallback? onFechar;
 
   const TelaDetalheExercicio({
@@ -3197,7 +3084,6 @@ class TelaDetalheExercicio extends StatelessWidget {
     required this.exercicio,
     required this.user,
     required this.onAtualizar,
-    this.embutido = false,
     this.onFechar,
   });
 
@@ -3240,8 +3126,8 @@ class TelaDetalheExercicio extends StatelessWidget {
       }
       if (!context.mounted) return;
       onAtualizar();
-      if (embutido) {
-        onFechar?.call();
+      if (onFechar != null) {
+        onFechar!();
       } else {
         Navigator.pop(context);
       }
@@ -3257,36 +3143,27 @@ class TelaDetalheExercicio extends StatelessWidget {
   Future<void> _editar(BuildContext context) async {
     await Navigator.push(
       context,
-      FluentPageRoute(
+      MistakeMapPageRoute(
+        context: context,
         builder: (_) => TelaEditarExercicio(exercicio: exercicio, user: user),
       ),
     );
     onAtualizar();
-    if (!embutido && context.mounted) Navigator.pop(context);
+    if (context.mounted && onFechar == null) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (embutido) {
-      return SingleChildScrollView(
-        padding: _paddingCorpo(context),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              exercicio.subjectName,
-              style: context.tipo.subtitle?.copyWith(color: titleBlue),
-            ),
-            const SizedBox(height: 16),
-            _conteudo(context),
-          ],
-        ),
-      );
-    }
     return _PaginaVidro(
       titulo: exercicio.subjectName,
-      voltar: true,
+      voltar: onFechar == null,
       acoes: [
+        if (onFechar != null)
+          _BotaoBarra(
+            icone: WindowsIcons.cancel,
+            dica: 'Fechar detalhes',
+            onPressed: onFechar!,
+          ),
         _BotaoBarra(
           icone: WindowsIcons.edit,
           dica: 'Editar',
@@ -3301,114 +3178,104 @@ class TelaDetalheExercicio extends StatelessWidget {
       ],
       corpo: SingleChildScrollView(
         padding: _paddingCorpo(context),
-        child: _conteudo(context),
-      ),
-    );
-  }
-
-  Widget _conteudo(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Status:',
-              style: context.tipo.bodyStrong?.copyWith(color: contentBlue),
-            ),
-            const SizedBox(width: 8),
-            _StatusBadge(status: exercicio.status),
-          ],
-        ),
-        if (exercicio.createdAt != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Adicionado em ${_fmtData(exercicio.createdAt!)}',
-            style: context.tipo.caption?.copyWith(color: Cores.cinza),
-          ),
-        ],
-        const SizedBox(height: 24),
-        _rotulo(context, 'ASSUNTO'),
-        const SizedBox(height: 8),
-        _DetalheBox(
-          child: Text(
-            exercicio.subjectName,
-            style: context.tipo.bodyStrong?.copyWith(color: titleBlue),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _rotulo(context, 'DESCRIÇÃO DO ERRO'),
-        const SizedBox(height: 8),
-        _DetalheBox(
-          child: Text(
-            exercicio.promptText,
-            style: context.tipo.body?.copyWith(color: contentBlue, height: 1.5),
-          ),
-        ),
-        const SizedBox(height: 32),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            style: _estiloBotao(
-              fundo: contentBlue,
-              texto: Cores.branco,
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            ),
-            onPressed: () => _editar(context),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Row(
               children: [
-                Icon(WindowsIcons.edit, size: 18),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text('Editar exercício', textAlign: TextAlign.center),
+                Text(
+                  'Status:',
+                  style: context.tipo.bodyStrong?.copyWith(color: contentBlue),
                 ),
+                const SizedBox(width: 8),
+                _StatusBadge(status: exercicio.status),
               ],
             ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: Button(
-            style:
-                _estiloBotao(
-                  texto: Cores.vermelho400,
+            if (exercicio.createdAt != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Adicionado em ${_fmtData(exercicio.createdAt!)}',
+                style: context.tipo.caption?.copyWith(color: Cores.cinza),
+              ),
+            ],
+            const SizedBox(height: 24),
+            _rotulo(context, 'ASSUNTO'),
+            const SizedBox(height: 8),
+            _DetalheBox(
+              child: Text(
+                exercicio.subjectName,
+                style: context.tipo.bodyStrong?.copyWith(color: titleBlue),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _rotulo(context, 'DESCRIÇÃO DO ERRO'),
+            const SizedBox(height: 8),
+            _DetalheBox(
+              child: Text(
+                exercicio.promptText,
+                style: context.tipo.body?.copyWith(
+                  color: contentBlue,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: MistakeMapFilledButton(
+                style: _estiloBotao(
+                  fundo: contentBlue,
+                  texto: Cores.branco,
                   padding: const EdgeInsets.symmetric(
                     vertical: 16,
                     horizontal: 24,
                   ),
-                ).copyWith(
-                  // Realce vermelho em vez do véu preto do _estiloBotao,
-                  // coerente com a ação destrutiva.
-                  backgroundColor: WidgetStateProperty.resolveWith(
-                    (estados) => estados.contains(WidgetState.pressed)
-                        ? Cores.vermelho400.withValues(alpha: 0.12)
-                        : estados.contains(WidgetState.hovered)
-                        ? Cores.vermelho400.withValues(alpha: 0.08)
-                        : Cores.transparente,
-                  ),
-                  shape: WidgetStatePropertyAll(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(kRadiusSm),
-                      side: const BorderSide(color: Cores.vermelho300),
-                    ),
-                  ),
                 ),
-            onPressed: () => _excluir(context),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(WindowsIcons.delete, size: 18),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text('Excluir exercício', textAlign: TextAlign.center),
+                onPressed: () => _editar(context),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(WindowsIcons.edit, size: 18),
+                    SizedBox(width: 8),
+                    Text('Editar exercício'),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: MistakeMapButton(
+                style:
+                    _estiloBotao(
+                      fundo: Cores.transparente,
+                      texto: Cores.vermelho400,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 24,
+                      ),
+                    ).copyWith(
+                      shape: WidgetStatePropertyAll(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(kRadiusSm),
+                          side: const BorderSide(color: Cores.vermelho300),
+                        ),
+                      ),
+                    ),
+                onPressed: () => _excluir(context),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(WindowsIcons.delete, size: 18),
+                    SizedBox(width: 8),
+                    Text('Excluir exercício'),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -3594,7 +3461,7 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  FilledButton(
+                  MistakeMapFilledButton(
                     style: _estiloBotao(
                       fundo: contentBlue,
                       texto: Cores.branco,
@@ -3638,112 +3505,50 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
 // ─── Painel administrativo ────────────────────────────────────────────────────
 class TelaAdmin extends StatefulWidget {
   final AppUser user;
-  final VoidCallback? onVoltar;
-  const TelaAdmin({super.key, required this.user, this.onVoltar});
+  final bool active;
+  const TelaAdmin({super.key, required this.user, this.active = true});
 
   @override
   State<TelaAdmin> createState() => _TelaAdminState();
 }
 
 class _TelaAdminState extends State<TelaAdmin> {
+  int _secao = 0;
   List<Map<String, dynamic>> _perfis = [];
   bool _carregando = true;
   String? _erro;
-  int _latenciaMs = 0;
-  int _totalExercicios = 0;
-  int _totalTentativas = 0;
-  double _r2StorageUsedMb = 142.5;
-  int _r2ClassAOps = 4820;
-  int _r2ClassBOps = 18340;
-  double _supabaseDbStorageMb = 18.6;
-  final int _supabaseFunctionsInvocations = 1240;
-  Timer? _timerAutoRefresh;
-  DateTime? _ultimaAtualizacao;
 
   @override
   void initState() {
     super.initState();
     _carregar();
-    // Atualização automática periódica a cada 60 minutos
-    _timerAutoRefresh = Timer.periodic(const Duration(minutes: 60), (_) {
-      if (mounted) {
-        _carregar(silencioso: true);
-      }
+  }
+
+  Future<void> _carregar() async {
+    setState(() {
+      _carregando = true;
+      _erro = null;
     });
-  }
-
-  @override
-  void dispose() {
-    _timerAutoRefresh?.cancel();
-    super.dispose();
-  }
-
-  void _voltar() {
-    if (widget.onVoltar != null) {
-      widget.onVoltar!();
-    } else if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
-  }
-
-  Future<void> _carregar({bool silencioso = false}) async {
-    if (!silencioso) {
-      setState(() {
-        _carregando = true;
-        _erro = null;
-      });
-    }
-
-    final sw = Stopwatch()..start();
-    List<Map<String, dynamic>> perfisData = [];
     try {
       final res = await _db
           .from('profiles')
           .select('id, role, created_at, institution_name, course')
           .order('created_at');
-      perfisData = (res as List)
-          .map((p) => Map<String, dynamic>.from(p))
-          .toList();
-    } catch (_) {
-      perfisData = [
-        {
-          'id': widget.user.id,
-          'role': widget.user.role,
-          'created_at': DateTime.now().toIso8601String(),
-        },
-      ];
-    }
-    sw.stop();
-
-    int totalEx = 0;
-    int totalTent = 0;
-    try {
-      final exRes = await _db.from('exercises').select('id');
-      totalEx = (exRes as List).length;
-    } catch (_) {}
-    try {
-      final attRes = await _db.from('attempts').select('id');
-      totalTent = (attRes as List).length;
-    } catch (_) {}
-
-    final r2EstimadoMb = 142.5 + (totalTent * 1.8) + (totalEx * 0.4);
-    final r2AOps = 4820 + (totalTent * 3);
-    final r2BOps = 18340 + (totalTent * 10);
-    final dbStorageMb = 18.6 + (perfisData.length * 0.08) + (totalTent * 0.04);
-
-    if (mounted) {
-      setState(() {
-        _perfis = perfisData;
-        _totalExercicios = totalEx;
-        _totalTentativas = totalTent;
-        _latenciaMs = sw.elapsedMilliseconds > 0 ? sw.elapsedMilliseconds : 84;
-        _r2StorageUsedMb = r2EstimadoMb;
-        _r2ClassAOps = r2AOps;
-        _r2ClassBOps = r2BOps;
-        _supabaseDbStorageMb = dbStorageMb;
-        _ultimaAtualizacao = DateTime.now();
-        _carregando = false;
-      });
+      if (mounted) {
+        setState(() {
+          _perfis = (res as List)
+              .map((p) => Map<String, dynamic>.from(p))
+              .toList();
+          _carregando = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _erro = 'Falha ao carregar usuários: $e';
+          _carregando = false;
+        });
+      }
     }
   }
 
@@ -3751,9 +3556,6 @@ class _TelaAdminState extends State<TelaAdmin> {
     try {
       await _db.from('profiles').update({'role': novaRole}).eq('id', userId);
       await _carregar();
-      if (mounted) {
-        _avisar(context, 'Papel de usuário atualizado com sucesso!');
-      }
     } catch (e) {
       if (mounted) {
         _avisar(context, 'Erro ao alterar papel: $e', erro: true);
@@ -3761,625 +3563,104 @@ class _TelaAdminState extends State<TelaAdmin> {
     }
   }
 
-  String _formatarHora(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    return '$h:$m';
-  }
-
   @override
   Widget build(BuildContext context) {
     return _PaginaVidro(
-      titulo: 'Painel Administrativo & Infraestrutura',
-      voltar: true,
-      onVoltar: _voltar,
+      titulo: 'Painel Administrativo',
       acoes: [
         _BotaoBarra(
           icone: WindowsIcons.refresh,
-          dica: 'Atualizar agora (Auto a cada 60 min)',
-          onPressed: () => _carregar(),
+          dica: 'Atualizar',
+          onPressed: _carregar,
         ),
       ],
-      corpo: _carregando
-          ? Padding(
-              padding: _paddingCorpo(context),
-              child: const Center(child: ProgressRing()),
-            )
-          : _erro != null
-          ? Padding(
-              padding: _paddingCorpo(context, horizontal: 24),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _erro!,
-                      textAlign: TextAlign.center,
-                      style: context.tipo.body?.copyWith(color: Cores.vermelho),
-                    ),
-                    const SizedBox(height: 16),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _voltar,
-                      child: Button(
-                        onPressed: _voltar,
-                        child: const Text('Voltar ao Início'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : ListView(
-              padding: _paddingCorpo(context),
-              children: [
-                _secaoAvisoPrivacidade(context),
-                const SizedBox(height: 16),
-                _secaoResumoPlataforma(context),
-                const SizedBox(height: 20),
-                _secaoCloudflareR2(context),
-                const SizedBox(height: 20),
-                _secaoSupabaseLimits(context),
-                const SizedBox(height: 20),
-                _secaoDesempenho(context),
-                const SizedBox(height: 24),
-                _secaoUsuarios(context),
-                const SizedBox(height: 24),
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 400),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: _voltar,
-                        child: Button(
-                          style:
-                              _estiloBotao(
-                                fundo: Azuis.gelo,
-                                texto: contentBlue,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                  horizontal: 20,
-                                ),
-                              ).copyWith(
-                                shape: WidgetStatePropertyAll(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      kRadiusSm,
-                                    ),
-                                    side: const BorderSide(color: Azuis.nevoa),
-                                  ),
-                                ),
-                              ),
-                          onPressed: _voltar,
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                WindowsIcons.back,
-                                size: 16,
-                                color: contentBlue,
-                              ),
-                              SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  'Voltar ao Início',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: contentBlue,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-              ],
-            ),
-    );
-  }
-
-  Widget _secaoAvisoPrivacidade(BuildContext context) {
-    return _PainelVidro(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      raio: kRadiusSm,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(WindowsIcons.shield, size: 22, color: contentBlue),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Governança Zero-PII & Privacidade (LGPD)',
-                  style: context.tipo.bodyStrong?.copyWith(color: titleBlue),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Este painel opera exclusivamente com métricas técnicas agregadas de infraestrutura. '
-                  'Identificadores de alunos são pseudonimizados com hash truncado para evitar exposição '
-                  'de dados pessoais e preservar sigilo pedagógico.',
-                  style: context.tipo.caption?.copyWith(color: contentBlue),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _secaoResumoPlataforma(BuildContext context) {
-    final horaTexto = _ultimaAtualizacao != null
-        ? ' • Atualizado às ${_formatarHora(_ultimaAtualizacao!)}'
-        : '';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      corpo: Padding(
+        padding: _paddingCorpo(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Visão Geral da Infraestrutura',
-                    style: context.tipo.subtitle?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: titleBlue,
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var i = 0; i < 2; i++)
+                  Semantics(
+                    selected: _secao == i,
+                    child: MistakeMapButton(
+                      key: ValueKey('admin-section-$i'),
+                      style: _estiloBotao(
+                        fundo: _secao == i ? contentBlue : Cores.branco,
+                        texto: _secao == i ? Cores.branco : contentBlue,
+                      ),
+                      onPressed: () => setState(() => _secao = i),
+                      child: Text(i == 0 ? 'Funcionamento' : 'Usuários'),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Atualização automática a cada 60 min$horaTexto',
-                    style: context.tipo.caption?.copyWith(
-                      color: contentBlue.withValues(alpha: 0.8),
-                    ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: IndexedStack(
+                index: _secao,
+                children: [
+                  ListView(
+                    children: [
+                      AdminMetricsPanel(
+                        client: _db,
+                        active: widget.active && _secao == 0,
+                      ),
+                    ],
+                  ),
+                  ListView.builder(
+                    itemCount: (_carregando || _erro != null)
+                        ? 1
+                        : _perfis.length + 1,
+                    itemBuilder: (ctx, i) {
+                      if (_carregando) {
+                        return const Center(child: ProgressRing());
+                      }
+                      if (_erro != null) {
+                        return Text(
+                          _erro!,
+                          style: context.tipo.body?.copyWith(
+                            color: Cores.vermelho,
+                          ),
+                        );
+                      }
+                      return i == 0
+                          ? _cabecalho(ctx)
+                          : _itemPerfil(ctx, _perfis[i - 1]);
+                    },
                   ),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Resumo com o total de perfis cadastrados
+  Widget _cabecalho(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _PainelVidro(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        raio: kRadiusSm,
+        child: Row(
+          children: [
+            const Icon(WindowsIcons.people, size: 20, color: contentBlue),
             const SizedBox(width: 8),
-            const Flexible(
-              child: _Pilula(texto: 'Operacional 99.8%', cor: Cores.verde),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // 1 coluna no celular, 2 no tablet, 4 em telas largas.
-        GradeAdaptativa(
-          larguraMinimaItem: 160,
-          children: [
-            _CardMetricaAdmin(
-              icone: WindowsIcons.network,
-              titulo: 'Latência PostgREST',
-              valor: '$_latenciaMs ms',
-              subtitulo: _latenciaMs < 200 ? 'Excelente (<200ms)' : 'Estável',
-              corDestaque: _latenciaMs < 200 ? Cores.verde : contentBlue,
-            ),
-            _CardMetricaAdmin(
-              icone: WindowsIcons.people,
-              titulo: 'Total Usuários',
-              valor: '${_perfis.length}',
-              subtitulo:
-                  '${_perfis.where((p) => p['role'] == 'admin').length} administradores',
-              corDestaque: contentBlue,
-            ),
-            _CardMetricaAdmin(
-              icone: WindowsIcons.bulleted_list,
-              titulo: 'Exercícios Criados',
-              valor: '$_totalExercicios',
-              subtitulo: 'Cadastrados no banco',
-              corDestaque: contentBlue,
-            ),
-            _CardMetricaAdmin(
-              icone: WindowsIcons.completed,
-              titulo: 'Tentativas & Envios',
-              valor: '$_totalTentativas',
-              subtitulo: 'Resoluções analisadas',
-              corDestaque: contentBlue,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _secaoCloudflareR2(BuildContext context) {
-    const double r2QuotaTotalMb = 10.0 * 1024.0; // 10 GB
-    final double r2UsoPercent = (_r2StorageUsedMb / r2QuotaTotalMb) * 100.0;
-    const int r2ClassALimit = 1000000; // 1M ops
-    final double r2ClassAPercent = (_r2ClassAOps / r2ClassALimit) * 100.0;
-    const int r2ClassBLimit = 10000000; // 10M ops
-    final double r2ClassBPercent = (_r2ClassBOps / r2ClassBLimit) * 100.0;
-
-    return _CartaoFluent(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(WindowsIcons.hard_drive, size: 20, color: contentBlue),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Cloudflare R2 Storage (S3-Compatible)',
-                  style: context.tipo.bodyStrong?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: titleBlue,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Flexible(
-                child: _Pilula(texto: 'Zero Egress Fees', cor: contentBlue),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Armazena fotos e scans de resoluções de exercícios submetidas para análise de IA.',
-            style: context.tipo.caption?.copyWith(color: contentBlue),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Armazenamento Ocupado',
-                  style: context.tipo.body?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  '${_r2StorageUsedMb.toStringAsFixed(1)} MB / 10 GB (${r2UsoPercent.toStringAsFixed(1)}%)',
-                  textAlign: TextAlign.end,
-                  style: context.tipo.caption?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: contentBlue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          _BarraProgresso(
-            progresso: _r2StorageUsedMb / r2QuotaTotalMb,
-            cor: contentBlue,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Quota gratuita: 10 GB/mês. ${(10.0 - (_r2StorageUsedMb / 1024.0)).toStringAsFixed(2)} GB livres disponíveis.',
-            style: context.tipo.caption?.copyWith(color: Cores.cinza),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Operações Classe A (Uploads / URLs)',
-                  style: context.tipo.body?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  '$_r2ClassAOps / 1M (${r2ClassAPercent.toStringAsFixed(1)}%)',
-                  textAlign: TextAlign.end,
-                  style: context.tipo.caption?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: contentBlue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          _BarraProgresso(
-            progresso: _r2ClassAOps / r2ClassALimit,
-            cor: Cores.verde,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Operações Classe B (Downloads / Imagens)',
-                  style: context.tipo.body?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  '$_r2ClassBOps / 10M (${r2ClassBPercent.toStringAsFixed(2)}%)',
-                  textAlign: TextAlign.end,
-                  style: context.tipo.caption?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: contentBlue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          _BarraProgresso(
-            progresso: _r2ClassBOps / r2ClassBLimit,
-            cor: Cores.verde,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _secaoSupabaseLimits(BuildContext context) {
-    const double dbQuotaMb = 500.0;
-    final double dbPercent = (_supabaseDbStorageMb / dbQuotaMb) * 100.0;
-    const int mauLimit = 50000;
-    final double mauPercent = (_perfis.length / mauLimit) * 100.0;
-    const int fnLimit = 500000;
-    final double fnPercent = (_supabaseFunctionsInvocations / fnLimit) * 100.0;
-
-    return _CartaoFluent(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(WindowsIcons.network, size: 20, color: contentBlue),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Supabase Backend Limits (Free Tier)',
-                  style: context.tipo.bodyStrong?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: titleBlue,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Flexible(
-                child: _Pilula(texto: 'Nível Gratuito', cor: contentBlue),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Monitoramento dos limites operacionais do plano Free da organização Supabase.',
-            style: context.tipo.caption?.copyWith(color: contentBlue),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Banco de Dados (PostgreSQL)',
-                  style: context.tipo.body?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  '${_supabaseDbStorageMb.toStringAsFixed(1)} MB / 500 MB (${dbPercent.toStringAsFixed(1)}%)',
-                  textAlign: TextAlign.end,
-                  style: context.tipo.caption?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: contentBlue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          _BarraProgresso(
-            progresso: _supabaseDbStorageMb / dbQuotaMb,
-            cor: contentBlue,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Usuários Ativos (MAU)',
-                  style: context.tipo.body?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  '${_perfis.length} / 50k MAU (${mauPercent.toStringAsFixed(2)}%)',
-                  textAlign: TextAlign.end,
-                  style: context.tipo.caption?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: contentBlue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          _BarraProgresso(
-            progresso: _perfis.length / mauLimit,
-            cor: Cores.verde,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Edge Functions (OpenAI)',
-                  style: context.tipo.body?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  '$_supabaseFunctionsInvocations / 500k (${fnPercent.toStringAsFixed(2)}%)',
-                  textAlign: TextAlign.end,
-                  style: context.tipo.caption?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: contentBlue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          _BarraProgresso(
-            progresso: _supabaseFunctionsInvocations / fnLimit,
-            cor: Cores.verde,
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: Azuis.gelo,
-              borderRadius: BorderRadius.circular(kRadiusSm),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  WindowsIcons.completed,
-                  size: 16,
-                  color: Cores.verde,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Pooler Supavisor ativo: Conexões seguras via Transaction Mode (porta 6543)',
-                    style: context.tipo.caption?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: contentBlue,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _secaoDesempenho(BuildContext context) {
-    return _CartaoFluent(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(WindowsIcons.refresh, size: 20, color: contentBlue),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Desempenho & Tempos de Resposta',
-                  style: context.tipo.bodyStrong?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: titleBlue,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Flexible(
-                child: _Pilula(texto: 'Alta Disponibilidade', cor: Cores.verde),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          GradeAdaptativa(
-            larguraMinimaItem: 140,
-            children: [
-              _MetricaPequena(
-                label: 'Latência PostgREST',
-                valor: '$_latenciaMs ms',
-                detalhe: 'Tempo real round-trip',
-              ),
-              const _MetricaPequena(
-                label: 'Edge Function IA',
-                valor: '~1.25 s',
-                detalhe: 'Tempo médio OpenAI',
-              ),
-              const _MetricaPequena(
-                label: 'Taxa de Sucesso API',
-                valor: '99.8%',
-                detalhe: 'Zero erros 5xx hoje',
-              ),
-              const _MetricaPequena(
-                label: 'CDN Cloudflare Cache',
-                valor: '94.2%',
-                detalhe: 'Hit-rate de assets estáticos',
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _secaoUsuarios(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
             Expanded(
               child: Text(
-                'Gestão de Perfis & Acessos',
-                style: context.tipo.subtitle?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: titleBlue,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                '${_perfis.length} cadastrados',
-                textAlign: TextAlign.end,
-                style: context.tipo.caption?.copyWith(color: contentBlue),
+                '${_perfis.length} usuário(s) cadastrado(s)',
+                style: context.tipo.bodyStrong?.copyWith(color: contentBlue),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Identificadores anonimizados em conformidade com as políticas de privacidade.',
-          style: context.tipo.caption?.copyWith(color: Cores.cinza),
-        ),
-        const SizedBox(height: 12),
-        ..._perfis.map((p) => _itemPerfil(context, p)),
-      ],
+      ),
     );
   }
 
@@ -4390,9 +3671,6 @@ class _TelaAdminState extends State<TelaAdmin> {
     final course = p['course'] as String?;
     final isCurrentUser = uid == widget.user.id;
     final isAdmin = role == 'admin';
-    final maskedId = uid.length > 12
-        ? '${uid.substring(0, 6)}…${uid.substring(uid.length - 4)}'
-        : uid;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -4418,38 +3696,26 @@ class _TelaAdminState extends State<TelaAdmin> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Wrap: em telas estreitas o complemento desce para a linha
-                  // seguinte em vez de estourar o cartão.
+                  Text(
+                    // Mostra ID encurtado (email fica em auth.users, inacessível pelo client)
+                    'ID: ${uid.substring(0, 8)}…${uid.substring(uid.length - 4)}',
+                    style: context.tipo.body?.copyWith(fontFamily: 'monospace'),
+                  ),
+                  const SizedBox(height: 4),
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text(
-                        'ID: $maskedId',
-                        style: context.tipo.body?.copyWith(
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (isCurrentUser)
+                      _RoleBadge(role: role),
+                      if (isCurrentUser) ...[
+                        const SizedBox(width: 8),
                         Text(
                           '(você)',
                           style: context.tipo.caption?.copyWith(
                             color: Cores.cinza,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      _RoleBadge(role: role),
-                      if (isAdmin)
-                        const _Pilula(texto: 'Acesso Total', cor: Cores.verde),
+                      ],
                     ],
                   ),
                   if (institution != null || course != null) ...[
@@ -4472,25 +3738,28 @@ class _TelaAdminState extends State<TelaAdmin> {
     );
   }
 
+  // Menu de troca de papel: cada opção só fica habilitada quando muda o papel.
   Widget _menuPapel(String uid, bool isAdmin) {
     return DropDownButton(
       placement: FlyoutPlacementMode.bottomRight,
+      menuShape: MistakeMapControls.menuShape,
+      menuColor: MistakeMapDesign.surface,
       buttonBuilder: (context, onOpen) => Tooltip(
         message: 'Gerenciar papel',
-        child: IconButton(
-          icon: const Icon(WindowsIcons.more, size: 16),
+        child: MistakeMapIconButton(
+          icon: const _IconeBotao(WindowsIcons.more),
           onPressed: onOpen,
         ),
       ),
       items: [
-        MenuFlyoutItem(
-          leading: const Icon(WindowsIcons.admin, size: 16),
-          text: const Text('Tornar administrador'),
+        _itemMenu(
+          icone: WindowsIcons.admin,
+          texto: 'Tornar administrador',
           onPressed: isAdmin ? null : () => _alterarRole(uid, 'admin'),
         ),
-        MenuFlyoutItem(
-          leading: const Icon(WindowsIcons.contact, size: 16),
-          text: const Text('Revogar administrador'),
+        _itemMenu(
+          icone: WindowsIcons.contact,
+          texto: 'Revogar administrador',
           onPressed: isAdmin ? () => _alterarRole(uid, 'user') : null,
         ),
       ],
@@ -4508,144 +3777,6 @@ class _RoleBadge extends StatelessWidget {
     return _Pilula(
       texto: isAdmin ? 'Administrador' : 'Usuário',
       cor: isAdmin ? contentBlue : Cores.cinza700,
-    );
-  }
-}
-
-class _BarraProgresso extends StatelessWidget {
-  final double progresso;
-  final Color cor;
-
-  const _BarraProgresso({required this.progresso, this.cor = contentBlue});
-
-  @override
-  Widget build(BuildContext context) {
-    final pClamped = progresso.clamp(0.005, 1.0);
-    return Container(
-      height: 8,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Cores.cinza200.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      alignment: Alignment.centerLeft,
-      child: FractionallySizedBox(
-        widthFactor: pClamped,
-        child: Container(
-          decoration: BoxDecoration(
-            color: cor,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CardMetricaAdmin extends StatelessWidget {
-  final IconData icone;
-  final String titulo;
-  final String valor;
-  final String subtitulo;
-  final Color corDestaque;
-
-  const _CardMetricaAdmin({
-    required this.icone,
-    required this.titulo,
-    required this.valor,
-    required this.subtitulo,
-    this.corDestaque = contentBlue,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _CartaoFluent(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icone, size: 18, color: corDestaque),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  titulo,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.tipo.caption?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Cores.cinza700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            valor,
-            style: context.tipo.subtitle?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: corDestaque,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitulo,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.tipo.caption?.copyWith(color: Cores.cinza),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetricaPequena extends StatelessWidget {
-  final String label;
-  final String valor;
-  final String detalhe;
-
-  const _MetricaPequena({
-    required this.label,
-    required this.valor,
-    required this.detalhe,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Azuis.gelo,
-        borderRadius: BorderRadius.circular(kRadiusSm),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: context.tipo.caption?.copyWith(color: Cores.cinza700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            valor,
-            style: context.tipo.bodyStrong?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: contentBlue,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            detalhe,
-            style: context.tipo.caption?.copyWith(
-              fontSize: 11,
-              color: Cores.cinza,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -4709,9 +3840,10 @@ class TelaSobre extends StatelessWidget {
                 // Equipe
                 const _SobreSecaoTitulo(titulo: 'A Equipe'),
                 const SizedBox(height: 12),
-                const _MembroCard(
+                _MembroCard(
                   iniciais: 'CJ',
                   nome: 'Cláudio Francisco',
+                  foto: claudioProfilePhotoBytes,
                   corAvatar: Color(0xFF1E5CA7),
                   responsabilidades: [
                     'Backend',
@@ -4723,6 +3855,10 @@ class TelaSobre extends StatelessWidget {
                       'Responsável pela arquitetura backend, integração com '
                       'Supabase, armazenamento de arquivos no Cloudflare R2 '
                       'e pipeline de processamento com OCR e IA.',
+                  acao: LinkedInProfileButton(
+                    name: 'Cláudio Francisco',
+                    onPressed: () => _abrirLinkedIn(context),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 const _MembroCard(
@@ -4753,25 +3889,6 @@ class TelaSobre extends StatelessWidget {
                     _Pilula(texto: 'LLM', cor: contentBlue),
                   ],
                 ),
-                const SizedBox(height: 32),
-                // Rodapé
-                Center(
-                  child: Text(
-                    'PUC Minas · Projeto Integrado I · 2026',
-                    style: context.tipo.caption?.copyWith(
-                      color: contentBlue.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: Text(
-                    'v1.0.0 — Sprint 2',
-                    style: context.tipo.caption?.copyWith(
-                      color: contentBlue.withValues(alpha: 0.4),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -4780,16 +3897,26 @@ class TelaSobre extends StatelessWidget {
     );
   }
 
+  Future<void> _abrirLinkedIn(BuildContext context) async {
+    try {
+      if (await openClaudioLinkedInProfile()) return;
+    } on Exception {
+      // A falha do navegador é apresentada no mesmo canal dos avisos do app.
+    }
+    if (!context.mounted) return;
+    _avisar(
+      context,
+      'Não foi possível abrir o LinkedIn. Tente novamente.',
+      erro: true,
+    );
+  }
+
   // Destaque com o gradiente da identidade.
   Widget _heroi(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF142A4A), Color(0xFF1E5CA7)],
-        ),
+        gradient: MistakeMapDesign.hero,
         borderRadius: BorderRadius.circular(kRadius),
         boxShadow: [
           BoxShadow(
@@ -4955,16 +4082,20 @@ class _MvvCard extends StatelessWidget {
 class _MembroCard extends StatelessWidget {
   final String iniciais;
   final String nome;
+  final Uint8List? foto;
   final Color corAvatar;
   final List<String> responsabilidades;
   final String descricao;
+  final Widget? acao;
 
   const _MembroCard({
     required this.iniciais,
     required this.nome,
+    this.foto,
     required this.corAvatar,
     required this.responsabilidades,
     required this.descricao,
+    this.acao,
   });
 
   @override
@@ -4976,21 +4107,26 @@ class _MembroCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Avatar circular com as iniciais.
-              Container(
-                width: 52,
-                height: 52,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: corAvatar,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  iniciais,
-                  style: context.tipo.bodyLarge?.copyWith(
-                    color: Cores.branco,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
+              Semantics(
+                image: true,
+                label: 'Avatar de $nome',
+                child: ExcludeSemantics(
+                  child: ClipOval(
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      alignment: Alignment.center,
+                      color: corAvatar,
+                      child: foto == null
+                          ? _iniciais(context)
+                          : Image.memory(
+                              foto!,
+                              width: 52,
+                              height: 52,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => _iniciais(context),
+                            ),
+                    ),
                   ),
                 ),
               ),
@@ -5034,10 +4170,20 @@ class _MembroCard extends StatelessWidget {
               height: 1.5,
             ),
           ),
+          if (acao != null) ...[const SizedBox(height: 16), acao!],
         ],
       ),
     );
   }
+
+  Widget _iniciais(BuildContext context) => Text(
+    iniciais,
+    style: context.tipo.bodyLarge?.copyWith(
+      color: Cores.branco,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 1,
+    ),
+  );
 }
 
 // ─── fim: Sobre o App ───────────────────────────────────────────────────────
