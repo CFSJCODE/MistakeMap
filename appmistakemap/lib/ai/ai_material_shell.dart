@@ -93,6 +93,10 @@ class AiMaterialShell extends StatelessWidget {
         foregroundColor: MistakeMapDesign.primary,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        // Mesmo recuo de 12 px das barras Fluent: os botões não encostam na
+        // borda da tela.
+        actionsPadding: EdgeInsets.only(right: 12),
+        leadingWidth: 68,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: _controlStyle(context, primary: true),
