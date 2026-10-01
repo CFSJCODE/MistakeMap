@@ -1,0 +1,52 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {PGlite} from '../openai-integration/verification/node_modules/@electric-sql/pglite/dist/index.js';
+const db = new PGlite();
+try {
+  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
+    create schema auth;
+    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+    create function public.is_admin() returns boolean language sql stable as $$ select auth.uid()='10000000-0000-4000-8000-000000000001'::uuid $$;
+    grant usage on schema auth,public to anon,authenticated,service_role;`);
+  await db.exec(fs.readFileSync(new URL('./provider_telemetry.sql',import.meta.url),'utf8'));
+  await db.exec(`insert into public.ai_api_events(requested_model,model,finished_at,status_code,input_tokens,elapsed_ms)
+    values('gemini-flash-latest','gemini-3.8-flash',now(),200,852,800),
+    ('gemini-3.6-flash','gemini-3.6-flash',now(),429,null,100);`);
+  await db.exec(`set role anon;`);
+  await assert.rejects(db.exec('select public.admin_ai_api_metrics()'),e=>e.code==='42501');
+  await db.exec(`reset role; select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',false); set role authenticated;`);
+  await assert.rejects(db.exec('select public.admin_ai_api_metrics()'),e=>e.code==='42501');
+  await assert.rejects(db.exec('select * from public.ai_api_events'),e=>e.code==='42501');
+  await db.exec(`reset role; select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',false); set role authenticated;`);
+  const {rows} = await db.query('select public.admin_ai_api_metrics() as metrics');
+  const metrics = rows[0].metrics;
+  assert.equal(metrics.models.length,2);
+  const flash = metrics.models.find(m=>m.model==='gemini-3.8-flash');
+  assert.equal(flash.rpm,1); assert.equal(flash.rpd,1); assert.equal(flash.tpm,852);
+  assert.equal(flash.median_ms,800);
+  const fallback = metrics.models.find(m=>m.model==='gemini-3.6-flash');
+  assert.equal(fallback.throttled_24h,1); assert.equal(fallback.unknown_tokens,1);
+  assert.equal(fallback.tpm,null);
+  await db.exec(`reset role; create schema realtime;
+    create table realtime.messages(payload jsonb, topic text, extension text default 'broadcast');
+    alter table realtime.messages enable row level security;
+    grant usage on schema realtime to anon,authenticated;
+    grant select on realtime.messages to anon,authenticated;
+    create policy existing_broadcast_policy on realtime.messages for select using(true);
+    create function realtime.topic() returns text language sql stable as $$ select current_setting('realtime.topic',true) $$;
+    create function realtime.send(payload jsonb,event text,topic text,is_private boolean) returns void language sql as $$ insert into realtime.messages(payload,topic) values(payload,topic) $$;
+    create table public.profiles(id integer); create table public.exercises(id integer);
+    create table public.attempts(id integer); create table public.processing_runs(id integer);
+    create table public.practice_sets(id integer); create table public.ai_daily_usage(id integer);
+    create table public.r2_quota_usage(id integer);`);
+  await db.exec(fs.readFileSync(new URL('./private_metrics_events.sql',import.meta.url),'utf8'));
+  await db.exec(`insert into public.attempts values(1);
+    select set_config('realtime.topic','admin-metrics',false);
+    select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',false); set role authenticated;`);
+  assert.equal((await db.query('select count(*)::int n from realtime.messages')).rows[0].n,0);
+  await db.exec(`reset role; select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',false); set role authenticated;`);
+  const message = (await db.query('select payload from realtime.messages')).rows[0].payload;
+  assert.deepEqual(message,{refresh:true});
+  console.log('PASS SQL: anonymous/student denied, raw events inaccessible, admin aggregates and unknown token semantics verified');
+  console.log('PASS private event: student denied even with permissive existing policy; admin receives only refresh=true');
+} finally { await db.close(); }

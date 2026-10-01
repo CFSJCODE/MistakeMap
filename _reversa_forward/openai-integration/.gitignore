@@ -1,0 +1,7 @@
+verification/node_modules/
+verification/deno-cache/
+verification/pgdata/
+flutter-qa/
+.env
+.env.*
+!.env.example
