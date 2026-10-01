@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "created_at": "2026-09-29T05:32:38.814Z",
+  "state": "prepared_not_applied",
+  "files": [
+    {
+      "path": "appmistakemap/lib/ai/analysis_models.dart",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "dc019ca0cba3502cf02d0600d59a9754c2f8faa7d66c0619e39fcad1858d2cf3"
+    },
+    {
+      "path": "appmistakemap/lib/ai/analysis_repository.dart",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "a150e1266cade5f2c5d26d4c5ac0f32c6f9ffb3e455178b37219160006fa8c15"
+    },
+    {
+      "path": "appmistakemap/lib/ai/exercise_submission_view.dart",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "0c7de085a1457a53787ebc1fc102cf0799a454a7f3acb9f5ddc360cad56fd007"
+    },
+    {
+      "path": "appmistakemap/lib/ai/insights_view.dart",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "995298d5ef0460607f56bd1f5f03fd05bf9b715546dd6690e8a0a169491816fb"
+    },
+    {
+      "path": "appmistakemap/lib/main.dart",
+      "change": "modified",
+      "original_sha256": "e7a72c9b991bc4d1440bc1f7c1ce92240197343e40323c5c24f09e1f62706b1c",
+      "staged_sha256": "dbd93dcf0a2b93d92456a0b7aa291fa900558de875ecbe25199ab87f751f7f0f"
+    },
+    {
+      "path": "appmistakemap/pubspec.lock",
+      "change": "modified",
+      "original_sha256": "5eb766496b13574706b1a1b9f684e5471c0c83c503958674c8df2fc2fb6d5b60",
+      "staged_sha256": "6d5aed910ab200f72e8c7b86d16ffe7bf27b1a1439e5e69d4ee63cddf6443367"
+    },
+    {
+      "path": "appmistakemap/pubspec.yaml",
+      "change": "modified",
+      "original_sha256": "23bab796b9ef3aa8114fa84865c155160a2efe55c8bd8d7b31faac9a07cf0f8a",
+      "staged_sha256": "8ee5f894d29e2e309ff4cf0e53bc5ffc21cabf0e23d34575fbee6d46d888fce1"
+    },
+    {
+      "path": "appmistakemap/test/analysis_test.dart",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "8dc80fbf4c2f099b68d3fbd88b4c9df25ff6d78dfaf16a7f269cf24d88e32033"
+    },
+    {
+      "path": "appmistakemap/test/repository_contract_test.dart",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "4916891720bb810376502fcb5421ba2112cd0d4fb5359d7a9960a9bfbfcec26f"
+    },
+    {
+      "path": "appmistakemap/test/visual_preview_test.dart",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "886cca39ef00c74828bac76e77d4fb6cb3f26d2f45bd249705c55e178273b209"
+    },
+    {
+      "path": "appmistakemap/test/widget_test.dart",
+      "change": "modified",
+      "original_sha256": "acbe873416d8ce1a74b1624e17ef031772c3760b594ece1485d0e2f4aafd263c",
+      "staged_sha256": "6dcae05f626638136461de25578c165fee8b03fd229ec3839404fcaa59d0f618"
+    },
+    {
+      "path": "supabase/functions/_shared/ai_contract.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "035466d69717de8d46a4176034059f3d2052a0309fb8032f496b9028a423cb19"
+    },
+    {
+      "path": "supabase/functions/_shared/ai_http.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "c87ea0555eb59d129f476fe9184bcaba36e3f30922ea343d999b23d0fe7b93b5"
+    },
+    {
+      "path": "supabase/functions/_shared/ai_service.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "4c1f8c9fffa44cfc42b1068980489b8fab8f721e8fc3db1af94ad4fb6e97451c"
+    },
+    {
+      "path": "supabase/functions/_shared/openai.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "b04b4b98d54da6a358880b64b54dbd2885f3833aa760874a2fb92e58f1adc094"
+    },
+    {
+      "path": "supabase/functions/analyze-attempt/deno.json",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "8433c82a3ac776413d7d8493a9c0b0e6afc0df7e747e57b8b8e1bd50a2ac50ea"
+    },
+    {
+      "path": "supabase/functions/analyze-attempt/handler.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "45bc2e20815601be589194b8c3691d32ce50899635afad5c12bdd0a36bf18bc3"
+    },
+    {
+      "path": "supabase/functions/analyze-attempt/index.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "be5cc838f007729e87340264d304d9442f46481552043ee53db42f0244c061a5"
+    },
+    {
+      "path": "supabase/functions/deno.json",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "8433c82a3ac776413d7d8493a9c0b0e6afc0df7e747e57b8b8e1bd50a2ac50ea"
+    },
+    {
+      "path": "supabase/functions/deno.lock",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "160f58aad5ad00c552d09c51789373f73efbda9baaf3043b5983c2234f99f630"
+    },
+    {
+      "path": "supabase/functions/generate-practice/deno.json",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "8433c82a3ac776413d7d8493a9c0b0e6afc0df7e747e57b8b8e1bd50a2ac50ea"
+    },
+    {
+      "path": "supabase/functions/generate-practice/handler.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "095cc756cebb2d5bc85f77482004077a1d8da1baf666d9c994b669ea06267133"
+    },
+    {
+      "path": "supabase/functions/generate-practice/index.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "be5cc838f007729e87340264d304d9442f46481552043ee53db42f0244c061a5"
+    },
+    {
+      "path": "supabase/functions/process-batch/deno.json",
+      "change": "modified",
+      "original_sha256": "30d03c6871d19783d18e0998ddda20e6ed8d89685a9adfe6dfdbae047cc9ce5a",
+      "staged_sha256": "8433c82a3ac776413d7d8493a9c0b0e6afc0df7e747e57b8b8e1bd50a2ac50ea"
+    },
+    {
+      "path": "supabase/functions/process-batch/handler.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "8313a66b46bbf8d0412bcc3b67b0f7a6d4732b0f8161399b8fe3de5003030d5e"
+    },
+    {
+      "path": "supabase/functions/process-batch/index.ts",
+      "change": "modified",
+      "original_sha256": "163db588fc6311b002c74664e27869b144cd46eaa4d83ffe7d92130db57feb21",
+      "staged_sha256": "be5cc838f007729e87340264d304d9442f46481552043ee53db42f0244c061a5"
+    },
+    {
+      "path": "supabase/functions/tests/ai_contract_test.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "ffdc1b0741b6270fcbbd9c9ce6bb3f795624c89e10f70b559d6e06360ca54ac8"
+    },
+    {
+      "path": "supabase/functions/upload-url/deno.json",
+      "change": "modified",
+      "original_sha256": "b0a8e67a726d3502ed311d080a49b46b791ffc6e5c93b166cc532c179f030a4f",
+      "staged_sha256": "f21d829b79900a39c78fc42034812cc2b73d98e59d4f7671b5b1a94d1b7036c0"
+    },
+    {
+      "path": "supabase/functions/upload-url/deno.lock",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "39b6d0bc00bfb1ffede14306c56d360f02953eb087f31e28b784f6f3b53e3c51"
+    },
+    {
+      "path": "supabase/functions/upload-url/handler_test.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "195048974d77b4c12fe6e0a240decb622f1b2ac18294ac6e081362806b828486"
+    },
+    {
+      "path": "supabase/functions/upload-url/handler.ts",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "ec2f4ae756d7cf36afc22a97bb7b72d03214e90a753cf46a429689516c07c230"
+    },
+    {
+      "path": "supabase/functions/upload-url/index.ts",
+      "change": "modified",
+      "original_sha256": "3652cf4d04706fb87f8d4810c580a670774898d1a8e52050e2242882df11515a",
+      "staged_sha256": "76e147762a15472e383e13532111f62336ded21385b3c57d3f187c09b9d76545"
+    },
+    {
+      "path": "supabase/migrations/20260929052429_openai_error_analysis.sql",
+      "change": "new",
+      "original_sha256": null,
+      "staged_sha256": "2d82a18f4e5316507fafa75349773feef51828bcf6b7d84a2ebe21f58d89abd3"
+    }
+  ]
+}

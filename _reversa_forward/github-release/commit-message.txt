@@ -1,0 +1,9 @@
+feat: refine app navigation and add admin AI monitoring
+
+Unify Fluent controls, hover transitions and responsive navigation.
+Add administrative metrics, model quotas and provider telemetry sources.
+Improve AI screens and add the profile photo and animated LinkedIn link.
+
+Validation: Flutter analysis and formatting clean; 137 app tests passed,
+4 preview tests skipped; 2 provider telemetry tests passed.
+Android universal release APK built and checked separately.
