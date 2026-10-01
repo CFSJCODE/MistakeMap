@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:appmistakemap/ai/analysis_models.dart';
@@ -28,6 +29,31 @@ MockClient mockTransport(
 });
 
 void main() {
+  test(
+    'concurrent analyses of the same attempt share a single request',
+    () async {
+      final response = Completer<http.Response>();
+      final started = Completer<void>();
+      var calls = 0;
+      final client = SupabaseClient(
+        'https://database.invalid',
+        'public-test-key',
+        httpClient: mockTransport((_) {
+          calls++;
+          started.complete();
+          return response.future;
+        }),
+      );
+      addTearDown(client.dispose);
+      final repository = SupabaseAnalysisRepository(client);
+      final first = repository.analyze('attempt');
+      final second = repository.analyze('attempt');
+      await started.future.timeout(const Duration(seconds: 5));
+      expect(calls, 1);
+      response.complete(jsonResponse({'status': 'completed'}));
+      await Future.wait([first, second]);
+    },
+  );
   test('practice failure describes generation rather than analysis', () async {
     final client = SupabaseClient(
       'https://database.invalid',

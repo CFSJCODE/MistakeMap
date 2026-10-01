@@ -3,8 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../theme/motion.dart';
 import 'analysis_models.dart';
 import 'analysis_repository.dart';
+import 'material_control_styles.dart';
 import 'exercise_submission_view.dart';
 
 class ErrorMapView extends StatefulWidget {
@@ -73,7 +75,8 @@ class _ErrorMapViewState extends State<ErrorMapView> {
   Future<void> _detail(AttemptRecord attempt) async {
     await Navigator.push(
       context,
-      MaterialPageRoute<void>(
+      MistakeMapPageRoute<void>(
+        context: context,
         builder: (_) => AttemptDetailView(
           userId: widget.userId,
           attemptId: attempt.id,
@@ -196,10 +199,11 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                       DropdownButtonFormField<String>(
                         initialValue: _subject ?? '',
                         isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Matéria',
-                          border: OutlineInputBorder(),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        dropdownColor: mapSurface,
+                        menuMaxHeight: (MediaQuery.sizeOf(context).height * .5)
+                            .clamp(160.0, 360.0),
+                        decoration: const InputDecoration(labelText: 'Matéria'),
                         items: [
                           const DropdownMenuItem(
                             value: '',
@@ -325,7 +329,6 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                                       fontSize: insights.cloudFontSize(
                                         count.count,
                                       ),
-                                      color: mapContentBlue,
                                     ),
                                   ),
                                 ),
@@ -354,7 +357,8 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                       OutlinedButton.icon(
                         onPressed: () => Navigator.push(
                           context,
-                          MaterialPageRoute<void>(
+                          MistakeMapPageRoute<void>(
+                            context: context,
                             builder: (_) => PracticeView(
                               userId: widget.userId,
                               repository: widget.repository,
@@ -403,8 +407,19 @@ class FrequencyBars extends StatelessWidget {
     return Column(
       children: values
           .map(
-            (value) => InkWell(
-              onTap: () => onTap(value),
+            (value) => TextButton(
+              style:
+                  MistakeMapMaterialControls.button(
+                    context,
+                    background: Colors.transparent,
+                    quiet: true,
+                  ).copyWith(
+                    padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+                    textStyle: const WidgetStatePropertyAll(
+                      TextStyle(fontSize: 14),
+                    ),
+                  ),
+              onPressed: () => onTap(value),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Semantics(
@@ -518,20 +533,23 @@ class _ConceptGraphState extends State<ConceptGraph> {
                           '${node.kind}: ${node.label}. ${node.attemptIds.length} tentativa(s)',
                       child: OutlinedButton(
                         onPressed: () => widget.onNode(node),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: mapContentBlue,
-                          padding: const EdgeInsets.all(8),
-                          side: BorderSide(
-                            color: node.kind == 'Conceito'
-                                ? mapTitleBlue
-                                : mapContentBlue,
-                            width: 1 + math.min(3, node.attemptIds.length) / 2,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                        style:
+                            MistakeMapMaterialControls.button(
+                              context,
+                              background: Colors.white,
+                              radius: 10,
+                              border: BorderSide(
+                                color: node.kind == 'Conceito'
+                                    ? mapTitleBlue
+                                    : mapContentBlue,
+                                width:
+                                    1 + math.min(3, node.attemptIds.length) / 2,
+                              ),
+                            ).copyWith(
+                              padding: const WidgetStatePropertyAll(
+                                EdgeInsets.all(8),
+                              ),
+                            ),
                         child: Text(
                           '${node.label}\n${node.attemptIds.length} tentativa(s)',
                           textAlign: TextAlign.center,
@@ -580,11 +598,23 @@ class AttemptTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Card(
     color: Colors.white,
-    child: ListTile(
-      title: Text(attempt.prompt, maxLines: 2, overflow: TextOverflow.ellipsis),
-      subtitle: Text('${attempt.subjectName} · ${attempt.statusLabel}'),
-      trailing: const Icon(Icons.chevron_right, color: mapContentBlue),
-      onTap: onTap,
+    child: TextButton(
+      style: MistakeMapMaterialControls.button(
+        context,
+        background: Colors.white,
+        radius: 12,
+        border: BorderSide.none,
+      ).copyWith(padding: const WidgetStatePropertyAll(EdgeInsets.zero)),
+      onPressed: onTap,
+      child: ListTile(
+        title: Text(
+          attempt.prompt,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text('${attempt.subjectName} · ${attempt.statusLabel}'),
+        trailing: const Icon(Icons.chevron_right),
+      ),
     ),
   );
 }
@@ -849,7 +879,8 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
                       ? null
                       : () => Navigator.push(
                           context,
-                          MaterialPageRoute<void>(
+                          MistakeMapPageRoute<void>(
+                            context: context,
                             builder: (_) => PracticeView(
                               userId: widget.userId,
                               repository: widget.repository,
@@ -955,10 +986,13 @@ class _PracticeViewState extends State<PracticeView> {
           DropdownButtonFormField<String>(
             initialValue: _subject,
             isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Matéria',
-              border: OutlineInputBorder(),
+            borderRadius: BorderRadius.circular(12),
+            dropdownColor: mapSurface,
+            menuMaxHeight: (MediaQuery.sizeOf(context).height * .5).clamp(
+              160.0,
+              360.0,
             ),
+            decoration: const InputDecoration(labelText: 'Matéria'),
             items: widget.subjects.entries
                 .map(
                   (entry) => DropdownMenuItem(
@@ -1026,7 +1060,8 @@ class _PracticeViewState extends State<PracticeView> {
                       OutlinedButton(
                         onPressed: () => Navigator.push(
                           context,
-                          MaterialPageRoute<void>(
+                          MistakeMapPageRoute<void>(
+                            context: context,
                             builder: (_) => ExerciseSubmissionView(
                               userId: widget.userId,
                               repository: widget.repository,

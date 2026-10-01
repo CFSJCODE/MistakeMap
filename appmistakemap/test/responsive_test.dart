@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
 import 'package:appmistakemap/main.dart';
@@ -6,8 +7,11 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'analysis_test.dart' show FakeRepository;
 
 const _user = AppUser(
   id: '11111111-1111-4111-8111-111111111111',
@@ -50,7 +54,11 @@ Future<void> _render(
       theme: temaVidro,
       brightnessResolver: (context) => FluentTheme.maybeOf(context)?.brightness,
       child: FluentApp(
-        theme: temaFluent,
+        theme: const bool.fromEnvironment('GENERATE_PREVIEWS')
+            ? temaFluent.copyWith(
+                typography: temaFluent.typography.apply(fontFamily: 'Segoe UI'),
+              )
+            : temaFluent,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(scale),
@@ -84,16 +92,32 @@ void _expectOutsideTopFade(WidgetTester tester, Finder content) {
     of: content,
     matching: find.byType(GlassScrollEdgeEffect),
   );
-  final edge = tester.widget<GlassScrollEdgeEffect>(edgeFinder);
-  final fadeBottom = tester.getTopLeft(edgeFinder).dy + edge.topFadeHeight;
-  expect(edge.fadeTop, isTrue);
-  expect(tester.getTopLeft(content).dy, greaterThanOrEqualTo(fadeBottom));
+  expect(edgeFinder, findsNothing);
+  final bar = find.byType(GlassAppBar);
+  expect(
+    tester.getTopLeft(content).dy,
+    greaterThanOrEqualTo(tester.getBottomLeft(bar).dy),
+  );
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
+    if (const bool.fromEnvironment('GENERATE_PREVIEWS')) {
+      await (FontLoader('Segoe UI')..addFont(
+            Future.value(
+              ByteData.sublistView(
+                await File('C:/Windows/Fonts/segoeui.ttf').readAsBytes(),
+              ),
+            ),
+          ))
+          .load();
+      await (FontLoader('packages/fluent_ui/SegoeIcons')..addFont(
+            rootBundle.load('packages/fluent_ui/fonts/SegoeIcons.ttf'),
+          ))
+          .load();
+    }
     await Supabase.initialize(
       url: 'https://responsive-tests.invalid',
       publishableKey: 'public-test-key',
@@ -168,6 +192,87 @@ void main() {
   });
   tearDownAll(() => Supabase.instance.dispose());
 
+  testWidgets(
+    'Navegação inicia sob demanda e não empilha IA por clique duplo',
+    (tester) async {
+      await _render(
+        tester,
+        TelaNavegacao(user: _admin, analysisRepository: FakeRepository()),
+        size: const Size(1280, 900),
+      );
+      expect(find.byType(TelaPrincipal, skipOffstage: false), findsNothing);
+      expect(
+        find.byType(TelaAdicionarExercicio, skipOffstage: false),
+        findsNothing,
+      );
+      expect(find.byType(TelaAdmin, skipOffstage: false), findsNothing);
+      final analysisButton = find.text('Analisar com IA');
+      await tester.tap(analysisButton);
+      await tester.tap(analysisButton);
+      await _settle(tester);
+      expect(find.text('Sua resposta'), findsOneWidget);
+      await tester.tap(find.byTooltip('Voltar'));
+      await _settle(tester);
+      expect(find.text('Início — Resumo'), findsOneWidget);
+      expect(find.text('Sua resposta', skipOffstage: false), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  for (final width in [390.0, 1280.0]) {
+    testWidgets('Navegação real abre análise e mapa IA em ${width.toInt()}px', (
+      tester,
+    ) async {
+      await _render(
+        tester,
+        TelaNavegacao(user: _user, analysisRepository: FakeRepository()),
+        size: Size(width, 900),
+      );
+      expect(find.text('Analisar exercício com IA'), findsNothing);
+      if (width < 840) {
+        await tester.tap(find.byKey(const ValueKey('navigation-more')));
+        await _settle(tester);
+      }
+      await tester.tap(find.text('Analisar com IA'));
+      await _settle(tester);
+      expect(find.text('Sua resposta'), findsOneWidget);
+      await tester.tap(find.byTooltip('Voltar'));
+      await _settle(tester);
+      expect(find.text('Início — Resumo'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('navigation-2')));
+      await _settle(tester);
+      expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
+      await tester.tap(find.byTooltip('Voltar'));
+      await _settle(tester);
+      expect(find.text('Início — Resumo'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final width in [390.0, 1280.0]) {
+    testWidgets('Prévias do início e Sobre em ${width.toInt()}px', (
+      tester,
+    ) async {
+      for (final entry in <String, Widget>{
+        'inicio': const TelaInicial(user: _user),
+        'sobre': const TelaSobre(),
+        'navegacao': const TelaNavegacao(user: _user),
+      }.entries) {
+        await _render(
+          tester,
+          RepaintBoundary(key: const Key('design-preview'), child: entry.value),
+          size: Size(width, 900),
+        );
+        await expectLater(
+          find.byKey(const Key('design-preview')),
+          matchesGoldenFile(
+            'previews/${entry.key}-${width.toInt()}-synthetic.png',
+          ),
+        );
+      }
+    }, skip: !const bool.fromEnvironment('GENERATE_PREVIEWS'));
+  }
+
   for (final width in [320.0, 390.0, 768.0, 1280.0, 1440.0]) {
     testWidgets('Login acessível em ${width.toInt()}px', (tester) async {
       await _render(tester, const TelaCadastro(), size: Size(width, 800));
@@ -203,8 +308,13 @@ void main() {
           size: Size(scenario.$1, 800),
           scale: scenario.$2,
         );
-        await tester.ensureVisible(find.text('v1.0.0 — Sprint 2'));
-        expect(find.text('v1.0.0 — Sprint 2').hitTestable(), findsOneWidget);
+        await tester.ensureVisible(find.text('LLM'));
+        expect(find.text('LLM').hitTestable(), findsOneWidget);
+        expect(
+          find.text('PUC Minas · Projeto Integrado I · 2026'),
+          findsNothing,
+        );
+        expect(find.text('v1.0.0 — Sprint 2'), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );
@@ -248,12 +358,12 @@ void main() {
       lessThanOrEqualTo(1120),
     );
     final cards = find
-        .ancestor(of: find.text('Exercícios'), matching: find.byType(GlassCard))
+        .ancestor(of: find.text('Exercícios'), matching: find.byType(Container))
         .first;
     expect(tester.getSize(cards).width, lessThanOrEqualTo(360));
     final aboutButton = find.ancestor(
       of: find.text('Sobre o App'),
-      matching: find.byType(Button),
+      matching: find.byWidgetPredicate((widget) => widget is Button),
     );
     expect(tester.getSize(aboutButton).width, lessThanOrEqualTo(480));
     expect(find.text('3'), findsOneWidget);
@@ -291,6 +401,8 @@ void main() {
       scale: 2,
     );
     expect(find.textContaining('Falha ao carregar'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('admin-section-1')));
+    await _settle(tester);
     await tester.scrollUntilVisible(
       find.text('(você)'),
       200,
@@ -317,23 +429,22 @@ void main() {
       (tester) async {
         await _render(
           tester,
-          TelaNavegacao(user: user),
+          TelaNavegacao(user: user, analysisRepository: FakeRepository()),
           size: const Size(320, 740),
           scale: user.isAdmin ? 1.5 : 1,
         );
         await tester.tap(find.text('Mapa'));
         await _settle(tester);
-        expect(find.text('Mapa Conceitual').hitTestable(), findsOneWidget);
-        expect(find.text('Nenhum dado ainda'), findsNothing);
-        expect(find.text('4'), findsWidgets);
+        expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
         expect(tester.takeException(), isNull);
+        await tester.tap(find.byTooltip('Voltar'));
+        await _settle(tester);
         if (user.isAdmin) {
+          await tester.tap(find.byKey(const ValueKey('navigation-more')));
+          await _settle(tester);
           await tester.tap(find.text('Admin').hitTestable().first);
           await _settle(tester);
-          expect(
-            find.text('Painel Administrativo & Infraestrutura'),
-            findsOneWidget,
-          );
+          expect(find.text('Painel Administrativo'), findsOneWidget);
           expect(tester.takeException(), isNull);
         }
       },

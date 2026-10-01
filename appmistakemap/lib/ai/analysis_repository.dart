@@ -54,6 +54,7 @@ abstract class AnalysisRepository {
 }
 
 class SupabaseAnalysisRepository implements AnalysisRepository {
+  final Map<String, Future<void>> _inFlightAnalyses = {};
   final SupabaseClient client;
   final http.Client? uploadTransport;
   SupabaseAnalysisRepository(this.client, {this.uploadTransport});
@@ -294,6 +295,18 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
 
   @override
   Future<void> analyze(String attemptId) async {
+    final existing = _inFlightAnalyses[attemptId];
+    if (existing != null) return existing;
+    final operation = _analyzeOnce(attemptId);
+    _inFlightAnalyses[attemptId] = operation;
+    try {
+      await operation;
+    } finally {
+      _inFlightAnalyses.remove(attemptId);
+    }
+  }
+
+  Future<void> _analyzeOnce(String attemptId) async {
     await _invoke('analyze-attempt', {'attempt_id': attemptId});
     notifyAnalysisChanged();
   }
