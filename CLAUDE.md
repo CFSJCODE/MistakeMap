@@ -4,14 +4,14 @@
 ## Identidade do Projeto
 
 **MistakeMap** — Mapa dos Padrões de Erro do Estudante  
-Stack: Flutter + Dart (cliente) · Supabase (banco/auth) · Cloudflare R2 (arquivos) · Worker Rust (IA assíncrona)  
+Stack: Flutter + Dart (cliente) · Supabase (banco/auth) · Supabase Edge Functions + Google Gemini (IA) · Cloudflare R2 (arquivos) · Worker Rust (arquivado)  
 Plataformas: Android, Windows, Web
 
 ---
 
 ## Regras Fundamentais (não negociáveis)
 
-1. **Nada de lógica de negócio no Flutter.** OCR, LLM e processamento de IA ficam no worker Rust.
+1. **Nada de lógica de negócio no Flutter.** OCR, LLM e processamento de IA ficam no backend (Supabase Edge Functions; o worker Rust está arquivado).
 2. **Nunca envie `service_role` ou segredos para o cliente.**
 3. **Migrações do Supabase são imutáveis.** Correções viram novas migrations, nunca reescrita do histórico.
 4. **HTTP síncrono dentro de trigger de banco é proibido.** Use pg_cron + pg_net para notificações assíncronas.
@@ -295,14 +295,17 @@ Planeja migração de sistema legado após o Discovery estar completo.
 
 ```
 MistakeMap/
+├── .github/                 # README principal, CI/CD, licença e citação canônicas
 ├── appmistakemap/           # Cliente Flutter/Dart
 │   ├── lib/
-│   │   ├── core/
-│   │   │   └── constants/   # about_content.dart, app_constants.dart
-│   │   └── features/        # Telas por funcionalidade
-│   └── test/
-├── worker/                  # Worker Rust (OCR + LLM)
+│   │   ├── main.dart        # Bootstrap, Auth e telas Fluent
+│   │   ├── about/ admin/ ai/ assets/ auth/ layout/ theme/
+│   ├── test/
+│   └── database/            # Migrações canônicas do Supabase
+├── supabase/                # Edge Functions (Deno) e config.toml
+├── worker/                  # Worker Rust (OCR + LLM) — arquivado
 │   └── src/
+├── ai/                      # Portal de documentação dos recursos de IA
 ├── harness.yaml             # Harness de loops autônomos
 ├── CLAUDE.md                # Este arquivo
 ├── AGENTS.md                # Entrada para Codex e outros agentes

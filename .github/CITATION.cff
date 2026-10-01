@@ -13,15 +13,20 @@ authors:
 abstract: >-
   MistakeMap is a learning-oriented application that transforms corrected
   exercises into a conceptual map of error patterns, recurrence, recovery,
-  and evolution. The project is designed around Flutter and Dart with a
-  Supabase/PostgreSQL backend, OCR/LLM-assisted classification, human
-  validation, and a conceptual graph for evidence-based review prioritization.
+  and evolution. The project is built with Flutter and Dart on a
+  Supabase/PostgreSQL backend, with Supabase Edge Functions calling Google
+  Gemini for OCR and LLM-assisted error classification, Cloudflare R2 for
+  exercise images, human validation, and a conceptual graph for
+  evidence-based review prioritization.
 keywords:
   - MistakeMap
   - Flutter
   - Dart
   - Supabase
   - PostgreSQL
+  - Supabase Edge Functions
+  - Google Gemini
+  - Cloudflare R2
   - learning analytics
   - educational technology
   - OCR

@@ -89,6 +89,11 @@ e conferidos instrução por instrução (MD5) contra o registro remoto:
 Os arquivos recuperados receberam só um cabeçalho de comentário. Como as versões
 já estão registradas, a publicação não os executa de novo.
 
+> **Atualização:** a função `health` passou a ser publicada pelo CD
+> (`supabase-functions-deploy.yml`) com `verify_jwt = false`, e o monitor
+> `worker-health-monitor` deixou de receber 404. Detalhes em
+> [`BACKEND.md`](../../BACKEND.md), seção 9.
+
 O job `process-batch-every-minute` foi criado manualmente e não pertence a
 nenhuma migração. Ele guarda o segredo do cron em texto puro em `cron.job`;
 recriá-lo lendo do Vault exige uma nova migração e a rotação do segredo.
