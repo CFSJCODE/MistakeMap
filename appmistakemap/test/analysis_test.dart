@@ -164,6 +164,32 @@ void main() {
     },
   );
 
+  test('every attempts_status_check state maps to one status group', () {
+    // Same list as the database constraint; a new state must be grouped here.
+    const expected = {
+      'uploading': AttemptStatusGroup.pending,
+      'pending': AttemptStatusGroup.pending,
+      'queued': AttemptStatusGroup.pending,
+      'processing': AttemptStatusGroup.pending,
+      'awaiting_review': AttemptStatusGroup.review,
+      'completed': AttemptStatusGroup.completed,
+      'retryable_failed': AttemptStatusGroup.pending, // reprocessado automaticamente
+      'dead_letter': AttemptStatusGroup.failed,
+      'cancelled': AttemptStatusGroup.none,
+    };
+    for (final entry in expected.entries) {
+      expect(attemptStatusGroup(entry.key), entry.value, reason: entry.key);
+    }
+  });
+
+  test('missing, unknown and legacy error statuses count as no attempt', () {
+    expect(attemptStatusGroup(null), AttemptStatusGroup.none);
+    expect(attemptStatusGroup('sem_tentativa'), AttemptStatusGroup.none);
+    // 'error' is not allowed by attempts_status_check.
+    expect(attemptStatusGroup('error'), AttemptStatusGroup.none);
+    expect(attemptStatusGroup('COMPLETED'), AttemptStatusGroup.none);
+  });
+
   test('JSON parser bounds confidence and accepts uncertain result', () {
     final analysis = AttemptAnalysis.fromJson({
       'attempt_id': 'a1',
@@ -184,6 +210,23 @@ void main() {
     expect(imageContentType('foto.png'), 'image/png');
     expect(imageContentType('foto.webp'), 'image/webp');
     expect(() => imageContentType('foto.svg'), throwsA(isA<AnalysisFailure>()));
+  });
+
+  test('image MIME comes from magic numbers before the file name', () {
+    const jpeg = [0xFF, 0xD8, 0xFF, 0xDB];
+    const png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+    final webp = [...'RIFF'.codeUnits, 0x24, 0, 0, 0, ...'WEBP'.codeUnits];
+    expect(imageTypeFromBytes(jpeg), 'image/jpeg');
+    expect(imageTypeFromBytes(png), 'image/png');
+    expect(imageTypeFromBytes(webp), 'image/webp');
+    expect(imageTypeFromBytes(png.sublist(0, 4)), isNull);
+    // image_picker_android re-encodes HEIC as JPEG but keeps the .heic name.
+    expect(imageContentType('scaled_x.heic', jpeg), 'image/jpeg');
+    expect(imageContentType('foto.jpg', png), 'image/png');
+    expect(
+      () => imageContentType('foto.jpg', 'GIF89a'.codeUnits),
+      throwsA(isA<AnalysisFailure>()),
+    );
   });
 
   test('unexpected errors never expose server details', () {

@@ -7,7 +7,7 @@ import '../theme/design_tokens.dart';
 import 'material_control_styles.dart';
 
 /// Hosts the new analysis flow within the existing Fluent navigation.
-class AiMaterialShell extends StatelessWidget {
+class AiMaterialShell extends StatefulWidget {
   final String userId;
   final AnalysisRepository repository;
   final bool showMap;
@@ -22,17 +22,7 @@ class AiMaterialShell extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    debugShowCheckedModeBanner: false,
-    theme: _theme(context),
-    home: showMap
-        ? ErrorMapView(userId: userId, repository: repository, onClose: onClose)
-        : ExerciseSubmissionView(
-            userId: userId,
-            repository: repository,
-            onClose: onClose,
-          ),
-  );
+  State<AiMaterialShell> createState() => _AiMaterialShellState();
 
   static ThemeData _theme(BuildContext context) {
     final inputBorder = OutlineInputBorder(
@@ -163,5 +153,43 @@ class AiMaterialShell extends StatelessWidget {
         : MistakeMapDesign.surface,
     foreground: primary ? Colors.white : MistakeMapDesign.content,
     quiet: quiet,
+  );
+}
+
+class _AiMaterialShellState extends State<AiMaterialShell> {
+  // O MaterialApp interno tem Navigator próprio; a chave deixa o Voltar do
+  // sistema desempilhar primeiro as telas internas em vez da rota do shell.
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    // O WidgetsApp externo recebe o Voltar antes do interno; bloquear aqui
+    // evita que o fluxo de IA inteiro seja fechado de uma vez.
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (didPop) return;
+      final navigator = _navigatorKey.currentState;
+      if (navigator != null && navigator.canPop()) {
+        navigator.pop();
+      } else {
+        widget.onClose();
+      }
+    },
+    child: MaterialApp(
+      navigatorKey: _navigatorKey,
+      debugShowCheckedModeBanner: false,
+      theme: AiMaterialShell._theme(context),
+      home: widget.showMap
+          ? ErrorMapView(
+              userId: widget.userId,
+              repository: widget.repository,
+              onClose: widget.onClose,
+            )
+          : ExerciseSubmissionView(
+              userId: widget.userId,
+              repository: widget.repository,
+              onClose: widget.onClose,
+            ),
+    ),
   );
 }

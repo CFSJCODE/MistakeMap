@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:fluent_ui/fluent_ui.dart';
@@ -19,6 +20,7 @@ import 'layout/navigation_shell.dart';
 import 'auth/google_sign_in.dart';
 import 'ai/ai_material_shell.dart';
 import 'ai/analysis_repository.dart';
+import 'ai/analysis_models.dart' show AttemptStatusGroup, attemptStatusGroup;
 import 'admin/metrics_panel.dart';
 import 'assets/profile_photo.dart';
 import 'about/external_profile.dart';
@@ -590,7 +592,15 @@ const Map<String, String> _extensaoPorTipo = {
 /// Content-Type que a upload-url assina para a foto, ou null se o formato não
 /// é aceito. O PUT para a R2 precisa repetir esse valor exato (image/jpeg,
 /// nunca image/jpg), senão a assinatura da URL não confere.
-String? tipoMimeImagem(String nomeArquivo, {String? mimeType}) {
+/// Com [bytes], vale a assinatura do arquivo (magic numbers): o
+/// image_picker_android reencoda a foto em JPEG/PNG mas mantém o nome
+/// original (ex.: scaled_x.heic). Nome e mimeType só decidem sem bytes.
+String? tipoMimeImagem(
+  String nomeArquivo, {
+  String? mimeType,
+  List<int>? bytes,
+}) {
+  if (bytes != null && bytes.isNotEmpty) return imageTypeFromBytes(bytes);
   final ponto = nomeArquivo.lastIndexOf('.');
   final extensao = ponto < 0
       ? ''
@@ -606,13 +616,15 @@ String? tipoMimeImagem(String nomeArquivo, {String? mimeType}) {
 }
 
 /// Corpo do POST para a upload-url, ou null se a foto não pode ser enviada.
-/// O nome enviado é sintético: o nome original do arquivo não sai do aparelho.
+/// O nome enviado é sintético: o nome original do arquivo não sai do aparelho
+/// e a extensão acompanha o tipo detectado, como a upload-url exige.
 Map<String, Object>? pedidoDeUpload(
   String nomeArquivo,
   int tamanhoBytes, {
   String? mimeType,
+  List<int>? bytes,
 }) {
-  final tipo = tipoMimeImagem(nomeArquivo, mimeType: mimeType);
+  final tipo = tipoMimeImagem(nomeArquivo, mimeType: mimeType, bytes: bytes);
   if (tipo == null || tamanhoBytes <= 0 || tamanhoBytes > kMaxBytesImagem) {
     return null;
   }
@@ -636,6 +648,13 @@ class ErroDeEnvio implements Exception {
   String toString() => mensagem;
 }
 
+// guard_analyzed_exercise: o diagnóstico da IA pertence ao enunciado
+// enviado, então enunciado e matéria ficam imutáveis após a tentativa.
+const _msgExercicioJaEnviado =
+    'Este exercício já foi enviado para análise, então o enunciado e a '
+    'matéria não podem mais ser alterados. Registre um novo exercício '
+    'com a versão corrigida.';
+
 /// Mensagem amigável para erros conhecidos do backend, ou null quando o erro
 /// não é reconhecido (o chamador decide como exibi-lo).
 String? mensagemDeErro(Object erro) {
@@ -652,14 +671,10 @@ String? mensagemDeErro(Object erro) {
         ? 'Sem conexão com o servidor. Verifique a internet e tente novamente.'
         : 'O envio de fotos está temporariamente indisponível.';
   }
-  // guard_analyzed_exercise: o diagnóstico da IA pertence ao enunciado
-  // enviado, então enunciado e matéria ficam imutáveis após a tentativa.
   if (erro is PostgrestException &&
       erro.code == '42501' &&
       erro.message.contains('create a new exercise')) {
-    return 'Este exercício já foi enviado para análise, então o enunciado e a '
-        'matéria não podem mais ser alterados. Registre um novo exercício '
-        'com a versão corrigida.';
+    return _msgExercicioJaEnviado;
   }
   return null;
 }
@@ -759,8 +774,11 @@ class AuthGate extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const _LoadingScaffold();
         }
-        final session = snapshot.data?.session;
-        if (session == null) return const TelaCadastro();
+        // A sessão vem do cliente, não do snapshot: falha de refresh por rede
+        // chega como erro sem data, mas a sessão continua válida e o usuário
+        // não deve cair no login nem perder o estado das abas.
+        final session = _db.auth.currentSession;
+        if (session == null) return TelaCadastro(erroAuth: snapshot.error);
         return _CarregadorDePerfil(supaUser: session.user);
       },
     );
@@ -822,6 +840,7 @@ class TelaNavegacao extends StatefulWidget {
 class _TelaNavegacaoState extends State<TelaNavegacao> {
   int _indiceAtual = 0;
   bool _paginaAberta = false;
+  final _inicioKey = GlobalKey<_TelaInicialState>();
   final _listaKey = GlobalKey<_TelaPrincipalState>();
   final _mapaKey = GlobalKey<_TelaMapaConceitualState>();
   late final AnalysisRepository _analysisRepository =
@@ -843,7 +862,15 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _paginaAberta = false);
+      if (mounted) {
+        setState(() => _paginaAberta = false);
+        // Recarrega o Início se estiver visível: uma tentativa pode ter sido
+        // criada dentro do fluxo de IA. O índice 0 pode estar ativo mesmo
+        // quando a guarda `i == _indiceAtual` impediu a troca de aba.
+        if (_indiceAtual == 0) {
+          _inicioKey.currentState?.carregarEstatisticas();
+        }
+      }
     }
   }
 
@@ -867,14 +894,27 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   }
 
   void _selecionar(int i) {
+    // Aba "Novo" (índice 3): redireciona para o fluxo de IA em vez do
+    // formulário antigo, que escrevia a descrição tanto em prompt_text quanto
+    // em solution_text. O fluxo de IA é a entrada canônica de exercícios.
+    if (i == 3) {
+      _abrirIa();
+      return;
+    }
     if (i == _indiceAtual) return;
     setState(() => _indiceAtual = i);
+    if (i == 0) _inicioKey.currentState?.carregarEstatisticas();
     if (i == 1) _listaKey.currentState?.carregarExercicios();
     if (i == 2) _mapaKey.currentState?.carregar();
   }
 
   List<Widget> get _telas => [
-    TelaInicial(user: widget.user, onAnalysis: _abrirIa, onAbout: _abrirSobre),
+    TelaInicial(
+      key: _inicioKey,
+      user: widget.user,
+      onAnalysis: _abrirIa,
+      onAbout: _abrirSobre,
+    ),
     TelaPrincipal(key: _listaKey, user: widget.user),
     TelaMapaConceitual(key: _mapaKey, user: widget.user),
     TelaAdicionarExercicio(user: widget.user, onIrParaMapa: _irParaMapa),
@@ -910,7 +950,9 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
 
 // ─── Tela de login / cadastro ─────────────────────────────────────────────────
 class TelaCadastro extends StatefulWidget {
-  const TelaCadastro({super.key});
+  // Erro do stream de auth (ex.: deep link do OAuth) exibido como aviso.
+  final Object? erroAuth;
+  const TelaCadastro({super.key, this.erroAuth});
 
   @override
   State<TelaCadastro> createState() => _TelaCadastroState();
@@ -924,6 +966,20 @@ class _TelaCadastroState extends State<TelaCadastro> {
   bool _modoCadastro = false; // false = entrar, true = criar conta
 
   @override
+  void initState() {
+    super.initState();
+    _avisarErroAuth();
+  }
+
+  @override
+  void didUpdateWidget(TelaCadastro oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Identidade: cada falha é um objeto novo; rebuilds com o mesmo snapshot
+    // não repetem o aviso.
+    if (!identical(widget.erroAuth, oldWidget.erroAuth)) _avisarErroAuth();
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _senhaCtrl.dispose();
@@ -933,6 +989,23 @@ class _TelaCadastroState extends State<TelaCadastro> {
   void _snack(String msg, {bool erro = false}) {
     if (!mounted) return;
     _avisar(context, msg, erro: erro);
+  }
+
+  void _avisarErroAuth() {
+    final erro = widget.erroAuth;
+    if (erro == null) return;
+    // O aviso usa o Overlay; espera o frame terminar de montar a tela.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _snack(_mensagemErroAuth(erro), erro: true),
+    );
+  }
+
+  String _mensagemErroAuth(Object erro) {
+    if (erro is AuthRetryableFetchException) {
+      return 'Sem conexão com o servidor. Verifique a internet e tente novamente.';
+    }
+    if (erro is AuthException) return _traduzirErroAuth(erro.message);
+    return 'Não foi possível concluir o login. Tente novamente.';
   }
 
   Future<void> _entrarComEmailSenha() async {
@@ -963,18 +1036,20 @@ class _TelaCadastroState extends State<TelaCadastro> {
     if (_carregando) return;
     setState(() => _carregando = true);
     try {
-      final launched = await _db.auth
-          .signInWithOAuth(
-            OAuthProvider.google,
-            redirectTo: googleOAuthRedirect(
-              isWeb: kIsWeb,
-              currentUri: Uri.base,
+      // O serviço consulta /auth/v1/settings antes de sair do app: com o
+      // provedor desligado, o usuário fica no login com a mensagem, em vez de
+      // cair na página de erro 400 do Supabase. O timeout externo cobre os 8 s
+      // da consulta mais a abertura do navegador.
+      await GoogleSignInService(
+            supabaseUrl: Uri.parse(_supabaseUrl),
+            publicKey: _supabaseAnonKey,
+            launchOAuth: (redirectTo) => _db.auth.signInWithOAuth(
+              OAuthProvider.google,
+              redirectTo: redirectTo,
             ),
           )
-          .timeout(const Duration(seconds: 10));
-      if (!launched && mounted) {
-        _snack('Não foi possível abrir o Google. Tente novamente.', erro: true);
-      }
+          .signIn(isWeb: kIsWeb, currentUri: Uri.base)
+          .timeout(const Duration(seconds: 15));
     } on TimeoutException {
       if (mounted) {
         _snack(
@@ -1079,6 +1154,27 @@ class _TelaCadastroState extends State<TelaCadastro> {
     );
   }
 
+  // Ação dentro do campo (mostrar/ocultar senha). O iconButtonStyle do tema é
+  // de botão avulso (fundo, borda em gradiente e sombra) e, aqui, aparecia como
+  // uma caixa solta sobre a borda do TextBox. Em repouso fica só o ícone; o
+  // hover/press seguem o _MistakeMapButtonState e o foco, o mesmo traço de 2 px.
+  ButtonStyle get _estiloAcaoCampo {
+    return ButtonStyle(
+      padding: const WidgetStatePropertyAll(EdgeInsets.all(12)),
+      backgroundColor: const WidgetStatePropertyAll(Cores.transparente),
+      foregroundColor: const WidgetStatePropertyAll(contentBlue),
+      elevation: const WidgetStatePropertyAll(0),
+      shape: WidgetStateProperty.resolveWith(
+        (states) => RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusSm),
+          side: states.contains(WidgetState.focused)
+              ? const BorderSide(color: titleBlue, width: 2)
+              : BorderSide.none,
+        ),
+      ),
+    );
+  }
+
   Widget _iconeCampo(IconData icone) {
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 12),
@@ -1125,12 +1221,19 @@ class _TelaCadastroState extends State<TelaCadastro> {
             padding: const EdgeInsetsDirectional.only(end: 4),
             child: Tooltip(
               message: _senhaVisivel ? 'Ocultar senha' : 'Mostrar senha',
-              child: MistakeMapIconButton(
-                icon: _IconeBotao(
-                  _senhaVisivel ? WindowsIcons.hide : WindowsIcons.red_eye,
-                  size: 16,
+              // 40 px fixos, como _BotaoBarra: a densidade compacta do
+              // desktop/web reduziria o padding para 36 px.
+              child: SizedBox.square(
+                dimension: 40,
+                child: MistakeMapIconButton(
+                  style: _estiloAcaoCampo,
+                  icon: _IconeBotao(
+                    _senhaVisivel ? WindowsIcons.hide : WindowsIcons.red_eye,
+                    size: 16,
+                  ),
+                  onPressed: () =>
+                      setState(() => _senhaVisivel = !_senhaVisivel),
                 ),
-                onPressed: () => setState(() => _senhaVisivel = !_senhaVisivel),
               ),
             ),
           ),
@@ -1164,68 +1267,79 @@ class _TelaCadastroState extends State<TelaCadastro> {
                 : 'Não tenho conta — Criar',
           ),
         ),
-        const SizedBox(height: 16),
-        // Divisor "ou"
-        Row(
-          children: [
-            Expanded(child: _divisor()),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'ou',
-                style: context.tipo.body?.copyWith(color: contentBlue),
-              ),
-            ),
-            Expanded(child: _divisor()),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Botão Google
-        MistakeMapButton(
-          style:
-              _estiloBotao(
-                fundo: Cores.cinza100,
-                texto: contentBlue,
-                fonte: 14,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 24,
-                ),
-              ).copyWith(
-                shape: WidgetStatePropertyAll(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(kRadiusSm),
-                    side: const BorderSide(color: contentBlue),
-                  ),
-                ),
-              ),
-          onPressed: _carregando ? null : _entrarComGoogle,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+        // O retorno do OAuth (io.supabase.mistakemap://) só está registrado no
+        // Android; na web ele volta para a própria página. No Windows o
+        // navegador abriria e a sessão nunca chegaria ao app.
+        if (_googleDisponivel) ...[
+          const SizedBox(height: 16),
+          // Divisor "ou"
+          Row(
             children: [
-              // Não há ícone do Google em WindowsIcons: usa-se a letra "G".
-              Builder(
-                builder: (context) => ExcludeSemantics(
-                  child: Text(
-                    'G',
-                    style: context.tipo.subtitle?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: DefaultTextStyle.of(context).style.color,
-                      height: 1,
+              Expanded(child: _divisor()),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'ou',
+                  style: context.tipo.body?.copyWith(color: contentBlue),
+                ),
+              ),
+              Expanded(child: _divisor()),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Botão Google
+          MistakeMapButton(
+            style:
+                _estiloBotao(
+                  fundo: Cores.cinza100,
+                  texto: contentBlue,
+                  fonte: 14,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 24,
+                  ),
+                ).copyWith(
+                  shape: WidgetStatePropertyAll(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kRadiusSm),
+                      side: const BorderSide(color: contentBlue),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Flexible(
-                child: Text('Continue com Google', textAlign: TextAlign.center),
-              ),
-            ],
+            onPressed: _carregando ? null : _entrarComGoogle,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Não há ícone do Google em WindowsIcons: usa-se a letra "G".
+                Builder(
+                  builder: (context) => ExcludeSemantics(
+                    child: Text(
+                      'G',
+                      style: context.tipo.subtitle?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: DefaultTextStyle.of(context).style.color,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Flexible(
+                  child: Text(
+                    'Continue com Google',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
+
+  bool get _googleDisponivel =>
+      kIsWeb || defaultTargetPlatform == TargetPlatform.android;
 
   Widget _termos(BuildContext context) {
     return Text.rich(
@@ -1276,28 +1390,36 @@ class _TelaInicialState extends State<TelaInicial> {
   @override
   void initState() {
     super.initState();
-    _carregarEstatisticas();
+    carregarEstatisticas();
   }
 
-  Future<void> _carregarEstatisticas() async {
+  // Pública para a navegação recarregar ao voltar ao Início: as abas ficam
+  // vivas no IndexedStack e o initState não roda de novo.
+  Future<void> carregarEstatisticas() async {
     try {
       final res = await _db
           .from('attempts')
           .select('status')
           .eq('user_id', widget.user.id);
 
-      final lista = res as List;
-      final total = lista.length;
-      final pendentes = lista
-          .where((a) => a['status'] == 'pending' || a['status'] == 'uploading')
+      final grupos = (res as List)
+          .map((a) => attemptStatusGroup(a['status'] as String?))
+          .toList();
+      final total = grupos.length;
+      // "Para revisar" segue o _StatusBadge: só awaiting_review vira
+      // "Revisar". Análises em andamento não pedem ação do estudante.
+      final paraRevisar = grupos
+          .where((g) => g == AttemptStatusGroup.review)
           .length;
-      final completos = lista.where((a) => a['status'] == 'completed').length;
+      final completos = grupos
+          .where((g) => g == AttemptStatusGroup.completed)
+          .length;
       final pct = total > 0 ? '${((completos / total) * 100).round()}%' : '0%';
 
       if (mounted) {
         setState(() {
           _totalExercicios = total;
-          _paraRevisar = pendentes;
+          _paraRevisar = paraRevisar;
           _evolucao = pct;
           _carregando = false;
         });
@@ -1538,18 +1660,40 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
   }
 
   Future<void> _selecionarImagem(ImageSource source) async {
-    final img = await _imagePicker.pickImage(
-      source: source,
-      imageQuality: 85,
-      maxWidth: 2048,
-    );
-    if (img == null) return;
-    final bytes = await img.readAsBytes();
-    if (!mounted) return;
-    setState(() {
-      _imagemSelecionada = img;
-      _imagemBytes = bytes;
-    });
+    // Como ExerciseSubmissionView._pickImage: sem câmera (emulador) ou sem
+    // permissão o image_picker lança PlatformException, e sem o aviso o toque
+    // ficaria sem resposta. O formato é validado já na escolha.
+    try {
+      final img = await _imagePicker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 2048,
+      );
+      if (img == null) return;
+      final bytes = await img.readAsBytes();
+      final pedido = pedidoDeUpload(
+        img.name,
+        bytes.length,
+        mimeType: img.mimeType,
+        bytes: bytes,
+      );
+      if (pedido == null) {
+        throw const ErroDeEnvio('Envie uma foto JPG, PNG ou WebP de até 8 MB.');
+      }
+      if (!mounted) return;
+      setState(() {
+        _imagemSelecionada = img;
+        _imagemBytes = bytes;
+      });
+    } catch (e) {
+      _snack(
+        mensagemDeErro(e) ??
+            (source == ImageSource.camera
+                ? 'Não foi possível abrir a câmera. Escolha uma foto da galeria.'
+                : 'Não foi possível abrir a galeria. Tente novamente.'),
+        erro: true,
+      );
+    }
   }
 
   Future<void> _mostrarOpcoesDeImagem() async {
@@ -1696,39 +1840,52 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
       arquivo.name,
       bytes.length,
       mimeType: arquivo.mimeType,
+      bytes: bytes,
     );
     if (pedido == null) {
       throw const ErroDeEnvio('Envie uma foto JPG, PNG ou WebP de até 8 MB.');
     }
 
-    final fnRes = await _db.functions.invoke('upload-url', body: pedido);
-    final data = fnRes.data;
-    if (data is! Map ||
-        data['upload_url'] is! String ||
-        data['object_path'] is! String) {
+    // Mesmos limites do SupabaseAnalysisRepository: sem eles, uma rede que
+    // trava deixa o botão girando para sempre.
+    try {
+      final fnRes = await _db.functions
+          .invoke('upload-url', body: pedido)
+          .timeout(const Duration(seconds: 120));
+      final data = fnRes.data;
+      if (data is! Map ||
+          data['upload_url'] is! String ||
+          data['object_path'] is! String) {
+        throw const ErroDeEnvio(
+          'O envio de fotos está temporariamente indisponível.',
+        );
+      }
+
+      // Content-Type e Content-Length fazem parte da assinatura: o http envia
+      // o tamanho exato dos bytes, igual ao size_bytes informado.
+      final putRes = await http
+          .put(
+            Uri.parse(data['upload_url'] as String),
+            headers: {'Content-Type': pedido['content_type'] as String},
+            body: bytes,
+          )
+          .timeout(const Duration(seconds: 90));
+      if (putRes.statusCode >= 400) {
+        throw ErroDeEnvio(
+          'Não foi possível enviar a foto (HTTP ${putRes.statusCode}). '
+          'Tente novamente.',
+        );
+      }
+
+      return (
+        objectPath: data['object_path'] as String,
+        sha256: sha256Hex(bytes),
+      );
+    } on TimeoutException {
       throw const ErroDeEnvio(
-        'O envio de fotos está temporariamente indisponível.',
+        'O envio demorou demais. Verifique a conexão e tente novamente.',
       );
     }
-
-    // Content-Type e Content-Length fazem parte da assinatura: o http envia o
-    // tamanho exato dos bytes, igual ao size_bytes informado.
-    final putRes = await http.put(
-      Uri.parse(data['upload_url'] as String),
-      headers: {'Content-Type': pedido['content_type'] as String},
-      body: bytes,
-    );
-    if (putRes.statusCode >= 400) {
-      throw ErroDeEnvio(
-        'Não foi possível enviar a foto (HTTP ${putRes.statusCode}). '
-        'Tente novamente.',
-      );
-    }
-
-    return (
-      objectPath: data['object_path'] as String,
-      sha256: sha256Hex(bytes),
-    );
   }
 
   void _resetarParaForm() {
@@ -2052,15 +2209,16 @@ class _SubjectData {
 
   void add(String status) {
     total++;
-    switch (status) {
-      case 'completed':
+    switch (attemptStatusGroup(status)) {
+      case AttemptStatusGroup.completed:
         concluidos++;
-      case 'pending':
-      case 'uploading':
+      // O mapa não tem faixa própria para revisão: como no _StatusBadge, que
+      // pinta Pendente e Revisar de laranja, ela entra como pendente.
+      case AttemptStatusGroup.pending || AttemptStatusGroup.review:
         pendentes++;
-      case 'error':
+      case AttemptStatusGroup.failed:
         erros++;
-      default:
+      case AttemptStatusGroup.none:
         semTentativa++;
     }
   }
@@ -2112,7 +2270,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
 
       final exRes = await _db
           .from('exercises')
-          .select('id, subject_id, attempts(id, status, user_id)')
+          .select('id, subject_id, attempts(id, status, user_id, attempted_at)')
           .inFilter('subject_id', subjectMap.keys.toList());
 
       final dataMap = <String, _SubjectData>{};
@@ -2120,12 +2278,8 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
         final sid = e['subject_id'] as String;
         final nome = subjectMap[sid] ?? '?';
         if (!dataMap.containsKey(sid)) dataMap[sid] = _SubjectData(nome);
-        final userAttempts = ((e['attempts'] as List?) ?? [])
-            .where((a) => a['user_id'] == widget.user.id)
-            .toList();
-        final status = userAttempts.isNotEmpty
-            ? (userAttempts.first['status'] as String? ?? 'sem_tentativa')
-            : 'sem_tentativa';
+        final latest = tentativaMaisRecente(e['attempts'], widget.user.id);
+        final status = latest?['status'] as String? ?? 'sem_tentativa';
         dataMap[sid]!.add(status);
       }
 
@@ -2440,7 +2594,9 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Parabéns! Todos os exercícios foram concluídos.',
+                    // "completed" só indica análise terminada, mesmo com a
+                    // resposta errada; não é motivo de parabéns.
+                    'Todos os exercícios foram analisados.',
                     style: context.tipo.body?.copyWith(color: contentBlue),
                   ),
                 ),
@@ -2647,6 +2803,32 @@ class Exercicio {
     this.attemptId,
     this.createdAt,
   });
+
+  // guard_analyzed_exercise recusa mudar enunciado e matéria depois da
+  // primeira tentativa, então a edição só vale antes de qualquer envio.
+  bool get podeEditar => attemptId == null;
+}
+
+/// Tentativa mais recente do usuário entre as embutidas em `exercises`.
+/// Exercícios de prática acumulam várias tentativas e o PostgREST não garante
+/// a ordem do recurso embutido, então a escolha é feita aqui por attempted_at.
+Map<String, dynamic>? tentativaMaisRecente(Object? attempts, String userId) {
+  Map<String, dynamic>? maisRecente;
+  DateTime? dataMaisRecente;
+  for (final tentativa in (attempts as List?) ?? const []) {
+    if (tentativa is! Map<String, dynamic> || tentativa['user_id'] != userId) {
+      continue;
+    }
+    final data = DateTime.tryParse('${tentativa['attempted_at'] ?? ''}');
+    // Sem data só vence enquanto nenhuma tentativa datada apareceu.
+    if (maisRecente == null ||
+        (data != null &&
+            (dataMaisRecente == null || data.isAfter(dataMaisRecente)))) {
+      maisRecente = tentativa;
+      dataMaisRecente = data;
+    }
+  }
+  return maisRecente;
 }
 
 // ─── fim: Mapa conceitual ────────────────────────────────────────────────────
@@ -2698,17 +2880,15 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
       final exRes = await _db
           .from('exercises')
           .select(
-            'id, prompt_text, created_at, subject_id, attempts(id, status, user_id)',
+            'id, prompt_text, created_at, subject_id, '
+            'attempts(id, status, user_id, attempted_at)',
           )
           .inFilter('subject_id', subjectMap.keys.toList())
           .order('created_at', ascending: false);
 
       final lista = <Exercicio>[];
       for (final e in (exRes as List)) {
-        final userAttempts = ((e['attempts'] as List?) ?? [])
-            .where((a) => a['user_id'] == widget.user.id)
-            .toList();
-        final latest = userAttempts.isNotEmpty ? userAttempts.first : null;
+        final latest = tentativaMaisRecente(e['attempts'], widget.user.id);
         lista.add(
           Exercicio(
             id: e['id'] as String,
@@ -3010,11 +3190,13 @@ class _ExercicioCard extends StatelessWidget {
           texto: 'Ver detalhes',
           onPressed: onTap,
         ),
-        _itemMenu(
-          icone: WindowsIcons.edit,
-          texto: 'Editar',
-          onPressed: onEditar,
-        ),
+        // Depois do envio o banco recusa a edição (guard_analyzed_exercise).
+        if (exercicio.podeEditar)
+          _itemMenu(
+            icone: WindowsIcons.edit,
+            texto: 'Editar',
+            onPressed: onEditar,
+          ),
         _itemMenu(
           icone: WindowsIcons.delete,
           texto: 'Excluir',
@@ -3162,11 +3344,13 @@ class TelaDetalheExercicio extends StatelessWidget {
             dica: 'Fechar detalhes',
             onPressed: onFechar!,
           ),
-        _BotaoBarra(
-          icone: WindowsIcons.edit,
-          dica: 'Editar',
-          onPressed: () => _editar(context),
-        ),
+        // Depois do envio o banco recusa a edição (guard_analyzed_exercise).
+        if (exercicio.podeEditar)
+          _BotaoBarra(
+            icone: WindowsIcons.edit,
+            dica: 'Editar',
+            onPressed: () => _editar(context),
+          ),
         _BotaoBarra(
           icone: WindowsIcons.delete,
           dica: 'Excluir',
@@ -3218,29 +3402,31 @@ class TelaDetalheExercicio extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: MistakeMapFilledButton(
-                style: _estiloBotao(
-                  fundo: contentBlue,
-                  texto: Cores.branco,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 24,
+            if (exercicio.podeEditar) ...[
+              SizedBox(
+                width: double.infinity,
+                child: MistakeMapFilledButton(
+                  style: _estiloBotao(
+                    fundo: contentBlue,
+                    texto: Cores.branco,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 24,
+                    ),
+                  ),
+                  onPressed: () => _editar(context),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(WindowsIcons.edit, size: 18),
+                      SizedBox(width: 8),
+                      Text('Editar exercício'),
+                    ],
                   ),
                 ),
-                onPressed: () => _editar(context),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(WindowsIcons.edit, size: 18),
-                    SizedBox(width: 8),
-                    Text('Editar exercício'),
-                  ],
-                ),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+            ],
             SizedBox(
               width: double.infinity,
               child: MistakeMapButton(
@@ -3355,11 +3541,20 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
 
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
+    // O banco recusaria (guard_analyzed_exercise); nem tenta, para não criar
+    // matéria à toa.
+    if (!widget.exercicio.podeEditar) {
+      _snack(_msgExercicioJaEnviado, erro: true);
+      return;
+    }
     setState(() => _salvando = true);
+    String? materiaCriada;
     try {
       final novoAssunto = _assuntoCtrl.text.trim();
       final novaDescricao = _erroCtrl.text.trim();
 
+      // O enunciado vai antes da matéria: se o banco recusar a edição, nada
+      // novo foi criado ainda.
       await _db
           .from('exercises')
           .update({'prompt_text': novaDescricao})
@@ -3373,19 +3568,26 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
             .eq('name', novoAssunto)
             .maybeSingle();
 
-        final novoSubjectId = existente != null
-            ? existente['id'] as String
-            : (await _db
+        final String novoSubjectId;
+        if (existente != null) {
+          novoSubjectId = existente['id'] as String;
+        } else {
+          materiaCriada =
+              (await _db
                       .from('subjects')
                       .insert({'user_id': widget.user.id, 'name': novoAssunto})
                       .select('id')
                       .single())['id']
                   as String;
+          novoSubjectId = materiaCriada;
+        }
 
         await _db
             .from('exercises')
             .update({'subject_id': novoSubjectId})
             .eq('id', widget.exercicio.id);
+        // A matéria nova agora tem exercício: não pode mais ser desfeita.
+        materiaCriada = null;
 
         final rem = await _db
             .from('exercises')
@@ -3403,6 +3605,15 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
       _snack('Exercício atualizado!');
       Navigator.pop(context);
     } catch (e) {
+      // practice_answer_keys também trava a matéria e o cliente não a lê:
+      // desfaz a matéria recém-criada para ela não ficar órfã.
+      if (materiaCriada != null) {
+        try {
+          await _db.from('subjects').delete().eq('id', materiaCriada);
+        } catch (_) {
+          // Melhor esforço: o erro original é o que interessa ao usuário.
+        }
+      }
       _snack(mensagemDeErro(e) ?? 'Erro ao salvar: $e', erro: true);
     } finally {
       if (mounted) setState(() => _salvando = false);

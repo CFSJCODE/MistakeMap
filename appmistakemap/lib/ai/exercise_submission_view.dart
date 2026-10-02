@@ -97,8 +97,10 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
         maxWidth: 2048,
       );
       if (image == null) return;
-      imageContentType(image.name);
       final bytes = await image.readAsBytes();
+      // The bytes decide the type: the picker may keep a .heic name on a
+      // photo it already re-encoded as JPEG.
+      imageContentType(image.name, bytes);
       if (bytes.isEmpty || bytes.length > 8 * 1024 * 1024) {
         throw const AnalysisFailure(
           'Use uma imagem JPG, PNG ou WebP de até 8 MB.',

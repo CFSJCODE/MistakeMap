@@ -43,6 +43,11 @@ app.*.map.json
 *.jks
 # Chaves de API guardadas localmente em texto (ex.: "Chave API Gemini.txt")
 Chave API*.txt
+# Token Vercel e outros tokens locais
+TokenVercel.txt
+# Build outputs mÃ³veis/desktop (nÃ£o versionar binÃ¡rios grandes)
+*.apk
+*.aab
 
 # IDEs e Editores
 .idea/
@@ -60,5 +65,5 @@ desktop.ini
 *.pyc
 *.swp
 
-# Reversa — configurações pessoais (não versionar)
+# Reversa ï¿½ configuraï¿½ï¿½es pessoais (nï¿½o versionar)
 .reversa/config.user.toml
