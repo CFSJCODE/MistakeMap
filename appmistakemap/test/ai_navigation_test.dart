@@ -44,6 +44,57 @@ void main() {
     expect(find.text('Abrir IA'), findsOneWidget);
   });
 
+  testWidgets('system back pops inner AI screens before closing the shell', (
+    tester,
+  ) async {
+    final repository = _EmptyRepository();
+    await tester.pumpWidget(
+      FluentApp(
+        home: Builder(
+          builder: (outerContext) => Center(
+            child: Button(
+              onPressed: () => Navigator.of(outerContext).push<void>(
+                FluentPageRoute(
+                  builder: (_) => AiMaterialShell(
+                    userId: 'student',
+                    repository: repository,
+                    showMap: false,
+                    onClose: () => Navigator.of(outerContext).pop(),
+                  ),
+                ),
+              ),
+              child: const Text('Abrir IA'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Abrir IA'));
+    await tester.pumpAndSettle();
+
+    // Empilha uma tela no Navigator interno, como fazem detalhe e prática.
+    Navigator.of(tester.element(find.text('Sua resposta'))).push<void>(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const Center(child: Text('Tela interna')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Tela interna'), findsOneWidget);
+
+    // Primeiro Voltar do sistema: sai só a tela interna, o shell continua.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Tela interna'), findsNothing);
+    expect(find.text('Adicionar exercício'), findsOneWidget);
+
+    // Segundo Voltar: sem telas internas, fecha o shell como o botão Voltar.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Adicionar exercício'), findsNothing);
+    expect(find.text('Abrir IA'), findsOneWidget);
+  });
+
   testWidgets('empty error map opens with a helpful state and closes', (
     tester,
   ) async {

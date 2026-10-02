@@ -2,6 +2,13 @@ import 'package:appmistakemap/main.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Primeiros bytes (magic numbers) de cada formato.
+const _jpeg = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10];
+const _png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+// 'RIFF', tamanho do contêiner, 'WEBP'.
+final _webp = [...'RIFF'.codeUnits, 0x24, 0, 0, 0, ...'WEBP'.codeUnits];
+const _gif = [0x47, 0x49, 0x46, 0x38, 0x39, 0x61];
+
 // Espelha as regras de supabase/functions/upload-url/handler.ts e da política
 // RLS attempt_assets_owner_insert (migração 20260929052429).
 void main() {
@@ -23,6 +30,31 @@ void main() {
       expect(tipoMimeImagem('foto.heic'), isNull);
       expect(tipoMimeImagem('sem_extensao'), isNull);
     });
+
+    // O image_picker_android reencoda a foto e mantém o nome original.
+    test('com bytes, a assinatura do arquivo decide o tipo', () {
+      expect(tipoMimeImagem('scaled_x.heic', bytes: _jpeg), 'image/jpeg');
+      expect(tipoMimeImagem('foto.jpg', bytes: _png), 'image/png');
+      expect(tipoMimeImagem('blob', bytes: _webp), 'image/webp');
+      expect(
+        tipoMimeImagem('foto.png', mimeType: 'image/png', bytes: _gif),
+        isNull,
+      );
+    });
+
+    test('assinaturas incompletas não são aceitas', () {
+      expect(tipoMimeImagem('a.png', bytes: _png.sublist(0, 4)), isNull);
+      expect(tipoMimeImagem('a.jpg', bytes: _jpeg.sublist(0, 2)), isNull);
+      // RIFF sem a marca WEBP (ex.: WAV) não é imagem.
+      expect(
+        tipoMimeImagem('a.webp', bytes: 'RIFF\x00\x00\x00\x00WAVE'.codeUnits),
+        isNull,
+      );
+    });
+
+    test('sem bytes, recorre ao nome do arquivo', () {
+      expect(tipoMimeImagem('foto.jpg', bytes: const []), 'image/jpeg');
+    });
   });
 
   group('pedidoDeUpload', () {
@@ -41,6 +73,20 @@ void main() {
     test('não envia o nome original do arquivo', () {
       final pedido = pedidoDeUpload('Prova do João.png', 10)!;
       expect(pedido['filename'], 'exercicio.png');
+    });
+
+    test('JPEG com nome .heic vira exercicio.jpg em image/jpeg', () {
+      expect(pedidoDeUpload('scaled_x.heic', _jpeg.length, bytes: _jpeg), {
+        'filename': 'exercicio.jpg',
+        'content_type': 'image/jpeg',
+        'size_bytes': _jpeg.length,
+      });
+      // A extensão do nome sintético segue os bytes, não o nome original.
+      expect(
+        pedidoDeUpload('foto.jpg', _png.length, bytes: _png)?['filename'],
+        'exercicio.png',
+      );
+      expect(pedidoDeUpload('foto.jpg', _gif.length, bytes: _gif), isNull);
     });
 
     test('recusa tamanho vazio, acima de 8 MB ou formato inválido', () {

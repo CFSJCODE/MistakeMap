@@ -149,6 +149,27 @@ class AttemptRecord {
   };
 }
 
+/// Groups the `attempts_status_check` states shown by the Home counters and
+/// the concept map, so both screens count the same attempt the same way.
+enum AttemptStatusGroup { pending, review, failed, completed, none }
+
+/// `completed` only means the analysis finished, not that the answer was
+/// right. Cancelled, missing or unknown states count as no attempt.
+AttemptStatusGroup attemptStatusGroup(String? status) => switch (status) {
+  'uploading' ||
+  'pending' ||
+  'queued' ||
+  'processing' => AttemptStatusGroup.pending,
+  'awaiting_review' => AttemptStatusGroup.review,
+  // retryable_failed: o backend reprocessa automaticamente na próxima rodada
+  // do pg_cron — do ponto de vista do aluno ainda está "em andamento".
+  // dead_letter: falha definitiva, sem nova tentativa automática.
+  'retryable_failed' => AttemptStatusGroup.pending,
+  'dead_letter' => AttemptStatusGroup.failed,
+  'completed' => AttemptStatusGroup.completed,
+  _ => AttemptStatusGroup.none,
+};
+
 class PracticeExercise {
   final String id;
   final String subjectId;

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
+import 'package:appmistakemap/layout/navigation_shell.dart';
 import 'package:appmistakemap/main.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -153,10 +154,20 @@ void main() {
                   'prompt_text': 'Descrição longa de um exercício para validar a quebra de linha sem cortes.',
                   'created_at': '2026-09-29T00:00:00Z',
                   'attempts': [
+                    // Prática acumula tentativas; a antiga vem primeiro para
+                    // provar que a tela escolhe pela data, não pela posição.
+                    if (i == 1)
+                      {
+                        'id': 'attempt-1-antiga',
+                        'user_id': _user.id,
+                        'status': 'dead_letter',
+                        'attempted_at': '2026-09-28T00:00:00Z',
+                      },
                     {
                       'id': 'attempt-$i',
                       'user_id': _user.id,
                       'status': i.isEven ? 'completed' : 'pending',
+                      'attempted_at': '2026-09-29T00:00:00Z',
                     },
                   ],
                 },
@@ -206,9 +217,15 @@ void main() {
         findsNothing,
       );
       expect(find.byType(TelaAdmin, skipOffstage: false), findsNothing);
-      final analysisButton = find.text('Analisar com IA');
-      await tester.tap(analysisButton);
-      await tester.tap(analysisButton);
+      // Dois taps seguidos não servem: o segundo é absorvido pelo
+      // AbsorbPointer do Navigator durante a transição e a guarda contra
+      // clique duplo nunca roda. Chamar o callback duas vezes no mesmo frame
+      // reproduz o clique duplo que chega antes da rota bloquear a entrada.
+      final shell = tester.widget<AppNavigationShell>(
+        find.byType(AppNavigationShell),
+      );
+      shell.onAnalysis!();
+      shell.onAnalysis!();
       await _settle(tester);
       expect(find.text('Sua resposta'), findsOneWidget);
       await tester.tap(find.byTooltip('Voltar'));
@@ -486,6 +503,28 @@ void main() {
       // A lista continua visível ao lado do detalhe.
       expect(find.text(prompt), findsWidgets);
       expect(find.text('Meus Exercícios'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Exercícios usam a tentativa mais recente e não oferecem '
+        'Editar depois do envio', (tester) async {
+      await _render(
+        tester,
+        const TelaPrincipal(user: _user),
+        size: const Size(1280, 800),
+      );
+      await _settle(tester);
+      // A tentativa antiga de exercise-1 ('dead_letter') não aparece.
+      expect(find.text('Erro'), findsNothing);
+      expect(find.text('Pendente'), findsNWidgets(2));
+      await tester.tap(find.text(prompt).first);
+      await _settle(tester);
+      expect(find.text('Editar exercício'), findsNothing);
+      expect(find.byTooltip('Editar'), findsNothing);
+      await tester.tap(find.byTooltip('Opções').first);
+      await _settle(tester);
+      expect(find.text('Ver detalhes'), findsOneWidget);
+      expect(find.text('Editar'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

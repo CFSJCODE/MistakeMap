@@ -22,7 +22,47 @@ String friendlyFailure(Object error) => error is AnalysisFailure
     ? error.message
     : 'Não foi possível concluir. Verifique sua conexão e tente novamente.';
 
-String imageContentType(String filename) {
+const _imageExtensions = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+/// MIME type read from the file signature (magic numbers), or null when the
+/// bytes are not JPEG, PNG or WebP. image_picker_android re-encodes the photo
+/// as JPEG/PNG but keeps the original name (e.g. scaled_x.heic), so the
+/// extension alone would reject valid photos.
+String? imageTypeFromBytes(List<int> bytes) {
+  bool hasAt(int offset, List<int> signature) {
+    if (bytes.length < offset + signature.length) return false;
+    for (var i = 0; i < signature.length; i++) {
+      if (bytes[offset + i] != signature[i]) return false;
+    }
+    return true;
+  }
+
+  if (hasAt(0, const [0xFF, 0xD8, 0xFF])) return 'image/jpeg';
+  if (hasAt(0, const [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])) {
+    return 'image/png';
+  }
+  // 'RIFF', 4 bytes of container size, then 'WEBP'.
+  if (hasAt(0, const [0x52, 0x49, 0x46, 0x46]) &&
+      hasAt(8, const [0x57, 0x45, 0x42, 0x50])) {
+    return 'image/webp';
+  }
+  return null;
+}
+
+/// Content-Type accepted by upload-url. When [bytes] are given the signature
+/// decides; the extension is only a fallback when there is nothing to inspect.
+String imageContentType(String filename, [List<int>? bytes]) {
+  if (bytes != null && bytes.isNotEmpty) {
+    final detected = imageTypeFromBytes(bytes);
+    if (detected == null) {
+      throw const AnalysisFailure('Use uma imagem JPG, PNG ou WebP.');
+    }
+    return detected;
+  }
   final extension = filename.split('.').last.toLowerCase();
   return switch (extension) {
     'jpg' || 'jpeg' => 'image/jpeg',
@@ -184,7 +224,7 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
     String filename,
     Uint8List bytes,
   ) async {
-    final contentType = imageContentType(filename);
+    final contentType = imageContentType(filename, bytes);
     if (bytes.isEmpty || bytes.length > 8 * 1024 * 1024) {
       throw const AnalysisFailure(
         'A imagem deve ter conteúdo e no máximo 8 MB.',
@@ -197,8 +237,10 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
         .eq('attempt_id', attemptId)
         .limit(1);
     if (existing.isEmpty) {
+      // upload-url requires the extension to match the Content-Type, and the
+      // original file name never leaves the device.
       final data = await _invoke('upload-url', {
-        'filename': filename,
+        'filename': 'exercicio.${_imageExtensions[contentType]}',
         'content_type': contentType,
         'size_bytes': bytes.length,
       });

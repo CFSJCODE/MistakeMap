@@ -16,6 +16,10 @@ http.Response jsonResponse(Object? value, [int status = 200]) => http.Response(
   headers: {'content-type': 'application/json'},
 );
 
+// Leading bytes (magic numbers) that define the uploaded image type.
+const _jpegHeader = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10];
+const _pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+
 MockClient mockTransport(
   Future<http.Response> Function(http.Request) handler,
 ) => MockClient((request) async {
@@ -101,15 +105,17 @@ void main() {
   test(
     'upload sends filename MIME exact size SHA256 and conditional finalization',
     () async {
-      final bytes = Uint8List.fromList([137, 80, 78, 71]);
+      // Full PNG signature: the bytes, not the name, define the type.
+      final bytes = Uint8List.fromList(_pngSignature);
       final requests = <http.Request>[];
       final transport = mockTransport((request) async {
         requests.add(request);
         if (request.url.path.endsWith('/upload-url')) {
+          // Synthetic name: the original file name never leaves the device.
           expect(jsonDecode(request.body), {
-            'filename': 'foto.png',
+            'filename': 'exercicio.png',
             'content_type': 'image/png',
-            'size_bytes': 4,
+            'size_bytes': 8,
           });
           return jsonResponse({
             'upload_url': 'https://storage.invalid/photo',
@@ -179,8 +185,82 @@ void main() {
       await SupabaseAnalysisRepository(
         client,
         uploadTransport: transport,
-      ).uploadImage('attempt', 'photo.jpg', Uint8List.fromList([1]));
+      ).uploadImage('attempt', 'photo.jpg', Uint8List.fromList(_jpegHeader));
       expect(requests.length, 2);
+    },
+  );
+
+  test(
+    'JPEG re-encoded by the picker under a .heic name uploads as image/jpeg',
+    () async {
+      final bytes = Uint8List.fromList(_jpegHeader);
+      final requests = <http.Request>[];
+      final transport = mockTransport((request) async {
+        requests.add(request);
+        if (request.url.path.endsWith('/upload-url')) {
+          // upload-url rejects a name whose extension differs from the type.
+          expect(jsonDecode(request.body), {
+            'filename': 'exercicio.jpg',
+            'content_type': 'image/jpeg',
+            'size_bytes': 6,
+          });
+          return jsonResponse({
+            'upload_url': 'https://storage.invalid/photo',
+            'object_path': 'uploads/u/photo.jpg',
+            'content_type': 'image/jpeg',
+          });
+        }
+        if (request.url.host == 'storage.invalid') {
+          expect(request.headers['content-type'], 'image/jpeg');
+          return http.Response('', 200);
+        }
+        if (request.url.path.endsWith('/attempt_assets')) {
+          return request.method == 'GET'
+              ? jsonResponse([])
+              : jsonResponse(null, 201);
+        }
+        return jsonResponse(null);
+      });
+      final client = SupabaseClient(
+        'https://database.invalid',
+        'public-test-key',
+        httpClient: transport,
+      );
+      addTearDown(client.dispose);
+      await SupabaseAnalysisRepository(
+        client,
+        uploadTransport: transport,
+      ).uploadImage('attempt', 'scaled_IMG_0001.heic', bytes);
+      expect(requests.where((r) => r.method == 'PUT').length, 1);
+    },
+  );
+
+  test(
+    'bytes that are not JPEG PNG or WebP are refused before any request',
+    () async {
+      var calls = 0;
+      final transport = mockTransport((_) async {
+        calls++;
+        return jsonResponse(null);
+      });
+      final client = SupabaseClient(
+        'https://database.invalid',
+        'public-test-key',
+        httpClient: transport,
+      );
+      addTearDown(client.dispose);
+      await expectLater(
+        SupabaseAnalysisRepository(
+          client,
+          uploadTransport: transport,
+        ).uploadImage(
+          'attempt',
+          'foto.jpg',
+          Uint8List.fromList('GIF89a'.codeUnits),
+        ),
+        throwsA(isA<AnalysisFailure>()),
+      );
+      expect(calls, 0);
     },
   );
 

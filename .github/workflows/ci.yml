@@ -10,9 +10,9 @@ on:
       - main
     paths-ignore:
       - "**.md"
-  # Sem filtro de caminhos: os 3 jobs são checks obrigatórios do main, e um
-  # PR sem eles ficaria bloqueado.
   pull_request:
+    # Sem filtro de caminhos: os 3 jobs são checks obrigatórios do main,
+    # e um PR sem eles ficaria bloqueado.
   workflow_dispatch: {}
 
 permissions:
