@@ -17,7 +17,7 @@ import {
   originAllowed,
   readLimited,
 } from "../_shared/ai_http.ts";
-import { structuredResponse } from "../_shared/gemini.ts";
+import { modelChain, structuredResponse } from "../_shared/gemini.ts";
 import { analysisRetryExhausted } from "../_shared/ai_service.ts";
 import { handler as analyzeHandler } from "../analyze-attempt/handler.ts";
 import { handler as practiceHandler } from "../generate-practice/handler.ts";
@@ -399,6 +399,40 @@ Deno.test("transient overload retries on a stable model and reports the model us
   assert.ok(urls[0].includes("/test-model:generateContent"));
   assert.ok(urls[1].includes("/gemini-3.6-flash:generateContent"));
   assert.deepEqual(used, ["gemini-3.6-flash"]);
+});
+Deno.test("overload and quota errors move through the model chain to Flash-Lite", async () => {
+  const urls: string[] = [];
+  const used: string[] = [];
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    const result = await structuredResponse(
+      { ...options, onModelUsed: (model) => used.push(model) },
+      config,
+      fetchMock((url) => {
+        urls.push(String(url));
+        if (urls.length === 1) return new Response("", { status: 503 });
+        if (urls.length === 2) return new Response("", { status: 429 });
+        return wrapped(sample());
+      }),
+    );
+    assert.deepEqual(validateAnalysis(result), sample());
+  } finally {
+    console.warn = warn;
+  }
+  assert.equal(urls.length, 3);
+  assert.ok(urls[2].includes("/gemini-3.5-flash-lite:generateContent"));
+  assert.deepEqual(used, ["gemini-3.5-flash-lite"]);
+});
+Deno.test("model chain dedupes, honours off and repeats a single model", () => {
+  assert.deepEqual(
+    modelChain({ key: "k", model: "a", fallbackModel: "b", liteModel: "c" }),
+    ["a", "b", "c"],
+  );
+  assert.deepEqual(
+    modelChain({ key: "k", model: "a", fallbackModel: "a", liteModel: "off" }),
+    ["a", "a", "a"],
+  );
 });
 Deno.test("missing API key makes no provider call", async () => {
   let called = false;
