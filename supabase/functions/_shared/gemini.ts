@@ -15,7 +15,9 @@ import { env, type Environment, readLimited, required } from "./ai_http.ts";
 // - The key travels in the x-goog-api-key header, never in the URL.
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 const THINKING_LEVEL = "LOW";
-const TRANSIENT_STATUSES = new Set([500, 502, 503, 504]);
+// 503 "high demand" and 429 quota errors are per model, so they move on to the
+// next model in the chain; 404 means a retired or misspelled model name.
+const RETRYABLE_STATUSES = new Set([404, 429, 500, 502, 503, 504]);
 const REFUSALS = new Set([
   "SAFETY",
   "RECITATION",
@@ -33,7 +35,21 @@ export function aiConfig(get: Environment = env) {
     key: required("GEMINI_API_KEY", get),
     model: get("GEMINI_MODEL")?.trim() || "gemini-flash-latest",
     fallbackModel: get("GEMINI_FALLBACK_MODEL")?.trim() || "gemini-3.6-flash",
+    // Flash-Lite runs on separate capacity and usually answers while the Flash
+    // models are overloaded. Set GEMINI_LITE_MODEL=off to disable it.
+    liteModel: get("GEMINI_LITE_MODEL")?.trim() || "gemini-3.5-flash-lite",
   };
+}
+
+// Three attempts, each on the next distinct model; a short chain repeats its
+// last model so a single configured model still gets retried.
+export function modelChain(config: ReturnType<typeof aiConfig>): string[] {
+  const models = [
+    ...new Set([config.model, config.fallbackModel, config.liteModel]),
+  ]
+    .filter((model) => model && model.toLowerCase() !== "off");
+  while (models.length < 3) models.push(models[models.length - 1]);
+  return models.slice(0, 3);
 }
 
 const refusal = () =>
@@ -105,10 +121,7 @@ export async function structuredResponse(
       thinkingConfig: { thinkingLevel: THINKING_LEVEL },
     },
   });
-  const fallback = config.fallbackModel === config.model
-    ? config.model
-    : config.fallbackModel;
-  const models = [config.model, fallback, fallback];
+  const models = modelChain(config);
   // Edge Functions têm 150 s de wall clock; preserve margem para auth,
   // leitura das imagens no R2 e gravação no banco em todas as tentativas.
   const deadline = Date.now() + 110000;
@@ -146,16 +159,18 @@ export async function structuredResponse(
       break;
     }
     if (
-      !TRANSIENT_STATUSES.has(response.status) || attempt === models.length - 1
+      !RETRYABLE_STATUSES.has(response.status) ||
+      attempt === models.length - 1
     ) break;
     console.warn(
       JSON.stringify({
         event: "ai_provider_retry",
         attempt: attempt + 1,
         status: response.status,
+        model: models[attempt],
       }),
     );
-    await response.body?.cancel().catch(() => {});
+    await logProviderError(response);
     response = undefined;
     await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt));
   }

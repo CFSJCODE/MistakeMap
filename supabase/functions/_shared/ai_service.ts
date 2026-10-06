@@ -288,10 +288,13 @@ async function saveAnalysis(
     // Serialize concept creation before FK inserts. NO KEY UPDATE remains
     // compatible with other transactions holding FK KEY SHARE on this subject.
     await tx`SELECT id FROM public.subjects WHERE id=${a.subject_id} AND user_id=${a.user_id} FOR NO KEY UPDATE`;
+    // tx.json, not JSON.stringify(...)::jsonb: postgres.js serializes jsonb
+    // parameters itself, so a pre-stringified value is stored as a JSON string
+    // and violates attempt_analyses_analysis_check (jsonb_typeof = 'object').
     await tx`INSERT INTO public.attempt_analyses(attempt_id,user_id,subject_id,analysis,model,pipeline_version)
       VALUES(${a.id},${a.user_id},${a.subject_id},${
-      JSON.stringify(result)
-    }::jsonb,${model},${PIPELINE_VERSION})`;
+      tx.json(result as unknown as postgres.JSONValue)
+    },${model},${PIPELINE_VERSION})`;
     await tx`INSERT INTO public.corrections(attempt_id,reference_text) VALUES(${a.id},${
       result.correct_answer + "\n\n" + result.explanation
     })`;
