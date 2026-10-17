@@ -25,6 +25,11 @@ import 'admin/metrics_panel.dart';
 import 'assets/profile_photo.dart';
 import 'about/external_profile.dart';
 import 'about/linkedin_profile_button.dart';
+import 'local/preferencias_caderno.dart';
+import 'local/registro_erro.dart';
+import 'local/registro_erro_dao.dart';
+
+part 'caderno_erros.dart';
 
 // ─── Cores da identidade visual ──────────────────────────────────────────────
 const Color titleBlue = MistakeMapDesign.primary;
@@ -1460,7 +1465,17 @@ class _TelaInicialState extends State<TelaInicial> {
                       const SizedBox(height: 24),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 480),
-                        child: _botaoSobre(context),
+                        child: Column(
+                          children: [
+                            _botaoAtalho(
+                              icone: WindowsIcons.quick_note,
+                              texto: 'Caderno de erros',
+                              onPressed: _abrirCaderno,
+                            ),
+                            const SizedBox(height: 12),
+                            _botaoSobre(context),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -1550,8 +1565,41 @@ class _TelaInicialState extends State<TelaInicial> {
     );
   }
 
+  // Caderno de erros local (SQLite): funciona sem internet.
+  void _abrirCaderno() {
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    Navigator.of(context).push(
+      MistakeMapPageRoute(
+        context: context,
+        builder: (_) => TelaCadernoErros(user: widget.user),
+      ),
+    );
+  }
+
   // Botão "Sobre o App"
   Widget _botaoSobre(BuildContext context) {
+    return _botaoAtalho(
+      icone: WindowsIcons.info,
+      texto: 'Sobre o App',
+      onPressed:
+          widget.onAbout ??
+          () {
+            if (ModalRoute.of(context)?.isCurrent != true) return;
+            Navigator.of(context).push(
+              MistakeMapPageRoute(
+                context: context,
+                builder: (_) => const TelaSobre(),
+              ),
+            );
+          },
+    );
+  }
+
+  Widget _botaoAtalho({
+    required IconData icone,
+    required String texto,
+    required VoidCallback onPressed,
+  }) {
     return SizedBox(
       width: double.infinity,
       child: MistakeMapButton(
@@ -1561,23 +1609,13 @@ class _TelaInicialState extends State<TelaInicial> {
           texto: contentBlue,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         ),
-        onPressed:
-            widget.onAbout ??
-            () {
-              if (ModalRoute.of(context)?.isCurrent != true) return;
-              Navigator.of(context).push(
-                MistakeMapPageRoute(
-                  context: context,
-                  builder: (_) => const TelaSobre(),
-                ),
-              );
-            },
-        child: const Row(
+        onPressed: onPressed,
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(WindowsIcons.info, size: 18),
-            SizedBox(width: 8),
-            Flexible(child: Text('Sobre o App', textAlign: TextAlign.center)),
+            Icon(icone, size: 18),
+            const SizedBox(width: 8),
+            Flexible(child: Text(texto, textAlign: TextAlign.center)),
           ],
         ),
       ),
