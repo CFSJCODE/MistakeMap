@@ -8,12 +8,32 @@
 
 Plataforma de aprendizagem orientada a erros que transforma exercícios corrigidos em uma estrutura navegável de **conceitos, padrões recorrentes, evidências de recuperação e evolução**.
 
-[![GitHub](https://img.shields.io/badge/GitHub-CFSJCODE%2FMISTAKEMAP-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/CFSJCODE/MISTAKEMAP)
-![Status](https://img.shields.io/badge/Status-MVP%20funcional-F59E0B?style=flat-square)
+[![CI](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml)
+[![Deploy web](https://github.com/CFSJCODE/MistakeMap/actions/workflows/web-deploy-vercel.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/web-deploy-vercel.yml)
+[![Edge Functions](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-functions-deploy.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-functions-deploy.yml)
+[![Migrações](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-deploy.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-deploy.yml)
+
+[![Web](https://img.shields.io/badge/Web-mistakemap--tau.vercel.app-000000?style=flat-square&logo=vercel&logoColor=white)](https://mistakemap-tau.vercel.app)
 ![Versão](https://img.shields.io/badge/Versão-1.0.0-0A7F5A?style=flat-square)
-![PUC Minas](https://img.shields.io/badge/Projeto%20Acadêmico-PUC%20Minas-003B71?style=flat-square)
+![Status](https://img.shields.io/badge/Status-MVP%20funcional-F59E0B?style=flat-square)
+[![Licença](https://img.shields.io/badge/Licença-PolyForm%20Noncommercial%201.0.0-6B7280?style=flat-square)](LICENSE)
+[![Último commit](https://img.shields.io/github/last-commit/CFSJCODE/MistakeMap/main?style=flat-square&label=Último%20commit)](https://github.com/CFSJCODE/MistakeMap/commits/main)
+[![PRs](https://img.shields.io/github/issues-pr-closed/CFSJCODE/MistakeMap?style=flat-square&label=PRs%20fechados)](https://github.com/CFSJCODE/MistakeMap/pulls?q=is%3Apr+is%3Aclosed)
+
+![Flutter](https://img.shields.io/badge/Flutter-3.47-02569B?style=flat-square&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Auth%20·%20RLS%20·%20Edge%20Functions-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
+![Deno](https://img.shields.io/badge/Deno-2.9-000000?style=flat-square&logo=deno&logoColor=white)
+![Gemini](https://img.shields.io/badge/IA-Google%20Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
+![Cloudflare R2](https://img.shields.io/badge/Arquivos-Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white)
+![SQLite](https://img.shields.io/badge/Offline-SQLite%20%28sqflite%29-003B57?style=flat-square&logo=sqlite&logoColor=white)
 ![Fluent UI](https://img.shields.io/badge/Design%20System-Fluent%20UI-0078D4?style=flat-square&logo=windows11&logoColor=white)
-[![CI](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml/badge.svg)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml)
+
+![Android](https://img.shields.io/badge/Android-API%2024+-3DDC84?style=flat-square&logo=android&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-.exe%20%28build%20local%29-0078D4?style=flat-square&logo=windows11&logoColor=white)
+![Web](https://img.shields.io/badge/Web-Vercel-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
+[![Release](https://img.shields.io/github/v/release/CFSJCODE/MistakeMap?include_prereleases&style=flat-square&logo=github&label=Release)](https://github.com/CFSJCODE/MistakeMap/releases)
+![PUC Minas](https://img.shields.io/badge/Projeto%20Acadêmico-PUC%20Minas-003B71?style=flat-square)
 
 **MistakeMap não é apenas um corretor de certo ou errado.**  
 Ele procura responder a uma pergunta mais útil:
@@ -244,15 +264,112 @@ O núcleo do MVP está implementado e publicado: o estudante cadastra exercício
 | **Fila em lote** processada pelo `pg_cron` | ✅ | função `process-batch` |
 | **Painel administrativo** (papéis, uso e cotas da IA por modelo) | ✅ | `lib/admin/`, tela Admin |
 | **Layout adaptativo** (celular, tablet, desktop, dobráveis e telas duplas) | ✅ | `lib/layout/` |
+| **Caderno de erros offline** (CRUD em SQLite local, filtro "Ocultar revisados" persistido) | ✅ | `lib/caderno_erros.dart`, `lib/local/`, [`BANCO_LOCAL.md`](../appmistakemap/BANCO_LOCAL.md) |
+| **Aplicativo Windows** (`appmistakemap.exe`) | 🟡 | projeto em `appmistakemap/windows/`; gerado localmente, ainda sem Release nem workflow de build |
 | **Fórmula de prioridade** $P = F \times R \times I \times (1 - M)$ | 🔜 | prevista como função PostgreSQL |
 | **Validação humana** dos erros sugeridos (confirmar, corrigir, rejeitar) | 🔜 | hoje a análise é exibida, ainda sem confirmação por evento |
-| **Modo offline** e fila local de envio | 🔜 | não iniciado |
+| **Modo offline** e fila local de envio | 🟡 | o Caderno de erros já funciona sem internet; a fila de envio de fotos ainda não existe |
 | **Relatórios** PDF/CSV | 🔜 | não iniciado |
 
 A taxonomia de erros usada pela IA tem 7 categorias: `calculo`, `conceito`, `sinal`, `interpretacao`, `procedimento`, `unidade` e `outro`. Cada usuário tem um limite diário de análises e de pedidos de prática, controlado no banco (`ai_daily_usage`).
 
 > [!NOTE]
 > O worker Rust em `worker/` foi a primeira implementação do pipeline e está **arquivado**: desde 28/09/2026 o processamento roda nas Supabase Edge Functions. Os detalhes de backend, deploy e pendências estão em [`BACKEND.md`](../BACKEND.md), e as migrações em [`appmistakemap/database/README.md`](../appmistakemap/database/README.md).
+
+---
+
+<a id="funcionalidades"></a>
+
+## Funcionalidades
+
+Guia rápido do que o aplicativo faz hoje, tela por tela. A navegação usa barra inferior no celular e menu lateral a partir de 840 px de largura.
+
+| Tela / recurso | O que o estudante faz | Implementação |
+|:---|:---|:---|
+| **Login e cadastro** | Entra com e-mail e senha ou com a conta Google | Supabase Auth; `AuthGate` e `TelaCadastro` em `main.dart`, OAuth em `lib/auth/google_sign_in.dart` |
+| **Início — Resumo** | Vê os totais (exercícios, concluídos, atenção), atalhos para a análise por IA, o Caderno de erros e a página Sobre | `TelaInicial` em `main.dart` |
+| **Meus Exercícios** | Lista, filtra, abre o detalhe, edita e exclui exercícios | `TelaPrincipal`, `TelaDetalheExercicio`, `TelaEditarExercicio` |
+| **Mapa Conceitual** | Vê os erros agrupados por disciplina, com indicadores e barras de frequência | `TelaMapaConceitual` |
+| **Analisar com IA** | Cadastra o exercício, fotografa ou escolhe a imagem da tentativa e recebe a análise | `lib/ai/exercise_submission_view.dart` → `upload-url` → `analyze-attempt` |
+| **Mapa de erros (IA)** | Navega pelo grafo de conceitos e pelos erros por categoria, evidência e confiança | `lib/ai/insights_view.dart` |
+| **Prática direcionada** | Pede de 3 a 5 exercícios gerados a partir dos próprios erros e confere as respostas | `generate-practice` (o gabarito fica só no servidor, em `practice_answer_keys`) |
+| **Caderno de erros (offline)** | Anota, edita, marca como revisado e exclui erros sem internet; o filtro "Ocultar revisados" fica salvo | SQLite (`sqflite` / `sqflite_common_ffi` / `sqflite_common_ffi_web`) + `shared_preferences`; ver [`BANCO_LOCAL.md`](../appmistakemap/BANCO_LOCAL.md) |
+| **Painel Administrativo** | Apenas administradores: papéis, uso e cotas da IA por modelo, métricas do plano gratuito | `TelaAdmin` + `lib/admin/` |
+| **Sobre o MistakeMap** | Missão, visão, valores, equipe e stack, com link para o LinkedIn | `TelaSobre`, `lib/about/` |
+| **Modo demonstração** | Mostra o aviso "Demonstração" nas telas com dados de exemplo | constante `kModoDemo` em `main.dart` |
+
+### Como a análise por IA funciona
+
+```mermaid
+sequenceDiagram
+    participant App as App Flutter
+    participant UP as upload-url
+    participant R2 as Cloudflare R2
+    participant AN as analyze-attempt
+    participant G as Gemini
+    participant DB as PostgreSQL (RLS)
+    App->>UP: POST (JWT do usuário, SHA-256 da foto)
+    UP->>DB: valida sessão e reserva cota diária
+    UP-->>App: URL pré-assinada (PUT)
+    App->>R2: envia a foto
+    App->>AN: POST {attempt_id}
+    AN->>R2: baixa a imagem
+    AN->>G: OCR + classificação dos erros
+    AN->>DB: grava attempt_analyses e error_events
+    AN-->>App: diagnóstico (ou o cache, se já existir)
+```
+
+Tentativas que ficam pendentes são reprocessadas pela função `process-batch`, chamada pelo `pg_cron` via `pg_net` (nunca por HTTP síncrono dentro de trigger).
+
+### Edge Functions
+
+| Função | Método | Papel |
+|:---|:---:|:---|
+| `upload-url` | POST | Valida a sessão, reserva cota e assina o PUT na R2 |
+| `analyze-attempt` | POST | Baixa a imagem, chama o Gemini (com fallback entre modelos) e grava a análise |
+| `generate-practice` | POST | Gera de 3 a 5 exercícios direcionados por disciplina |
+| `process-batch` | POST | Processa a fila de tentativas pendentes (protegida por `X-Cron-Secret`) |
+| `health` | GET | Verifica o banco e o bucket R2; usada pelo monitor do `pg_cron` |
+
+O código fica em `supabase/functions/`, com testes Deno em `supabase/functions/tests/`. Segredos (chave do Gemini, credenciais da R2) ficam apenas no Supabase e nunca no cliente.
+
+---
+
+<a id="windows-exe"></a>
+
+## Aplicativo Windows (.exe)
+
+> [!IMPORTANT]
+> **O executável do Windows não está versionado no repositório.** Não há `.exe` no histórico do Git, nenhuma Release publicada no GitHub e nenhum workflow que gere o build do Windows. O que existe é o projeto nativo em `appmistakemap/windows/` (CMake + runner Win32), que produz o `appmistakemap.exe` quando compilado localmente.
+
+### Gerar o .exe
+
+Pré-requisitos: Windows 10/11, Flutter estável e Visual Studio com a carga de trabalho **Desenvolvimento para desktop com C++**. Clone o repositório num caminho **sem acentos** (por exemplo, `D:\MistakeMap`).
+
+```powershell
+cd D:\MistakeMap\appmistakemap
+flutter pub get
+flutter build windows --release
+```
+
+O resultado fica em:
+
+```text
+appmistakemap\build\windows\x64\runner\Release\
+├── appmistakemap.exe        # executável
+├── flutter_windows.dll      # motor do Flutter
+├── *.dll                    # plugins (ex.: sqlite3 do Caderno de erros)
+└── data\                    # assets e app.so (código AOT)
+```
+
+> [!WARNING]
+> O `.exe` sozinho não abre: distribua a pasta `Release\` inteira (por exemplo, compactada em `.zip`). A pasta `build/` é ignorada pelo Git, então o binário deve ser publicado como anexo de uma Release, e não commitado.
+
+Observações:
+
+- O nome exibido no Windows ainda é o padrão do Flutter (`appmistakemap`, empresa `com.example`), definido em `appmistakemap/windows/runner/Runner.rc`.
+- O Caderno de erros usa `sqflite_common_ffi` no Windows, sem dependências extras.
+- Evite adicionar `path_provider` ao projeto: ele puxa `jni` e quebra o build do Windows em máquinas sem JDK.
 
 ---
 
@@ -268,6 +385,8 @@ A taxonomia de erros usada pela IA tem 7 categorias: `calculo`, `conceito`, `sin
 - [Tecnologias](#stack-tecnologica)
 - [Informações do projeto](#metadados)
 - [Estado atual da implementação](#estado-atual)
+- [Funcionalidades](#funcionalidades)
+- [Aplicativo Windows (.exe)](#windows-exe)
 - [Visão Executiva](#visao-executiva)
 - [Objetivos](#objetivos)
 - [Problema e Cenário de Uso](#problema-e-cenario-de-uso)
@@ -1170,7 +1289,9 @@ appmistakemap/lib/
 ├── ai/                          # Fluxo de IA: shell Material, repositório, envio, mapa, correção e prática
 ├── assets/                      # Foto de perfil embutida
 ├── auth/                        # Login com Google e verificação da configuração OAuth
+├── caderno_erros.dart           # Tela do Caderno de erros (part of main.dart)
 ├── layout/                      # Classes de largura, dobráveis e shell de navegação adaptativo
+├── local/                       # Banco SQLite local, DAO, fábrica por plataforma e preferências
 └── theme/                       # Tokens de design, paleta, estilos de controles e movimento
 ```
 
@@ -1331,6 +1452,7 @@ Fotografar e anotar exercício deve funcionar durante aula ou estudo **sem inter
 
 ### Recursos previstos
 
+- [x] Caderno de erros local em SQLite, com CRUD e preferências (`lib/local/`).
 - [ ] Rascunhos locais de exercícios e tentativas.
 - [ ] Fila de imagens com hash para upload posterior.
 - [ ] Cache do grafo.
@@ -1738,6 +1860,14 @@ flutter doctor
 flutter run -d android    # ou: -d windows / -d chrome
 ```
 
+### Gerar os pacotes
+
+| Plataforma | Comando | Saída |
+|:---|:---|:---|
+| Android | `flutter build apk --release` | `build/app/outputs/flutter-apk/app-release.apk` (assinatura de debug; não serve para loja) |
+| Windows | `flutter build windows --release` | `build/windows/x64/runner/Release/` (ver [Aplicativo Windows](#windows-exe)) |
+| Web | `flutter build web --release` | `build/web/` (publicado automaticamente na Vercel) |
+
 ### 5. Validar como o CI
 
 ```bash
@@ -1767,6 +1897,11 @@ dependencies:
   image_picker:
   http:
   crypto:
+  sqflite:
+  sqflite_common_ffi:
+  sqflite_common_ffi_web:
+  shared_preferences:
+  path:
 ```
 
 > [!WARNING]
