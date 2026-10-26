@@ -851,10 +851,13 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   final _inicioKey = GlobalKey<_TelaInicialState>();
   final _listaKey = GlobalKey<_TelaPrincipalState>();
   final _mapaKey = GlobalKey<_TelaMapaConceitualState>();
+  final _cadernoKey = GlobalKey<_TelaCadernoErrosState>();
   late final AnalysisRepository _analysisRepository =
       widget.analysisRepository ?? SupabaseAnalysisRepository(_db);
 
-  Future<void> _abrirIa({bool mapa = false}) async {
+  // Mapa e análise por IA são uma página só; [analisar] abre o painel de
+  // envio já expandido (atalho do Início).
+  Future<void> _abrirIa({bool analisar = false}) async {
     if (_paginaAberta) return;
     setState(() => _paginaAberta = true);
     try {
@@ -864,7 +867,8 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
           builder: (_) => AiMaterialShell(
             userId: widget.user.id,
             repository: _analysisRepository,
-            showMap: mapa,
+            showMap: true,
+            startWithAnalysis: analisar,
             onClose: () => Navigator.of(context).pop(),
           ),
         ),
@@ -897,35 +901,28 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     }
   }
 
-  void _irParaMapa() {
-    _selecionar(2);
-  }
-
   void _selecionar(int i) {
-    // Aba "Novo" (índice 3): redireciona para o fluxo de IA em vez do
-    // formulário antigo, que escrevia a descrição tanto em prompt_text quanto
-    // em solution_text. O fluxo de IA é a entrada canônica de exercícios.
-    if (i == 3) {
-      _abrirIa();
-      return;
-    }
     if (i == _indiceAtual) return;
     setState(() => _indiceAtual = i);
     if (i == 0) _inicioKey.currentState?.carregarEstatisticas();
     if (i == 1) _listaKey.currentState?.carregarExercicios();
     if (i == 2) _mapaKey.currentState?.carregar();
+    if (i == 3) _cadernoKey.currentState?._carregar();
   }
 
+  // Índice 3 era "Novo exercício", que só repetia a análise por IA (hoje
+  // dentro do Mapa). O Caderno, antes escondido num botão do Início, ocupa
+  // a vaga como aba própria.
   List<Widget> get _telas => [
     TelaInicial(
       key: _inicioKey,
       user: widget.user,
-      onAnalysis: _abrirIa,
+      onAnalysis: () => _abrirIa(analisar: true),
       onAbout: _abrirSobre,
     ),
     TelaPrincipal(key: _listaKey, user: widget.user),
     TelaMapaConceitual(key: _mapaKey, user: widget.user),
-    TelaAdicionarExercicio(user: widget.user, onIrParaMapa: _irParaMapa),
+    TelaCadernoErros(key: _cadernoKey, user: widget.user, aba: true),
     if (widget.user.isAdmin)
       TelaAdmin(user: widget.user, active: _indiceAtual == 4 && !_paginaAberta),
   ];
@@ -936,8 +933,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       selectedIndex: _indiceAtual,
       onSelected: _selecionar,
       hasAdmin: widget.user.isAdmin,
-      onAnalysis: _abrirIa,
-      onErrorMap: () => _abrirIa(mapa: true),
+      onErrorMap: _abrirIa,
       onAbout: _abrirSobre,
       child: PopScope(
         canPop: _indiceAtual == 0,
@@ -1478,12 +1474,16 @@ class _TelaInicialState extends State<TelaInicial> {
                         constraints: const BoxConstraints(maxWidth: 480),
                         child: Column(
                           children: [
-                            _botaoAtalho(
-                              icone: WindowsIcons.quick_note,
-                              texto: 'Caderno de erros',
-                              onPressed: _abrirCaderno,
-                            ),
-                            const SizedBox(height: 12),
+                            // O Caderno virou aba; o atalho do Início leva
+                            // direto à análise de um exercício novo.
+                            if (widget.onAnalysis != null) ...[
+                              _botaoAtalho(
+                                icone: WindowsIcons.lightbulb,
+                                texto: 'Analisar um exercício',
+                                onPressed: widget.onAnalysis!,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
                             _botaoSobre(context),
                           ],
                         ),
@@ -1574,17 +1574,6 @@ class _TelaInicialState extends State<TelaInicial> {
           ],
         ),
       ],
-    );
-  }
-
-  // Caderno de erros local (SQLite): funciona sem internet.
-  void _abrirCaderno() {
-    if (ModalRoute.of(context)?.isCurrent != true) return;
-    Navigator.of(context).push(
-      MistakeMapPageRoute(
-        context: context,
-        builder: (_) => TelaCadernoErros(user: widget.user),
-      ),
     );
   }
 

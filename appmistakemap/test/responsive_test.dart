@@ -224,8 +224,8 @@ void main() {
       final shell = tester.widget<AppNavigationShell>(
         find.byType(AppNavigationShell),
       );
-      shell.onAnalysis!();
-      shell.onAnalysis!();
+      shell.onErrorMap!();
+      shell.onErrorMap!();
       await _settle(tester);
       expect(find.text('Sua resposta'), findsOneWidget);
       await tester.tap(find.byTooltip('Voltar'));
@@ -246,20 +246,20 @@ void main() {
         size: Size(width, 900),
       );
       expect(find.text('Analisar exercício com IA'), findsNothing);
-      // Análise e mapa ficam juntos no menu do Mapa.
-      await tester.tap(find.byKey(const ValueKey('navigation-2')));
+      // Atalho do Início: abre o Mapa com o painel de análise aberto.
+      await tester.tap(find.text('Analisar um exercício'));
       await _settle(tester);
-      await tester.tap(find.text('Analisar com IA'));
-      await _settle(tester);
+      expect(find.text('Mapa de erros'), findsOneWidget);
       expect(find.text('Sua resposta'), findsOneWidget);
       await tester.tap(find.byTooltip('Voltar'));
       await _settle(tester);
       expect(find.text('Início — Resumo'), findsOneWidget);
+      // Mapa e análise na mesma página: sem tentativas, o painel já abre.
       await tester.tap(find.byKey(const ValueKey('navigation-2')));
       await _settle(tester);
-      await tester.tap(find.text('Ver mapa de erros'));
-      await _settle(tester);
       expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
+      expect(find.text('Analisar exercício com IA'), findsOneWidget);
+      expect(find.text('Sua resposta'), findsOneWidget);
       await tester.tap(find.byTooltip('Voltar'));
       await _settle(tester);
       expect(find.text('Início — Resumo'), findsOneWidget);
@@ -452,8 +452,6 @@ void main() {
           scale: user.isAdmin ? 1.5 : 1,
         );
         await tester.tap(find.text('Mapa'));
-        await _settle(tester);
-        await tester.tap(find.text('Ver mapa de erros'));
         await _settle(tester);
         expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
         expect(tester.takeException(), isNull);

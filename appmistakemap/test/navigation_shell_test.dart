@@ -86,55 +86,41 @@ void main() {
     expect(find.text('Sobre o App'), findsOneWidget);
   });
 
-  for (final width in [390.0, 1280.0]) {
-    testWidgets('Mapa reúne mapa de erros e análise por IA em ${width}px', (
-      tester,
-    ) async {
-      tester.view.physicalSize = Size(width, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      var map = 0;
-      var analysis = 0;
-      await tester.pumpWidget(
-        FluentApp(
-          home: AppNavigationShell(
-            selectedIndex: 0,
-            onSelected: (_) {},
+  testWidgets('Mapa é um destino só e o Caderno substitui o Novo', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var map = 0;
+    var selected = 0;
+    await tester.pumpWidget(
+      FluentApp(
+        home: StatefulBuilder(
+          builder: (context, setState) => AppNavigationShell(
+            selectedIndex: selected,
+            onSelected: (index) => setState(() => selected = index),
             onAbout: () {},
-            onAnalysis: () => analysis++,
             onErrorMap: () => map++,
             hasAdmin: false,
             child: const SizedBox.expand(),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-      // "Analisar com IA" não aparece mais solto: só dentro do menu do Mapa.
-      expect(find.text('Analisar com IA'), findsNothing);
-      if (width < 840) {
-        await tester.tap(find.byKey(const ValueKey('navigation-more')));
-        await tester.pumpAndSettle();
-        expect(find.text('Analisar com IA'), findsNothing);
-        await tester.tapAt(const Offset(10, 10));
-        await tester.pumpAndSettle();
-      }
-
-      await tester.tap(find.byKey(const ValueKey('navigation-2')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Ver mapa de erros'));
-      await tester.pumpAndSettle();
-      expect((map, analysis), (1, 0));
-
-      await tester.tap(find.byKey(const ValueKey('navigation-2')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Analisar com IA'));
-      await tester.pumpAndSettle();
-      expect((map, analysis), (1, 1));
-      expect(tester.takeException(), isNull);
-    });
-  }
-
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Novo'), findsNothing);
+    expect(find.text('Analisar com IA'), findsNothing);
+    // Um toque no Mapa abre a página unificada, sem menu intermediário.
+    await tester.tap(find.byKey(const ValueKey('navigation-2')));
+    await tester.pumpAndSettle();
+    expect(map, 1);
+    await tester.tap(find.text('Caderno'));
+    await tester.pumpAndSettle();
+    expect(selected, 3);
+    expect(tester.takeException(), isNull);
+  });
   for (final reduced in [false, true]) {
     testWidgets('Hover rápido mantém botões e rótulos estáveis '
         '(movimento reduzido: $reduced)', (tester) async {
@@ -158,7 +144,6 @@ void main() {
                 setState(() => selected = index);
               },
               hasAdmin: true,
-              onAnalysis: () => actions++,
               onAbout: () => actions++,
               child: const Center(child: Text('Conteúdo preservado')),
             ),
@@ -169,7 +154,7 @@ void main() {
       final labels = <int, String>{
         0: 'Início',
         1: 'Meus exercícios',
-        3: 'Novo exercício',
+        3: 'Caderno de erros',
         2: 'Mapa de erros',
         4: 'Administração',
         6: 'Sobre o App',

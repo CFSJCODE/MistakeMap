@@ -16,7 +16,6 @@ class AppNavigationShell extends StatelessWidget {
     required this.selectedIndex,
     required this.onSelected,
     required this.onAbout,
-    this.onAnalysis,
     this.onErrorMap,
     required this.hasAdmin,
     required this.child,
@@ -25,7 +24,6 @@ class AppNavigationShell extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final VoidCallback onAbout;
-  final VoidCallback? onAnalysis;
   final VoidCallback? onErrorMap;
   final bool hasAdmin;
   final Widget child;
@@ -34,14 +32,14 @@ class AppNavigationShell extends StatelessWidget {
     'Início',
     'Meus exercícios',
     'Mapa de erros',
-    'Novo exercício',
+    'Caderno de erros',
     'Administração',
   ];
   static const icons = [
     WindowsIcons.home,
     WindowsIcons.bulleted_list,
     WindowsIcons.relationship,
-    WindowsIcons.add,
+    WindowsIcons.quick_note,
     WindowsIcons.admin,
   ];
 
@@ -149,7 +147,7 @@ class AppNavigationShell extends StatelessWidget {
     final icon = _icon(context, icons[index], selected, compact: compact);
     final label = Text(
       compact
-          ? const ['Início', 'Lista', 'Mapa', 'Novo'][index]
+          ? const ['Início', 'Lista', 'Mapa', 'Caderno'][index]
           : labels[index],
       textAlign: compact ? TextAlign.center : TextAlign.start,
       style: TextStyle(
@@ -198,39 +196,6 @@ class AppNavigationShell extends StatelessWidget {
           compact: compact,
         ),
       ),
-    );
-  }
-
-  /// Mapa e análise por IA num único destino: o botão do Mapa abre um menu
-  /// com as duas entradas, em vez de "Analisar com IA" repetido em Mais.
-  Widget _mapDestination(BuildContext context, {required bool compact}) {
-    final analysis = onAnalysis;
-    if (analysis == null) return _destination(context, 2, compact: compact);
-    return DropDownButton(
-      placement: compact
-          ? FlyoutPlacementMode.topCenter
-          : FlyoutPlacementMode.bottomLeft,
-      menuColor: MistakeMapDesign.surface,
-      menuShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: MistakeMapDesign.border),
-      ),
-      buttonBuilder: (context, open) =>
-          _destination(context, 2, compact: compact, onPressed: open),
-      items: [
-        _flyoutItem(
-          context,
-          icon: WindowsIcons.relationship,
-          label: 'Ver mapa de erros',
-          action: onErrorMap ?? () => onSelected(2),
-        ),
-        _flyoutItem(
-          context,
-          icon: WindowsIcons.lightbulb,
-          label: 'Analisar com IA',
-          action: analysis,
-        ),
-      ],
     );
   }
 
@@ -385,7 +350,7 @@ class AppNavigationShell extends StatelessWidget {
                     ],
                     const SizedBox(height: 24),
                     _section('INTELIGÊNCIA ARTIFICIAL'),
-                    _mapDestination(context, compact: false),
+                    _destination(context, 2, compact: false),
                     const SizedBox(height: 24),
                     _section('SISTEMA'),
                     if (hasAdmin) ...[
@@ -455,9 +420,7 @@ class AppNavigationShell extends StatelessWidget {
                     children: [
                       for (var i = 0; i < 4; i++)
                         Expanded(
-                          child: i == 2
-                              ? _mapDestination(context, compact: true)
-                              : _destination(context, i, compact: true),
+                          child: _destination(context, i, compact: true),
                         ),
                       Expanded(child: _more(context)),
                     ],

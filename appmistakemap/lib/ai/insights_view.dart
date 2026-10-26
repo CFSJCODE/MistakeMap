@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../theme/design_tokens.dart';
 import '../theme/motion.dart';
 import 'analysis_models.dart';
 import 'analysis_repository.dart';
@@ -18,7 +19,11 @@ class ErrorMapView extends StatefulWidget {
     required this.userId,
     required this.repository,
     this.onClose,
+    this.startWithAnalysis = false,
   });
+
+  /// Abre a página já com o formulário de análise expandido.
+  final bool startWithAnalysis;
 
   @override
   State<ErrorMapView> createState() => _ErrorMapViewState();
@@ -32,6 +37,26 @@ class _ErrorMapViewState extends State<ErrorMapView> {
   int _days = 0;
   int _view = 0;
   int _request = 0;
+  final _analysis = ExpansibleController();
+  final _analysisKey = GlobalKey();
+  late bool _analysisOpen = widget.startWithAnalysis;
+
+  // Botão flutuante e atalho do Início: abre o painel e rola até ele.
+  void _openAnalysis() {
+    if (!_analysis.isExpanded) _analysis.expand();
+    // Rola depois da animação de abrir: antes dela a página ainda não tem a
+    // altura do formulário e o painel ficaria cortado no rodapé.
+    Future<void>.delayed(const Duration(milliseconds: 250), () {
+      final target = _analysisKey.currentContext;
+      if (target == null || !target.mounted) return;
+      Scrollable.ensureVisible(
+        target,
+        duration: MediaQuery.disableAnimationsOf(target)
+            ? Duration.zero
+            : const Duration(milliseconds: 300),
+      );
+    });
+  }
 
   @override
   void initState() {
@@ -43,8 +68,47 @@ class _ErrorMapViewState extends State<ErrorMapView> {
   @override
   void dispose() {
     analysisChanges.removeListener(_reload);
+    _analysis.dispose();
     super.dispose();
   }
+
+  // Mapa e análise na mesma página: o formulário de envio fica num painel
+  // recolhível acima do mapa, aberto quando ainda não há tentativas.
+  Widget _analysisSection() => Card(
+    key: _analysisKey,
+    margin: EdgeInsets.zero,
+    color: mapSurface,
+    elevation: 0,
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: const BorderSide(color: MistakeMapDesign.border),
+    ),
+    child: ExpansionTile(
+      controller: _analysis,
+      initiallyExpanded: widget.startWithAnalysis,
+      onExpansionChanged: (open) => setState(() => _analysisOpen = open),
+      // O formulário guarda o que já foi digitado ao recolher o painel.
+      maintainState: true,
+      leading: const Icon(Icons.lightbulb_outline, color: mapTitleBlue),
+      title: const Text(
+        'Analisar exercício com IA',
+        style: TextStyle(color: mapTitleBlue, fontWeight: FontWeight.w600),
+      ),
+      subtitle: const Text(
+        'Registre uma tentativa; a correção entra neste mapa.',
+        style: TextStyle(color: mapContentBlue),
+      ),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      children: [
+        ExerciseSubmissionView(
+          userId: widget.userId,
+          repository: widget.repository,
+          embedded: true,
+        ),
+      ],
+    ),
+  );
 
   Future<void> _reload() async {
     final request = ++_request;
@@ -61,6 +125,9 @@ class _ErrorMapViewState extends State<ErrorMapView> {
           _attempts = result;
           _loading = false;
         });
+        // Sem tentativas o mapa não tem o que mostrar: começa pela análise.
+        if (result.isEmpty && !_analysis.isExpanded) _analysis.expand();
+        if (widget.startWithAnalysis && request == 1) _openAnalysis();
       }
     } catch (error) {
       if (mounted && request == _request) {
@@ -161,220 +228,229 @@ class _ErrorMapViewState extends State<ErrorMapView> {
         ],
       ),
       backgroundColor: mapBackground,
+      floatingActionButton: _analysisOpen
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _openAnalysis,
+              backgroundColor: mapTitleBlue,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.lightbulb_outline),
+              label: const Text('Analisar exercício'),
+            ),
       body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-            ? RetryMessage(message: _error!, retry: _reload)
-            : RefreshIndicator(
-                onRefresh: _reload,
-                child: ListView(
-                  padding: const EdgeInsets.all(24),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    if (_attempts.isEmpty) ...[
-                      const SizedBox(height: 48),
-                      const Icon(
-                        Icons.account_tree_outlined,
-                        size: 64,
-                        color: mapContentBlue,
+        child: RefreshIndicator(
+          onRefresh: _reload,
+          // Coluna, não ListView: uma lista preguiçosa descartaria o
+          // formulário de análise ao rolar para o mapa.
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_loading)
+                  const Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (_error != null)
+                  RetryMessage(message: _error!, retry: _reload)
+                else if (_attempts.isEmpty) ...[
+                  const SizedBox(height: 48),
+                  const Icon(
+                    Icons.account_tree_outlined,
+                    size: 64,
+                    color: mapContentBlue,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Seu mapa ainda está vazio',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 23,
+                      fontWeight: FontWeight.bold,
+                      color: mapTitleBlue,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Analise um exercício abaixo para identificar suas fragilidades conceituais.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: mapContentBlue),
+                  ),
+                ] else ...[
+                  DropdownButtonFormField<String>(
+                    initialValue: _subject ?? '',
+                    isExpanded: true,
+                    borderRadius: BorderRadius.circular(12),
+                    dropdownColor: mapSurface,
+                    menuMaxHeight: (MediaQuery.sizeOf(context).height * .5)
+                        .clamp(160.0, 360.0),
+                    decoration: const InputDecoration(labelText: 'Matéria'),
+                    items: [
+                      const DropdownMenuItem(
+                        value: '',
+                        child: Text('Todas as matérias'),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Seu mapa ainda está vazio',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 23,
-                          fontWeight: FontWeight.bold,
-                          color: mapTitleBlue,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Adicione exercícios para identificar suas fragilidades conceituais.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: mapContentBlue),
-                      ),
-                    ] else ...[
-                      DropdownButtonFormField<String>(
-                        initialValue: _subject ?? '',
-                        isExpanded: true,
-                        borderRadius: BorderRadius.circular(12),
-                        dropdownColor: mapSurface,
-                        menuMaxHeight: (MediaQuery.sizeOf(context).height * .5)
-                            .clamp(160.0, 360.0),
-                        decoration: const InputDecoration(labelText: 'Matéria'),
-                        items: [
-                          const DropdownMenuItem(
-                            value: '',
-                            child: Text('Todas as matérias'),
-                          ),
-                          ...subjectNames.entries.map(
-                            (s) => DropdownMenuItem(
-                              value: s.key,
-                              child: Text(
-                                s.value,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) => setState(
-                          () => _subject = value == '' ? null : value,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final period in [
-                            (0, 'Todo o histórico'),
-                            (30, '30 dias'),
-                            (7, '7 dias'),
-                          ])
-                            ChoiceChip(
-                              label: Text(period.$2),
-                              selected: _days == period.$1,
-                              onSelected: (_) =>
-                                  setState(() => _days = period.$1),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        '${insights.analyzedCount} análise(s) · ${insights.errorsCount} tentativa(s) com erros sugeridos pela IA',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: mapContentBlue,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'As frequências contam tentativas distintas. As classificações são sugestões da IA; toque para conferir os exercícios.',
-                        style: TextStyle(fontSize: 14, color: mapContentBlue),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final view in [
-                            (0, 'Gráficos'),
-                            (1, 'Nuvem'),
-                            (2, 'Conexões'),
-                            (3, 'Tentativas'),
-                          ])
-                            ChoiceChip(
-                              label: Text(view.$2),
-                              selected: _view == view.$1,
-                              onSelected: (_) =>
-                                  setState(() => _view = view.$1),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      if (insights.attempts.isEmpty)
-                        const Text('Nenhuma tentativa neste período.')
-                      else if (_view == 3)
-                        ...insights.attempts.map(
-                          (a) =>
-                              AttemptTile(attempt: a, onTap: () => _detail(a)),
-                        )
-                      else if (insights.categories.isEmpty) ...[
-                        Text(
-                          insights.analyzedCount == 0
-                              ? 'As análises ainda não estão disponíveis. Abra uma tentativa para analisar ou tentar novamente.'
-                              : 'Nenhum erro foi identificado nas análises deste período.',
-                        ),
-                        const SizedBox(height: 16),
-                        OutlinedButton(
-                          onPressed: () => setState(() => _view = 3),
-                          child: const Text('Ver tentativas'),
-                        ),
-                      ] else if (_view == 0) ...[
-                        const SectionLabel('Tipos de erro'),
-                        FrequencyBars(
-                          values: insights.categories,
-                          onTap: (count) => _evidence(
-                            count.label,
-                            insights.evidence(count.attemptIds),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        const SectionLabel('Matérias'),
-                        FrequencyBars(
-                          values: insights.subjects,
-                          onTap: (count) => _evidence(
-                            count.label,
-                            insights.evidence(count.attemptIds),
-                          ),
-                        ),
-                      ] else if (_view == 1) ...[
-                        const SectionLabel('Conceitos com erros'),
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: insights.concepts
-                              .map(
-                                (count) => TextButton(
-                                  onPressed: () => _evidence(
-                                    count.label,
-                                    insights.evidence(count.attemptIds),
-                                  ),
-                                  child: Text(
-                                    '${count.label} (${count.count})',
-                                    style: TextStyle(
-                                      fontSize: insights.cloudFontSize(
-                                        count.count,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ] else ...[
-                        const SectionLabel('Matéria → conceito → tipo de erro'),
-                        const Text(
-                          'As linhas indicam ocorrência na mesma tentativa, sem inferir pré-requisitos. Amplie e arraste para explorar.',
-                        ),
-                        const SizedBox(height: 16),
-                        ConceptGraph(
-                          insights: insights,
-                          onNode: (node) => _evidence(
-                            node.label,
-                            insights.evidence(node.attemptIds),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Bordas e linhas mais espessas têm mais tentativas. Os mesmos dados estão disponíveis na nuvem e nos gráficos.',
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      OutlinedButton.icon(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MistakeMapPageRoute<void>(
-                            context: context,
-                            builder: (_) => PracticeView(
-                              userId: widget.userId,
-                              repository: widget.repository,
-                              subjects: subjectNames,
-                            ),
-                          ),
-                        ),
-                        icon: const Icon(Icons.school_outlined),
-                        label: const Text(
-                          'Praticar meus pontos de dificuldade',
+                      ...subjectNames.entries.map(
+                        (s) => DropdownMenuItem(
+                          value: s.key,
+                          child: Text(s.value, overflow: TextOverflow.ellipsis),
                         ),
                       ),
                     ],
+                    onChanged: (value) =>
+                        setState(() => _subject = value == '' ? null : value),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final period in [
+                        (0, 'Todo o histórico'),
+                        (30, '30 dias'),
+                        (7, '7 dias'),
+                      ])
+                        ChoiceChip(
+                          label: Text(period.$2),
+                          selected: _days == period.$1,
+                          onSelected: (_) => setState(() => _days = period.$1),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '${insights.analyzedCount} análise(s) · ${insights.errorsCount} tentativa(s) com erros sugeridos pela IA',
+                    style: const TextStyle(fontSize: 16, color: mapContentBlue),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'As frequências contam tentativas distintas. As classificações são sugestões da IA; toque para conferir os exercícios.',
+                    style: TextStyle(fontSize: 14, color: mapContentBlue),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final view in [
+                        (0, 'Gráficos'),
+                        (1, 'Nuvem'),
+                        (2, 'Conexões'),
+                        (3, 'Tentativas'),
+                      ])
+                        ChoiceChip(
+                          label: Text(view.$2),
+                          selected: _view == view.$1,
+                          onSelected: (_) => setState(() => _view = view.$1),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  if (insights.attempts.isEmpty)
+                    const Text('Nenhuma tentativa neste período.')
+                  else if (_view == 3)
+                    ...insights.attempts.map(
+                      (a) => AttemptTile(attempt: a, onTap: () => _detail(a)),
+                    )
+                  else if (insights.categories.isEmpty) ...[
+                    Text(
+                      insights.analyzedCount == 0
+                          ? 'As análises ainda não estão disponíveis. Abra uma tentativa para analisar ou tentar novamente.'
+                          : 'Nenhum erro foi identificado nas análises deste período.',
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      onPressed: () => setState(() => _view = 3),
+                      child: const Text('Ver tentativas'),
+                    ),
+                  ] else if (_view == 0) ...[
+                    const SectionLabel('Tipos de erro'),
+                    FrequencyBars(
+                      values: insights.categories,
+                      onTap: (count) => _evidence(
+                        count.label,
+                        insights.evidence(count.attemptIds),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const SectionLabel('Matérias'),
+                    FrequencyBars(
+                      values: insights.subjects,
+                      onTap: (count) => _evidence(
+                        count.label,
+                        insights.evidence(count.attemptIds),
+                      ),
+                    ),
+                  ] else if (_view == 1) ...[
+                    const SectionLabel('Conceitos com erros'),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: insights.concepts
+                          .map(
+                            (count) => TextButton(
+                              onPressed: () => _evidence(
+                                count.label,
+                                insights.evidence(count.attemptIds),
+                              ),
+                              child: Text(
+                                '${count.label} (${count.count})',
+                                style: TextStyle(
+                                  fontSize: insights.cloudFontSize(count.count),
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ] else ...[
+                    const SectionLabel('Matéria → conceito → tipo de erro'),
+                    const Text(
+                      'As linhas indicam ocorrência na mesma tentativa, sem inferir pré-requisitos. Amplie e arraste para explorar.',
+                    ),
+                    const SizedBox(height: 16),
+                    ConceptGraph(
+                      insights: insights,
+                      onNode: (node) => _evidence(
+                        node.label,
+                        insights.evidence(node.attemptIds),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Bordas e linhas mais espessas têm mais tentativas. Os mesmos dados estão disponíveis na nuvem e nos gráficos.',
+                    ),
                   ],
-                ),
-              ),
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MistakeMapPageRoute<void>(
+                        context: context,
+                        builder: (_) => PracticeView(
+                          userId: widget.userId,
+                          repository: widget.repository,
+                          subjects: subjectNames,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.school_outlined),
+                    label: const Text('Praticar meus pontos de dificuldade'),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                // A análise fica fora do carregamento do mapa: recarregar
+                // depois de uma correção não descarta o formulário.
+                _analysisSection(),
+                // Espaço para o botão flutuante não cobrir o fim da página.
+                const SizedBox(height: 72),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -20,7 +20,11 @@ class AiMaterialShell extends StatefulWidget {
     required this.showMap,
     required this.onClose,
     this.attemptId,
+    this.startWithAnalysis = false,
   });
+
+  /// Abre o Mapa com o painel de análise expandido (atalho do Início).
+  final bool startWithAnalysis;
 
   /// Opens straight on the correction of this attempt (from the exercise list).
   final String? attemptId;
@@ -192,6 +196,7 @@ class _AiMaterialShellState extends State<AiMaterialShell> {
             userId: widget.userId,
             repository: widget.repository,
             onClose: widget.onClose,
+            startWithAnalysis: widget.startWithAnalysis,
           )
         : ExerciseSubmissionView(
             userId: widget.userId,

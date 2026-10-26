@@ -19,7 +19,11 @@ class TelaCadernoErros extends StatefulWidget {
     required this.user,
     this.dao,
     this.preferencias = const PreferenciasCaderno(),
+    this.aba = false,
   });
+
+  /// Aberto como aba da navegação: sem botão Voltar.
+  final bool aba;
 
   @override
   State<TelaCadernoErros> createState() => _TelaCadernoErrosState();
@@ -128,7 +132,7 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
   Widget build(BuildContext context) {
     return _PaginaVidro(
       titulo: 'Caderno de erros',
-      voltar: true,
+      voltar: !widget.aba,
       acoes: [
         _BotaoBarra(
           icone: WindowsIcons.filter,
