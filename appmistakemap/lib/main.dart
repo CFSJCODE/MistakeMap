@@ -524,8 +524,11 @@ MenuFlyoutItemBuilder _itemMenu({
     onPressed: onPressed == null
         ? null
         : () {
-            Navigator.of(context).maybePop();
-            onPressed();
+            // Fecha o menu antes de agir: com a ação no mesmo quadro, o
+            // diálogo de confirmação abria por cima e o menu ficava órfão na
+            // tela depois de excluir o item.
+            Navigator.of(context).pop();
+            WidgetsBinding.instance.addPostFrameCallback((_) => onPressed());
           },
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -1435,6 +1438,14 @@ class _TelaInicialState extends State<TelaInicial> {
   }
 
   Future<void> _sair() async {
+    // O ícone fica ao lado do título: um toque acidental não deve deslogar.
+    final ok = await _confirmar(
+      context,
+      titulo: 'Sair da conta',
+      mensagem: 'Deseja sair do MistakeMap neste aparelho?',
+      confirmar: 'Sair',
+    );
+    if (!ok) return;
     await _db.auth.signOut();
   }
 
@@ -1546,7 +1557,8 @@ class _TelaInicialState extends State<TelaInicial> {
           children: [
             _ResumoCard(
               icone: WindowsIcons.bulleted_list,
-              label: 'Exercícios',
+              // Conta tentativas (attempts), não os exercícios da lista.
+              label: 'Tentativas',
               value: '$_totalExercicios',
             ),
             _ResumoCard(
@@ -2224,6 +2236,9 @@ class _AdicionarCampoTexto extends StatelessWidget {
         minLines: minLines,
         maxLines: maxLines,
         validator: validator,
+        // Revalida a cada digitação: o aviso some assim que o campo é
+        // preenchido, sem esperar outro toque em Salvar.
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         decoration: const WidgetStatePropertyAll(
           BoxDecoration(color: Cores.branco),
         ),
@@ -3370,6 +3385,24 @@ class TelaDetalheExercicio extends StatelessWidget {
     if (context.mounted && onFechar == null) Navigator.pop(context);
   }
 
+  // A correção da IA mora no fluxo Material; sem este atalho o status
+  // "Revisar" da lista não levava a lugar nenhum.
+  Future<void> _verCorrecao(BuildContext context) async {
+    await Navigator.of(context).push(
+      MistakeMapPageRoute(
+        context: context,
+        builder: (rotaContext) => AiMaterialShell(
+          userId: user.id,
+          repository: SupabaseAnalysisRepository(_db),
+          showMap: false,
+          attemptId: exercicio.attemptId,
+          onClose: () => Navigator.of(rotaContext).pop(),
+        ),
+      ),
+    );
+    onAtualizar();
+  }
+
   @override
   Widget build(BuildContext context) {
     return _PaginaVidro(
@@ -3440,6 +3473,36 @@ class TelaDetalheExercicio extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
+            if (exercicio.attemptId != null) ...[
+              SizedBox(
+                width: double.infinity,
+                child: MistakeMapFilledButton(
+                  style: _estiloBotao(
+                    fundo: contentBlue,
+                    texto: Cores.branco,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 24,
+                    ),
+                  ),
+                  onPressed: () => _verCorrecao(context),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(WindowsIcons.lightbulb, size: 18),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Ver correção da IA',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (exercicio.podeEditar) ...[
               SizedBox(
                 width: double.infinity,

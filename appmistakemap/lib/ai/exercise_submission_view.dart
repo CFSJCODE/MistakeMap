@@ -44,6 +44,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
   String? _error;
   bool _busy = false;
   bool _uploaded = false;
+  bool _triedSubmit = false;
   String _stage = 'Salvando exercício…';
 
   @override
@@ -112,12 +113,15 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
         _imageName = image.name;
         _error = null;
       });
+      // The photo can stand in for prompt and answer: clear warnings already shown.
+      if (_triedSubmit) _form.currentState?.validate();
     } catch (error) {
       if (mounted) setState(() => _error = friendlyFailure(error));
     }
   }
 
   Future<void> _submit() async {
+    _triedSubmit = true;
     if (!_form.currentState!.validate() || _busy) return;
     setState(() {
       _busy = true;
@@ -184,6 +188,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
     _imageBytes = null;
     _imageName = null;
     _uploaded = false;
+    _triedSubmit = false;
     _error = null;
   });
 
@@ -239,6 +244,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                     'Assunto',
                     'Ex.: Equações de segundo grau',
                   ),
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   validator: (v) => v == null || v.trim().isEmpty
                       ? 'Informe o assunto'
                       : null,
@@ -255,6 +261,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                     'Enunciado do exercício',
                     'Digite o enunciado; a foto pode complementar.',
                   ),
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) && _imageBytes == null
                       ? 'Informe o enunciado ou anexe uma foto legível'
@@ -272,6 +279,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                     'Sua resposta',
                     'Escreva sua resposta e os passos que tentou.',
                   ),
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) && _imageBytes == null
                       ? 'Informe sua resposta ou anexe a foto da resolução'

@@ -19,7 +19,11 @@ class AiMaterialShell extends StatefulWidget {
     required this.repository,
     required this.showMap,
     required this.onClose,
+    this.attemptId,
   });
+
+  /// Opens straight on the correction of this attempt (from the exercise list).
+  final String? attemptId;
 
   @override
   State<AiMaterialShell> createState() => _AiMaterialShellState();
@@ -160,6 +164,41 @@ class _AiMaterialShellState extends State<AiMaterialShell> {
   // O MaterialApp interno tem Navigator próprio; a chave deixa o Voltar do
   // sistema desempilhar primeiro as telas internas em vez da rota do shell.
   final _navigatorKey = GlobalKey<NavigatorState>();
+  late final _closeAtBase = _CloseAtBase(() => widget.onClose());
+
+  // Uma base invisível fica sempre por baixo da primeira tela. Assim o
+  // Navigator interno sempre "pode voltar" e o Android entrega o Voltar ao
+  // Flutter: sem ela, o MaterialApp interno avisava que não tratava o gesto e
+  // o sistema fechava o aplicativo inteiro. Voltar até a base fecha o shell.
+  List<Route<dynamic>> _initialRoutes(String _) => [
+    _baseRoute(),
+    MaterialPageRoute<void>(builder: (_) => _firstPage()),
+  ];
+
+  Route<void> _baseRoute() =>
+      MaterialPageRoute<void>(builder: (_) => const SizedBox.shrink());
+
+  Widget _firstPage() {
+    final attemptId = widget.attemptId;
+    if (attemptId != null) {
+      return AttemptDetailView(
+        userId: widget.userId,
+        attemptId: attemptId,
+        repository: widget.repository,
+      );
+    }
+    return widget.showMap
+        ? ErrorMapView(
+            userId: widget.userId,
+            repository: widget.repository,
+            onClose: widget.onClose,
+          )
+        : ExerciseSubmissionView(
+            userId: widget.userId,
+            repository: widget.repository,
+            onClose: widget.onClose,
+          );
+  }
 
   @override
   Widget build(BuildContext context) => PopScope(
@@ -168,28 +207,37 @@ class _AiMaterialShellState extends State<AiMaterialShell> {
     canPop: false,
     onPopInvokedWithResult: (didPop, _) {
       if (didPop) return;
-      final navigator = _navigatorKey.currentState;
-      if (navigator != null && navigator.canPop()) {
-        navigator.pop();
-      } else {
-        widget.onClose();
-      }
+      // Desempilha uma tela interna; ao chegar à base o observer fecha o shell.
+      _navigatorKey.currentState?.maybePop();
     },
     child: MaterialApp(
       navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AiMaterialShell._theme(context),
-      home: widget.showMap
-          ? ErrorMapView(
-              userId: widget.userId,
-              repository: widget.repository,
-              onClose: widget.onClose,
-            )
-          : ExerciseSubmissionView(
-              userId: widget.userId,
-              repository: widget.repository,
-              onClose: widget.onClose,
-            ),
+      navigatorObservers: [_closeAtBase],
+      onGenerateInitialRoutes: _initialRoutes,
+      onGenerateRoute: (_) => _baseRoute(),
     ),
   );
+}
+
+/// Closes the shell once only the invisible base route is left.
+class _CloseAtBase extends NavigatorObserver {
+  _CloseAtBase(this.onBase);
+
+  final VoidCallback onBase;
+  int _depth = 0;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) => _depth++;
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _depth--;
+    if (_depth == 1) onBase();
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _depth--;
 }

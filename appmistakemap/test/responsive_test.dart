@@ -346,7 +346,7 @@ void main() {
       size: const Size(320, 640),
       scale: 1.5,
     );
-    final exercises = tester.getTopLeft(find.text('Exercícios'));
+    final exercises = tester.getTopLeft(find.text('Tentativas'));
     final review = tester.getTopLeft(find.text('Para revisar'));
     final progress = tester.getTopLeft(find.text('Evolução'));
     expect(exercises.dy, lessThan(review.dy));
@@ -365,7 +365,7 @@ void main() {
       size: const Size(1440, 1000),
       scale: 2,
     );
-    final exercises = tester.getTopLeft(find.text('Exercícios'));
+    final exercises = tester.getTopLeft(find.text('Tentativas'));
     final review = tester.getTopLeft(find.text('Para revisar'));
     final progress = tester.getTopLeft(find.text('Evolução'));
     expect(exercises.dy, closeTo(review.dy, 1));
@@ -375,7 +375,7 @@ void main() {
       lessThanOrEqualTo(1120),
     );
     final cards = find
-        .ancestor(of: find.text('Exercícios'), matching: find.byType(Container))
+        .ancestor(of: find.text('Tentativas'), matching: find.byType(Container))
         .first;
     expect(tester.getSize(cards).width, lessThanOrEqualTo(360));
     final aboutButton = find.ancestor(

@@ -56,13 +56,15 @@ class AppNavigationShell extends StatelessWidget {
       (states) => RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
-          color: states.contains(WidgetState.focused)
-              ? MistakeMapDesign.primary
-              : states.contains(WidgetState.hovered) ||
-                    states.contains(WidgetState.pressed)
+          color:
+              selected ||
+                  states.contains(WidgetState.focused) ||
+                  states.contains(WidgetState.hovered) ||
+                  states.contains(WidgetState.pressed)
               ? MistakeMapDesign.primary
               : const Color(0xFFA9C6E4),
-          width: states.contains(WidgetState.focused) ? 2 : 1,
+          // A aba atual fica marcada mesmo sem foco: borda e ícone cheios.
+          width: selected || states.contains(WidgetState.focused) ? 2 : 1,
         ),
       ),
     ),
@@ -573,7 +575,7 @@ class _NavigationIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = _NavigationHoverProgress.of(context);
+    final progress = selected ? 1.0 : _NavigationHoverProgress.of(context);
     final color = Color.lerp(
       const Color(0xFFD2E4F7),
       MistakeMapDesign.primary,
