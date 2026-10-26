@@ -137,6 +137,7 @@ void main() {
         await tester.pumpAndSettle();
         final bounds = tester.getRect(find.byKey(_controlKey));
         final base = _fluentFill(tester);
+        final hovered = MistakeMapDesign.hoverFill(base);
         final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
         await mouse.addPointer(location: const Offset(1, 1));
         addTearDown(mouse.removePointer);
@@ -157,7 +158,7 @@ void main() {
         expect(_fluentFill(tester), base);
         await tester.pump(const Duration(milliseconds: 40));
         expect(_fluentFill(tester), isNot(base));
-        expect(_fluentFill(tester), isNot(MistakeMapDesign.primary));
+        expect(_fluentFill(tester), isNot(hovered));
         for (var step = 0; step < 22; step++) {
           _expectReadable(
             tester,
@@ -165,7 +166,7 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 20));
         }
-        expect(_fluentFill(tester), MistakeMapDesign.primary);
+        expect(_fluentFill(tester), hovered);
         expect(tester.getRect(find.byKey(_controlKey)), bounds);
         expect(calls, 0);
         await mouse.moveTo(const Offset(1, 1));
@@ -208,12 +209,13 @@ void main() {
       await tester.pumpAndSettle();
       await mouse.moveTo(tester.getCenter(find.byKey(_controlKey)));
       await tester.pump();
+      final hovered = MistakeMapDesign.hoverFill(MistakeMapDesign.raised);
       if (reduced) {
-        expect(_fluentFill(tester), MistakeMapDesign.primary);
+        expect(_fluentFill(tester), hovered);
       } else {
-        expect(_fluentFill(tester), isNot(MistakeMapDesign.primary));
+        expect(_fluentFill(tester), isNot(hovered));
         await tester.pump(MistakeMapMotion.hover);
-        expect(_fluentFill(tester), MistakeMapDesign.primary);
+        expect(_fluentFill(tester), hovered);
       }
       expect(tester.takeException(), isNull);
     });
@@ -271,6 +273,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       final base = _materialFill(tester);
+      final hovered = MistakeMapDesign.hoverFill(base);
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await mouse.addPointer(location: const Offset(1, 1));
       addTearDown(mouse.removePointer);
@@ -279,12 +282,12 @@ void main() {
       expect(_materialFill(tester), base);
       await tester.pump(const Duration(milliseconds: 40));
       expect(_materialFill(tester), isNot(base));
-      expect(_materialFill(tester), isNot(MistakeMapDesign.primary));
+      expect(_materialFill(tester), isNot(hovered));
       for (var step = 0; step < 22; step++) {
         _expectReadable(tester, _materialFill(tester));
         await tester.pump(const Duration(milliseconds: 20));
       }
-      expect(_materialFill(tester), MistakeMapDesign.primary);
+      expect(_materialFill(tester), hovered);
       await mouse.moveTo(const Offset(1, 1));
       await tester.pumpAndSettle();
       expect(_materialFill(tester), base);
@@ -371,12 +374,13 @@ void main() {
       await tester.pumpAndSettle();
       await mouse.moveTo(tester.getCenter(find.byKey(_controlKey)));
       await tester.pump();
+      final hovered = MistakeMapDesign.hoverFill(MistakeMapDesign.raised);
       if (reduced) {
-        expect(_materialFill(tester), MistakeMapDesign.primary);
+        expect(_materialFill(tester), hovered);
       } else {
-        expect(_materialFill(tester), isNot(MistakeMapDesign.primary));
+        expect(_materialFill(tester), isNot(hovered));
         await tester.pump(MistakeMapMotion.hover);
-        expect(_materialFill(tester), MistakeMapDesign.primary);
+        expect(_materialFill(tester), hovered);
       }
       expect(tester.takeException(), isNull);
     });

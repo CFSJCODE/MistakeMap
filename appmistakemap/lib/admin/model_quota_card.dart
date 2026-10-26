@@ -37,13 +37,13 @@ class ModelQuotaCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFCFDFE), Color(0xFFF1F6FB)],
+          colors: [MistakeMapDesign.white, MistakeMapDesign.well],
         ),
         borderRadius: BorderRadius.circular(MistakeMapDesign.radius),
         border: Border.all(color: MistakeMapDesign.border),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x08142A4A),
+            color: MistakeMapDesign.hairline,
             blurRadius: 16,
             offset: Offset(0, 4),
           ),
@@ -61,13 +61,13 @@ class ModelQuotaCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE5EEF8),
+                  color: MistakeMapDesign.violet.withValues(alpha: .16),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   WindowsIcons.lightbulb,
                   size: 18,
-                  color: MistakeMapDesign.primary,
+                  color: MistakeMapDesign.violetInk,
                 ),
               ),
               Text(
@@ -84,7 +84,7 @@ class ModelQuotaCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE5EEF8),
+                  color: MistakeMapDesign.mint.withValues(alpha: .18),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
@@ -92,7 +92,7 @@ class ModelQuotaCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: MistakeMapDesign.content,
+                    color: MistakeMapDesign.mintInk,
                   ),
                 ),
               ),
@@ -150,9 +150,9 @@ class ModelQuotaCard extends StatelessWidget {
     final color = partial || ratio == null
         ? MistakeMapDesign.content
         : ratio >= 1
-        ? const Color(0xFFB42318)
+        ? MistakeMapDesign.bad
         : ratio >= 0.8
-        ? const Color(0xFF8A4B08)
+        ? MistakeMapDesign.warn
         : MistakeMapDesign.primary;
     final percent = ratio == null
         ? 'Uso indisponível'

@@ -226,7 +226,7 @@ class _CadernoVazio extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           MistakeMapFilledButton(
-            style: _estiloBotao(fundo: contentBlue, texto: Cores.branco),
+            style: _estiloBotao(fundo: kAcento, texto: MistakeMapDesign.abyss),
             onPressed: onNovo,
             child: const Row(
               mainAxisSize: MainAxisSize.min,
@@ -308,7 +308,10 @@ class _RegistroErroCard extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           _Pilula(texto: registro.disciplina, cor: contentBlue),
-                          _Pilula(texto: registro.tipo.rotulo, cor: titleBlue),
+                          _Pilula(
+                            texto: registro.tipo.rotulo,
+                            cor: _corDoTipo(registro.tipo),
+                          ),
                           Text(
                             _dataCurta(registro.atualizadoEm),
                             style: context.tipo.caption?.copyWith(
@@ -559,8 +562,8 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
                   const SizedBox(height: 24),
                   MistakeMapFilledButton(
                     style: _estiloBotao(
-                      fundo: contentBlue,
-                      texto: Cores.branco,
+                      fundo: kAcento,
+                      texto: MistakeMapDesign.abyss,
                       padding: const EdgeInsets.symmetric(
                         vertical: 16,
                         horizontal: 20,
@@ -610,8 +613,8 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
     final estilo = _estiloBotao(
       fonte: 14,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-      fundo: selecionada ? contentBlue : null,
-      texto: selecionada ? Cores.branco : contentBlue,
+      fundo: selecionada ? kAcento : null,
+      texto: selecionada ? MistakeMapDesign.abyss : contentBlue,
     );
     return Semantics(
       selected: selecionada,
@@ -632,3 +635,11 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
 }
 
 // ─── fim: Caderno de erros ───────────────────────────────────────────────────
+
+// Cada tipo de erro mantém a cor que tem no Mapa, sempre ao lado do rótulo.
+Color _corDoTipo(TipoErro tipo) => switch (tipo) {
+  TipoErro.conceitual => MistakeMapDesign.violetInk,
+  TipoErro.calculo => MistakeMapDesign.azureInk,
+  TipoErro.interpretacao => MistakeMapDesign.aquaInk,
+  TipoErro.atencao => MistakeMapDesign.amberInk,
+};

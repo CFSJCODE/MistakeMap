@@ -4,6 +4,8 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/design_tokens.dart';
+
 /// A LinkedIn link with a reserved footprint and a gentle expansion on hover.
 /// Touch layouts show the name immediately; opening the profile always requires
 /// a click, a tap, or keyboard activation.
@@ -25,9 +27,9 @@ class LinkedInProfileButton extends StatefulWidget {
 
 class _LinkedInProfileButtonState extends State<LinkedInProfileButton>
     with SingleTickerProviderStateMixin {
-  static const _rest = Color(0xFF075985);
-  static const _expanded = Color(0xFF0369A1);
-  static const _white = Color(0xFFFFFFFF);
+  static const _rest = MistakeMapDesign.azureInk;
+  static const _expanded = Color(0xFF1A4FA0);
+  static const _white = MistakeMapDesign.white;
   static const _tipWidth = 18.0;
   static const _labelStyle = TextStyle(
     color: _white,
@@ -213,7 +215,7 @@ class _LinkedInProfileButtonState extends State<LinkedInProfileButton>
                                       boxShadow: _focused
                                           ? const [
                                               BoxShadow(
-                                                color: Color(0xFF214572),
+                                                color: MistakeMapDesign.abyss,
                                                 spreadRadius: 2,
                                               ),
                                             ]

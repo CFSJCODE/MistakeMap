@@ -232,8 +232,8 @@ class _ErrorMapViewState extends State<ErrorMapView> {
           ? null
           : FloatingActionButton.extended(
               onPressed: _openAnalysis,
-              backgroundColor: mapTitleBlue,
-              foregroundColor: Colors.white,
+              backgroundColor: MistakeMapDesign.accent,
+              foregroundColor: MistakeMapDesign.abyss,
               icon: const Icon(Icons.lightbulb_outline),
               label: const Text('Analisar exercício'),
             ),
@@ -260,7 +260,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                   const Icon(
                     Icons.account_tree_outlined,
                     size: 64,
-                    color: mapContentBlue,
+                    color: MistakeMapDesign.violetInk,
                   ),
                   const SizedBox(height: 16),
                   const Text(
@@ -616,8 +616,8 @@ class _ConceptGraphState extends State<ConceptGraph> {
                               radius: 10,
                               border: BorderSide(
                                 color: node.kind == 'Conceito'
-                                    ? mapTitleBlue
-                                    : mapContentBlue,
+                                    ? MistakeMapDesign.violetInk
+                                    : MistakeMapDesign.azureInk,
                                 width:
                                     1 + math.min(3, node.attemptIds.length) / 2,
                               ),
@@ -840,7 +840,7 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
                 liveRegion: true,
                 child: Text(
                   _error!,
-                  style: TextStyle(color: Colors.red.shade700),
+                  style: TextStyle(color: MistakeMapDesign.bad),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1139,7 +1139,7 @@ class _PracticeViewState extends State<PracticeView> {
                 liveRegion: true,
                 child: Text(
                   _error!,
-                  style: TextStyle(color: Colors.red.shade700),
+                  style: TextStyle(color: MistakeMapDesign.bad),
                 ),
               ),
             ),
