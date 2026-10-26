@@ -8,7 +8,7 @@ import '../theme/motion.dart';
 abstract final class MistakeMapMaterialControls {
   static ButtonStyle button(
     BuildContext context, {
-    Color background = MistakeMapDesign.surface,
+    Color background = MistakeMapDesign.raised,
     Color foreground = MistakeMapDesign.content,
     bool quiet = false,
     double radius = 12,
@@ -31,7 +31,7 @@ abstract final class MistakeMapMaterialControls {
       ),
       foregroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
-          return const Color(0xFF61758A);
+          return MistakeMapDesign.disabledInk;
         }
         return foreground;
       }),
@@ -92,16 +92,20 @@ class _MaterialHoverSurface extends StatelessWidget {
     final baseFill = disabled
         ? quiet
               ? Colors.transparent
-              : const Color(0xFFE5ECF2)
+              : MistakeMapDesign.disabledFill
         : background;
-    final baseInk = disabled ? const Color(0xFF61758A) : foreground;
+    final baseInk = disabled ? MistakeMapDesign.disabledInk : foreground;
     return TweenAnimationBuilder<double>(
       tween: Tween(end: active ? 1 : 0),
       duration: disabled ? Duration.zero : duration,
       curve: MistakeMapMotion.hoverCurve,
       child: child,
       builder: (context, progress, child) {
-        var fill = Color.lerp(baseFill, MistakeMapDesign.primary, progress)!;
+        var fill = Color.lerp(
+          baseFill,
+          MistakeMapDesign.hoverFill(baseFill),
+          progress,
+        )!;
         if (states.contains(WidgetState.pressed) && !disabled) {
           fill = Color.alphaBlend(const Color(0x14000000), fill);
         }
@@ -116,18 +120,11 @@ class _MaterialHoverSurface extends StatelessWidget {
               );
         final focused = states.contains(WidgetState.focused) && !disabled;
         final outline = focused
-            ? BorderSide(
-                color: Color.lerp(
-                  MistakeMapDesign.primary,
-                  Colors.white,
-                  progress,
-                )!,
-                width: 2,
-              )
+            ? BorderSide(color: MistakeMapDesign.aquaInk, width: 2)
             : border.copyWith(
                 color: Color.lerp(
                   border.color,
-                  MistakeMapDesign.primary,
+                  MistakeMapDesign.highlight,
                   progress,
                 ),
               );

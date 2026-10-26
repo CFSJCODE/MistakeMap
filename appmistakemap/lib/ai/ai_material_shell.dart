@@ -34,31 +34,37 @@ class AiMaterialShell extends StatefulWidget {
 
   static ThemeData _theme(BuildContext context) {
     final inputBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: MistakeMapDesign.border),
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: MistakeMapDesign.fieldBorder),
     );
     final inputTheme = InputDecorationTheme(
       filled: true,
-      fillColor: MistakeMapDesign.surface,
-      hoverColor: MistakeMapDesign.primary.withValues(alpha: .04),
+      fillColor: MistakeMapDesign.white,
+      hoverColor: MistakeMapDesign.deep.withValues(alpha: .02),
       contentPadding: const EdgeInsets.all(16),
       border: inputBorder,
       enabledBorder: inputBorder,
       disabledBorder: inputBorder,
       focusedBorder: inputBorder.copyWith(
-        borderSide: const BorderSide(color: MistakeMapDesign.primary, width: 2),
+        borderSide: const BorderSide(color: MistakeMapDesign.aquaInk, width: 2),
       ),
-      labelStyle: const TextStyle(color: MistakeMapDesign.content),
+      errorBorder: inputBorder.copyWith(
+        borderSide: const BorderSide(color: MistakeMapDesign.bad),
+      ),
+      labelStyle: const TextStyle(color: MistakeMapDesign.steel),
+      floatingLabelStyle: const TextStyle(color: MistakeMapDesign.aquaInk),
+      hintStyle: const TextStyle(color: MistakeMapDesign.disabledInk),
+      errorStyle: const TextStyle(color: MistakeMapDesign.bad),
     );
     final menuShape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       side: const BorderSide(color: MistakeMapDesign.border),
     );
     final menuStyle = MenuStyle(
-      backgroundColor: const WidgetStatePropertyAll(MistakeMapDesign.surface),
+      backgroundColor: const WidgetStatePropertyAll(MistakeMapDesign.white),
       surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
       shadowColor: WidgetStatePropertyAll(
-        MistakeMapDesign.navy.withValues(alpha: .12),
+        MistakeMapDesign.deep.withValues(alpha: .16),
       ),
       elevation: const WidgetStatePropertyAll(3),
       padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
@@ -69,26 +75,50 @@ class AiMaterialShell extends StatefulWidget {
       useMaterial3: true,
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: MistakeMapDesign.primary,
-        primary: MistakeMapDesign.primary,
-        onPrimary: Colors.white,
-        primaryContainer: const Color(0xFFE5EFF9),
-        onPrimaryContainer: MistakeMapDesign.navy,
-        secondary: MistakeMapDesign.primary,
-        secondaryContainer: const Color(0xFFE5EFF9),
-        onSecondaryContainer: MistakeMapDesign.navy,
-        surface: MistakeMapDesign.surface,
-        onSurface: MistakeMapDesign.navy,
-        outline: MistakeMapDesign.border,
+      colorScheme: const ColorScheme.light(
+        primary: MistakeMapDesign.aquaInk,
+        onPrimary: MistakeMapDesign.white,
+        primaryContainer: Color(0xFFD7F7F3),
+        onPrimaryContainer: MistakeMapDesign.abyss,
+        secondary: MistakeMapDesign.violetInk,
+        onSecondary: MistakeMapDesign.white,
+        secondaryContainer: Color(0xFFEAE4FF),
+        onSecondaryContainer: MistakeMapDesign.abyss,
+        tertiary: MistakeMapDesign.azureInk,
+        onTertiary: MistakeMapDesign.white,
+        error: MistakeMapDesign.bad,
+        onError: MistakeMapDesign.white,
+        surface: MistakeMapDesign.white,
+        onSurface: MistakeMapDesign.deep,
+        onSurfaceVariant: MistakeMapDesign.steel,
+        surfaceContainerLowest: MistakeMapDesign.white,
+        surfaceContainerLow: MistakeMapDesign.well,
+        surfaceContainer: MistakeMapDesign.well,
+        surfaceContainerHigh: MistakeMapDesign.disabledFill,
+        surfaceContainerHighest: MistakeMapDesign.pressed,
+        outline: MistakeMapDesign.mist,
+        outlineVariant: MistakeMapDesign.border,
+        shadow: MistakeMapDesign.deep,
       ),
       scaffoldBackgroundColor: MistakeMapDesign.background,
-      canvasColor: MistakeMapDesign.surface,
-      hoverColor: MistakeMapDesign.primary.withValues(alpha: .04),
-      focusColor: MistakeMapDesign.primary.withValues(alpha: .10),
+      canvasColor: MistakeMapDesign.white,
+      cardColor: MistakeMapDesign.white,
+      dividerColor: MistakeMapDesign.hairline,
+      hoverColor: MistakeMapDesign.deep.withValues(alpha: .03),
+      focusColor: MistakeMapDesign.aqua.withValues(alpha: .2),
+      textTheme: Typography.blackMountainView.apply(
+        bodyColor: MistakeMapDesign.content,
+        displayColor: MistakeMapDesign.strong,
+      ),
+      iconTheme: const IconThemeData(color: MistakeMapDesign.steel),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: MistakeMapDesign.aquaInk,
+        linearTrackColor: MistakeMapDesign.disabledFill,
+        circularTrackColor: MistakeMapDesign.disabledFill,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: MistakeMapDesign.background,
-        foregroundColor: MistakeMapDesign.primary,
+        foregroundColor: MistakeMapDesign.strong,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         // Mesmo recuo de 12 px das barras Fluent: os botões não encostam na
@@ -118,17 +148,17 @@ class AiMaterialShell extends StatefulWidget {
       dropdownMenuTheme: DropdownMenuThemeData(
         inputDecorationTheme: inputTheme,
         menuStyle: menuStyle,
-        textStyle: const TextStyle(color: MistakeMapDesign.navy, fontSize: 14),
-        disabledColor: const Color(0xFF61758A),
+        textStyle: const TextStyle(color: MistakeMapDesign.deep, fontSize: 14),
+        disabledColor: MistakeMapDesign.disabledInk,
       ),
       menuTheme: MenuThemeData(style: menuStyle),
       menuButtonTheme: MenuButtonThemeData(
         style: _controlStyle(context, quiet: true),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: MistakeMapDesign.surface,
+        color: MistakeMapDesign.white,
         surfaceTintColor: Colors.transparent,
-        shadowColor: MistakeMapDesign.navy.withValues(alpha: .12),
+        shadowColor: MistakeMapDesign.deep.withValues(alpha: .16),
         elevation: 3,
         shape: menuShape,
         menuPadding: const EdgeInsets.all(8),
@@ -136,8 +166,8 @@ class AiMaterialShell extends StatefulWidget {
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
             color: states.contains(WidgetState.disabled)
-                ? const Color(0xFF61758A)
-                : MistakeMapDesign.navy,
+                ? MistakeMapDesign.disabledInk
+                : MistakeMapDesign.deep,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -146,7 +176,7 @@ class AiMaterialShell extends StatefulWidget {
     );
   }
 
-  /// Light, readable control surfaces with a visible keyboard focus outline.
+  /// White raised controls with a visible aqua keyboard focus outline.
   /// Opaque fills keep the labels clear above the surrounding page content.
   static ButtonStyle _controlStyle(
     BuildContext context, {
@@ -155,11 +185,11 @@ class AiMaterialShell extends StatefulWidget {
   }) => MistakeMapMaterialControls.button(
     context,
     background: primary
-        ? MistakeMapDesign.primary
+        ? MistakeMapDesign.accent
         : quiet
         ? Colors.transparent
-        : MistakeMapDesign.surface,
-    foreground: primary ? Colors.white : MistakeMapDesign.content,
+        : MistakeMapDesign.raised,
+    foreground: primary ? MistakeMapDesign.abyss : MistakeMapDesign.content,
     quiet: quiet,
   );
 }

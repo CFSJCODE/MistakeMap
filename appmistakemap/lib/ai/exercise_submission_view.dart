@@ -358,7 +358,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
               liveRegion: true,
               child: Text(
                 _error!,
-                style: TextStyle(color: Colors.red.shade700),
+                style: TextStyle(color: MistakeMapDesign.bad),
               ),
             ),
             if (_attemptId != null)
@@ -379,7 +379,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                     width: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: MistakeMapDesign.abyss,
                     ),
                   )
                 : const Icon(Icons.check),
@@ -393,8 +393,8 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
             style:
                 MistakeMapMaterialControls.button(
                   context,
-                  background: mapContentBlue,
-                  foreground: Colors.white,
+                  background: MistakeMapDesign.accent,
+                  foreground: MistakeMapDesign.abyss,
                   radius: 10,
                 ).copyWith(
                   padding: const WidgetStatePropertyAll(

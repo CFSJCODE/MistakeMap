@@ -15,32 +15,33 @@ void main() {
     expect(aluno.isAdmin, isFalse);
   });
 
-  test('paleta Cores mantém os tons Material usados antes do Fluent UI', () {
-    final equivalencias = <m.Color, m.Color>{
-      Cores.branco: m.Colors.white,
-      Cores.transparente: m.Colors.transparent,
-      Cores.vermelho: m.Colors.red,
-      Cores.vermelho300: m.Colors.red.shade300,
-      Cores.vermelho400: m.Colors.red.shade400,
-      Cores.vermelho600: m.Colors.red.shade600,
-      Cores.vermelho700: m.Colors.red.shade700,
-      Cores.verde: m.Colors.green.shade500,
-      Cores.verde600: m.Colors.green.shade600,
-      Cores.laranja: m.Colors.orange,
-      Cores.laranja400: m.Colors.orange.shade400,
-      Cores.laranja700: m.Colors.orange.shade700,
-      Cores.ambar: m.Colors.amber,
-      Cores.azul600: m.Colors.blue.shade600,
-      Cores.cinza: m.Colors.grey.shade500,
-      Cores.cinza100: m.Colors.grey.shade100,
-      Cores.cinza200: m.Colors.grey.shade200,
-      Cores.cinza300: m.Colors.grey.shade300,
-      Cores.cinza600: m.Colors.grey.shade600,
-      Cores.cinza700: m.Colors.grey.shade700,
-    };
+  test('cores de estado são legíveis como texto sobre o branco', () {
+    double contraste(m.Color a, m.Color b) {
+      final la = a.computeLuminance();
+      final lb = b.computeLuminance();
+      return la > lb ? (la + .05) / (lb + .05) : (lb + .05) / (la + .05);
+    }
 
-    equivalencias.forEach((nova, material) {
-      expect(nova.toARGB32(), material.toARGB32());
-    });
+    // Tons usados como texto em etiquetas, avisos e status (modo claro).
+    for (final cor in [
+      Cores.vermelho,
+      Cores.vermelho400,
+      Cores.vermelho600,
+      Cores.vermelho700,
+      Cores.verde,
+      Cores.verde600,
+      Cores.laranja,
+      Cores.laranja400,
+      Cores.laranja700,
+      Cores.azul600,
+      Cores.cinza,
+      Cores.cinza600,
+      Cores.cinza700,
+      titleBlue,
+      contentBlue,
+    ]) {
+      expect(contraste(cor, Cores.branco), greaterThanOrEqualTo(4.5));
+      expect(contraste(cor, kScaffoldBg), greaterThanOrEqualTo(4.5));
+    }
   });
 }

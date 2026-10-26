@@ -3,11 +3,9 @@ import 'package:fluent_ui/fluent_ui.dart';
 import '../theme/design_tokens.dart';
 import '../theme/motion.dart';
 
-const _navigationGradient = LinearGradient(
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-  colors: [Color(0xFFF4F9FD), Color(0xFFDCEAF8)],
-);
+// Vidro branco fosco da navegação: topo mais opaco, base mais translúcida.
+const _railGradient = MistakeMapDesign.glass;
+const _hoverFill = Color(0x0F11212D);
 
 /// Navigation owns its space: no content is painted underneath its buttons.
 class AppNavigationShell extends StatelessWidget {
@@ -35,6 +33,24 @@ class AppNavigationShell extends StatelessWidget {
     'Caderno de erros',
     'Administração',
   ];
+
+  /// Cada destino tem seu acento Aurora: a cor diz onde o aluno está.
+  static const accents = [
+    MistakeMapDesign.aqua,
+    MistakeMapDesign.azure,
+    MistakeMapDesign.violet,
+    MistakeMapDesign.amber,
+    MistakeMapDesign.mint,
+  ];
+
+  /// O mesmo acento escurecido, para ícones legíveis sobre o vidro branco.
+  static const accentInks = [
+    MistakeMapDesign.aquaInk,
+    MistakeMapDesign.azureInk,
+    MistakeMapDesign.violetInk,
+    MistakeMapDesign.amberInk,
+    MistakeMapDesign.mintInk,
+  ];
   static const icons = [
     WindowsIcons.home,
     WindowsIcons.bulleted_list,
@@ -43,7 +59,11 @@ class AppNavigationShell extends StatelessWidget {
     WindowsIcons.admin,
   ];
 
-  ButtonStyle _style(bool selected, {bool compact = false}) => ButtonStyle(
+  ButtonStyle _style(
+    bool selected, {
+    bool compact = false,
+    Color accent = MistakeMapDesign.mist,
+  }) => ButtonStyle(
     textStyle: WidgetStatePropertyAll(
       TextStyle(fontSize: compact ? 12 : 14, fontWeight: FontWeight.w600),
     ),
@@ -52,24 +72,34 @@ class AppNavigationShell extends StatelessWidget {
     ),
     shape: WidgetStateProperty.resolveWith(
       (states) => RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color:
-              selected ||
-                  states.contains(WidgetState.focused) ||
-                  states.contains(WidgetState.hovered) ||
-                  states.contains(WidgetState.pressed)
-              ? MistakeMapDesign.primary
-              : const Color(0xFFA9C6E4),
-          // A aba atual fica marcada mesmo sem foco: borda e ícone cheios.
-          width: selected || states.contains(WidgetState.focused) ? 2 : 1,
-        ),
+        borderRadius: BorderRadius.circular(12),
+        side: states.contains(WidgetState.focused)
+            ? const BorderSide(color: MistakeMapDesign.aquaInk, width: 2)
+            : BorderSide(
+                // A aba atual fica marcada mesmo sem foco: borda e fundo
+                // no acento do destino.
+                color: selected
+                    ? accent.withValues(alpha: .55)
+                    : states.contains(WidgetState.hovered) ||
+                          states.contains(WidgetState.pressed)
+                    ? MistakeMapDesign.edge
+                    : Colors.transparent,
+              ),
       ),
     ),
     backgroundColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) return Colors.transparent;
-      if (states.contains(WidgetState.pressed)) return MistakeMapDesign.primary;
-      if (states.contains(WidgetState.hovered)) return MistakeMapDesign.primary;
+      // Opaco: a sombra da aba atual não pode aparecer através do fundo.
+      if (selected) {
+        return Color.alphaBlend(
+          accent.withValues(alpha: .16),
+          MistakeMapDesign.white,
+        );
+      }
+      if (states.contains(WidgetState.pressed) ||
+          states.contains(WidgetState.hovered)) {
+        return _hoverFill;
+      }
       return Colors.transparent;
     }),
     foregroundColor: const WidgetStatePropertyAll(MistakeMapDesign.content),
@@ -90,14 +120,14 @@ class AppNavigationShell extends StatelessWidget {
     duration: _motionDuration(context),
     curve: MistakeMapMotion.curve,
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(14),
-      gradient: _navigationGradient,
-      boxShadow: !compact
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: selected && !compact
           ? const [
               BoxShadow(
-                color: Color(0x101E5CA7),
-                blurRadius: 8,
-                offset: Offset(0, 2),
+                color: Color(0x1F11212D),
+                blurRadius: 14,
+                spreadRadius: -6,
+                offset: Offset(0, 6),
               ),
             ]
           : null,
@@ -122,7 +152,15 @@ class AppNavigationShell extends StatelessWidget {
     IconData icon,
     bool selected, {
     bool compact = false,
-  }) => _NavigationIcon(icon: icon, selected: selected, compact: compact);
+    Color accent = MistakeMapDesign.mist,
+    Color ink = MistakeMapDesign.steel,
+  }) => _NavigationIcon(
+    icon: icon,
+    selected: selected,
+    compact: compact,
+    accent: accent,
+    ink: ink,
+  );
 
   Widget _section(String label) => Padding(
     padding: const EdgeInsets.only(left: 4, bottom: 8),
@@ -131,8 +169,8 @@ class AppNavigationShell extends StatelessWidget {
       style: const TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w600,
-        letterSpacing: 0.6,
-        color: MistakeMapDesign.content,
+        letterSpacing: 0.9,
+        color: MistakeMapDesign.steel,
       ),
     ),
   );
@@ -144,17 +182,31 @@ class AppNavigationShell extends StatelessWidget {
     VoidCallback? onPressed,
   }) {
     final selected = index == selectedIndex;
-    final icon = _icon(context, icons[index], selected, compact: compact);
-    final label = Text(
+    final accent = accents[index];
+    final icon = _icon(
+      context,
+      icons[index],
+      selected,
+      compact: compact,
+      accent: accent,
+      ink: accentInks[index],
+    );
+    final text = Text(
       compact
           ? const ['Início', 'Lista', 'Mapa', 'Caderno'][index]
           : labels[index],
       textAlign: compact ? TextAlign.center : TextAlign.start,
+      maxLines: compact ? 1 : null,
+      softWrap: !compact,
       style: TextStyle(
         fontSize: compact ? 12 : 14,
         fontWeight: FontWeight.w600,
       ),
     );
+    // Em telas de 320 px a barra inferior encolhe o rótulo em vez de quebrá-lo.
+    final label = compact
+        ? FittedBox(fit: BoxFit.scaleDown, child: text)
+        : text;
     return Semantics(
       selected: selected,
       child: Tooltip(
@@ -164,7 +216,7 @@ class AppNavigationShell extends StatelessWidget {
           selected,
           Button(
             key: ValueKey('navigation-$index'),
-            style: _style(selected, compact: compact),
+            style: _style(selected, compact: compact, accent: accent),
             onPressed:
                 onPressed ??
                 (index == 2 && onErrorMap != null
@@ -186,7 +238,11 @@ class AppNavigationShell extends StatelessWidget {
                         SizedBox(
                           width: 12,
                           child: selected
-                              ? const Icon(WindowsIcons.chevron_right, size: 12)
+                              ? Icon(
+                                  WindowsIcons.chevron_right,
+                                  size: 12,
+                                  color: accentInks[index],
+                                )
                               : null,
                         ),
                       ],
@@ -246,9 +302,9 @@ class AppNavigationShell extends StatelessWidget {
     child: DropDownButton(
       title: const Text('Mais'),
       leading: const Icon(WindowsIcons.more, size: 20),
-      menuColor: MistakeMapDesign.surface,
+      menuColor: MistakeMapDesign.white,
       menuShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         side: const BorderSide(color: MistakeMapDesign.border),
       ),
       buttonBuilder: (context, open) => Tooltip(
@@ -273,12 +329,17 @@ class AppNavigationShell extends StatelessWidget {
                     compact: true,
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    selectedIndex == 4 ? 'Admin' : 'Mais',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      selectedIndex == 4 ? 'Admin' : 'Mais',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -318,27 +379,37 @@ class AppNavigationShell extends StatelessWidget {
             Container(
               width: 224,
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFFBFDFE), Color(0xFFEDF4F9)],
-                ),
+                gradient: _railGradient,
                 border: Border(
-                  right: BorderSide(color: MistakeMapDesign.border),
+                  right: BorderSide(color: MistakeMapDesign.hairline),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x1411212D),
+                    blurRadius: 24,
+                    offset: Offset(6, 0),
+                  ),
+                ],
               ),
               child: SafeArea(
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Text(
-                        'MistakeMap',
-                        style: TextStyle(
-                          color: MistakeMapDesign.primary,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      // A marca leva o gradiente Aurora escurecido; o resto do
+                      // trilho fica sóbrio.
+                      child: ShaderMask(
+                        blendMode: BlendMode.srcIn,
+                        shaderCallback: MistakeMapDesign.hero.createShader,
+                        child: const Text(
+                          'MistakeMap',
+                          style: TextStyle(
+                            color: MistakeMapDesign.strong,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.4,
+                          ),
                         ),
                       ),
                     ),
@@ -394,17 +465,15 @@ class AppNavigationShell extends StatelessWidget {
           if (MediaQuery.viewInsetsOf(context).bottom == 0)
             Container(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFFFCFEFF), Color(0xFFEEF4FA)],
+                gradient: _railGradient,
+                border: Border(
+                  top: BorderSide(color: MistakeMapDesign.hairline),
                 ),
-                border: Border(top: BorderSide(color: MistakeMapDesign.border)),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0x0C142A4A),
-                    blurRadius: 12,
-                    offset: Offset(0, -2),
+                    color: Color(0x1F11212D),
+                    blurRadius: 24,
+                    offset: Offset(0, -6),
                   ),
                 ],
               ),
@@ -455,20 +524,21 @@ class _NavigationHoverInk extends StatelessWidget {
         !states.contains(WidgetState.disabled) &&
         (states.contains(WidgetState.hovered) ||
             states.contains(WidgetState.pressed));
-    final original = _navigationGradient.colors;
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: highlighted ? 1 : 0),
+      tween: Tween(begin: 0, end: highlighted || selected ? 1 : 0),
       duration: MediaQuery.disableAnimationsOf(context)
           ? Duration.zero
           : MistakeMapMotion.hover,
       curve: MistakeMapMotion.hoverCurve,
       child: child,
       builder: (context, progress, child) {
-        final fill = [
-          for (final color in original)
-            Color.lerp(color, MistakeMapDesign.primary, progress)!,
-        ];
-        final ink = _readableInk(fill);
+        // Steel em repouso, Abyss no hover e na aba atual: ambos passam de
+        // 4,5:1 sobre o vidro e sobre o fundo tingido pelo acento.
+        final ink = Color.lerp(
+          MistakeMapDesign.steel,
+          MistakeMapDesign.abyss,
+          progress,
+        )!;
         return _NavigationHoverProgress(
           progress: progress,
           child: DefaultTextStyle.merge(
@@ -482,32 +552,6 @@ class _NavigationHoverInk extends StatelessWidget {
       },
     );
   }
-}
-
-/// Choose ink from the painted fill, including the middle of the transition.
-/// A direct blue-to-white ink lerp becomes unreadable over a midtone fill.
-Color _readableInk(List<Color> fill) {
-  final darkest = fill.reduce(
-    (a, b) => a.computeLuminance() < b.computeLuminance() ? a : b,
-  );
-  double minimumContrast(Color ink) {
-    final inkLuminance = ink.computeLuminance();
-    return fill
-        .map((color) {
-          final fillLuminance = color.computeLuminance();
-          return inkLuminance > fillLuminance
-              ? (inkLuminance + 0.05) / (fillLuminance + 0.05)
-              : (fillLuminance + 0.05) / (inkLuminance + 0.05);
-        })
-        .reduce((a, b) => a < b ? a : b);
-  }
-
-  final ink = MistakeMapDesign.hoverInk(darkest, MistakeMapDesign.content);
-  if (minimumContrast(ink) >= 4.5) return ink;
-  // A gradient's lighter endpoint may require a later white-ink handoff.
-  return minimumContrast(Colors.white) >= minimumContrast(Colors.black)
-      ? Colors.white
-      : Colors.black;
 }
 
 class _NavigationHoverProgress extends InheritedWidget {
@@ -534,35 +578,39 @@ class _NavigationIcon extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.compact,
+    required this.accent,
+    required this.ink,
   });
 
   final IconData icon;
   final bool selected;
   final bool compact;
+  final Color accent;
+  final Color ink;
 
   @override
   Widget build(BuildContext context) {
     final progress = selected ? 1.0 : _NavigationHoverProgress.of(context);
-    final color = Color.lerp(
-      const Color(0xFFD2E4F7),
-      MistakeMapDesign.primary,
-      progress,
-    )!;
     return Container(
       width: compact ? 24 : 32,
       height: compact ? 24 : 32,
       decoration: BoxDecoration(
-        color: color,
+        color: accent.withValues(alpha: .16 + .14 * progress),
         borderRadius: BorderRadius.circular(compact ? 8 : 10),
         border: Border.all(
-          color: Color.lerp(
-            const Color(0xFF9EBBDD),
-            const Color(0x663F80C5),
-            progress,
-          )!,
+          color: accent.withValues(alpha: .35 + .3 * progress),
         ),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: accent.withValues(alpha: .45),
+                  blurRadius: 12,
+                  spreadRadius: -4,
+                ),
+              ]
+            : null,
       ),
-      child: Icon(icon, size: compact ? 17 : 18, color: _readableInk([color])),
+      child: Icon(icon, size: compact ? 17 : 18, color: ink),
     );
   }
 }

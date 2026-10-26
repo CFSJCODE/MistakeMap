@@ -31,33 +31,37 @@ import 'local/registro_erro_dao.dart';
 
 part 'caderno_erros.dart';
 
-// ─── Cores da identidade visual ──────────────────────────────────────────────
+// ─── Cores da identidade visual (Obsidian Glass, modo claro) ─────────────────
+// titleBlue e contentBlue mantêm o nome histórico; hoje são as tintas escuras
+// da paleta para títulos e texto.
 const Color titleBlue = MistakeMapDesign.primary;
 const Color contentBlue = MistakeMapDesign.content;
+// Preenchimento do botão principal (Aqua); a tinta escura vem do contraste.
+const Color kAcento = MistakeMapDesign.accent;
 
-// Tons da paleta Material com os valores exatos do SDK: a classe Colors do
-// Fluent UI tem outros valores, e as cores já adotadas devem ser mantidas.
+// Cores de estado do app. Os nomes vêm da paleta Material antiga; os valores
+// são os acentos Aurora escurecidos, legíveis como texto sobre o branco.
 abstract final class Cores {
   static const Color branco = Color(0xFFFFFFFF);
   static const Color transparente = Color(0x00000000);
-  static const Color vermelho = Color(0xFFF44336);
-  static const Color vermelho300 = Color(0xFFE57373);
-  static const Color vermelho400 = Color(0xFFEF5350);
-  static const Color vermelho600 = Color(0xFFE53935);
-  static const Color vermelho700 = Color(0xFFD32F2F);
-  static const Color verde = Color(0xFF4CAF50);
-  static const Color verde600 = Color(0xFF43A047);
-  static const Color laranja = Color(0xFFFF9800);
-  static const Color laranja400 = Color(0xFFFFA726);
-  static const Color laranja700 = Color(0xFFF57C00);
-  static const Color ambar = Color(0xFFFFC107);
-  static const Color azul600 = Color(0xFF1E88E5);
-  static const Color cinza = Color(0xFF9E9E9E);
-  static const Color cinza100 = Color(0xFFF5F5F5);
-  static const Color cinza200 = Color(0xFFEEEEEE);
-  static const Color cinza300 = Color(0xFFE0E0E0);
-  static const Color cinza600 = Color(0xFF757575);
-  static const Color cinza700 = Color(0xFF616161);
+  static const Color vermelho = MistakeMapDesign.coralInk;
+  static const Color vermelho300 = MistakeMapDesign.coral;
+  static const Color vermelho400 = Color(0xFFC8364A);
+  static const Color vermelho600 = MistakeMapDesign.coralInk;
+  static const Color vermelho700 = Color(0xFF9E1F31);
+  static const Color verde = MistakeMapDesign.mintInk;
+  static const Color verde600 = Color(0xFF0F6640);
+  static const Color laranja = MistakeMapDesign.amberInk;
+  static const Color laranja400 = Color(0xFF9A5E00);
+  static const Color laranja700 = Color(0xFF7A4900);
+  static const Color ambar = MistakeMapDesign.amber;
+  static const Color azul600 = MistakeMapDesign.azureInk;
+  static const Color cinza = MistakeMapDesign.steel;
+  static const Color cinza100 = MistakeMapDesign.well;
+  static const Color cinza200 = MistakeMapDesign.disabledFill;
+  static const Color cinza300 = MistakeMapDesign.mist;
+  static const Color cinza600 = MistakeMapDesign.steel;
+  static const Color cinza700 = MistakeMapDesign.slate;
 }
 
 // ─── Fluent UI + Liquid Glass — tokens ───────────────────────────────────────
@@ -73,21 +77,48 @@ double _alturaBarraSuperior(BuildContext context) =>
       double.infinity,
     );
 
-// Gradiente de fundo (efeito Mica) que dá profundidade às camadas de vidro.
+// Fundo: Pearl clareado com luz ambiente Aurora suave, que dá profundidade
+// às camadas de vidro sem competir com o conteúdo.
+// Um gradiente substitui a cor da BoxDecoration, então o Pearl vai por baixo
+// em camada própria; sem ele a janela apareceria pelas áreas transparentes.
 const BoxDecoration kBgGradient = BoxDecoration(
-  gradient: LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFDDE8EE), Color(0xFFEBF3EF), Color(0xFFE4EBF0)],
+  gradient: RadialGradient(
+    center: Alignment(-0.95, -1.1),
+    radius: 1.3,
+    colors: [Color(0x3836D6C3), Color(0x0036D6C3)],
+  ),
+);
+const BoxDecoration _luzAmbiente = BoxDecoration(
+  gradient: RadialGradient(
+    center: Alignment(1.05, -0.7),
+    radius: 1.1,
+    colors: [Color(0x2B9B7BFF), Color(0x009B7BFF)],
+  ),
+);
+const BoxDecoration _luzAmbienteBase = BoxDecoration(
+  gradient: RadialGradient(
+    center: Alignment(0.4, 1.25),
+    radius: 1.2,
+    colors: [Color(0x264C9DFF), Color(0x004C9DFF)],
   ),
 );
 
 final FluentThemeData temaFluent = FluentThemeData(
   brightness: Brightness.light,
-  accentColor: contentBlue.toAccentColor(),
+  accentColor: MistakeMapDesign.aquaInk.toAccentColor(),
   scaffoldBackgroundColor: kScaffoldBg,
   cardColor: kGlassBg,
-  menuColor: MistakeMapDesign.surface,
+  menuColor: MistakeMapDesign.white,
+  micaBackgroundColor: MistakeMapDesign.canvas,
+  inactiveColor: MistakeMapDesign.steel,
+  shadowColor: MistakeMapDesign.deep,
+  resources: const ResourceDictionary.light(
+    textFillColorPrimary: MistakeMapDesign.deep,
+    textFillColorSecondary: MistakeMapDesign.steel,
+    cardStrokeColorDefault: MistakeMapDesign.hairline,
+    controlStrokeColorDefault: MistakeMapDesign.edge,
+    solidBackgroundFillColorBase: MistakeMapDesign.canvas,
+  ),
   fasterAnimationDuration: MistakeMapMotion.hover,
   fastAnimationDuration: MistakeMapMotion.controls,
   mediumAnimationDuration: MistakeMapMotion.page,
@@ -96,32 +127,34 @@ final FluentThemeData temaFluent = FluentThemeData(
     defaultButtonStyle: MistakeMapControls.button(),
     outlinedButtonStyle: MistakeMapControls.button(),
     filledButtonStyle: MistakeMapControls.button(
-      background: titleBlue,
-      foreground: Cores.branco,
+      background: kAcento,
+      foreground: MistakeMapDesign.abyss,
     ),
     iconButtonStyle: MistakeMapControls.button(
       padding: const EdgeInsets.all(14),
     ),
     hyperlinkButtonStyle: MistakeMapControls.button(
       background: Cores.transparente,
+      foreground: MistakeMapDesign.aquaInk,
       padding: kDefaultButtonPadding,
       fontSize: 14,
     ),
   ),
 );
 
-// As cores semânticas do vidro (toasts, brilhos) seguem a paleta do app.
+// As cores semânticas do vidro (toasts, brilhos) seguem os acentos Aurora.
 const GlassThemeData temaVidro = GlassThemeData(
   brightness: Brightness.light,
   interaction: GlassInteractionSettings(stretch: 0, interactionScale: 0.98),
   light: GlassThemeVariant(
     quality: GlassQuality.standard,
     glowColors: GlassGlowColors(
-      primary: titleBlue,
-      success: contentBlue,
-      info: titleBlue,
-      warning: Cores.laranja700,
-      danger: Cores.vermelho700,
+      primary: MistakeMapDesign.aquaInk,
+      secondary: MistakeMapDesign.violetInk,
+      success: MistakeMapDesign.mintInk,
+      info: MistakeMapDesign.azureInk,
+      warning: MistakeMapDesign.amberInk,
+      danger: MistakeMapDesign.coralInk,
     ),
   ),
 );
@@ -156,9 +189,18 @@ class _FundoMica extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: kBgGradient,
-      child: SizedBox.expand(),
+    return const ColoredBox(
+      color: kScaffoldBg,
+      child: DecoratedBox(
+        decoration: kBgGradient,
+        child: DecoratedBox(
+          decoration: _luzAmbiente,
+          child: DecoratedBox(
+            decoration: _luzAmbienteBase,
+            child: SizedBox.expand(),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -323,9 +365,10 @@ class _PainelVidro extends StatelessWidget {
         border: Border.all(color: kGlassBorder),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0A142A4A),
-            blurRadius: 16,
-            offset: Offset(0, 4),
+            color: Color(0x1A11212D),
+            blurRadius: 24,
+            spreadRadius: -8,
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -354,9 +397,10 @@ class _CartaoFluent extends StatelessWidget {
         borderRadius: BorderRadius.circular(kRadius),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 20,
-            offset: Offset(0, 6),
+            color: Color(0x1A11212D),
+            blurRadius: 24,
+            spreadRadius: -8,
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -402,7 +446,7 @@ class _Pilula extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frente = solida ? Cores.branco : cor;
+    final frente = solida ? MistakeMapDesign.hoverInk(cor, Cores.branco) : cor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -440,14 +484,17 @@ class _BannerDemo extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: Cores.vermelho600,
+        color: MistakeMapDesign.amber.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(kRadiusSm),
+        border: Border.all(
+          color: MistakeMapDesign.amber.withValues(alpha: 0.6),
+        ),
       ),
       child: Text(
         '⚠ Demonstração',
         textAlign: TextAlign.center,
         style: context.tipo.caption?.copyWith(
-          color: Cores.branco,
+          color: MistakeMapDesign.amberInk,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.8,
         ),
@@ -798,9 +845,12 @@ class _LoadingScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: kBgGradient,
-      child: Center(child: ProgressRing()),
+    return const ColoredBox(
+      color: kScaffoldBg,
+      child: DecoratedBox(
+        decoration: kBgGradient,
+        child: Center(child: ProgressRing()),
+      ),
     );
   }
 }
@@ -1191,7 +1241,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
       style: DividerThemeData(
         thickness: 1,
         horizontalMargin: EdgeInsets.zero,
-        decoration: BoxDecoration(color: contentBlue),
+        decoration: BoxDecoration(color: MistakeMapDesign.mist),
       ),
     );
   }
@@ -1246,8 +1296,8 @@ class _TelaCadastroState extends State<TelaCadastro> {
         // Botão principal
         MistakeMapFilledButton(
           style: _estiloBotao(
-            fundo: contentBlue,
-            texto: Cores.branco,
+            fundo: kAcento,
+            texto: MistakeMapDesign.abyss,
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           ),
           onPressed: _carregando ? null : _entrarComEmailSenha,
@@ -1257,7 +1307,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
                   width: 16,
                   child: ProgressRing(
                     strokeWidth: 2.5,
-                    activeColor: Cores.branco,
+                    activeColor: MistakeMapDesign.abyss,
                   ),
                 )
               : Text(_modoCadastro ? 'Criar conta' : 'Entrar'),
@@ -2012,8 +2062,8 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                       const SizedBox(height: 32),
                       MistakeMapFilledButton(
                         style: _estiloBotao(
-                          fundo: contentBlue,
-                          texto: Cores.branco,
+                          fundo: kAcento,
+                          texto: MistakeMapDesign.abyss,
                           padding: const EdgeInsets.symmetric(
                             vertical: 16,
                             horizontal: 20,
@@ -2154,8 +2204,8 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                 const SizedBox(height: 24),
                 MistakeMapFilledButton(
                   style: _estiloBotao(
-                    fundo: contentBlue,
-                    texto: Cores.branco,
+                    fundo: kAcento,
+                    texto: MistakeMapDesign.abyss,
                     padding: const EdgeInsets.symmetric(
                       vertical: 16,
                       horizontal: 20,
@@ -2171,7 +2221,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                           height: 16,
                           child: ProgressRing(
                             strokeWidth: 2.5,
-                            activeColor: Cores.branco,
+                            activeColor: MistakeMapDesign.abyss,
                           ),
                         )
                       else
@@ -2229,7 +2279,7 @@ class _AdicionarCampoTexto extends StatelessWidget {
         // preenchido, sem esperar outro toque em Salvar.
         autovalidateMode: AutovalidateMode.onUserInteraction,
         decoration: const WidgetStatePropertyAll(
-          BoxDecoration(color: Cores.branco),
+          BoxDecoration(color: MistakeMapDesign.white),
         ),
       ),
     );
@@ -2523,7 +2573,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
                           if (size > 66)
                             Text(
                               '${s.total} ex.',
-                              // Valor exato de Colors.white70 do Material.
+                              // Branco a 70%: o círculo é sempre um tom escuro.
                               style: context.tipo.caption?.copyWith(
                                 color: const Color(0xB3FFFFFF),
                               ),
@@ -3467,8 +3517,8 @@ class TelaDetalheExercicio extends StatelessWidget {
                 width: double.infinity,
                 child: MistakeMapFilledButton(
                   style: _estiloBotao(
-                    fundo: contentBlue,
-                    texto: Cores.branco,
+                    fundo: kAcento,
+                    texto: MistakeMapDesign.abyss,
                     padding: const EdgeInsets.symmetric(
                       vertical: 16,
                       horizontal: 24,
@@ -3497,8 +3547,8 @@ class TelaDetalheExercicio extends StatelessWidget {
                 width: double.infinity,
                 child: MistakeMapFilledButton(
                   style: _estiloBotao(
-                    fundo: contentBlue,
-                    texto: Cores.branco,
+                    fundo: kAcento,
+                    texto: MistakeMapDesign.abyss,
                     padding: const EdgeInsets.symmetric(
                       vertical: 16,
                       horizontal: 24,
@@ -3578,8 +3628,8 @@ class _DetalheBox extends StatelessWidget {
       width: double.infinity,
       child: Card(
         padding: const EdgeInsets.all(16),
-        backgroundColor: Cores.branco,
-        borderColor: contentBlue.withValues(alpha: 0.25),
+        backgroundColor: MistakeMapDesign.well,
+        borderColor: MistakeMapDesign.hairline,
         borderRadius: BorderRadius.circular(kRadiusSm),
         child: child,
       ),
@@ -3762,8 +3812,8 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
                   const SizedBox(height: 24),
                   MistakeMapFilledButton(
                     style: _estiloBotao(
-                      fundo: contentBlue,
-                      texto: Cores.branco,
+                      fundo: kAcento,
+                      texto: MistakeMapDesign.abyss,
                       padding: const EdgeInsets.symmetric(
                         vertical: 16,
                         horizontal: 20,
@@ -3779,7 +3829,7 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
                             height: 16,
                             child: ProgressRing(
                               strokeWidth: 2.5,
-                              activeColor: Cores.branco,
+                              activeColor: MistakeMapDesign.abyss,
                             ),
                           )
                         else
@@ -3888,8 +3938,10 @@ class _TelaAdminState extends State<TelaAdmin> {
                     child: MistakeMapButton(
                       key: ValueKey('admin-section-$i'),
                       style: _estiloBotao(
-                        fundo: _secao == i ? contentBlue : Cores.branco,
-                        texto: _secao == i ? Cores.branco : contentBlue,
+                        fundo: _secao == i ? kAcento : null,
+                        texto: _secao == i
+                            ? MistakeMapDesign.abyss
+                            : contentBlue,
                       ),
                       onPressed: () => setState(() => _secao = i),
                       child: Text(i == 0 ? 'Funcionamento' : 'Usuários'),
@@ -3982,11 +4034,13 @@ class _TelaAdminState extends State<TelaAdmin> {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isAdmin ? contentBlue : Cores.cinza300,
+                color: isAdmin ? MistakeMapDesign.violet : Cores.cinza300,
               ),
               child: Icon(
                 isAdmin ? WindowsIcons.admin : WindowsIcons.contact,
-                color: Cores.branco,
+                color: isAdmin
+                    ? MistakeMapDesign.abyss
+                    : MistakeMapDesign.strong,
                 size: 20,
               ),
             ),
@@ -4106,7 +4160,7 @@ class TelaSobre extends StatelessWidget {
                 const SizedBox(height: 12),
                 const _MvvCard(
                   icone: WindowsIcons.flag,
-                  cor: Color(0xFF1E5CA7),
+                  cor: MistakeMapDesign.aquaInk,
                   titulo: 'Missão',
                   descricao:
                       'Ajudar estudantes a identificar e superar suas lacunas conceituais, '
@@ -4116,7 +4170,7 @@ class TelaSobre extends StatelessWidget {
                 const SizedBox(height: 12),
                 const _MvvCard(
                   icone: WindowsIcons.view,
-                  cor: Color(0xFF21457A),
+                  cor: MistakeMapDesign.violetInk,
                   titulo: 'Visão',
                   descricao:
                       'Ser a principal ferramenta de aprendizado ativo no Brasil, '
@@ -4126,7 +4180,7 @@ class TelaSobre extends StatelessWidget {
                 const SizedBox(height: 12),
                 const _MvvCard(
                   icone: WindowsIcons.heart,
-                  cor: Color(0xFF142A4A),
+                  cor: MistakeMapDesign.amberInk,
                   titulo: 'Valores',
                   descricao:
                       '• Aprendizado contínuo acima de resultados imediatos\n'
@@ -4142,7 +4196,7 @@ class TelaSobre extends StatelessWidget {
                   iniciais: 'CJ',
                   nome: 'Cláudio Francisco',
                   foto: claudioProfilePhotoBytes,
-                  corAvatar: Color(0xFF1E5CA7),
+                  corAvatar: MistakeMapDesign.azure,
                   responsabilidades: [
                     'Backend',
                     'Storage (R2)',
@@ -4162,7 +4216,7 @@ class TelaSobre extends StatelessWidget {
                 const _MembroCard(
                   iniciais: 'LE',
                   nome: 'Lucas Emanuel',
-                  corAvatar: Color(0xFF21457A),
+                  corAvatar: MistakeMapDesign.violet,
                   responsabilidades: ['Frontend', 'Design', 'UI/UX'],
                   descricao:
                       'Responsável pela experiência do usuário, design de '
@@ -4218,9 +4272,10 @@ class TelaSobre extends StatelessWidget {
         borderRadius: BorderRadius.circular(kRadius),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF142A4A).withValues(alpha: 0.25),
+            color: MistakeMapDesign.violetInk.withValues(alpha: 0.22),
             blurRadius: 24,
-            offset: const Offset(0, 8),
+            spreadRadius: -8,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -4315,7 +4370,7 @@ class _MvvCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CartaoFluent(
-      cor: Cores.branco,
+      cor: kGlassBg,
       padding: EdgeInsets.zero,
       child: IntrinsicHeight(
         child: Row(
@@ -4362,7 +4417,7 @@ class _MvvCard extends StatelessWidget {
                     Text(
                       descricao,
                       style: context.tipo.body?.copyWith(
-                        color: const Color(0xFF4A5568),
+                        color: MistakeMapDesign.steel,
                         height: 1.5,
                       ),
                     ),
@@ -4399,7 +4454,7 @@ class _MembroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CartaoFluent(
-      cor: Cores.branco,
+      cor: kGlassBg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -4464,7 +4519,7 @@ class _MembroCard extends StatelessWidget {
           Text(
             descricao,
             style: context.tipo.body?.copyWith(
-              color: const Color(0xFF4A5568),
+              color: MistakeMapDesign.steel,
               height: 1.5,
             ),
           ),
@@ -4477,7 +4532,7 @@ class _MembroCard extends StatelessWidget {
   Widget _iniciais(BuildContext context) => Text(
     iniciais,
     style: context.tipo.bodyLarge?.copyWith(
-      color: Cores.branco,
+      color: MistakeMapDesign.abyss,
       fontWeight: FontWeight.bold,
       letterSpacing: 1,
     ),
