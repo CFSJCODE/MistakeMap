@@ -224,8 +224,8 @@ void main() {
       final shell = tester.widget<AppNavigationShell>(
         find.byType(AppNavigationShell),
       );
-      shell.onAnalysis!();
-      shell.onAnalysis!();
+      shell.onErrorMap!();
+      shell.onErrorMap!();
       await _settle(tester);
       expect(find.text('Sua resposta'), findsOneWidget);
       await tester.tap(find.byTooltip('Voltar'));
@@ -246,19 +246,20 @@ void main() {
         size: Size(width, 900),
       );
       expect(find.text('Analisar exercício com IA'), findsNothing);
-      if (width < 840) {
-        await tester.tap(find.byKey(const ValueKey('navigation-more')));
-        await _settle(tester);
-      }
-      await tester.tap(find.text('Analisar com IA'));
+      // Atalho do Início: abre o Mapa com o painel de análise aberto.
+      await tester.tap(find.text('Analisar um exercício'));
       await _settle(tester);
+      expect(find.text('Mapa de erros'), findsOneWidget);
       expect(find.text('Sua resposta'), findsOneWidget);
       await tester.tap(find.byTooltip('Voltar'));
       await _settle(tester);
       expect(find.text('Início — Resumo'), findsOneWidget);
+      // Mapa e análise na mesma página: sem tentativas, o painel já abre.
       await tester.tap(find.byKey(const ValueKey('navigation-2')));
       await _settle(tester);
       expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
+      expect(find.text('Analisar exercício com IA'), findsOneWidget);
+      expect(find.text('Sua resposta'), findsOneWidget);
       await tester.tap(find.byTooltip('Voltar'));
       await _settle(tester);
       expect(find.text('Início — Resumo'), findsOneWidget);
@@ -346,7 +347,7 @@ void main() {
       size: const Size(320, 640),
       scale: 1.5,
     );
-    final exercises = tester.getTopLeft(find.text('Exercícios'));
+    final exercises = tester.getTopLeft(find.text('Tentativas'));
     final review = tester.getTopLeft(find.text('Para revisar'));
     final progress = tester.getTopLeft(find.text('Evolução'));
     expect(exercises.dy, lessThan(review.dy));
@@ -365,7 +366,7 @@ void main() {
       size: const Size(1440, 1000),
       scale: 2,
     );
-    final exercises = tester.getTopLeft(find.text('Exercícios'));
+    final exercises = tester.getTopLeft(find.text('Tentativas'));
     final review = tester.getTopLeft(find.text('Para revisar'));
     final progress = tester.getTopLeft(find.text('Evolução'));
     expect(exercises.dy, closeTo(review.dy, 1));
@@ -375,7 +376,7 @@ void main() {
       lessThanOrEqualTo(1120),
     );
     final cards = find
-        .ancestor(of: find.text('Exercícios'), matching: find.byType(Container))
+        .ancestor(of: find.text('Tentativas'), matching: find.byType(Container))
         .first;
     expect(tester.getSize(cards).width, lessThanOrEqualTo(360));
     final aboutButton = find.ancestor(

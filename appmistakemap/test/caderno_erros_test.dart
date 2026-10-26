@@ -97,6 +97,10 @@ void main() {
     expect(dao.registros, isEmpty);
 
     await _preencher(tester, 'Ex.: Matemática', 'Matemática');
+    await tester.pump();
+    // O aviso some ao preencher, sem novo toque em Salvar.
+    expect(find.text('Informe a disciplina'), findsNothing);
+    expect(find.text('Informe o título'), findsOneWidget);
     await _preencher(tester, 'Ex.: Sinal na fórmula de Bhaskara', 'Sinal');
     await _preencher(
       tester,
@@ -132,9 +136,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Excluir'));
     await tester.pumpAndSettle();
+    // O menu fecha antes do diálogo abrir; antes ficava órfão na tela.
+    expect(find.text('Marcar como pendente'), findsNothing);
     await tester.tap(find.widgetWithText(MistakeMapFilledButton, 'Excluir'));
     await tester.pumpAndSettle(const Duration(seconds: 5));
     expect(dao.registros, isEmpty);
+    expect(find.text('Editar'), findsNothing);
     expect(find.text('Seu caderno ainda está vazio'), findsOneWidget);
   });
 

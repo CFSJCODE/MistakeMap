@@ -95,6 +95,51 @@ void main() {
     expect(find.text('Abrir IA'), findsOneWidget);
   });
 
+  testWidgets('correction opens straight from the exercise and returns', (
+    tester,
+  ) async {
+    final repository = _EmptyRepository();
+    await tester.pumpWidget(
+      FluentApp(
+        home: Builder(
+          builder: (outerContext) => Center(
+            child: Button(
+              onPressed: () => Navigator.of(outerContext).push<void>(
+                FluentPageRoute(
+                  builder: (_) => AiMaterialShell(
+                    userId: 'student',
+                    repository: repository,
+                    showMap: false,
+                    attemptId: 'attempt-1',
+                    onClose: () => Navigator.of(outerContext).pop(),
+                  ),
+                ),
+              ),
+              child: const Text('Ver correção'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Ver correção'));
+    await tester.pumpAndSettle();
+    expect(find.text('Correção e evidências'), findsOneWidget);
+    expect(find.text('Adicionar exercício'), findsNothing);
+
+    // A seta do AppBar volta direto para quem abriu, sem tela vazia no meio.
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('Correção e evidências'), findsNothing);
+    expect(find.text('Ver correção'), findsOneWidget);
+
+    // O Voltar do sistema também fecha a correção.
+    await tester.tap(find.text('Ver correção'));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Ver correção'), findsOneWidget);
+  });
+
   testWidgets('empty error map opens with a helpful state and closes', (
     tester,
   ) async {

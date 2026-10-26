@@ -86,6 +86,41 @@ void main() {
     expect(find.text('Sobre o App'), findsOneWidget);
   });
 
+  testWidgets('Mapa é um destino só e o Caderno substitui o Novo', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var map = 0;
+    var selected = 0;
+    await tester.pumpWidget(
+      FluentApp(
+        home: StatefulBuilder(
+          builder: (context, setState) => AppNavigationShell(
+            selectedIndex: selected,
+            onSelected: (index) => setState(() => selected = index),
+            onAbout: () {},
+            onErrorMap: () => map++,
+            hasAdmin: false,
+            child: const SizedBox.expand(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Novo'), findsNothing);
+    expect(find.text('Analisar com IA'), findsNothing);
+    // Um toque no Mapa abre a página unificada, sem menu intermediário.
+    await tester.tap(find.byKey(const ValueKey('navigation-2')));
+    await tester.pumpAndSettle();
+    expect(map, 1);
+    await tester.tap(find.text('Caderno'));
+    await tester.pumpAndSettle();
+    expect(selected, 3);
+    expect(tester.takeException(), isNull);
+  });
   for (final reduced in [false, true]) {
     testWidgets('Hover rápido mantém botões e rótulos estáveis '
         '(movimento reduzido: $reduced)', (tester) async {
@@ -109,7 +144,6 @@ void main() {
                 setState(() => selected = index);
               },
               hasAdmin: true,
-              onAnalysis: () => actions++,
               onAbout: () => actions++,
               child: const Center(child: Text('Conteúdo preservado')),
             ),
@@ -120,8 +154,7 @@ void main() {
       final labels = <int, String>{
         0: 'Início',
         1: 'Meus exercícios',
-        3: 'Novo exercício',
-        5: 'Analisar com IA',
+        3: 'Caderno de erros',
         2: 'Mapa de erros',
         4: 'Administração',
         6: 'Sobre o App',
@@ -129,7 +162,7 @@ void main() {
       final buttons = <int, Finder>{
         for (final index in [0, 1, 2, 3, 4])
           index: find.byKey(ValueKey('navigation-$index')),
-        for (final index in [5, 6])
+        for (final index in [6])
           index: find
               .ancestor(
                 of: find.text(labels[index]!),
@@ -169,7 +202,7 @@ void main() {
       await mouse.addPointer(location: const Offset(1000, 800));
       addTearDown(mouse.removePointer);
       for (var pass = 0; pass < 2; pass++) {
-        for (final index in [0, 1, 3, 5, 2, 4, 6, 4, 2, 5, 3, 1, 0]) {
+        for (final index in [0, 1, 3, 2, 4, 6, 4, 2, 3, 1, 0]) {
           await mouse.moveTo(tester.getCenter(buttons[index]!));
           await tester.pump(const Duration(milliseconds: 16));
           verifyLayout();

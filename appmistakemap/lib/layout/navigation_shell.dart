@@ -16,7 +16,6 @@ class AppNavigationShell extends StatelessWidget {
     required this.selectedIndex,
     required this.onSelected,
     required this.onAbout,
-    this.onAnalysis,
     this.onErrorMap,
     required this.hasAdmin,
     required this.child,
@@ -25,7 +24,6 @@ class AppNavigationShell extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final VoidCallback onAbout;
-  final VoidCallback? onAnalysis;
   final VoidCallback? onErrorMap;
   final bool hasAdmin;
   final Widget child;
@@ -34,14 +32,14 @@ class AppNavigationShell extends StatelessWidget {
     'Início',
     'Meus exercícios',
     'Mapa de erros',
-    'Novo exercício',
+    'Caderno de erros',
     'Administração',
   ];
   static const icons = [
     WindowsIcons.home,
     WindowsIcons.bulleted_list,
     WindowsIcons.relationship,
-    WindowsIcons.add,
+    WindowsIcons.quick_note,
     WindowsIcons.admin,
   ];
 
@@ -56,13 +54,15 @@ class AppNavigationShell extends StatelessWidget {
       (states) => RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
-          color: states.contains(WidgetState.focused)
-              ? MistakeMapDesign.primary
-              : states.contains(WidgetState.hovered) ||
-                    states.contains(WidgetState.pressed)
+          color:
+              selected ||
+                  states.contains(WidgetState.focused) ||
+                  states.contains(WidgetState.hovered) ||
+                  states.contains(WidgetState.pressed)
               ? MistakeMapDesign.primary
               : const Color(0xFFA9C6E4),
-          width: states.contains(WidgetState.focused) ? 2 : 1,
+          // A aba atual fica marcada mesmo sem foco: borda e ícone cheios.
+          width: selected || states.contains(WidgetState.focused) ? 2 : 1,
         ),
       ),
     ),
@@ -141,12 +141,13 @@ class AppNavigationShell extends StatelessWidget {
     BuildContext context,
     int index, {
     required bool compact,
+    VoidCallback? onPressed,
   }) {
     final selected = index == selectedIndex;
     final icon = _icon(context, icons[index], selected, compact: compact);
     final label = Text(
       compact
-          ? const ['Início', 'Lista', 'Mapa', 'Novo'][index]
+          ? const ['Início', 'Lista', 'Mapa', 'Caderno'][index]
           : labels[index],
       textAlign: compact ? TextAlign.center : TextAlign.start,
       style: TextStyle(
@@ -164,9 +165,11 @@ class AppNavigationShell extends StatelessWidget {
           Button(
             key: ValueKey('navigation-$index'),
             style: _style(selected, compact: compact),
-            onPressed: index == 2 && onErrorMap != null
-                ? onErrorMap
-                : () => onSelected(index),
+            onPressed:
+                onPressed ??
+                (index == 2 && onErrorMap != null
+                    ? onErrorMap
+                    : () => onSelected(index)),
             child: _NavigationHoverInk(
               selected: selected,
               compact: compact,
@@ -286,14 +289,6 @@ class AppNavigationShell extends StatelessWidget {
         ),
       ),
       items: [
-        if (onAnalysis != null)
-          _flyoutItem(
-            context,
-            icon: WindowsIcons.lightbulb,
-            label: 'Analisar com IA',
-            action: onAnalysis!,
-          ),
-        if (onAnalysis != null) const MenuFlyoutSeparator(),
         if (hasAdmin)
           _flyoutItem(
             context,
@@ -355,32 +350,6 @@ class AppNavigationShell extends StatelessWidget {
                     ],
                     const SizedBox(height: 24),
                     _section('INTELIGÊNCIA ARTIFICIAL'),
-                    if (onAnalysis != null) ...[
-                      _surface(
-                        context,
-                        false,
-                        Button(
-                          style: _style(false),
-                          onPressed: onAnalysis,
-                          child: _NavigationHoverInk(
-                            child: Row(
-                              children: [
-                                _icon(context, WindowsIcons.lightbulb, false),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Text(
-                                    'Analisar com IA',
-                                    textAlign: TextAlign.start,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
                     _destination(context, 2, compact: false),
                     const SizedBox(height: 24),
                     _section('SISTEMA'),
@@ -573,7 +542,7 @@ class _NavigationIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = _NavigationHoverProgress.of(context);
+    final progress = selected ? 1.0 : _NavigationHoverProgress.of(context);
     final color = Color.lerp(
       const Color(0xFFD2E4F7),
       MistakeMapDesign.primary,
