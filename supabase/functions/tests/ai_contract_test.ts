@@ -2,8 +2,10 @@ import { strict as assert } from "node:assert";
 import {
   analysisSchema,
   imageMime,
+  practiceCategory,
   practiceCount,
   PublicError,
+  rankConcepts,
   uuid,
   validateAnalysis,
   validatePractice,
@@ -147,6 +149,63 @@ Deno.test("runtime enforces output length and cardinality", () => {
     () => validateAnalysis({ ...sample(), concepts: Array(13).fill("Adição") }),
     PublicError,
   );
+});
+Deno.test("practice category accepts only the taxonomy or nothing", () => {
+  assert.equal(practiceCategory(undefined), null);
+  assert.equal(practiceCategory(null), null);
+  assert.equal(practiceCategory(""), null);
+  assert.equal(practiceCategory("sinal"), "sinal");
+  for (const value of ["Sinal", "algebra", 3, {}]) {
+    assert.throws(() => practiceCategory(value), PublicError);
+  }
+});
+Deno.test("rankConcepts weighs frequency and recency and discounts recovery", () => {
+  const now = new Date("2026-10-26T12:00:00Z");
+  const daysAgo = (d: number) => new Date(now.getTime() - d * 86_400_000);
+  const errors = [
+    { concept: "Frações", category: "calculo" as const, at: daysAgo(30) },
+    { concept: "frações", category: "sinal" as const, at: daysAgo(29) },
+    { concept: "Frações", category: "calculo" as const, at: daysAgo(28) },
+    { concept: "Equações", category: "sinal" as const, at: daysAgo(1) },
+    { concept: "Unidades", category: "unidade" as const, at: daysAgo(2) },
+    { concept: "Unidades", category: "unidade" as const, at: daysAgo(3) },
+  ];
+  const ranked = rankConcepts(errors, [], now);
+  // Dois erros recentes valem mais que três erros de um mês atrás.
+  assert.deepEqual(ranked.map((r) => r.concept), [
+    "Unidades",
+    "Equações",
+    "Frações",
+  ]);
+  assert.equal(ranked[2].frequency, 3);
+  assert.deepEqual(ranked[2].categories.sort(), ["calculo", "sinal"]);
+  // Filtro por tipo de erro.
+  assert.deepEqual(
+    rankConcepts(errors, [], now, "sinal").map((r) => r.concept),
+    ["Equações", "frações"],
+  );
+  // Acertos depois do último erro reduzem a prioridade; três o removem.
+  const partial = rankConcepts(errors, [
+    { concept: "UNIDADES", at: daysAgo(1) },
+    { concept: "Unidades", at: daysAgo(1) },
+  ], now);
+  assert.deepEqual(partial.map((r) => r.concept), [
+    "Equações",
+    "Frações",
+    "Unidades",
+  ]);
+  assert.ok(Math.abs(partial[2].mastery - 2 / 3) < 1e-9);
+  const recovered = rankConcepts(errors, [
+    { concept: "Unidades", at: daysAgo(1) },
+    { concept: "Unidades", at: daysAgo(1) },
+    { concept: "Unidades", at: daysAgo(0.5) },
+  ], now);
+  assert.ok(!recovered.some((r) => r.concept === "Unidades"));
+  // Acertos anteriores ao último erro não contam como recuperação.
+  const stale = rankConcepts(errors, [
+    { concept: "Unidades", at: daysAgo(10) },
+  ], now);
+  assert.equal(stale[0].mastery, 0);
 });
 Deno.test("practice requires three to five distinct complete exercises", () => {
   const exercises = Array.from(
