@@ -427,28 +427,41 @@ export async function generatePractice(
   if (!subject) {
     throw new PublicError(404, "subject_not_found", "Matéria não encontrada.");
   }
+  // Datas da tentativa (attempted_at), não da análise: respostas antigas
+  // analisadas agora não podem inverter a ordem de erros e acertos.
   const source =
-    await sql`SELECT attempt_id,analysis,created_at FROM public.attempt_analyses
-    WHERE user_id=${user} AND subject_id=${subjectId} AND analysis->>'is_correct'='false' ORDER BY created_at DESC LIMIT 50`;
-  // Acertos registrados pela análise (mastery_events) contam como recuperação.
-  const recoveries =
-    await sql`SELECT c.name,m.created_at FROM public.mastery_events m
-    JOIN public.concepts c ON c.id=m.concept_id
-    JOIN public.attempts a ON a.id=m.attempt_id
-    WHERE c.subject_id=${subjectId} AND a.user_id=${user} ORDER BY m.created_at DESC LIMIT 500`;
+    await sql`SELECT aa.attempt_id,aa.analysis,a.attempted_at FROM public.attempt_analyses aa
+    JOIN public.attempts a ON a.id=aa.attempt_id
+    WHERE aa.user_id=${user} AND aa.subject_id=${subjectId} AND aa.analysis->>'is_correct'='false'
+    ORDER BY a.attempted_at DESC LIMIT 50`;
   const errorsOf = (row: postgres.Row) =>
     ((row.analysis as Analysis).errors ?? []).filter((e) =>
       !category || e.category === category
     );
+  const occurrences = source.flatMap((row) =>
+    errorsOf(row).map((e) => ({
+      concept: e.concept,
+      category: e.category,
+      at: new Date(row.attempted_at),
+    }))
+  );
+  const keys = [
+    ...new Set(occurrences.map((o) => o.concept.trim().toLowerCase())),
+  ];
+  // Acertos registrados pela análise (mastery_events) contam como recuperação.
+  // Filtra pelos conceitos com erro, sem limite global, para que acertos em
+  // outros conceitos não apaguem a evidência de recuperação destes.
+  const recoveries = keys.length
+    ? await sql`SELECT c.name,a.attempted_at FROM public.mastery_events m
+    JOIN public.concepts c ON c.id=m.concept_id
+    JOIN public.attempts a ON a.id=m.attempt_id
+    WHERE c.subject_id=${subjectId} AND a.user_id=${user} AND lower(c.name) IN ${
+      sql(keys)
+    }`
+    : [];
   const priorities = rankConcepts(
-    source.flatMap((row) =>
-      errorsOf(row).map((e) => ({
-        concept: e.concept,
-        category: e.category,
-        at: new Date(row.created_at),
-      }))
-    ),
-    recoveries.map((r) => ({ concept: r.name, at: new Date(r.created_at) })),
+    occurrences,
+    recoveries.map((r) => ({ concept: r.name, at: new Date(r.attempted_at) })),
     new Date(),
     category,
   );
