@@ -1,4 +1,8 @@
-import { practiceCount, uuid } from "../_shared/ai_contract.ts";
+import {
+  practiceCategory,
+  practiceCount,
+  uuid,
+} from "../_shared/ai_contract.ts";
 import {
   authenticate,
   body,
@@ -16,8 +20,12 @@ export async function handler(req: Request): Promise<Response> {
     const input = await body(req);
     const subject = uuid(input.subject_id);
     const count = practiceCount(input.count);
+    const category = practiceCategory(input.category);
     sql = database();
-    return json(req, await generatePractice(sql, user, subject, count));
+    return json(
+      req,
+      await generatePractice(sql, user, subject, count, category),
+    );
   } catch (error) {
     return failure(req, error);
   } finally {

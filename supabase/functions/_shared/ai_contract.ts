@@ -285,6 +285,90 @@ export function practiceCount(value: unknown): number {
   }
   return Number(n);
 }
+export type Category = typeof CATEGORIES[number];
+export function practiceCategory(value: unknown): Category | null {
+  if (value === undefined || value === null || value === "") return null;
+  if (!CATEGORIES.includes(value as Category)) {
+    throw new PublicError(400, "invalid_category", "Tipo de erro inválido.");
+  }
+  return value as Category;
+}
+export type ErrorOccurrence = { concept: string; category: Category; at: Date };
+export type Recovery = { concept: string; at: Date };
+export type ConceptPriority = {
+  concept: string;
+  score: number;
+  frequency: number;
+  mastery: number;
+  categories: Category[];
+};
+// Peso de recência: um erro de 14 dias atrás vale metade de um erro de hoje.
+export const RECENCY_HALF_LIFE_DAYS = 14;
+// Acertos posteriores ao último erro necessários para considerar o conceito recuperado.
+export const RECOVERY_TARGET = 3;
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Ordena os conceitos para reforço: soma dos erros ponderada pela recência
+// (frequência × recência), descontada pela recuperação M ∈ [0, 1] observada
+// em acertos depois do último erro. Conceitos já recuperados saem da lista.
+export function rankConcepts(
+  occurrences: ErrorOccurrence[],
+  recoveries: Recovery[],
+  now: Date = new Date(),
+  category: Category | null = null,
+): ConceptPriority[] {
+  const groups = new Map<string, {
+    concept: string;
+    weight: number;
+    frequency: number;
+    last: number;
+    categories: Set<Category>;
+  }>();
+  for (const o of occurrences) {
+    if (category && o.category !== category) continue;
+    const key = o.concept.trim().toLowerCase();
+    if (!key) continue;
+    const at = o.at.getTime();
+    const age = Math.max(0, now.getTime() - at) / DAY_MS;
+    const group = groups.get(key) ??
+      {
+        concept: o.concept.trim(),
+        weight: 0,
+        frequency: 0,
+        last: 0,
+        categories: new Set(),
+      };
+    group.weight += Math.pow(0.5, age / RECENCY_HALF_LIFE_DAYS);
+    group.frequency += 1;
+    if (at >= group.last) {
+      group.last = at;
+      group.concept = o.concept.trim();
+    }
+    group.categories.add(o.category);
+    groups.set(key, group);
+  }
+  const ranked: ConceptPriority[] = [];
+  for (const [key, g] of groups) {
+    const recovered = recoveries.filter((r) =>
+      r.concept.trim().toLowerCase() === key && r.at.getTime() > g.last
+    ).length;
+    const mastery = Math.min(1, recovered / RECOVERY_TARGET);
+    const score = g.weight * (1 - mastery);
+    if (score <= 0) {
+      continue;
+    }
+    ranked.push({
+      concept: g.concept,
+      score,
+      frequency: g.frequency,
+      mastery,
+      categories: [...g.categories],
+    });
+  }
+  return ranked.sort((a, b) =>
+    b.score - a.score || b.frequency - a.frequency ||
+    a.concept.localeCompare(b.concept)
+  );
+}
 export function imageMime(bytes: Uint8Array): string {
   if (bytes.length < 12 || bytes.length > 8 * 1024 * 1024) {
     throw new PublicError(

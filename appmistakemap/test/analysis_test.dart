@@ -55,6 +55,8 @@ class FakeRepository implements AnalysisRepository {
   int analyzed = 0;
   String? savedPrompt;
   String? savedAnswer;
+  String? practiceCategory;
+  int? practiceCount;
   String? savedDifficulty;
   PracticeExercise? savedPractice;
   @override
@@ -106,8 +108,14 @@ class FakeRepository implements AnalysisRepository {
   Future<List<PracticeExercise>> generatePractice(
     String subjectId,
     String subjectName,
-    int count,
-  ) async => practice;
+    int count, {
+    String? category,
+  }) async {
+    practiceCategory = category;
+    practiceCount = count;
+    return practice;
+  }
+
   @override
   Future<List<PracticeExercise>> loadPractice(String userId) async => practice;
 }
@@ -173,7 +181,8 @@ void main() {
       'processing': AttemptStatusGroup.pending,
       'awaiting_review': AttemptStatusGroup.review,
       'completed': AttemptStatusGroup.completed,
-      'retryable_failed': AttemptStatusGroup.pending, // reprocessado automaticamente
+      'retryable_failed':
+          AttemptStatusGroup.pending, // reprocessado automaticamente
       'dead_letter': AttemptStatusGroup.failed,
       'cancelled': AttemptStatusGroup.none,
     };
@@ -360,6 +369,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Calcule 1/4 + 1/2'), findsOneWidget);
     expect(find.text('3/4'), findsNothing);
+    await tester.ensureVisible(find.text('Resolver'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Resolver'));
     await tester.pumpAndSettle();
     expect(find.text('Resolver exercício'), findsOneWidget);
@@ -370,5 +381,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(repository.savedPractice?.id, 'generated-1');
     expect(repository.savedAnswer, '2/6');
+  });
+
+  testWidgets('practice can target one error type', (tester) async {
+    final repository = FakeRepository();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PracticeView(
+          userId: 'u',
+          repository: repository,
+          subjects: const {'math': 'Matemática'},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('practice-category-sinal')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gerar exercícios'));
+    await tester.pumpAndSettle();
+    expect(repository.practiceCategory, 'sinal');
+    expect(repository.practiceCount, 3);
+    await tester.tap(find.byKey(const Key('practice-category-all')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gerar exercícios'));
+    await tester.pumpAndSettle();
+    expect(repository.practiceCategory, isNull);
   });
 }

@@ -58,6 +58,34 @@ void main() {
       await Future.wait([first, second]);
     },
   );
+  test('practice request forwards the chosen error type', () async {
+    Map<String, dynamic>? sent;
+    final client = SupabaseClient(
+      'https://database.invalid',
+      'public-test-key',
+      httpClient: MockClient((request) async {
+        sent = jsonDecode(request.body) as Map<String, dynamic>;
+        return jsonResponse({
+          'practice_set_id': 'set',
+          'focus_category': 'sinal',
+          'exercises': [
+            {
+              'id': 'e1',
+              'prompt_text': 'Resolva -(2 - 5)',
+              'difficulty': 'facil',
+              'focus_concept': 'Sinais',
+            },
+          ],
+        }, 200);
+      }),
+    );
+    addTearDown(client.dispose);
+    final exercises = await SupabaseAnalysisRepository(client)
+        .generatePractice('subject', 'Física', 3, category: 'sinal');
+    expect(sent, {'subject_id': 'subject', 'count': 3, 'category': 'sinal'});
+    expect(exercises.single.focusConcept, 'Sinais');
+  });
+
   test('practice failure describes generation rather than analysis', () async {
     final client = SupabaseClient(
       'https://database.invalid',

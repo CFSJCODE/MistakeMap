@@ -919,6 +919,7 @@ class PracticeView extends StatefulWidget {
 
 class _PracticeViewState extends State<PracticeView> {
   String? _subject;
+  String? _category;
   int _count = 3;
   bool _busy = false;
   String? _error;
@@ -956,6 +957,7 @@ class _PracticeViewState extends State<PracticeView> {
         _subject!,
         widget.subjects[_subject]!,
         _count,
+        category: _category,
       );
       if (mounted) setState(() => _exercises = [...result, ..._exercises]);
     } catch (error) {
@@ -978,9 +980,11 @@ class _PracticeViewState extends State<PracticeView> {
         padding: const EdgeInsets.all(24),
         children: [
           const Text(
-            'A IA gera exercícios personalizados com base nos seus erros nesta matéria '
-            'ou questões diagnósticas caso ainda não haja histórico registrado. '
-            'Respostas antigas ainda sem análise serão avaliadas antes da geração.',
+            'A IA gera exercícios personalizados com base nos seus erros nesta matéria, '
+            'priorizando os conceitos que você errou mais vezes e mais recentemente. '
+            'Conceitos que você já voltou a acertar perdem prioridade. Sem histórico, '
+            'a IA gera questões diagnósticas. Respostas antigas ainda sem análise '
+            'serão avaliadas antes da geração.',
           ),
           const SizedBox(height: 24),
           DropdownButtonFormField<String>(
@@ -1004,6 +1008,32 @@ class _PracticeViewState extends State<PracticeView> {
             onChanged: _busy
                 ? null
                 : (value) => setState(() => _subject = value),
+          ),
+          const SizedBox(height: 16),
+          const Text('Tipo de erro para reforçar'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                key: const Key('practice-category-all'),
+                label: const Text('Todos os tipos'),
+                selected: _category == null,
+                onSelected: _busy
+                    ? null
+                    : (_) => setState(() => _category = null),
+              ),
+              for (final entry in categoryLabels.entries)
+                ChoiceChip(
+                  key: Key('practice-category-${entry.key}'),
+                  label: Text(entry.value),
+                  selected: _category == entry.key,
+                  onSelected: _busy
+                      ? null
+                      : (_) => setState(() => _category = entry.key),
+                ),
+            ],
           ),
           const SizedBox(height: 16),
           Wrap(

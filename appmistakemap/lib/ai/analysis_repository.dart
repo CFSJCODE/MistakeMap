@@ -85,11 +85,15 @@ abstract class AnalysisRepository {
   });
   Future<void> uploadImage(String attemptId, String filename, Uint8List bytes);
   Future<void> analyze(String attemptId);
+
+  /// [category] limita o reforço a um tipo de erro (chave de
+  /// [categoryLabels]); nulo usa todos os tipos.
   Future<List<PracticeExercise>> generatePractice(
     String subjectId,
     String subjectName,
-    int count,
-  );
+    int count, {
+    String? category,
+  });
   Future<List<PracticeExercise>> loadPractice(String userId);
 }
 
@@ -357,8 +361,9 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
   Future<List<PracticeExercise>> generatePractice(
     String subjectId,
     String subjectName,
-    int count,
-  ) async {
+    int count, {
+    String? category,
+  }) async {
     if (count < 3 || count > 5) {
       throw const AnalysisFailure('Escolha de 3 a 5 exercícios.');
     }
@@ -404,6 +409,7 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
     final result = await _invoke('generate-practice', {
       'subject_id': subjectId,
       'count': count,
+      'category': ?category,
     });
     final exercises = result['exercises'];
     if (exercises is! List) {
