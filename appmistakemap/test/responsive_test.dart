@@ -246,10 +246,9 @@ void main() {
         size: Size(width, 900),
       );
       expect(find.text('Analisar exercício com IA'), findsNothing);
-      if (width < 840) {
-        await tester.tap(find.byKey(const ValueKey('navigation-more')));
-        await _settle(tester);
-      }
+      // Análise e mapa ficam juntos no menu do Mapa.
+      await tester.tap(find.byKey(const ValueKey('navigation-2')));
+      await _settle(tester);
       await tester.tap(find.text('Analisar com IA'));
       await _settle(tester);
       expect(find.text('Sua resposta'), findsOneWidget);
@@ -257,6 +256,8 @@ void main() {
       await _settle(tester);
       expect(find.text('Início — Resumo'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('navigation-2')));
+      await _settle(tester);
+      await tester.tap(find.text('Ver mapa de erros'));
       await _settle(tester);
       expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
       await tester.tap(find.byTooltip('Voltar'));
@@ -451,6 +452,8 @@ void main() {
           scale: user.isAdmin ? 1.5 : 1,
         );
         await tester.tap(find.text('Mapa'));
+        await _settle(tester);
+        await tester.tap(find.text('Ver mapa de erros'));
         await _settle(tester);
         expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
         expect(tester.takeException(), isNull);

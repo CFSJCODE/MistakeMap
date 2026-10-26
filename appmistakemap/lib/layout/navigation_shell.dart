@@ -143,6 +143,7 @@ class AppNavigationShell extends StatelessWidget {
     BuildContext context,
     int index, {
     required bool compact,
+    VoidCallback? onPressed,
   }) {
     final selected = index == selectedIndex;
     final icon = _icon(context, icons[index], selected, compact: compact);
@@ -166,9 +167,11 @@ class AppNavigationShell extends StatelessWidget {
           Button(
             key: ValueKey('navigation-$index'),
             style: _style(selected, compact: compact),
-            onPressed: index == 2 && onErrorMap != null
-                ? onErrorMap
-                : () => onSelected(index),
+            onPressed:
+                onPressed ??
+                (index == 2 && onErrorMap != null
+                    ? onErrorMap
+                    : () => onSelected(index)),
             child: _NavigationHoverInk(
               selected: selected,
               compact: compact,
@@ -195,6 +198,39 @@ class AppNavigationShell extends StatelessWidget {
           compact: compact,
         ),
       ),
+    );
+  }
+
+  /// Mapa e análise por IA num único destino: o botão do Mapa abre um menu
+  /// com as duas entradas, em vez de "Analisar com IA" repetido em Mais.
+  Widget _mapDestination(BuildContext context, {required bool compact}) {
+    final analysis = onAnalysis;
+    if (analysis == null) return _destination(context, 2, compact: compact);
+    return DropDownButton(
+      placement: compact
+          ? FlyoutPlacementMode.topCenter
+          : FlyoutPlacementMode.bottomLeft,
+      menuColor: MistakeMapDesign.surface,
+      menuShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: MistakeMapDesign.border),
+      ),
+      buttonBuilder: (context, open) =>
+          _destination(context, 2, compact: compact, onPressed: open),
+      items: [
+        _flyoutItem(
+          context,
+          icon: WindowsIcons.relationship,
+          label: 'Ver mapa de erros',
+          action: onErrorMap ?? () => onSelected(2),
+        ),
+        _flyoutItem(
+          context,
+          icon: WindowsIcons.lightbulb,
+          label: 'Analisar com IA',
+          action: analysis,
+        ),
+      ],
     );
   }
 
@@ -288,14 +324,6 @@ class AppNavigationShell extends StatelessWidget {
         ),
       ),
       items: [
-        if (onAnalysis != null)
-          _flyoutItem(
-            context,
-            icon: WindowsIcons.lightbulb,
-            label: 'Analisar com IA',
-            action: onAnalysis!,
-          ),
-        if (onAnalysis != null) const MenuFlyoutSeparator(),
         if (hasAdmin)
           _flyoutItem(
             context,
@@ -357,33 +385,7 @@ class AppNavigationShell extends StatelessWidget {
                     ],
                     const SizedBox(height: 24),
                     _section('INTELIGÊNCIA ARTIFICIAL'),
-                    if (onAnalysis != null) ...[
-                      _surface(
-                        context,
-                        false,
-                        Button(
-                          style: _style(false),
-                          onPressed: onAnalysis,
-                          child: _NavigationHoverInk(
-                            child: Row(
-                              children: [
-                                _icon(context, WindowsIcons.lightbulb, false),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Text(
-                                    'Analisar com IA',
-                                    textAlign: TextAlign.start,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    _destination(context, 2, compact: false),
+                    _mapDestination(context, compact: false),
                     const SizedBox(height: 24),
                     _section('SISTEMA'),
                     if (hasAdmin) ...[
@@ -453,7 +455,9 @@ class AppNavigationShell extends StatelessWidget {
                     children: [
                       for (var i = 0; i < 4; i++)
                         Expanded(
-                          child: _destination(context, i, compact: true),
+                          child: i == 2
+                              ? _mapDestination(context, compact: true)
+                              : _destination(context, i, compact: true),
                         ),
                       Expanded(child: _more(context)),
                     ],

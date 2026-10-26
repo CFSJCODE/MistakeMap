@@ -86,6 +86,55 @@ void main() {
     expect(find.text('Sobre o App'), findsOneWidget);
   });
 
+  for (final width in [390.0, 1280.0]) {
+    testWidgets('Mapa reúne mapa de erros e análise por IA em ${width}px', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var map = 0;
+      var analysis = 0;
+      await tester.pumpWidget(
+        FluentApp(
+          home: AppNavigationShell(
+            selectedIndex: 0,
+            onSelected: (_) {},
+            onAbout: () {},
+            onAnalysis: () => analysis++,
+            onErrorMap: () => map++,
+            hasAdmin: false,
+            child: const SizedBox.expand(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // "Analisar com IA" não aparece mais solto: só dentro do menu do Mapa.
+      expect(find.text('Analisar com IA'), findsNothing);
+      if (width < 840) {
+        await tester.tap(find.byKey(const ValueKey('navigation-more')));
+        await tester.pumpAndSettle();
+        expect(find.text('Analisar com IA'), findsNothing);
+        await tester.tapAt(const Offset(10, 10));
+        await tester.pumpAndSettle();
+      }
+
+      await tester.tap(find.byKey(const ValueKey('navigation-2')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ver mapa de erros'));
+      await tester.pumpAndSettle();
+      expect((map, analysis), (1, 0));
+
+      await tester.tap(find.byKey(const ValueKey('navigation-2')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Analisar com IA'));
+      await tester.pumpAndSettle();
+      expect((map, analysis), (1, 1));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   for (final reduced in [false, true]) {
     testWidgets('Hover rápido mantém botões e rótulos estáveis '
         '(movimento reduzido: $reduced)', (tester) async {
@@ -121,7 +170,6 @@ void main() {
         0: 'Início',
         1: 'Meus exercícios',
         3: 'Novo exercício',
-        5: 'Analisar com IA',
         2: 'Mapa de erros',
         4: 'Administração',
         6: 'Sobre o App',
@@ -129,7 +177,7 @@ void main() {
       final buttons = <int, Finder>{
         for (final index in [0, 1, 2, 3, 4])
           index: find.byKey(ValueKey('navigation-$index')),
-        for (final index in [5, 6])
+        for (final index in [6])
           index: find
               .ancestor(
                 of: find.text(labels[index]!),
@@ -169,7 +217,7 @@ void main() {
       await mouse.addPointer(location: const Offset(1000, 800));
       addTearDown(mouse.removePointer);
       for (var pass = 0; pass < 2; pass++) {
-        for (final index in [0, 1, 3, 5, 2, 4, 6, 4, 2, 5, 3, 1, 0]) {
+        for (final index in [0, 1, 3, 2, 4, 6, 4, 2, 3, 1, 0]) {
           await mouse.moveTo(tester.getCenter(buttons[index]!));
           await tester.pump(const Duration(milliseconds: 16));
           verifyLayout();
