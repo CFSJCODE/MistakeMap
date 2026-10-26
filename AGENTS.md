@@ -1,36 +1,53 @@
-# Reversa
+# AGENTS.md — MistakeMap
 
-> Framework de Engenharia Reversa instalado neste projeto.
+Entrada para Codex e outros agentes. O guia completo (loops do harness e
+catálogo do Reversa) está no [CLAUDE.md](CLAUDE.md); em caso de dúvida, ele vale.
 
-## Como usar
+## Projeto
 
-Use o fluxo adequado no chat:
+MistakeMap mapeia os padrões de erro do estudante.
 
-- `reversa` — descobrir e documentar um sistema existente
-- `reversa-new` — criar PRD e specs para um projeto novo
-- `reversa-forward` — implementar ou evoluir código a partir das specs
-- `reversa-migrate` — planejar a migração de um sistema legado
-- `reversa-docs` — gerar o mini-site visual da documentação
-- `reversa-agents-help` — consultar o catálogo completo de agentes
+| Camada | Onde | Tecnologia |
+|---|---|---|
+| Cliente (Android, Windows, Web) | `appmistakemap/` | Flutter + Dart |
+| Caderno de erros offline | `appmistakemap/lib/local/` | SQLite (`sqflite`, `ffi`, `ffi_web`) + `shared_preferences` — ver [BANCO_LOCAL.md](appmistakemap/BANCO_LOCAL.md) |
+| Banco, Auth, RLS | `appmistakemap/database/supabase/migrations/` | Supabase (Postgres) |
+| IA e uploads | `supabase/functions/` | Edge Functions (Deno) + Google Gemini + Cloudflare R2 |
+| Worker OCR/LLM | `worker/` | Rust — **arquivado**, não evoluir |
 
-## Comportamento ao ativar
+## Regras não negociáveis
 
-Quando o usuário digitar `reversa` sozinho em uma mensagem:
+1. Nada de lógica de negócio, OCR ou IA no Flutter: isso fica nas Edge Functions.
+2. Nunca envie `service_role` nem qualquer segredo ao cliente; nunca grave segredos em arquivos versionados.
+3. Migrations são imutáveis: correção vira migration nova.
+4. Proibido HTTP síncrono dentro de trigger; use `pg_cron` + `pg_net`.
+5. Todo Dart passa em `flutter analyze` sem avisos.
+6. Antes de escrever fora de `_reversa_*/` e `.reversa/`, leia `.reversa/reversa-config.json`
+   e respeite `allowLegacyEdits`/`allowedPaths`. Nunca edite esse arquivo por conta própria:
+   liberar escrita é ato exclusivo do usuário.
 
-1. Ative o skill `reversa` disponível em `.agents/skills/reversa/SKILL.md`
-2. Leia o SKILL.md na íntegra e siga exatamente as instruções do Reversa
+## Critérios de aceite
 
-## Regra não-negociável
+Flutter (rodar em `appmistakemap/`):
 
-Por padrão, nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto legado:
-o Reversa escreve apenas em `.reversa/`, `_reversa_sdd/`, `_reversa_docs/`, `_reversa_forward/`, `_reversa_bugs/` e `_reversa_refactor/`.
-A única exceção é a política configurável abaixo, controlada exclusivamente pelo usuário.
+```bash
+flutter test --reporter compact          # All tests passed
+flutter analyze                          # No issues found
+dart format --set-exit-if-changed lib/   # exit 0
+```
 
-Antes de criar, modificar ou apagar qualquer arquivo fora das pastas próprias do Reversa, leia `.reversa/reversa-config.json` e obedeça ao resultado:
+Edge Functions (rodar em `supabase/functions/`):
 
-- Arquivo ausente, JSON inválido ou campo com tipo errado: trate como `allowLegacyEdits: false` (falha segura, nenhuma escrita fora das pastas do Reversa).
-- `allowLegacyEdits: false`: recuse a escrita, informando o caminho recusado, o estado atual da config e o que o usuário deve editar para liberar.
-- `allowLegacyEdits: true` com `allowedPaths` não vazio: escreva apenas em caminhos que casem com algum glob da lista (globs relativos à raiz do projeto, com `/`, suportando `*` e `**`).
-- `allowLegacyEdits: true` com `allowedPaths` vazio ou ausente: projeto liberado; avise uma vez por sessão que a liberação é irrestrita.
+```bash
+deno check --frozen */index.ts
+deno test --frozen --allow-env
+```
 
-Nunca crie nem edite `.reversa/reversa-config.json` por iniciativa própria: pedido na conversa não é liberação implícita, alterações nesse arquivo são ato exclusivo do usuário.
+## Reversa
+
+Framework de engenharia reversa instalado (skills em `.agents/skills/`). Quando o
+usuário digitar `reversa` ou `reversa-*`, leia o `SKILL.md` correspondente na
+íntegra e siga-o. Fluxos principais: `reversa` (discovery), `reversa-forward`
+(specs → código), `reversa-debugger` (bugs), `reversa-docs`, `reversa-agents-help`.
+Os artefatos ficam em `_reversa_sdd/`, `_reversa_forward/`, `_reversa_bugs/`,
+`_reversa_docs/` e `_reversa_refactor/`.
