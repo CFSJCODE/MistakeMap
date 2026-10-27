@@ -7,6 +7,8 @@ import 'analysis_models.dart';
 import 'analysis_repository.dart';
 import 'material_control_styles.dart';
 import 'insights_view.dart';
+import '../sync/conexao.dart';
+import '../sync/sincronizador.dart';
 import '../theme/design_tokens.dart';
 import '../theme/motion.dart';
 
@@ -46,6 +48,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
   String? _imageName;
   String? _attemptId;
   String? _error;
+  String? _notice;
   bool _busy = false;
   bool _uploaded = false;
   bool _triedSubmit = false;
@@ -130,8 +133,12 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
     setState(() {
       _busy = true;
       _error = null;
+      _notice = null;
       _stage = 'Salvando exercício…';
     });
+    // Already known to be offline: save on the device without waiting for
+    // the request to time out.
+    if (!Sincronizador.instancia.online.value && await _saveOffline()) return;
     try {
       _attemptId ??= await widget.repository.createAttempt(
         userId: widget.userId,
@@ -178,10 +185,46 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
         _reset();
       }
     } catch (error) {
+      // No network before the attempt (or its photo) reached the server: the
+      // queue sends it when the connection returns.
+      final pendingOnServer =
+          _attemptId == null || (_imageBytes != null && !_uploaded);
+      if (ehFalhaDeRede(error) && pendingOnServer && await _saveOffline()) {
+        return;
+      }
       if (mounted) setState(() => _error = friendlyFailure(error));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// True when the submission went to the offline queue.
+  Future<bool> _saveOffline() async {
+    try {
+      await widget.repository.saveOffline(
+        userId: widget.userId,
+        subject: _subject.text.trim(),
+        prompt: _prompt.text.trim(),
+        answer: _answer.text.trim(),
+        difficulty: _difficulty.text.trim(),
+        image: _uploaded ? null : _imageBytes,
+        practice: widget.practice,
+        attemptId: _attemptId,
+      );
+    } catch (_) {
+      return false;
+    }
+    if (!mounted) return true;
+    _reset();
+    _subject.text = widget.practice?.subjectName ?? '';
+    _prompt.text = widget.practice?.prompt ?? '';
+    setState(() {
+      _busy = false;
+      _notice =
+          'Sem conexão. O exercício ficou salvo no aparelho e será enviado '
+          'e analisado automaticamente quando a internet voltar.';
+    });
+    return true;
   }
 
   void _reset() => setState(() {
@@ -352,6 +395,16 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
             'A IA sugere uma correção e identifica padrões. Confira a explicação antes de estudar por ela.',
             style: TextStyle(fontSize: 14, color: mapContentBlue),
           ),
+          if (_notice != null) ...[
+            const SizedBox(height: 16),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                _notice!,
+                style: const TextStyle(color: mapContentBlue),
+              ),
+            ),
+          ],
           if (_error != null) ...[
             const SizedBox(height: 16),
             Semantics(

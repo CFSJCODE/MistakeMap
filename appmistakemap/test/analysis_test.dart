@@ -88,12 +88,25 @@ class FakeRepository implements AnalysisRepository {
     return 'a1';
   }
 
+  int savedOffline = 0;
+
   @override
   Future<void> uploadImage(
     String attemptId,
     String filename,
     Uint8List bytes,
   ) async {}
+  @override
+  Future<void> saveOffline({
+    required String userId,
+    required String subject,
+    required String prompt,
+    required String answer,
+    required String difficulty,
+    Uint8List? image,
+    PracticeExercise? practice,
+    String? attemptId,
+  }) async => savedOffline++;
   @override
   Future<void> analyze(String attemptId) async {
     analyzed++;

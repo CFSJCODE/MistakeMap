@@ -5,9 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../sync/sincronizador.dart';
 import 'analysis_models.dart';
 
-/// Local invalidation only. No student data or keys are cached here.
+/// Local invalidation only. The offline copy of the data lives in the SQLite
+/// cache of [Sincronizador]; no keys are ever cached.
 final analysisChanges = ValueNotifier<int>(0);
 void notifyAnalysisChanged() => analysisChanges.value++;
 
@@ -84,6 +86,20 @@ abstract class AnalysisRepository {
     PracticeExercise? practice,
   });
   Future<void> uploadImage(String attemptId, String filename, Uint8List bytes);
+
+  /// Keeps a submission on the device while there is no network; it is sent
+  /// (and analysed) automatically when the connection returns. With
+  /// [attemptId] the attempt already exists and only the photo is pending.
+  Future<void> saveOffline({
+    required String userId,
+    required String subject,
+    required String prompt,
+    required String answer,
+    required String difficulty,
+    Uint8List? image,
+    PracticeExercise? practice,
+    String? attemptId,
+  });
   Future<void> analyze(String attemptId);
 
   /// [category] limita o reforço a um tipo de erro (chave de
@@ -101,12 +117,38 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
   final Map<String, Future<void>> _inFlightAnalyses = {};
   final SupabaseClient client;
   final http.Client? uploadTransport;
-  SupabaseAnalysisRepository(this.client, {this.uploadTransport});
+  final Sincronizador? _sync;
+  SupabaseAnalysisRepository(
+    this.client, {
+    this.uploadTransport,
+    Sincronizador? sincronizador,
+  }) : _sync = sincronizador;
+
+  Sincronizador get _sincronizador => _sync ?? Sincronizador.instancia;
 
   @override
   Future<List<AttemptRecord>> loadAttempts(String userId) async {
+    // Supabase first; without network the last copy saved on the device.
+    final cached = jsonMap(
+      await _sincronizador.consultar(
+        userId,
+        'ia_tentativas',
+        () => _fetchAttemptRows(userId),
+      ),
+    );
+    final analyses = <String, AttemptAnalysis>{
+      for (final row in (cached['analyses'] as List? ?? const []))
+        textValue(jsonMap(row)['attempt_id']): AttemptAnalysis.fromJson(
+          jsonMap(row),
+        ),
+    };
+    final rows = (cached['rows'] as List? ?? const []).map(jsonMap);
+    return _attemptRecords(rows, analyses);
+  }
+
+  Future<JsonMap> _fetchAttemptRows(String userId) async {
     final rows = <JsonMap>[];
-    final analyses = <String, AttemptAnalysis>{};
+    final analyses = <JsonMap>[];
     const pageSize = 200;
     for (var offset = 0; ; offset += pageSize) {
       final page = await client
@@ -133,9 +175,7 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
           final data = jsonMap(row['analysis']);
           data['attempt_id'] = row['attempt_id'];
           data['subject_id'] = row['subject_id'];
-          analyses[textValue(row['attempt_id'])] = AttemptAnalysis.fromJson(
-            data,
-          );
+          analyses.add(data);
         }
         if (page.length < pageSize) break;
       }
@@ -147,6 +187,13 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
       }
       rethrow;
     }
+    return {'rows': rows, 'analyses': analyses};
+  }
+
+  List<AttemptRecord> _attemptRecords(
+    Iterable<JsonMap> rows,
+    Map<String, AttemptAnalysis> analyses,
+  ) {
     return rows
         .map((row) {
           final exercise = jsonMap(row['exercises']);
@@ -220,6 +267,30 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
         .single();
     notifyAnalysisChanged();
     return result['id'] as String;
+  }
+
+  @override
+  Future<void> saveOffline({
+    required String userId,
+    required String subject,
+    required String prompt,
+    required String answer,
+    required String difficulty,
+    Uint8List? image,
+    PracticeExercise? practice,
+    String? attemptId,
+  }) async {
+    if (image != null) imageContentType('exercicio', image);
+    await _sincronizador.enfileirarTentativa(
+      usuarioId: userId,
+      materia: practice?.subjectName ?? subject,
+      enunciado: practice?.prompt ?? prompt,
+      resposta: answer,
+      dificuldade: difficulty,
+      imagem: image,
+      exercicioPraticaId: practice?.id,
+      tentativaId: attemptId,
+    );
   }
 
   @override

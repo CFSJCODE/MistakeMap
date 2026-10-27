@@ -2,7 +2,8 @@ import 'package:sqflite/sqflite.dart';
 
 import 'fabrica_banco.dart';
 
-/// Banco SQLite do caderno de erros, guardado no próprio aparelho.
+/// Banco SQLite do aparelho: caderno de erros (v1) e, desde a v2, o cache
+/// offline do Supabase e a fila de envio (ver lib/sync/).
 ///
 /// O esquema está documentado em BANCO_LOCAL.md. Mudanças de esquema sobem
 /// [versao] e entram em `onUpgrade`, nunca reescrevendo o `onCreate`.
@@ -13,7 +14,7 @@ class BancoLocal {
   static final BancoLocal instancia = BancoLocal();
 
   static const String nomeArquivo = 'mistakemap_local.db';
-  static const int versao = 1;
+  static const int versao = 2;
 
   /// Nulo usa a fábrica da plataforma (ver fabrica_banco.dart).
   final DatabaseFactory? fabrica;
@@ -33,7 +34,13 @@ class BancoLocal {
         version: versao,
         // O SQLite só aplica FOREIGN KEY com esta pragma ligada por conexão.
         onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
-        onCreate: criarTabelas,
+        onCreate: (db, versao) async {
+          await criarTabelas(db, versao);
+          await criarTabelasSincronizacao(db);
+        },
+        onUpgrade: (db, de, para) async {
+          if (de < 2) await criarTabelasSincronizacao(db);
+        },
       ),
     );
   }
@@ -71,6 +78,40 @@ class BancoLocal {
     lote.execute(
       'CREATE INDEX idx_registros_disciplina ON registros_erro (disciplina_id)',
     );
+    await lote.commit(noResult: true);
+  }
+
+  /// DDL da versão 2: cache das consultas ao Supabase e fila de envio.
+  static Future<void> criarTabelasSincronizacao(Database db) async {
+    final lote = db.batch();
+    // Última resposta do Supabase para cada tela, em JSON, por usuário.
+    lote.execute('''
+      CREATE TABLE cache_consultas (
+        usuario_id TEXT NOT NULL,
+        chave TEXT NOT NULL,
+        dados TEXT NOT NULL,
+        atualizado_em TEXT NOT NULL,
+        PRIMARY KEY (usuario_id, chave)
+      )
+    ''');
+    // Alterações feitas sem rede, enviadas em ordem quando ela volta.
+    lote.execute('''
+      CREATE TABLE fila_sync (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id TEXT NOT NULL,
+        operacao TEXT NOT NULL CHECK (operacao IN
+          ('criar_tentativa', 'enviar_foto', 'editar_exercicio',
+           'excluir_exercicio')),
+        dados TEXT NOT NULL,
+        imagem BLOB,
+        situacao TEXT NOT NULL DEFAULT 'pendente'
+          CHECK (situacao IN ('pendente', 'erro')),
+        tentativas INTEGER NOT NULL DEFAULT 0,
+        ultimo_erro TEXT,
+        criado_em TEXT NOT NULL
+      )
+    ''');
+    lote.execute('CREATE INDEX idx_fila_usuario ON fila_sync (usuario_id, id)');
     await lote.commit(noResult: true);
   }
 

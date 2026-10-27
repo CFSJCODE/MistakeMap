@@ -28,6 +28,9 @@ import 'about/linkedin_profile_button.dart';
 import 'local/preferencias_caderno.dart';
 import 'local/registro_erro.dart';
 import 'local/registro_erro_dao.dart';
+import 'sync/remoto_supabase.dart';
+import 'sync/sincronizador.dart';
+import 'sync/sobreposicao.dart';
 
 part 'caderno_erros.dart';
 
@@ -174,6 +177,13 @@ const String _supabaseAnonKey =
 // Atalho para o cliente Supabase
 SupabaseClient get _db => Supabase.instance.client;
 
+// Sincronizador do usuário logado: Supabase primeiro, SQLite sem rede.
+Sincronizador _sync(String usuarioId) {
+  final sync = Sincronizador.instancia;
+  if (sync.usuarioId != usuarioId) sync.iniciar(usuarioId, RemotoSupabase(_db));
+  return sync;
+}
+
 // ─── Design system: Fluent UI + Liquid Glass ─────────────────────────────────
 // Liquid Glass (Apple): estrutura e camada flutuante — scaffold, barras,
 // botões da barra, painéis de destaque e toasts.
@@ -261,9 +271,48 @@ class _PaginaVidro extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: context.tipo.subtitle?.copyWith(color: titleBlue),
         ),
-        actions: acoes,
+        actions: [const _IndicadorConexao(), ...acoes],
       ),
       body: corpo,
+    );
+  }
+}
+
+// Pílula da barra superior: só aparece sem rede ou com alterações na fila.
+class _IndicadorConexao extends StatelessWidget {
+  const _IndicadorConexao();
+
+  @override
+  Widget build(BuildContext context) {
+    final sync = Sincronizador.instancia;
+    return ListenableBuilder(
+      listenable: Listenable.merge([sync.online, sync.pendentes]),
+      builder: (context, _) {
+        final online = sync.online.value;
+        final pendentes = sync.pendentes.value;
+        if (online && pendentes == 0) return const SizedBox.shrink();
+        final aguardando = pendentes == 1
+            ? '1 alteração aguardando envio.'
+            : '$pendentes alterações aguardando envio.';
+        return Tooltip(
+          message: online
+              ? 'Enviando ao servidor. $aguardando'
+              : 'Sem conexão: mostrando os dados salvos no aparelho.'
+                    '${pendentes > 0 ? ' $aguardando' : ''}',
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(end: 8),
+            child: Center(
+              child: _Pilula(
+                texto: online ? 'Sincronizando' : 'Offline',
+                icone: online
+                    ? WindowsIcons.sync
+                    : WindowsIcons.cloud_not_synced,
+                cor: online ? Cores.azul600 : Cores.laranja700,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -904,6 +953,37 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   final _cadernoKey = GlobalKey<_TelaCadernoErrosState>();
   late final AnalysisRepository _analysisRepository =
       widget.analysisRepository ?? SupabaseAnalysisRepository(_db);
+  late final Sincronizador _sincronizador = _sync(widget.user.id);
+
+  @override
+  void initState() {
+    super.initState();
+    _sincronizador.alteracoes.addListener(_recarregarAbas);
+    _sincronizador.aviso.addListener(_mostrarAviso);
+  }
+
+  @override
+  void dispose() {
+    _sincronizador.alteracoes.removeListener(_recarregarAbas);
+    _sincronizador.aviso.removeListener(_mostrarAviso);
+    _sincronizador.parar();
+    super.dispose();
+  }
+
+  // Fila enviada ou mudança no Realtime: as abas vivas no IndexedStack
+  // recarregam do Supabase (e regravam o cache).
+  void _recarregarAbas() {
+    _inicioKey.currentState?.carregarEstatisticas();
+    _listaKey.currentState?.carregarExercicios();
+    _mapaKey.currentState?.carregar();
+  }
+
+  void _mostrarAviso() {
+    final mensagem = _sincronizador.aviso.value;
+    if (mensagem == null || !mounted) return;
+    _sincronizador.aviso.value = null;
+    _avisar(context, mensagem, erro: true);
+  }
 
   // Mapa e análise por IA são uma página só; [analisar] abre o painel de
   // envio já expandido (atalho do Início).
@@ -1451,12 +1531,21 @@ class _TelaInicialState extends State<TelaInicial> {
   // vivas no IndexedStack e o initState não roda de novo.
   Future<void> carregarEstatisticas() async {
     try {
-      final res = await _db
-          .from('attempts')
-          .select('status')
-          .eq('user_id', widget.user.id);
+      final sync = _sync(widget.user.id);
+      final res = await sync.consultar(
+        widget.user.id,
+        'inicio_tentativas',
+        () => _db
+            .from('attempts')
+            .select('id, status, exercise_id')
+            .eq('user_id', widget.user.id),
+      );
+      final linhas = sobreporTentativas(
+        res as List,
+        await sync.fila(widget.user.id),
+      );
 
-      final grupos = (res as List)
+      final grupos = linhas
           .map((a) => attemptStatusGroup(a['status'] as String?))
           .toList();
       final total = grupos.length;
@@ -2340,33 +2429,17 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
   Future<void> carregar() async {
     if (mounted) setState(() => _carregando = true);
     try {
-      final subjects = await _db
-          .from('subjects')
-          .select('id, name')
-          .eq('user_id', widget.user.id);
-
+      final dados = await _carregarMateriasEExercicios(
+        widget.user.id,
+        'mapa_exercicios',
+        'id, subject_id, attempts(id, status, user_id, attempted_at)',
+      );
       final subjectMap = <String, String>{
-        for (final s in (subjects as List))
-          s['id'] as String: s['name'] as String,
+        for (final s in dados.materias) s['id'] as String: s['name'] as String,
       };
 
-      if (subjectMap.isEmpty) {
-        if (mounted) {
-          setState(() {
-            _stats = [];
-            _carregando = false;
-          });
-        }
-        return;
-      }
-
-      final exRes = await _db
-          .from('exercises')
-          .select('id, subject_id, attempts(id, status, user_id, attempted_at)')
-          .inFilter('subject_id', subjectMap.keys.toList());
-
       final dataMap = <String, _SubjectData>{};
-      for (final e in (exRes as List)) {
+      for (final e in dados.exercicios) {
         final sid = e['subject_id'] as String;
         final nome = subjectMap[sid] ?? '?';
         if (!dataMap.containsKey(sid)) dataMap[sid] = _SubjectData(nome);
@@ -2877,6 +2950,42 @@ class _MapaLegenda extends StatelessWidget {
 }
 
 // ─── Modelo ───────────────────────────────────────────────────────────────────
+/// Matérias e exercícios do usuário: Supabase primeiro, cache sem rede, com
+/// a fila offline aplicada por cima. Lista e Mapa usam o mesmo formato.
+Future<
+  ({List<Map<String, dynamic>> materias, List<Map<String, dynamic>> exercicios})
+>
+_carregarMateriasEExercicios(
+  String usuarioId,
+  String chave,
+  String colunas, {
+  bool ordenarPorCriacao = false,
+}) async {
+  final sync = _sync(usuarioId);
+  final dados = await sync.consultar(usuarioId, chave, () async {
+    final subjects = await _db
+        .from('subjects')
+        .select('id, name')
+        .eq('user_id', usuarioId);
+    if (subjects.isEmpty) return {'subjects': subjects, 'exercises': []};
+    final consulta = _db.from('exercises').select(colunas).inFilter(
+      'subject_id',
+      [for (final s in subjects) s['id']],
+    );
+    final exercises = ordenarPorCriacao
+        ? await consulta.order('created_at', ascending: false)
+        : await consulta;
+    return {'subjects': subjects, 'exercises': exercises};
+  });
+  final mapa = dados as Map;
+  return sobreporExercicios(
+    mapa['subjects'] as List,
+    mapa['exercises'] as List,
+    await sync.fila(usuarioId),
+    usuarioId,
+  );
+}
+
 class Exercicio {
   final String id;
   final String subjectId;
@@ -2923,6 +3032,21 @@ Map<String, dynamic>? tentativaMaisRecente(Object? attempts, String userId) {
   return maisRecente;
 }
 
+/// Exclui no Supabase ou, sem rede, guarda a exclusão na fila do aparelho.
+Future<ResultadoEscrita> _excluirExercicio(Exercicio ex, AppUser user) =>
+    _sync(user.id).excluirExercicio(
+      usuarioId: user.id,
+      exercicioId: ex.id,
+      materiaId: ex.subjectId,
+      tentativaId: ex.attemptId,
+    );
+
+String _msgExclusao(ResultadoEscrita resultado) =>
+    resultado == ResultadoEscrita.naFila
+    ? 'Exercício excluído no aparelho. O servidor será atualizado quando a '
+          'conexão voltar.'
+    : 'Exercício excluído.';
+
 // ─── fim: Mapa conceitual ────────────────────────────────────────────────────
 
 // ─── Lista de exercícios ──────────────────────────────────────────────────────
@@ -2948,38 +3072,19 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   Future<void> carregarExercicios() async {
     if (mounted) setState(() => _carregando = true);
     try {
-      final subjects = await _db
-          .from('subjects')
-          .select('id, name')
-          .eq('user_id', widget.user.id);
-
+      final dados = await _carregarMateriasEExercicios(
+        widget.user.id,
+        'lista_exercicios',
+        'id, prompt_text, created_at, subject_id, '
+            'attempts(id, status, user_id, attempted_at)',
+        ordenarPorCriacao: true,
+      );
       final subjectMap = <String, String>{
-        for (final s in (subjects as List))
-          s['id'] as String: s['name'] as String,
+        for (final s in dados.materias) s['id'] as String: s['name'] as String,
       };
 
-      if (subjectMap.isEmpty) {
-        if (mounted) {
-          setState(() {
-            _exercicios = [];
-            _selecionado = null;
-            _carregando = false;
-          });
-        }
-        return;
-      }
-
-      final exRes = await _db
-          .from('exercises')
-          .select(
-            'id, prompt_text, created_at, subject_id, '
-            'attempts(id, status, user_id, attempted_at)',
-          )
-          .inFilter('subject_id', subjectMap.keys.toList())
-          .order('created_at', ascending: false);
-
       final lista = <Exercicio>[];
-      for (final e in (exRes as List)) {
+      for (final e in dados.exercicios) {
         final latest = tentativaMaisRecente(e['attempts'], widget.user.id);
         lista.add(
           Exercicio(
@@ -3029,27 +3134,9 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 
   Future<void> _excluir(Exercicio ex) async {
     try {
-      if (ex.attemptId != null) {
-        await _db
-            .from('attempt_assets')
-            .delete()
-            .eq('attempt_id', ex.attemptId!);
-      }
-      await _db
-          .from('attempts')
-          .delete()
-          .eq('exercise_id', ex.id)
-          .eq('user_id', widget.user.id);
-      await _db.from('exercises').delete().eq('id', ex.id);
-      final rem = await _db
-          .from('exercises')
-          .select('id')
-          .eq('subject_id', ex.subjectId);
-      if ((rem as List).isEmpty) {
-        await _db.from('subjects').delete().eq('id', ex.subjectId);
-      }
+      final resultado = await _excluirExercicio(ex, widget.user);
       if (!mounted) return;
-      _avisar(context, 'Exercício excluído.');
+      _avisar(context, _msgExclusao(resultado));
       carregarExercicios();
     } catch (e) {
       if (!mounted) return;
@@ -3334,6 +3421,13 @@ class _StatusBadge extends StatelessWidget {
       case 'cancelled':
         label = 'Cancelado';
         cor = Cores.cinza;
+      // Só no aparelho (fila offline), ainda sem resposta do servidor.
+      case statusOffline:
+        label = 'Aguardando conexão';
+        cor = Cores.azul600;
+      case statusRecusado:
+        label = 'Não enviado';
+        cor = Cores.vermelho600;
       default:
         label = 'Sem tentativa';
         cor = Cores.cinza;
@@ -3377,25 +3471,7 @@ class TelaDetalheExercicio extends StatelessWidget {
     );
     if (!ok || !context.mounted) return;
     try {
-      if (exercicio.attemptId != null) {
-        await _db
-            .from('attempt_assets')
-            .delete()
-            .eq('attempt_id', exercicio.attemptId!);
-      }
-      await _db
-          .from('attempts')
-          .delete()
-          .eq('exercise_id', exercicio.id)
-          .eq('user_id', user.id);
-      await _db.from('exercises').delete().eq('id', exercicio.id);
-      final rem = await _db
-          .from('exercises')
-          .select('id')
-          .eq('subject_id', exercicio.subjectId);
-      if ((rem as List).isEmpty) {
-        await _db.from('subjects').delete().eq('id', exercicio.subjectId);
-      }
+      final resultado = await _excluirExercicio(exercicio, user);
       if (!context.mounted) return;
       onAtualizar();
       if (onFechar != null) {
@@ -3405,7 +3481,7 @@ class TelaDetalheExercicio extends StatelessWidget {
       }
       // O toast vai para o Overlay do Navigator, então continua visível na
       // tela anterior depois do pop.
-      _avisar(context, 'Exercício excluído.');
+      _avisar(context, _msgExclusao(resultado));
     } catch (e) {
       if (!context.mounted) return;
       _avisar(context, 'Erro ao excluir: $e', erro: true);
@@ -3512,7 +3588,9 @@ class TelaDetalheExercicio extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            if (exercicio.attemptId != null) ...[
+            if (exercicio.attemptId != null &&
+                exercicio.status != statusOffline &&
+                exercicio.status != statusRecusado) ...[
               SizedBox(
                 width: double.infinity,
                 child: MistakeMapFilledButton(
@@ -3688,72 +3766,26 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
       return;
     }
     setState(() => _salvando = true);
-    String? materiaCriada;
     try {
-      final novoAssunto = _assuntoCtrl.text.trim();
-      final novaDescricao = _erroCtrl.text.trim();
-
-      // O enunciado vai antes da matéria: se o banco recusar a edição, nada
-      // novo foi criado ainda.
-      await _db
-          .from('exercises')
-          .update({'prompt_text': novaDescricao})
-          .eq('id', widget.exercicio.id);
-
-      if (novoAssunto != widget.exercicio.subjectName) {
-        final existente = await _db
-            .from('subjects')
-            .select('id')
-            .eq('user_id', widget.user.id)
-            .eq('name', novoAssunto)
-            .maybeSingle();
-
-        final String novoSubjectId;
-        if (existente != null) {
-          novoSubjectId = existente['id'] as String;
-        } else {
-          materiaCriada =
-              (await _db
-                      .from('subjects')
-                      .insert({'user_id': widget.user.id, 'name': novoAssunto})
-                      .select('id')
-                      .single())['id']
-                  as String;
-          novoSubjectId = materiaCriada;
-        }
-
-        await _db
-            .from('exercises')
-            .update({'subject_id': novoSubjectId})
-            .eq('id', widget.exercicio.id);
-        // A matéria nova agora tem exercício: não pode mais ser desfeita.
-        materiaCriada = null;
-
-        final rem = await _db
-            .from('exercises')
-            .select('id')
-            .eq('subject_id', widget.exercicio.subjectId);
-        if ((rem as List).isEmpty) {
-          await _db
-              .from('subjects')
-              .delete()
-              .eq('id', widget.exercicio.subjectId);
-        }
-      }
+      // RemotoSupabase.editarExercicio faz o envio (enunciado antes da
+      // matéria, desfazendo matéria órfã); sem rede a edição vai para a fila.
+      final resultado = await _sync(widget.user.id).editarExercicio(
+        usuarioId: widget.user.id,
+        exercicioId: widget.exercicio.id,
+        materiaIdAtual: widget.exercicio.subjectId,
+        materiaAtual: widget.exercicio.subjectName,
+        novaMateria: _assuntoCtrl.text.trim(),
+        novoEnunciado: _erroCtrl.text.trim(),
+      );
 
       if (!mounted) return;
-      _snack('Exercício atualizado!');
+      _snack(
+        resultado == ResultadoEscrita.naFila
+            ? 'Alteração salva no aparelho. Ela sobe quando a conexão voltar.'
+            : 'Exercício atualizado!',
+      );
       Navigator.pop(context);
     } catch (e) {
-      // practice_answer_keys também trava a matéria e o cliente não a lê:
-      // desfaz a matéria recém-criada para ela não ficar órfã.
-      if (materiaCriada != null) {
-        try {
-          await _db.from('subjects').delete().eq('id', materiaCriada);
-        } catch (_) {
-          // Melhor esforço: o erro original é o que interessa ao usuário.
-        }
-      }
       _snack(mensagemDeErro(e) ?? 'Erro ao salvar: $e', erro: true);
     } finally {
       if (mounted) setState(() => _salvando = false);

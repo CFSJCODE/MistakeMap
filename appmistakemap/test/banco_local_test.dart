@@ -45,17 +45,25 @@ void main() {
 
   tearDown(() => banco.fechar());
 
-  test('cria as tabelas da versão 1 com a chave estrangeira ligada', () async {
-    final db = await banco.banco;
-    final tabelas = await db.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type = 'table' "
-      "AND name NOT LIKE 'sqlite_%' ORDER BY name",
-    );
-    expect(tabelas.map((t) => t['name']), ['disciplinas', 'registros_erro']);
-    expect(await db.getVersion(), BancoLocal.versao);
-    final fk = await db.rawQuery('PRAGMA foreign_keys');
-    expect(fk.first.values.first, 1);
-  });
+  test(
+    'cria as tabelas da versão atual com a chave estrangeira ligada',
+    () async {
+      final db = await banco.banco;
+      final tabelas = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'table' "
+        "AND name NOT LIKE 'sqlite_%' ORDER BY name",
+      );
+      expect(tabelas.map((t) => t['name']), [
+        'cache_consultas',
+        'disciplinas',
+        'fila_sync',
+        'registros_erro',
+      ]);
+      expect(await db.getVersion(), BancoLocal.versao);
+      final fk = await db.rawQuery('PRAGMA foreign_keys');
+      expect(fk.first.values.first, 1);
+    },
+  );
 
   test('CRUD completo de um registro', () async {
     // CREATE
