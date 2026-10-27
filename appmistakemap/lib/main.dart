@@ -28,6 +28,8 @@ import 'about/linkedin_profile_button.dart';
 import 'local/preferencias_caderno.dart';
 import 'local/registro_erro.dart';
 import 'local/registro_erro_dao.dart';
+import 'sync/armazem_sync.dart' show OperacaoFila;
+import 'sync/conexao.dart' show ehFalhaDeRede;
 import 'sync/remoto_supabase.dart';
 import 'sync/sincronizador.dart';
 import 'sync/sobreposicao.dart';
@@ -1532,18 +1534,19 @@ class _TelaInicialState extends State<TelaInicial> {
   Future<void> carregarEstatisticas() async {
     try {
       final sync = _sync(widget.user.id);
-      final res = await sync.consultar(
+      final fila = await sync.fila(widget.user.id);
+      final res = await _consultarOuSoFila(
+        sync,
         widget.user.id,
         'inicio_tentativas',
+        fila,
+        const [],
         () => _db
             .from('attempts')
             .select('id, status, exercise_id')
             .eq('user_id', widget.user.id),
       );
-      final linhas = sobreporTentativas(
-        res as List,
-        await sync.fila(widget.user.id),
-      );
+      final linhas = sobreporTentativas(res as List, fila);
 
       final grupos = linhas
           .map((a) => attemptStatusGroup(a['status'] as String?))
@@ -2962,28 +2965,55 @@ _carregarMateriasEExercicios(
   bool ordenarPorCriacao = false,
 }) async {
   final sync = _sync(usuarioId);
-  final dados = await sync.consultar(usuarioId, chave, () async {
-    final subjects = await _db
-        .from('subjects')
-        .select('id, name')
-        .eq('user_id', usuarioId);
-    if (subjects.isEmpty) return {'subjects': subjects, 'exercises': []};
-    final consulta = _db.from('exercises').select(colunas).inFilter(
-      'subject_id',
-      [for (final s in subjects) s['id']],
-    );
-    final exercises = ordenarPorCriacao
-        ? await consulta.order('created_at', ascending: false)
-        : await consulta;
-    return {'subjects': subjects, 'exercises': exercises};
-  });
+  final fila = await sync.fila(usuarioId);
+  final dados = await _consultarOuSoFila(
+    sync,
+    usuarioId,
+    chave,
+    fila,
+    {'subjects': [], 'exercises': []},
+    () async {
+      final subjects = await _db
+          .from('subjects')
+          .select('id, name')
+          .eq('user_id', usuarioId);
+      if (subjects.isEmpty) return {'subjects': subjects, 'exercises': []};
+      final consulta = _db.from('exercises').select(colunas).inFilter(
+        'subject_id',
+        [for (final s in subjects) s['id']],
+      );
+      final exercises = ordenarPorCriacao
+          ? await consulta.order('created_at', ascending: false)
+          : await consulta;
+      return {'subjects': subjects, 'exercises': exercises};
+    },
+  );
   final mapa = dados as Map;
   return sobreporExercicios(
     mapa['subjects'] as List,
     mapa['exercises'] as List,
-    await sync.fila(usuarioId),
+    fila,
     usuarioId,
   );
+}
+
+/// [Sincronizador.consultar], mas sem rede e sem cache (app atualizado já
+/// offline) mostra só a fila sobre [vazio], para o aluno ver e poder excluir
+/// o que salvou. Sem nada na fila o erro segue para a tela, como antes.
+Future<Object?> _consultarOuSoFila(
+  Sincronizador sync,
+  String usuarioId,
+  String chave,
+  List<OperacaoFila> fila,
+  Object vazio,
+  Future<Object?> Function() remoto,
+) async {
+  try {
+    return await sync.consultar(usuarioId, chave, remoto);
+  } catch (erro) {
+    if (fila.isEmpty || !ehFalhaDeRede(erro)) rethrow;
+    return vazio;
+  }
 }
 
 class Exercicio {

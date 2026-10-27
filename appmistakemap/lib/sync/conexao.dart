@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../ai/analysis_repository.dart' show AnalysisFailure;
+
 /// Verdadeiro quando o erro veio da falta de rede (sem internet, DNS, tempo
 /// esgotado), e não de uma recusa do servidor. Só esses casos caem no cache
 /// local e na fila; um erro de RLS ou de validação continua sendo erro.
@@ -11,6 +13,8 @@ bool ehFalhaDeRede(Object erro) {
   if (erro is TimeoutException || erro is http.ClientException) return true;
   if (erro is AuthRetryableFetchException) return true;
   if (erro is FunctionException) return erro.status == 0;
+  // upload-url e analyze-attempt passam por _invoke, que traduz a falha.
+  if (erro is AnalysisFailure) return erro.network;
   // dart:io não existe na Web; o nome do tipo basta para reconhecer.
   return const {
     'SocketException',

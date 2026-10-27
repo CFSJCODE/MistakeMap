@@ -210,6 +210,9 @@ class Sincronizador {
       );
     }
     await _depoisDeEnfileirar();
+    // A submissão só chega aqui depois de uma falha de rede: a sonda agenda
+    // o envio mesmo que nenhuma consulta tenha marcado o app como offline.
+    _ficarOffline();
   }
 
   Future<ResultadoEscrita> excluirExercicio({
@@ -220,6 +223,8 @@ class Sincronizador {
   }) async {
     final remoto = _remoto;
     if (habilitado) {
+      // Um envio em andamento pode estar criando este exercício agora.
+      await _enviando;
       // Criado sem rede e ainda na fila: excluir é só tirar da fila.
       final fila = await this.fila(usuarioId);
       final criacao = fila
@@ -237,7 +242,10 @@ class Sincronizador {
             await _armazem.remover(op.id!);
           }
         }
-        if (criacao.dados['pratica'] != true) {
+        // Sem nenhuma tentativa de envio, nada chegou ao servidor. Depois de
+        // uma, exercício e tentativa podem já existir lá (a queda pode ter
+        // sido na foto), então a exclusão segue para o Supabase também.
+        if (criacao.dados['pratica'] != true && criacao.tentativas == 0) {
           await _depoisDeEnfileirar();
           return ResultadoEscrita.enviado;
         }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io' show Directory;
 import 'dart:typed_data';
 
+import 'package:appmistakemap/ai/analysis_repository.dart' show AnalysisFailure;
 import 'package:appmistakemap/local/banco_local.dart';
 import 'package:appmistakemap/local/registro_erro.dart';
 import 'package:appmistakemap/local/registro_erro_dao.dart';
@@ -118,6 +119,9 @@ void main() {
       expect(ehFalhaDeRede(const FunctionException(status: 0)), isTrue);
       expect(ehFalhaDeRede(const PostgrestException(message: 'rls')), isFalse);
       expect(ehFalhaDeRede(const FunctionException(status: 500)), isFalse);
+      // upload-url/analyze-attempt sem rede chegam traduzidos por _invoke.
+      expect(ehFalhaDeRede(const AnalysisFailure('x', network: true)), isTrue);
+      expect(ehFalhaDeRede(const AnalysisFailure('cota')), isFalse);
     });
 
     test('novoUuid gera UUID v4 diferentes', () {
@@ -334,6 +338,34 @@ void main() {
       expect(resultado, ResultadoEscrita.enviado);
       expect(await sync.fila(_usuario), isEmpty);
       expect(remoto.chamadas.where((c) => c.startsWith('excluir')), isEmpty);
+    });
+
+    test('enfileirar agenda o envio mesmo sem consulta offline', () async {
+      await iniciar();
+      expect(sync.online.value, isTrue);
+      await enfileirarComFoto();
+      expect(sync.online.value, isFalse);
+    });
+
+    test('criação enviada em parte também é excluída no servidor', () async {
+      await iniciar();
+      await enfileirarComFoto();
+      remoto.falha = _semRede;
+      await sync.sincronizar(); // caiu no meio: tentativas = 1
+      final criado = (await sync.fila(_usuario)).single;
+      expect(criado.tentativas, 1);
+
+      final resultado = await sync.excluirExercicio(
+        usuarioId: _usuario,
+        exercicioId: criado.exercicioId!,
+        materiaId: '${prefixoMateriaLocal}Equações',
+        tentativaId: criado.tentativaId,
+      );
+      // Ainda offline: a criação sai e a exclusão espera a rede.
+      expect(resultado, ResultadoEscrita.naFila);
+      final fila = await sync.fila(_usuario);
+      expect(fila.single.operacao, OperacaoFila.excluirExercicio);
+      expect(fila.single.exercicioId, criado.exercicioId);
     });
 
     test('com rede a exclusão vai direto ao servidor', () async {

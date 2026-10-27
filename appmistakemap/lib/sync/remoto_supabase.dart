@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../ai/analysis_repository.dart';
 import 'remoto_sync.dart';
+import 'sobreposicao.dart' show prefixoMateriaLocal;
 
 /// [RemotoSync] sobre o Supabase do app, com a sessão do próprio aluno (RLS).
 class RemotoSupabase implements RemotoSync {
@@ -140,6 +141,15 @@ class RemotoSupabase implements RemotoSync {
     required String materiaId,
     String? tentativaId,
   }) async {
+    // Criação enviada em parte: a tela só conhecia a matéria pelo nome.
+    if (materiaId.startsWith(prefixoMateriaLocal)) {
+      final exercicio = await client
+          .from('exercises')
+          .select('subject_id')
+          .eq('id', exercicioId)
+          .maybeSingle();
+      materiaId = exercicio?['subject_id'] as String? ?? '';
+    }
     if (tentativaId != null) {
       await client
           .from('attempt_assets')
@@ -152,7 +162,7 @@ class RemotoSupabase implements RemotoSync {
         .eq('exercise_id', exercicioId)
         .eq('user_id', usuarioId);
     await client.from('exercises').delete().eq('id', exercicioId);
-    await _apagarMateriaVazia(materiaId);
+    if (materiaId.isNotEmpty) await _apagarMateriaVazia(materiaId);
   }
 
   Future<void> _apagarMateriaVazia(String materiaId) async {

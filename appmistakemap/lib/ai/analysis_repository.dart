@@ -15,7 +15,11 @@ void notifyAnalysisChanged() => analysisChanges.value++;
 
 class AnalysisFailure implements Exception {
   final String message;
-  const AnalysisFailure(this.message);
+
+  /// The service was unreachable (timeout or no network), not a refusal: the
+  /// offline queue keeps the operation and retries it on reconnection.
+  final bool network;
+  const AnalysisFailure(this.message, {this.network = false});
   @override
   String toString() => message;
 }
@@ -353,10 +357,14 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
       }
       return jsonMap(response.data);
     } on FunctionException catch (error) {
-      throw AnalysisFailure(_message(name, error.status, error.details));
+      throw AnalysisFailure(
+        _message(name, error.status, error.details),
+        network: error.status == 0,
+      );
     } on TimeoutException {
       throw const AnalysisFailure(
         'A análise está demorando. O exercício está salvo; atualize o mapa antes de tentar novamente.',
+        network: true,
       );
     }
   }
