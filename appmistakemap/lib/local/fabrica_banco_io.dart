@@ -30,3 +30,6 @@ Future<String> caminhoDoBanco(DatabaseFactory fabrica, String arquivo) async {
   await pasta.create(recursive: true);
   return join(pasta.path, arquivo);
 }
+
+/// Verdadeiro dentro do `flutter test`: o cache não grava no disco do PC.
+bool executandoTestes() => Platform.environment.containsKey('FLUTTER_TEST');

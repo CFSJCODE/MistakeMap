@@ -6,3 +6,5 @@ DatabaseFactory fabricaDoBanco() => databaseFactoryFfiWeb;
 
 Future<String> caminhoDoBanco(DatabaseFactory fabrica, String arquivo) async =>
     arquivo;
+
+bool executandoTestes() => false;
