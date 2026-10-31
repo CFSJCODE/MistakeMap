@@ -180,7 +180,8 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
       );
       if (!mounted) return;
       if (widget.practice != null) {
-        Navigator.pop(context);
+        // The practice round reads the analysed attempt by this ID.
+        Navigator.pop(context, _attemptId);
       } else {
         _reset();
       }

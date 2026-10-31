@@ -1000,6 +1000,19 @@ class _PracticeViewState extends State<PracticeView> {
   bool _busy = false;
   String? _error;
   List<PracticeExercise> _exercises = [];
+
+  /// The last generated batch, answered one question at a time.
+  List<PracticeExercise> _roundExercises = [];
+  List<PracticeRoundEntry> _roundEntries = [];
+  bool _roundStarted = false;
+  bool _roundBusy = false;
+
+  bool get _roundActive =>
+      _roundStarted && _roundEntries.length < _roundExercises.length;
+  bool get _roundComplete =>
+      _roundExercises.isNotEmpty &&
+      _roundEntries.length == _roundExercises.length;
+
   @override
   void initState() {
     super.initState();
@@ -1023,7 +1036,7 @@ class _PracticeViewState extends State<PracticeView> {
   }
 
   Future<void> _generate() async {
-    if (_subject == null || _busy) return;
+    if (_subject == null || _busy || _roundBusy || _roundActive) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -1035,7 +1048,19 @@ class _PracticeViewState extends State<PracticeView> {
         _count,
         category: _category,
       );
-      if (mounted) setState(() => _exercises = [...result, ..._exercises]);
+      if (!mounted) return;
+      if (result.isEmpty) {
+        setState(
+          () => _error = 'Nenhum exercício foi gerado. Tente novamente.',
+        );
+        return;
+      }
+      setState(() {
+        _exercises = [...result, ..._exercises];
+        _roundExercises = result;
+        _roundEntries = [];
+        _roundStarted = false;
+      });
     } catch (error) {
       if (mounted) setState(() => _error = friendlyFailure(error));
     } finally {
@@ -1043,146 +1068,345 @@ class _PracticeViewState extends State<PracticeView> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Praticar meus erros'),
-      backgroundColor: mapSurface,
-      foregroundColor: mapTitleBlue,
+  /// Opens the answer form; resolves to the analysed attempt's ID, or null
+  /// when the student left without an analysis (back button, offline queue).
+  Future<String?> _openExercise(PracticeExercise exercise) =>
+      Navigator.of(context).push<String>(
+        MistakeMapPageRoute<String>(
+          context: context,
+          builder: (_) => ExerciseSubmissionView(
+            userId: widget.userId,
+            repository: widget.repository,
+            practice: exercise,
+          ),
+        ),
+      );
+
+  Future<void> _answerRoundQuestion() async {
+    if (_roundBusy || !_roundActive) return;
+    final exercise = _roundExercises[_roundEntries.length];
+    setState(() {
+      _roundBusy = true;
+      _error = null;
+    });
+    try {
+      final attemptId = await _openExercise(exercise);
+      if (attemptId == null || !mounted) return;
+      final attempts = await widget.repository.loadAttempts(widget.userId);
+      final attempt = attempts
+          .where((item) => item.id == attemptId && item.analysis != null)
+          .firstOrNull;
+      if (!mounted) return;
+      setState(() {
+        if (attempt == null) {
+          _error =
+              'Não foi possível confirmar a análise desta resposta. '
+              'A rodada continua nesta questão.';
+        } else {
+          _roundEntries = [
+            ..._roundEntries,
+            PracticeRoundEntry(exercise: exercise, attempt: attempt),
+          ];
+        }
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = friendlyFailure(error));
+    } finally {
+      if (mounted) setState(() => _roundBusy = false);
+    }
+  }
+
+  Widget _roundMetric(String label, int count, double? percentage) => SizedBox(
+    width: 96,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: MistakeMapDesign.steel)),
+        const SizedBox(height: 4),
+        Text(
+          '$count',
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: mapTitleBlue,
+          ),
+        ),
+        Text(
+          percentage == null ? '—' : '${percentage.toStringAsFixed(0)}%',
+          style: const TextStyle(color: MistakeMapDesign.steel),
+        ),
+      ],
     ),
-    backgroundColor: mapBackground,
-    body: SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(24),
+  );
+
+  Widget _roundCard({
+    required Key key,
+    required String title,
+    required List<Widget> children,
+  }) => Card(
+    key: key,
+    color: mapSurface,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 12,
         children: [
-          const Text(
-            'A IA gera exercícios personalizados com base nos seus erros nesta matéria, '
-            'priorizando os conceitos que você errou mais vezes e mais recentemente. '
-            'Conceitos que você já voltou a acertar perdem prioridade. Sem histórico, '
-            'a IA gera questões diagnósticas. Respostas antigas ainda sem análise '
-            'serão avaliadas antes da geração.',
-          ),
-          const SizedBox(height: 24),
-          DropdownButtonFormField<String>(
-            initialValue: _subject,
-            isExpanded: true,
-            borderRadius: BorderRadius.circular(12),
-            dropdownColor: mapSurface,
-            menuMaxHeight: (MediaQuery.sizeOf(context).height * .5).clamp(
-              160.0,
-              360.0,
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: mapTitleBlue,
             ),
-            decoration: const InputDecoration(labelText: 'Matéria'),
-            items: widget.subjects.entries
-                .map(
-                  (entry) => DropdownMenuItem(
-                    value: entry.key,
-                    child: Text(entry.value, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(),
-            onChanged: _busy
-                ? null
-                : (value) => setState(() => _subject = value),
           ),
-          const SizedBox(height: 16),
-          const Text('Tipo de erro para reforçar'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ChoiceChip(
-                key: const Key('practice-category-all'),
-                label: const Text('Todos os tipos'),
-                selected: _category == null,
-                onSelected: _busy
-                    ? null
-                    : (_) => setState(() => _category = null),
-              ),
-              for (final entry in categoryLabels.entries)
-                ChoiceChip(
-                  key: Key('practice-category-${entry.key}'),
-                  label: Text(entry.value),
-                  selected: _category == entry.key,
-                  onSelected: _busy
-                      ? null
-                      : (_) => setState(() => _category = entry.key),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            children: [
-              for (final count in [3, 4, 5])
-                ChoiceChip(
-                  label: Text('$count exercícios'),
-                  selected: count == _count,
-                  onSelected: _busy
-                      ? null
-                      : (_) => setState(() => _count = count),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _busy || _subject == null ? null : _generate,
-            icon: const Icon(Icons.auto_awesome_outlined),
-            label: Text(_busy ? 'Preparando exercícios…' : 'Gerar exercícios'),
-          ),
-          if (_busy) const LinearProgressIndicator(),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  _error!,
-                  style: TextStyle(color: MistakeMapDesign.bad),
-                ),
-              ),
-            ),
-          for (var index = 0; index < _exercises.length; index++)
-            if (_exercises[index].subjectId == _subject)
-              Card(
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Exercício ${index + 1}${_exercises[index].focusConcept.isEmpty ? '' : ' · ${_exercises[index].focusConcept}'}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: mapTitleBlue,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(_exercises[index].prompt),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MistakeMapPageRoute<void>(
-                            context: context,
-                            builder: (_) => ExerciseSubmissionView(
-                              userId: widget.userId,
-                              repository: widget.repository,
-                              practice: _exercises[index],
-                            ),
-                          ),
-                        ),
-                        child: const Text('Resolver'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          ...children,
         ],
       ),
     ),
   );
+
+  Widget _roundSetupCard() => _roundCard(
+    key: const Key('practice-round-setup'),
+    title: 'Rodada pronta',
+    children: [
+      Text(
+        '${_roundExercises.length} exercícios. As métricas serão calculadas '
+        'depois da análise de cada resposta.',
+      ),
+      ElevatedButton.icon(
+        key: const Key('practice-round-start'),
+        onPressed: _busy ? null : () => setState(() => _roundStarted = true),
+        icon: const Icon(Icons.play_arrow),
+        label: const Text('Iniciar rodada'),
+      ),
+    ],
+  );
+
+  Widget _roundProgressCard() {
+    final answered = _roundEntries.length;
+    final exercise = _roundExercises[answered];
+    return _roundCard(
+      key: const Key('practice-round-progress'),
+      title: 'Questão ${answered + 1} de ${_roundExercises.length}',
+      children: [
+        LinearProgressIndicator(value: answered / _roundExercises.length),
+        Text(
+          exercise.focusConcept.isEmpty
+              ? exercise.prompt
+              : '${exercise.focusConcept}\n\n${exercise.prompt}',
+          style: const TextStyle(fontSize: 16),
+        ),
+        ElevatedButton.icon(
+          key: const Key('practice-round-resolve'),
+          onPressed: _roundBusy ? null : _answerRoundQuestion,
+          icon: const Icon(Icons.edit_outlined),
+          label: Text(_roundBusy ? 'Analisando resposta…' : 'Responder'),
+        ),
+      ],
+    );
+  }
+
+  Widget _roundSummaryCard() {
+    final summary = PracticeRoundSummary(_roundEntries);
+    final missed = summary.mostMissedConcepts;
+    return _roundCard(
+      key: const Key('practice-round-summary'),
+      title: 'Resumo da rodada',
+      children: [
+        Wrap(
+          spacing: 16,
+          runSpacing: 12,
+          children: [
+            _roundMetric(
+              'Acertos',
+              summary.correctCount,
+              summary.correctPercentage,
+            ),
+            _roundMetric(
+              'Erros',
+              summary.incorrectCount,
+              summary.incorrectPercentage,
+            ),
+            _roundMetric('Inconclusivas', summary.inconclusiveCount, null),
+          ],
+        ),
+        Text(
+          summary.assessedCount == 0
+              ? 'A IA não conseguiu classificar respostas nesta rodada; '
+                    'não há percentual de acerto calculável.'
+              : 'Percentuais calculados sobre ${summary.assessedCount} '
+                    'resposta(s) classificadas. Inconclusivas ficam fora do cálculo.',
+        ),
+        const Text(
+          'Assuntos mais errados',
+          style: TextStyle(fontWeight: FontWeight.w600, color: mapTitleBlue),
+        ),
+        if (missed.isEmpty)
+          const Text('Nenhum assunto incorreto foi identificado nesta rodada.')
+        else
+          for (final concept in missed)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.bubble_chart_outlined),
+              title: Text(concept.label),
+              trailing: Text('${concept.count} questão(ões)'),
+            ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controlsDisabled = _busy || _roundBusy || _roundActive;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Praticar meus erros'),
+        backgroundColor: mapSurface,
+        foregroundColor: mapTitleBlue,
+      ),
+      backgroundColor: mapBackground,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            const Text(
+              'A IA gera exercícios personalizados com base nos seus erros nesta matéria, '
+              'priorizando os conceitos que você errou mais vezes e mais recentemente. '
+              'Conceitos que você já voltou a acertar perdem prioridade. Sem histórico, '
+              'a IA gera questões diagnósticas. Respostas antigas ainda sem análise '
+              'serão avaliadas antes da geração.',
+            ),
+            const SizedBox(height: 24),
+            DropdownButtonFormField<String>(
+              initialValue: _subject,
+              isExpanded: true,
+              borderRadius: BorderRadius.circular(12),
+              dropdownColor: mapSurface,
+              menuMaxHeight: (MediaQuery.sizeOf(context).height * .5).clamp(
+                160.0,
+                360.0,
+              ),
+              decoration: const InputDecoration(labelText: 'Matéria'),
+              items: widget.subjects.entries
+                  .map(
+                    (entry) => DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(),
+              onChanged: controlsDisabled
+                  ? null
+                  : (value) => setState(() => _subject = value),
+            ),
+            const SizedBox(height: 16),
+            const Text('Tipo de erro para reforçar'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChoiceChip(
+                  key: const Key('practice-category-all'),
+                  label: const Text('Todos os tipos'),
+                  selected: _category == null,
+                  onSelected: controlsDisabled
+                      ? null
+                      : (_) => setState(() => _category = null),
+                ),
+                for (final entry in categoryLabels.entries)
+                  ChoiceChip(
+                    key: Key('practice-category-${entry.key}'),
+                    label: Text(entry.value),
+                    selected: _category == entry.key,
+                    onSelected: controlsDisabled
+                        ? null
+                        : (_) => setState(() => _category = entry.key),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final count in [3, 4, 5])
+                  ChoiceChip(
+                    label: Text('$count exercícios'),
+                    selected: count == _count,
+                    onSelected: controlsDisabled
+                        ? null
+                        : (_) => setState(() => _count = count),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: controlsDisabled || _subject == null
+                  ? null
+                  : _generate,
+              icon: const Icon(Icons.auto_awesome_outlined),
+              label: Text(
+                _busy
+                    ? 'Preparando exercícios…'
+                    : _roundComplete
+                    ? 'Gerar nova rodada'
+                    : 'Gerar exercícios',
+              ),
+            ),
+            if (_busy || _roundBusy) const LinearProgressIndicator(),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    _error!,
+                    style: TextStyle(color: MistakeMapDesign.bad),
+                  ),
+                ),
+              ),
+            if (_roundExercises.firstOrNull?.subjectId == _subject)
+              if (!_roundStarted)
+                _roundSetupCard()
+              else if (_roundActive)
+                _roundProgressCard()
+              else
+                _roundSummaryCard(),
+            for (var index = 0; index < _exercises.length; index++)
+              if (_exercises[index].subjectId == _subject)
+                Card(
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Exercício ${index + 1}${_exercises[index].focusConcept.isEmpty ? '' : ' · ${_exercises[index].focusConcept}'}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: mapTitleBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(_exercises[index].prompt),
+                        const SizedBox(height: 16),
+                        OutlinedButton(
+                          onPressed: controlsDisabled
+                              ? null
+                              : () => _openExercise(_exercises[index]),
+                          child: const Text('Resolver'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
 }
