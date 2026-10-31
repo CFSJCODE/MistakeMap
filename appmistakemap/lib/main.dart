@@ -798,22 +798,43 @@ class AppUser {
   bool get isAdmin => role == 'admin';
 }
 
-// Carrega o perfil do Supabase e constrói um AppUser
-Future<AppUser> _carregarPerfil(User supaUser) async {
+// Carrega o perfil do Supabase e constrói um AppUser. Em falha (rede, RLS),
+// o papel fica `user` — nunca concede privilégio por engano — e o erro volta
+// para a tela avisar o estudante em vez de escondê-lo.
+Future<({AppUser user, Object? erro})> _carregarPerfil(User supaUser) async {
+  final padrao = AppUser(
+    id: supaUser.id,
+    email: supaUser.email ?? '',
+    role: 'user',
+  );
   try {
     final data = await _db
         .from('profiles')
         .select('role')
         .eq('id', supaUser.id)
-        .maybeSingle();
-    return AppUser(
-      id: supaUser.id,
-      email: supaUser.email ?? '',
-      role: data?['role'] as String? ?? 'user',
+        .maybeSingle()
+        .timeout(const Duration(seconds: 12));
+    return (
+      user: AppUser(
+        id: supaUser.id,
+        email: supaUser.email ?? '',
+        role: data?['role'] as String? ?? 'user',
+      ),
+      erro: null,
     );
-  } catch (_) {
-    return AppUser(id: supaUser.id, email: supaUser.email ?? '', role: 'user');
+  } catch (erro) {
+    return (user: padrao, erro: erro);
   }
+}
+
+/// Mensagem exibida quando o perfil não carrega; o app segue no modo
+/// estudante e tenta de novo sozinho.
+String mensagemFalhaPerfil(Object erro) {
+  return ehFalhaDeRede(erro)
+      ? 'Sem conexão para carregar seu perfil. Você entrou como estudante; '
+            'tentaremos de novo automaticamente.'
+      : 'Não foi possível carregar seu perfil. Você entrou como estudante; '
+            'tentaremos de novo automaticamente.';
 }
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
@@ -868,9 +889,18 @@ class MistakeMapApp extends StatelessWidget {
 }
 
 // ─── AuthGate ─────────────────────────────────────────────────────────────────
-// Redireciona para login ou app conforme o estado da sessão Supabase
-class AuthGate extends StatelessWidget {
+// Redireciona para login ou app conforme o estado da sessão Supabase. O link
+// de recuperação de senha abre uma sessão temporária: enquanto ela durar, a
+// tela pede a nova senha antes de liberar o app.
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _recuperandoSenha = false;
 
   @override
   Widget build(BuildContext context) {
@@ -880,11 +910,22 @@ class AuthGate extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const _LoadingScaffold();
         }
+        final evento = snapshot.data?.event;
+        if (evento == AuthChangeEvent.passwordRecovery) {
+          _recuperandoSenha = true;
+        } else if (evento == AuthChangeEvent.signedOut) {
+          _recuperandoSenha = false;
+        }
         // A sessão vem do cliente, não do snapshot: falha de refresh por rede
         // chega como erro sem data, mas a sessão continua válida e o usuário
         // não deve cair no login nem perder o estado das abas.
         final session = _db.auth.currentSession;
         if (session == null) return TelaCadastro(erroAuth: snapshot.error);
+        if (_recuperandoSenha) {
+          return TelaNovaSenha(
+            onConcluido: () => setState(() => _recuperandoSenha = false),
+          );
+        }
         return _CarregadorDePerfil(supaUser: session.user);
       },
     );
@@ -917,6 +958,8 @@ class _CarregadorDePerfil extends StatefulWidget {
 
 class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
   AppUser? _appUser;
+  Timer? _novaTentativa;
+  int _tentativas = 0;
 
   @override
   void initState() {
@@ -924,9 +967,33 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
     _carregar();
   }
 
+  @override
+  void dispose() {
+    _novaTentativa?.cancel();
+    super.dispose();
+  }
+
   Future<void> _carregar() async {
-    final user = await _carregarPerfil(widget.supaUser);
-    if (mounted) setState(() => _appUser = user);
+    final resultado = await _carregarPerfil(widget.supaUser);
+    if (!mounted) return;
+    final primeiraCarga = _appUser == null;
+    // Não rebaixa um papel já confirmado por causa de uma nova falha.
+    if (resultado.erro == null || primeiraCarga) {
+      setState(() => _appUser = resultado.user);
+    }
+    final erro = resultado.erro;
+    if (erro == null) return;
+    if (primeiraCarga) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _avisar(context, mensagemFalhaPerfil(erro), erro: true);
+      });
+    }
+    // 15 s, 30 s, 60 s… até 5 min entre as tentativas.
+    if (_tentativas < 8) {
+      final espera = Duration(seconds: (15 << _tentativas).clamp(15, 300));
+      _tentativas++;
+      _novaTentativa = Timer(espera, _carregar);
+    }
   }
 
   @override
@@ -1219,7 +1286,83 @@ class _TelaCadastroState extends State<TelaCadastro> {
     if (msg.contains('User already registered')) {
       return 'Este e-mail já possui uma conta.';
     }
+    if (msg.contains('rate limit') || msg.contains('For security purposes')) {
+      return 'Muitas solicitações seguidas. Aguarde um minuto e tente de novo.';
+    }
     return msg;
+  }
+
+  // Envia o link de redefinição. A resposta é a mesma com ou sem conta para
+  // o e-mail, para a tela não revelar quem está cadastrado.
+  Future<void> _recuperarSenha() async {
+    final campo = TextEditingController(text: _emailCtrl.text.trim());
+    final email = await showDialog<String>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => ContentDialog(
+        title: const Text('Redefinir senha'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Informe o e-mail da conta. Enviaremos um link para você criar '
+              'uma nova senha.',
+            ),
+            const SizedBox(height: 16),
+            TextBox(
+              key: const Key('recuperar-email'),
+              controller: campo,
+              autofocus: true,
+              keyboardType: TextInputType.emailAddress,
+              placeholder: 'email@dominio.com',
+              onSubmitted: (valor) => Navigator.of(ctx).pop(valor.trim()),
+            ),
+          ],
+        ),
+        actions: [
+          MistakeMapButton(
+            style: _estiloBotao(fonte: 14),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          MistakeMapFilledButton(
+            key: const Key('recuperar-enviar'),
+            style: _estiloBotao(fonte: 14),
+            onPressed: () => Navigator.of(ctx).pop(campo.text.trim()),
+            child: const Text('Enviar link'),
+          ),
+        ],
+      ),
+    );
+    campo.dispose();
+    if (email == null || !mounted) return;
+    if (!email.contains('@')) {
+      _snack('Informe um e-mail válido.', erro: true);
+      return;
+    }
+    setState(() => _carregando = true);
+    try {
+      await _db.auth.resetPasswordForEmail(
+        email,
+        redirectTo: googleOAuthRedirect(isWeb: kIsWeb, currentUri: Uri.base),
+      );
+      _snack(
+        'Se houver uma conta com esse e-mail, você receberá o link de '
+        'redefinição em instantes.',
+      );
+    } on AuthRetryableFetchException {
+      _snack(
+        'Sem conexão com o servidor. Verifique a internet e tente novamente.',
+        erro: true,
+      );
+    } on AuthException catch (e) {
+      _snack(_traduzirErroAuth(e.message), erro: true);
+    } on GoogleSignInException {
+      _snack('Não foi possível montar o link de retorno do app.', erro: true);
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
   }
 
   @override
@@ -1403,6 +1546,12 @@ class _TelaCadastroState extends State<TelaCadastro> {
                 : 'Não tenho conta — Criar',
           ),
         ),
+        if (!_modoCadastro)
+          MistakeMapHyperlinkButton(
+            key: const Key('login-esqueci-senha'),
+            onPressed: _carregando ? null : _recuperarSenha,
+            child: const Text('Esqueci minha senha'),
+          ),
         // O retorno do OAuth (io.supabase.mistakemap://) só está registrado no
         // Android; na web ele volta para a própria página. No Windows o
         // navegador abriria e a sessão nunca chegaria ao app.
@@ -1495,6 +1644,173 @@ class _TelaCadastroState extends State<TelaCadastro> {
         ],
       ),
       textAlign: TextAlign.center,
+    );
+  }
+}
+
+// ─── Tela de nova senha (link de recuperação) ────────────────────────────────
+class TelaNovaSenha extends StatefulWidget {
+  final VoidCallback onConcluido;
+  const TelaNovaSenha({super.key, required this.onConcluido});
+
+  @override
+  State<TelaNovaSenha> createState() => _TelaNovaSenhaState();
+}
+
+class _TelaNovaSenhaState extends State<TelaNovaSenha> {
+  final _senhaCtrl = TextEditingController();
+  final _confirmacaoCtrl = TextEditingController();
+  bool _salvando = false;
+
+  static const _tamanhoMinimo = 6;
+
+  @override
+  void dispose() {
+    _senhaCtrl.dispose();
+    _confirmacaoCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _salvar() async {
+    final senha = _senhaCtrl.text;
+    if (senha.length < _tamanhoMinimo) {
+      _avisar(
+        context,
+        'A senha precisa ter ao menos $_tamanhoMinimo caracteres.',
+        erro: true,
+      );
+      return;
+    }
+    if (senha != _confirmacaoCtrl.text) {
+      _avisar(context, 'As senhas não conferem.', erro: true);
+      return;
+    }
+    setState(() => _salvando = true);
+    try {
+      await _db.auth.updateUser(UserAttributes(password: senha));
+      if (!mounted) return;
+      _avisar(context, 'Senha atualizada. Bons estudos!');
+      widget.onConcluido();
+    } on AuthRetryableFetchException {
+      if (mounted) {
+        _avisar(
+          context,
+          'Sem conexão com o servidor. Verifique a internet e tente novamente.',
+          erro: true,
+        );
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        _avisar(
+          context,
+          e.message.contains('different from the old')
+              ? 'Escolha uma senha diferente da anterior.'
+              : e.message,
+          erro: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
+  }
+
+  Widget _campo(TextEditingController controller, String placeholder, Key key) {
+    return TextBox(
+      key: key,
+      controller: controller,
+      obscureText: true,
+      placeholder: placeholder,
+      placeholderStyle: const TextStyle(color: contentBlue),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: WidgetStatePropertyAll(
+        BoxDecoration(
+          borderRadius: BorderRadius.circular(kRadiusSm),
+          border: Border.all(color: contentBlue),
+        ),
+      ),
+      unfocusedColor: Cores.transparente,
+      prefix: const Padding(
+        padding: EdgeInsetsDirectional.only(start: 12),
+        child: Icon(WindowsIcons.lock, size: 16, color: contentBlue),
+      ),
+      onSubmitted: (_) => _salvar(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassScaffold(
+      background: const _FundoMica(),
+      enableBackgroundSampling: false,
+      backgroundColor: kScaffoldBg,
+      statusBarStyle: GlassStatusBarStyle.dark,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: _PainelVidro(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Crie uma nova senha',
+                      style: context.tipo.subtitle?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: titleBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Use ao menos $_tamanhoMinimo caracteres.',
+                      style: context.tipo.body?.copyWith(color: contentBlue),
+                    ),
+                    const SizedBox(height: 24),
+                    _campo(_senhaCtrl, 'nova senha', const Key('nova-senha')),
+                    const SizedBox(height: 16),
+                    _campo(
+                      _confirmacaoCtrl,
+                      'confirme a nova senha',
+                      const Key('nova-senha-confirmacao'),
+                    ),
+                    const SizedBox(height: 16),
+                    MistakeMapFilledButton(
+                      key: const Key('nova-senha-salvar'),
+                      style: _estiloBotao(
+                        fundo: kAcento,
+                        texto: MistakeMapDesign.abyss,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 24,
+                        ),
+                      ),
+                      onPressed: _salvando ? null : _salvar,
+                      child: _salvando
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: ProgressRing(
+                                strokeWidth: 2.5,
+                                activeColor: MistakeMapDesign.abyss,
+                              ),
+                            )
+                          : const Text('Salvar nova senha'),
+                    ),
+                    const SizedBox(height: 8),
+                    MistakeMapHyperlinkButton(
+                      onPressed: _salvando ? null : () => _db.auth.signOut(),
+                      child: const Text('Cancelar e voltar ao login'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

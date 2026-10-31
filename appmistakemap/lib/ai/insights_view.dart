@@ -9,6 +9,8 @@ import 'analysis_models.dart';
 import 'analysis_repository.dart';
 import 'material_control_styles.dart';
 import 'exercise_submission_view.dart';
+import 'study_material.dart';
+import 'study_material_view.dart';
 
 class ErrorMapView extends StatefulWidget {
   final String userId;
@@ -20,7 +22,12 @@ class ErrorMapView extends StatefulWidget {
     required this.repository,
     this.onClose,
     this.startWithAnalysis = false,
+    this.studyRepository,
   });
+
+  /// Material de estudo (resumo, cartões e quiz). Sem ele, a página usa o
+  /// cliente Supabase do repositório de análise, quando houver.
+  final StudyMaterialRepository? studyRepository;
 
   /// Abre a página já com o formulário de análise expandido.
   final bool startWithAnalysis;
@@ -30,6 +37,14 @@ class ErrorMapView extends StatefulWidget {
 }
 
 class _ErrorMapViewState extends State<ErrorMapView> {
+  late final StudyMaterialRepository? _study =
+      widget.studyRepository ??
+      switch (widget.repository) {
+        final SupabaseAnalysisRepository supabase =>
+          SupabaseStudyMaterialRepository(supabase.client),
+        _ => null,
+      };
+
   List<AttemptRecord> _attempts = [];
   bool _loading = true;
   String? _error;
@@ -440,6 +455,24 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                     icon: const Icon(Icons.school_outlined),
                     label: const Text('Praticar meus pontos de dificuldade'),
                   ),
+                  if (_study case final study?) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      key: const Key('open-study-material'),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MistakeMapPageRoute<void>(
+                          context: context,
+                          builder: (_) => StudyMaterialView(
+                            repository: study,
+                            subjects: subjectNames,
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.auto_stories_outlined),
+                      label: const Text('Estudar: resumo, cartões e quiz'),
+                    ),
+                  ],
                 ],
                 const SizedBox(height: 24),
                 // A análise fica fora do carregamento do mapa: recarregar

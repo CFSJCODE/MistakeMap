@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:appmistakemap/main.dart';
@@ -22,6 +23,9 @@ class _TestAuthStorage extends GotrueAsyncStorage {
 }
 
 GoTrueClient get _auth => Supabase.instance.client.auth;
+
+// Corpos enviados a /auth/v1/recover (link de redefinição de senha).
+final _pedidosRecuperacao = <Map<String, dynamic>>[];
 
 // Mesmo caminho do gotrue ao falhar o refresh ou o deep link do OAuth.
 void _injetarErro(Object erro) {
@@ -70,6 +74,17 @@ void main() {
         expect(request.url.host, 'auth-gate-tests.invalid');
         if (request.url.path == '/auth/v1/logout') {
           return http.Response('', 204, request: request);
+        }
+        if (request.url.path == '/auth/v1/recover') {
+          _pedidosRecuperacao.add(
+            Map<String, dynamic>.from(jsonDecode(request.body) as Map),
+          );
+          return http.Response(
+            '{}',
+            200,
+            headers: {'content-type': 'application/json'},
+            request: request,
+          );
         }
         if (!request.url.path.startsWith('/rest/v1/')) {
           throw StateError(
@@ -137,5 +152,50 @@ void main() {
     expect(tester.state(find.byType(TelaNavegacao)), same(estadoAntes));
     expect(find.textContaining('Sem conexão com o servidor'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Esqueci minha senha envia o link sem revelar a conta', (
+    tester,
+  ) async {
+    _pedidosRecuperacao.clear();
+    await _renderApp(tester);
+    await tester.enterText(find.byType(TextBox).first, 'aluno@example.test');
+    await tester.tap(find.byKey(const Key('login-esqueci-senha')));
+    await _settle(tester);
+
+    expect(find.text('Redefinir senha'), findsOneWidget);
+    final campo = tester.widget<TextBox>(
+      find.byKey(const Key('recuperar-email')),
+    );
+    expect(campo.controller!.text, 'aluno@example.test');
+    await tester.tap(find.byKey(const Key('recuperar-enviar')));
+    await _settle(tester);
+
+    expect(_pedidosRecuperacao.single['email'], 'aluno@example.test');
+    expect(find.textContaining('Se houver uma conta'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Modo de cadastro esconde a recuperação de senha', (
+    tester,
+  ) async {
+    await _renderApp(tester);
+    expect(find.byKey(const Key('login-esqueci-senha')), findsOneWidget);
+    await tester.tap(find.text('Não tenho conta — Criar'));
+    await _settle(tester);
+    expect(find.byKey(const Key('login-esqueci-senha')), findsNothing);
+  });
+
+  test('Falha do perfil vira aviso amigável', () {
+    expect(
+      mensagemFalhaPerfil(TimeoutException('lento')),
+      startsWith('Sem conexão'),
+    );
+    expect(
+      mensagemFalhaPerfil(const PostgrestException(message: 'RLS')),
+      startsWith('Não foi possível carregar seu perfil'),
+    );
   });
 }
