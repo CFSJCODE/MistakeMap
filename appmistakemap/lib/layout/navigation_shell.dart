@@ -1,10 +1,11 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
 import '../theme/design_tokens.dart';
+import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
 
-// Vidro branco fosco da navegação: topo mais opaco, base mais translúcida.
-const _railGradient = MistakeMapDesign.glass;
+// Acrílico Fluent no trilho lateral: topo mais opaco, base mais translúcida.
+const _railGradient = MistakeMapDesign.acrylic;
 const _hoverFill = Color(0x0F11212D);
 
 /// Navigation owns its space: no content is painted underneath its buttons.
@@ -374,130 +375,129 @@ class AppNavigationShell extends StatelessWidget {
       final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
       final desktop = constraints.maxWidth / scale >= 840;
       if (desktop) {
-        return Row(
-          children: [
-            Container(
-              width: 224,
-              decoration: const BoxDecoration(
-                gradient: _railGradient,
-                border: Border(
-                  right: BorderSide(color: MistakeMapDesign.hairline),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x1411212D),
-                    blurRadius: 24,
-                    offset: Offset(6, 0),
+        return AuroraBackground(
+          child: Row(
+            children: [
+              Container(
+                width: 224,
+                decoration: const BoxDecoration(
+                  gradient: _railGradient,
+                  border: Border(
+                    // Borda especular: a luz pega a aresta do painel acrílico.
+                    right: BorderSide(color: Color(0xE6FFFFFF)),
                   ),
-                ],
-              ),
-              child: SafeArea(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      // A marca leva o gradiente Aurora escurecido; o resto do
-                      // trilho fica sóbrio.
-                      child: ShaderMask(
-                        blendMode: BlendMode.srcIn,
-                        shaderCallback: MistakeMapDesign.hero.createShader,
-                        child: const Text(
-                          'MistakeMap',
-                          style: TextStyle(
-                            color: MistakeMapDesign.strong,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.4,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _section('ESTUDO'),
-                    for (final i in [0, 1, 3]) ...[
-                      _destination(context, i, compact: false),
-                      const SizedBox(height: 8),
-                    ],
-                    const SizedBox(height: 24),
-                    _section('INTELIGÊNCIA ARTIFICIAL'),
-                    _destination(context, 2, compact: false),
-                    const SizedBox(height: 24),
-                    _section('SISTEMA'),
-                    if (hasAdmin) ...[
-                      _destination(context, 4, compact: false),
-                      const SizedBox(height: 8),
-                    ],
-                    _surface(
-                      context,
-                      false,
-                      Button(
-                        style: _style(false),
-                        onPressed: onAbout,
-                        child: _NavigationHoverInk(
-                          child: Row(
-                            children: [
-                              _icon(context, WindowsIcons.info, false),
-                              const SizedBox(width: 12),
-                              const Expanded(
-                                child: Text(
-                                  'Sobre o App',
-                                  textAlign: TextAlign.start,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                            ],
-                          ),
-                        ),
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x1F11212D),
+                      blurRadius: 28,
+                      offset: Offset(6, 0),
                     ),
                   ],
                 ),
-              ),
-            ),
-            Expanded(child: child),
-          ],
-        );
-      }
-      return Column(
-        children: [
-          Expanded(child: child),
-          if (MediaQuery.viewInsetsOf(context).bottom == 0)
-            Container(
-              decoration: const BoxDecoration(
-                gradient: _railGradient,
-                border: Border(
-                  top: BorderSide(color: MistakeMapDesign.hairline),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x1F11212D),
-                    blurRadius: 24,
-                    offset: Offset(0, -6),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                // Same 8px rhythm around and between the buttons, so each
-                // destination reads as its own control.
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 8,
+                child: SafeArea(
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
                     children: [
-                      for (var i = 0; i < 4; i++)
-                        Expanded(
-                          child: _destination(context, i, compact: true),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        // A marca leva o gradiente Aurora escurecido; o resto do
+                        // trilho fica sóbrio.
+                        child: ShaderMask(
+                          blendMode: BlendMode.srcIn,
+                          shaderCallback: MistakeMapDesign.hero.createShader,
+                          child: const Text(
+                            'MistakeMap',
+                            style: TextStyle(
+                              color: MistakeMapDesign.strong,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
                         ),
-                      Expanded(child: _more(context)),
+                      ),
+                      const SizedBox(height: 8),
+                      _section('ESTUDO'),
+                      for (final i in [0, 1, 3]) ...[
+                        _destination(context, i, compact: false),
+                        const SizedBox(height: 8),
+                      ],
+                      const SizedBox(height: 24),
+                      _section('INTELIGÊNCIA ARTIFICIAL'),
+                      _destination(context, 2, compact: false),
+                      const SizedBox(height: 24),
+                      _section('SISTEMA'),
+                      if (hasAdmin) ...[
+                        _destination(context, 4, compact: false),
+                        const SizedBox(height: 8),
+                      ],
+                      _surface(
+                        context,
+                        false,
+                        Button(
+                          style: _style(false),
+                          onPressed: onAbout,
+                          child: _NavigationHoverInk(
+                            child: Row(
+                              children: [
+                                _icon(context, WindowsIcons.info, false),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Text(
+                                    'Sobre o App',
+                                    textAlign: TextAlign.start,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
-            ),
-        ],
+              Expanded(child: child),
+            ],
+          ),
+        );
+      }
+      return AuroraBackground(
+        child: Column(
+          children: [
+            Expanded(child: child),
+            if (MediaQuery.viewInsetsOf(context).bottom == 0)
+              SafeArea(
+                top: false,
+                minimum: const EdgeInsets.only(bottom: 8),
+                // Cápsula de vidro líquido que flutua sobre a luz Aurora;
+                // continua ocupando o próprio espaço, abaixo do conteúdo.
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  child: GlassSurface(
+                    tier: GlassTier.liquid,
+                    radius: 24,
+                    blur: true,
+                    // Same 8px rhythm around and between the buttons, so
+                    // each destination reads as its own control.
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 8,
+                      children: [
+                        for (var i = 0; i < 4; i++)
+                          Expanded(
+                            child: _destination(context, i, compact: true),
+                          ),
+                        Expanded(child: _more(context)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       );
     },
   );

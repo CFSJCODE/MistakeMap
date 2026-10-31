@@ -1,7 +1,34 @@
 import 'package:flutter/material.dart';
 
 import '../theme/design_tokens.dart';
+import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
+
+/// Scaffold do fluxo de IA sobre o fundo Aurora.
+/// A luz fica dentro da página, então cada rota continua opaca na transição e
+/// a tela anterior não aparece por trás da nova.
+class AuroraScaffold extends StatelessWidget {
+  const AuroraScaffold({
+    super.key,
+    this.appBar,
+    this.floatingActionButton,
+    required this.body,
+  });
+
+  final PreferredSizeWidget? appBar;
+  final Widget? floatingActionButton;
+  final Widget body;
+
+  @override
+  Widget build(BuildContext context) => AuroraBackground(
+    child: Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: appBar,
+      floatingActionButton: floatingActionButton,
+      body: body,
+    ),
+  );
+}
 
 /// Uses native button interaction states with one synchronized color animation.
 /// Material's button fill does not interpolate with animationDuration alone.

@@ -14,6 +14,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'theme/design_tokens.dart';
 import 'theme/control_styles.dart';
+import 'theme/glass_surface.dart';
 import 'theme/motion.dart';
 import 'layout/adaptativo.dart';
 import 'layout/navigation_shell.dart';
@@ -81,32 +82,6 @@ double _alturaBarraSuperior(BuildContext context) =>
       kAlturaBarraSuperior,
       double.infinity,
     );
-
-// Fundo: Pearl clareado com luz ambiente Aurora suave, que dá profundidade
-// às camadas de vidro sem competir com o conteúdo.
-// Um gradiente substitui a cor da BoxDecoration, então o Pearl vai por baixo
-// em camada própria; sem ele a janela apareceria pelas áreas transparentes.
-const BoxDecoration kBgGradient = BoxDecoration(
-  gradient: RadialGradient(
-    center: Alignment(-0.95, -1.1),
-    radius: 1.3,
-    colors: [Color(0x3836D6C3), Color(0x0036D6C3)],
-  ),
-);
-const BoxDecoration _luzAmbiente = BoxDecoration(
-  gradient: RadialGradient(
-    center: Alignment(1.05, -0.7),
-    radius: 1.1,
-    colors: [Color(0x2B9B7BFF), Color(0x009B7BFF)],
-  ),
-);
-const BoxDecoration _luzAmbienteBase = BoxDecoration(
-  gradient: RadialGradient(
-    center: Alignment(0.4, 1.25),
-    radius: 1.2,
-    colors: [Color(0x264C9DFF), Color(0x004C9DFF)],
-  ),
-);
 
 final FluentThemeData temaFluent = FluentThemeData(
   brightness: Brightness.light,
@@ -186,11 +161,12 @@ Sincronizador _sync(String usuarioId) {
   return sync;
 }
 
-// ─── Design system: Fluent UI + Liquid Glass ─────────────────────────────────
-// Liquid Glass (Apple): estrutura e camada flutuante — scaffold, barras,
-// botões da barra, painéis de destaque e toasts.
-// Fluent UI (Microsoft): conteúdo e controles — tipografia, cards de conteúdo,
-// campos, botões, combos, progresso, diálogos e ícones (WindowsIcons).
+// ─── Design system: Aurora Glass (Fluent UI + Liquid Glass) ──────────────────
+// L0 Mica: fundo Aurora fixo, com luz viva que dá profundidade às camadas.
+// L1 Acrílico (Fluent): conteúdo — tipografia, cartões, campos, botões,
+// combos, progresso, diálogos e ícones (WindowsIcons).
+// L2 Vidro líquido (Apple): o que flutua — barras, navegação, destaques e
+// toasts.
 
 extension _Tipografia on BuildContext {
   Typography get tipo => FluentTheme.of(this).typography;
@@ -200,21 +176,7 @@ class _FundoMica extends StatelessWidget {
   const _FundoMica();
 
   @override
-  Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: kScaffoldBg,
-      child: DecoratedBox(
-        decoration: kBgGradient,
-        child: DecoratedBox(
-          decoration: _luzAmbiente,
-          child: DecoratedBox(
-            decoration: _luzAmbienteBase,
-            child: SizedBox.expand(),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const AuroraBackground();
 }
 
 // A barra superior acompanha a fonte; a navegação ocupa espaço fora do corpo.
@@ -399,82 +361,57 @@ class _PainelVidro extends StatelessWidget {
   const _PainelVidro({
     required this.child,
     this.padding = const EdgeInsets.all(16),
-    this.raio = kRadius,
+    this.raio = MistakeMapDesign.cardRadius,
+    this.acento,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double raio;
 
+  /// Acento da seção que tinge o canto do vidro.
+  final Color? acento;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: kGlassBg,
-        borderRadius: BorderRadius.circular(raio),
-        border: Border.all(color: kGlassBorder),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A11212D),
-            blurRadius: 24,
-            spreadRadius: -8,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: child,
+    return GlassSurface(
+      radius: raio,
+      accent: acento,
+      child: Container(padding: padding, child: child),
     );
   }
 }
 
-// Card de conteúdo Fluent com acabamento acrílico (listas e blocos de texto).
+// Card de conteúdo Fluent em acrílico (listas e blocos de texto).
 class _CartaoFluent extends StatelessWidget {
   const _CartaoFluent({
     required this.child,
     this.padding = const EdgeInsets.all(16),
-    this.cor = kGlassBg,
+    this.acento,
     this.onPressed,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
-  final Color cor;
-  final VoidCallback? onPressed;
 
-  Widget _card(Color fundo) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(kRadius),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A11212D),
-            blurRadius: 24,
-            spreadRadius: -8,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Card(
-        padding: padding,
-        backgroundColor: fundo,
-        borderColor: kGlassBorder,
-        borderRadius: BorderRadius.circular(kRadius),
-        child: child,
-      ),
-    );
-  }
+  /// Acento da seção que tinge o canto do vidro.
+  final Color? acento;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final acao = onPressed;
-    if (acao == null) return _card(cor);
+    if (acao == null) {
+      return GlassSurface(accent: acento, padding: padding, child: child);
+    }
+    // Cartão clicável: superfície opaca do botão, para o rótulo nunca
+    // depender do que está atrás durante o hover.
     return MistakeMapButton(
       onPressed: acao,
       style: MistakeMapControls.button(
         radius: kRadius,
         padding: padding,
-        background: cor,
+        background: kGlassBg,
       ),
       child: child,
     );
@@ -937,13 +874,7 @@ class _LoadingScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: kScaffoldBg,
-      child: DecoratedBox(
-        decoration: kBgGradient,
-        child: Center(child: ProgressRing()),
-      ),
-    );
+    return const AuroraBackground(child: Center(child: ProgressRing()));
   }
 }
 
@@ -1956,13 +1887,7 @@ class _TelaInicialState extends State<TelaInicial> {
 
   // Cabeçalho com nome/email e badge de admin
   Widget _cabecalho(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: MistakeMapDesign.hero,
-        borderRadius: BorderRadius.circular(kRadius),
-      ),
+    return GlassHero(
       child: Column(
         children: [
           Text(
@@ -2018,16 +1943,22 @@ class _TelaInicialState extends State<TelaInicial> {
               // Conta tentativas (attempts), não os exercícios da lista.
               label: 'Tentativas',
               value: '$_totalExercicios',
+              acento: MistakeMapDesign.azure,
+              tinta: MistakeMapDesign.azureInk,
             ),
             _ResumoCard(
               icone: WindowsIcons.history,
               label: 'Para revisar',
               value: '$_paraRevisar',
+              acento: MistakeMapDesign.amber,
+              tinta: MistakeMapDesign.amberInk,
             ),
             _ResumoCard(
               icone: WindowsIcons.education,
               label: 'Evolução',
               value: _evolucao,
+              acento: MistakeMapDesign.mint,
+              tinta: MistakeMapDesign.mintInk,
             ),
           ],
         ),
@@ -2087,27 +2018,34 @@ class _ResumoCard extends StatelessWidget {
     required this.icone,
     required this.label,
     required this.value,
+    required this.acento,
+    required this.tinta,
   });
 
   final IconData icone;
   final String label;
   final String value;
 
+  /// Cor com função: cada número leva o acento do que ele mede.
+  final Color acento;
+  final Color tinta;
+
   @override
   Widget build(BuildContext context) {
     return _PainelVidro(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      raio: kRadiusSm,
+      raio: kRadius,
+      acento: acento,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icone, size: 18, color: titleBlue),
+          GlassIconTile(icon: icone, ink: tinta, accent: acento, size: 32),
           const SizedBox(height: 8),
           Text(
             value,
             style: context.tipo.subtitle?.copyWith(
               fontWeight: FontWeight.bold,
-              color: contentBlue,
+              color: MistakeMapDesign.abyss,
             ),
           ),
           const SizedBox(height: 4),
@@ -2910,6 +2848,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
   Widget _buildGrafo() {
     final maxT = _maxTotal.toDouble();
     return _CartaoFluent(
+      acento: MistakeMapDesign.violet,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3019,6 +2958,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
 
   Widget _buildPorAssunto() {
     return _CartaoFluent(
+      acento: MistakeMapDesign.violet,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3151,7 +3091,8 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PainelVidro(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      raio: kRadiusSm,
+      raio: kRadius,
+      acento: cor,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -4539,6 +4480,7 @@ class TelaSobre extends StatelessWidget {
                 const _MvvCard(
                   icone: WindowsIcons.flag,
                   cor: MistakeMapDesign.aquaInk,
+                  acento: MistakeMapDesign.aqua,
                   titulo: 'Missão',
                   descricao:
                       'Ajudar estudantes a identificar e superar suas lacunas conceituais, '
@@ -4549,6 +4491,7 @@ class TelaSobre extends StatelessWidget {
                 const _MvvCard(
                   icone: WindowsIcons.view,
                   cor: MistakeMapDesign.violetInk,
+                  acento: MistakeMapDesign.violet,
                   titulo: 'Visão',
                   descricao:
                       'Ser a principal ferramenta de aprendizado ativo no Brasil, '
@@ -4559,6 +4502,7 @@ class TelaSobre extends StatelessWidget {
                 const _MvvCard(
                   icone: WindowsIcons.heart,
                   cor: MistakeMapDesign.amberInk,
+                  acento: MistakeMapDesign.amber,
                   titulo: 'Valores',
                   descricao:
                       '• Aprendizado contínuo acima de resultados imediatos\n'
@@ -4575,6 +4519,7 @@ class TelaSobre extends StatelessWidget {
                   nome: 'Cláudio Francisco',
                   foto: claudioProfilePhotoBytes,
                   corAvatar: MistakeMapDesign.azure,
+                  tinta: MistakeMapDesign.azureInk,
                   responsabilidades: [
                     'Backend',
                     'Storage (R2)',
@@ -4595,6 +4540,7 @@ class TelaSobre extends StatelessWidget {
                   iniciais: 'LE',
                   nome: 'Lucas Emanuel',
                   corAvatar: MistakeMapDesign.violet,
+                  tinta: MistakeMapDesign.violetInk,
                   responsabilidades: ['Frontend', 'Design', 'UI/UX'],
                   descricao:
                       'Responsável pela experiência do usuário, design de '
@@ -4643,20 +4589,8 @@ class TelaSobre extends StatelessWidget {
 
   // Destaque com o gradiente da identidade.
   Widget _heroi(BuildContext context) {
-    return Container(
+    return GlassHero(
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-      decoration: BoxDecoration(
-        gradient: MistakeMapDesign.hero,
-        borderRadius: BorderRadius.circular(kRadius),
-        boxShadow: [
-          BoxShadow(
-            color: MistakeMapDesign.violetInk.withValues(alpha: 0.22),
-            blurRadius: 24,
-            spreadRadius: -8,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
       child: Column(
         children: [
           Container(
@@ -4712,7 +4646,11 @@ class _SobreSecaoTitulo extends StatelessWidget {
           width: 4,
           height: 24,
           decoration: BoxDecoration(
-            color: titleBlue,
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [MistakeMapDesign.aqua, MistakeMapDesign.violet],
+            ),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -4738,73 +4676,48 @@ class _MvvCard extends StatelessWidget {
   final String titulo;
   final String descricao;
 
+  /// Acento vivo que preenche o bloco do ícone e tinge o vidro.
+  final Color acento;
+
   const _MvvCard({
     required this.icone,
     required this.cor,
+    required this.acento,
     required this.titulo,
     required this.descricao,
   });
 
   @override
   Widget build(BuildContext context) {
+    // O tom do acento no canto e o ícone preenchido substituem a barra
+    // lateral: a cor marca o cartão sem dividir o vidro em duas peças.
     return _CartaoFluent(
-      cor: kGlassBg,
-      padding: EdgeInsets.zero,
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Barra lateral colorida; o raio desconta a borda de 1 px do card.
-            Container(
-              width: 6,
-              decoration: BoxDecoration(
-                color: cor,
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(kRadius - 1),
+      acento: acento,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GlassIconTile(icon: icone, ink: cor, accent: acento),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titulo,
+                  style: context.tipo.bodyStrong?.copyWith(color: cor),
                 ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: cor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(icone, size: 20, color: cor),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            titulo,
-                            style: context.tipo.bodyStrong?.copyWith(
-                              color: cor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      descricao,
-                      style: context.tipo.body?.copyWith(
-                        color: MistakeMapDesign.steel,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 8),
+                Text(
+                  descricao,
+                  style: context.tipo.body?.copyWith(
+                    color: MistakeMapDesign.steel,
+                    height: 1.5,
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -4815,6 +4728,9 @@ class _MembroCard extends StatelessWidget {
   final String nome;
   final Uint8List? foto;
   final Color corAvatar;
+
+  /// O acento escurecido, para nome e etiquetas legíveis sobre o vidro.
+  final Color tinta;
   final List<String> responsabilidades;
   final String descricao;
   final Widget? acao;
@@ -4824,6 +4740,7 @@ class _MembroCard extends StatelessWidget {
     required this.nome,
     this.foto,
     required this.corAvatar,
+    required this.tinta,
     required this.responsabilidades,
     required this.descricao,
     this.acao,
@@ -4832,7 +4749,7 @@ class _MembroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CartaoFluent(
-      cor: kGlassBg,
+      acento: corAvatar,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -4868,9 +4785,7 @@ class _MembroCard extends StatelessWidget {
                   children: [
                     Text(
                       nome,
-                      style: context.tipo.bodyStrong?.copyWith(
-                        color: corAvatar,
-                      ),
+                      style: context.tipo.bodyStrong?.copyWith(color: tinta),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -4878,7 +4793,7 @@ class _MembroCard extends StatelessWidget {
                       runSpacing: 4,
                       children: [
                         for (final r in responsabilidades)
-                          _Pilula(texto: r, cor: corAvatar),
+                          _Pilula(texto: r, cor: tinta),
                       ],
                     ),
                   ],
