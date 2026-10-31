@@ -188,6 +188,15 @@ class FakeRepository implements AnalysisRepository {
   Future<List<PracticeExercise>> loadPractice(String userId) async => practice;
 }
 
+PracticeExercise fractionExercise(int n) => PracticeExercise(
+  id: 'p$n',
+  subjectId: 'math',
+  subjectName: 'Matemática',
+  prompt: 'Exercício $n',
+  difficulty: 'facil',
+  focusConcept: 'Frações',
+);
+
 void main() {
   test('existing app model still compiles', () {
     expect(const AppUser(id: 'u', email: '', role: 'user').isAdmin, isFalse);
@@ -256,36 +265,15 @@ void main() {
 
     final summary = PracticeRoundSummary([
       PracticeRoundEntry(
-        exercise: const PracticeExercise(
-          id: 'p1',
-          subjectId: 'math',
-          subjectName: 'Matemática',
-          prompt: 'Exercício 1',
-          difficulty: 'facil',
-          focusConcept: 'Frações',
-        ),
+        exercise: fractionExercise(1),
         attempt: result('a1', false, duplicate: true),
       ),
       PracticeRoundEntry(
-        exercise: const PracticeExercise(
-          id: 'p2',
-          subjectId: 'math',
-          subjectName: 'Matemática',
-          prompt: 'Exercício 2',
-          difficulty: 'facil',
-          focusConcept: 'Frações',
-        ),
+        exercise: fractionExercise(2),
         attempt: result('a2', true),
       ),
       PracticeRoundEntry(
-        exercise: const PracticeExercise(
-          id: 'p3',
-          subjectId: 'math',
-          subjectName: 'Matemática',
-          prompt: 'Exercício 3',
-          difficulty: 'facil',
-          focusConcept: 'Frações',
-        ),
+        exercise: fractionExercise(3),
         attempt: result('a3', null),
       ),
     ]);
@@ -554,30 +542,9 @@ void main() {
   ) async {
     final repository = FakeRepository()
       ..practice = [
-        const PracticeExercise(
-          id: 'p1',
-          subjectId: 'math',
-          subjectName: 'Matemática',
-          prompt: 'Exercício 1',
-          difficulty: 'facil',
-          focusConcept: 'Frações',
-        ),
-        const PracticeExercise(
-          id: 'p2',
-          subjectId: 'math',
-          subjectName: 'Matemática',
-          prompt: 'Exercício 2',
-          difficulty: 'facil',
-          focusConcept: 'Frações',
-        ),
-        const PracticeExercise(
-          id: 'p3',
-          subjectId: 'math',
-          subjectName: 'Matemática',
-          prompt: 'Exercício 3',
-          difficulty: 'facil',
-          focusConcept: 'Frações',
-        ),
+        fractionExercise(1),
+        fractionExercise(2),
+        fractionExercise(3),
       ]
       ..analysisOutcomes = [false, true, null];
     await tester.pumpWidget(
@@ -592,23 +559,23 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Gerar exercícios'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('practice-round-start')));
-    await tester.tap(find.byKey(const Key('practice-round-start')));
-    await tester.pumpAndSettle();
+    // ensureVisible only scrolls: pump so the tap hits the new layout.
+    Future<void> tapKey(String key) async {
+      await tester.ensureVisible(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+    }
+
+    await tapKey('practice-round-start');
 
     Future<void> answerNextQuestion() async {
-      await tester.ensureVisible(
-        find.byKey(const Key('practice-round-resolve')),
-      );
-      await tester.tap(find.byKey(const Key('practice-round-resolve')));
-      await tester.pumpAndSettle();
+      await tapKey('practice-round-resolve');
       await tester.enterText(
         find.byKey(const Key('exercise-answer')),
         'Resposta',
       );
-      await tester.ensureVisible(find.byKey(const Key('submit-exercise')));
-      await tester.tap(find.byKey(const Key('submit-exercise')));
-      await tester.pumpAndSettle();
+      await tapKey('submit-exercise');
       await tester.pageBack();
       await tester.pumpAndSettle();
     }

@@ -998,14 +998,20 @@ class _PracticeViewState extends State<PracticeView> {
   String? _category;
   int _count = 3;
   bool _busy = false;
-  bool _roundBusy = false;
-  bool _roundActive = false;
   String? _error;
   List<PracticeExercise> _exercises = [];
+
+  /// The last generated batch, answered one question at a time.
   List<PracticeExercise> _roundExercises = [];
   List<PracticeRoundEntry> _roundEntries = [];
-  Map<String, Set<String>> _roundBaselineIds = {};
-  int _roundIndex = 0;
+  bool _roundStarted = false;
+  bool _roundBusy = false;
+
+  bool get _roundActive =>
+      _roundStarted && _roundEntries.length < _roundExercises.length;
+  bool get _roundComplete =>
+      _roundExercises.isNotEmpty &&
+      _roundEntries.length == _roundExercises.length;
 
   @override
   void initState() {
@@ -1053,9 +1059,7 @@ class _PracticeViewState extends State<PracticeView> {
         _exercises = [...result, ..._exercises];
         _roundExercises = result;
         _roundEntries = [];
-        _roundBaselineIds = {};
-        _roundIndex = 0;
-        _roundActive = false;
+        _roundStarted = false;
       });
     } catch (error) {
       if (mounted) setState(() => _error = friendlyFailure(error));
@@ -1064,48 +1068,11 @@ class _PracticeViewState extends State<PracticeView> {
     }
   }
 
-  Future<void> _startRound() async {
-    if (_roundExercises.isEmpty || _busy || _roundBusy || _roundActive) return;
-    setState(() {
-      _roundBusy = true;
-      _error = null;
-    });
-    try {
-      final attempts = await widget.repository.loadAttempts(widget.userId);
-      final baselineIds = <String, Set<String>>{
-        for (final exercise in _roundExercises) exercise.id: <String>{},
-      };
-      for (final attempt in attempts) {
-        baselineIds[attempt.exerciseId]?.add(attempt.id);
-      }
-      if (!mounted) return;
-      setState(() {
-        _roundBaselineIds = baselineIds;
-        _roundEntries = [];
-        _roundIndex = 0;
-        _roundActive = true;
-      });
-    } catch (error) {
-      if (mounted) setState(() => _error = friendlyFailure(error));
-    } finally {
-      if (mounted) setState(() => _roundBusy = false);
-    }
-  }
-
-  Future<void> _resolveExercise(
-    PracticeExercise exercise, {
-    bool forRound = false,
-  }) async {
-    if (_roundBusy || (forRound && !_roundActive)) return;
-    if (forRound) {
-      setState(() {
-        _roundBusy = true;
-        _error = null;
-      });
-    }
-    try {
-      await Navigator.of(context).push<void>(
-        MistakeMapPageRoute<void>(
+  /// Opens the answer form; resolves to the analysed attempt's ID, or null
+  /// when the student left without an analysis (back button, offline queue).
+  Future<String?> _openExercise(PracticeExercise exercise) =>
+      Navigator.of(context).push<String>(
+        MistakeMapPageRoute<String>(
           context: context,
           builder: (_) => ExerciseSubmissionView(
             userId: widget.userId,
@@ -1114,45 +1081,38 @@ class _PracticeViewState extends State<PracticeView> {
           ),
         ),
       );
-      if (!mounted || !forRound) return;
 
+  Future<void> _answerRoundQuestion() async {
+    if (_roundBusy || !_roundActive) return;
+    final exercise = _roundExercises[_roundEntries.length];
+    setState(() {
+      _roundBusy = true;
+      _error = null;
+    });
+    try {
+      final attemptId = await _openExercise(exercise);
+      if (attemptId == null || !mounted) return;
       final attempts = await widget.repository.loadAttempts(widget.userId);
-      final knownIds = _roundBaselineIds[exercise.id] ?? const <String>{};
-      final analyzed =
-          attempts
-              .where(
-                (attempt) =>
-                    attempt.exerciseId == exercise.id &&
-                    !knownIds.contains(attempt.id) &&
-                    attempt.analysis != null,
-              )
-              .toList()
-            ..sort((a, b) => b.attemptedAt.compareTo(a.attemptedAt));
-      final result = analyzed.firstOrNull;
-      if (result == null) {
-        if (mounted) {
-          setState(() {
-            _error =
-                'Não foi possível confirmar a análise desta resposta. '
-                'A rodada continua nesta questão.';
-          });
-        }
-        return;
-      }
-
+      final attempt = attempts
+          .where((item) => item.id == attemptId && item.analysis != null)
+          .firstOrNull;
       if (!mounted) return;
       setState(() {
-        _roundEntries = [
-          ..._roundEntries,
-          PracticeRoundEntry(exercise: exercise, attempt: result),
-        ];
-        _roundIndex++;
-        if (_roundIndex >= _roundExercises.length) _roundActive = false;
+        if (attempt == null) {
+          _error =
+              'Não foi possível confirmar a análise desta resposta. '
+              'A rodada continua nesta questão.';
+        } else {
+          _roundEntries = [
+            ..._roundEntries,
+            PracticeRoundEntry(exercise: exercise, attempt: attempt),
+          ];
+        }
       });
     } catch (error) {
       if (mounted) setState(() => _error = friendlyFailure(error));
     } finally {
-      if (mounted && forRound) setState(() => _roundBusy = false);
+      if (mounted) setState(() => _roundBusy = false);
     }
   }
 
@@ -1179,162 +1139,125 @@ class _PracticeViewState extends State<PracticeView> {
     ),
   );
 
-  Widget _roundSetupCard() => Card(
-    key: const Key('practice-round-setup'),
+  Widget _roundCard({
+    required Key key,
+    required String title,
+    required List<Widget> children,
+  }) => Card(
+    key: key,
     color: mapSurface,
     child: Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 12,
         children: [
-          const Text(
-            'Rodada pronta',
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: mapTitleBlue,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            '${_roundExercises.length} exercícios. As métricas serão calculadas '
-            'depois da análise de cada resposta.',
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            key: const Key('practice-round-start'),
-            onPressed: _busy || _roundBusy ? null : _startRound,
-            icon: const Icon(Icons.play_arrow),
-            label: Text(_roundBusy ? 'Preparando rodada…' : 'Iniciar rodada'),
-          ),
+          ...children,
         ],
       ),
     ),
+  );
+
+  Widget _roundSetupCard() => _roundCard(
+    key: const Key('practice-round-setup'),
+    title: 'Rodada pronta',
+    children: [
+      Text(
+        '${_roundExercises.length} exercícios. As métricas serão calculadas '
+        'depois da análise de cada resposta.',
+      ),
+      ElevatedButton.icon(
+        key: const Key('practice-round-start'),
+        onPressed: _busy ? null : () => setState(() => _roundStarted = true),
+        icon: const Icon(Icons.play_arrow),
+        label: const Text('Iniciar rodada'),
+      ),
+    ],
   );
 
   Widget _roundProgressCard() {
-    final exercise = _roundExercises[_roundIndex];
-    return Card(
+    final answered = _roundEntries.length;
+    final exercise = _roundExercises[answered];
+    return _roundCard(
       key: const Key('practice-round-progress'),
-      color: mapSurface,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Questão ${_roundIndex + 1} de ${_roundExercises.length}',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: mapTitleBlue,
-              ),
-            ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: _roundEntries.length / _roundExercises.length,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              exercise.focusConcept.isEmpty
-                  ? exercise.prompt
-                  : '${exercise.focusConcept}\n\n${exercise.prompt}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              key: const Key('practice-round-resolve'),
-              onPressed: _roundBusy
-                  ? null
-                  : () => _resolveExercise(exercise, forRound: true),
-              icon: const Icon(Icons.edit_outlined),
-              label: Text(_roundBusy ? 'Analisando resposta…' : 'Responder'),
-            ),
-          ],
+      title: 'Questão ${answered + 1} de ${_roundExercises.length}',
+      children: [
+        LinearProgressIndicator(value: answered / _roundExercises.length),
+        Text(
+          exercise.focusConcept.isEmpty
+              ? exercise.prompt
+              : '${exercise.focusConcept}\n\n${exercise.prompt}',
+          style: const TextStyle(fontSize: 16),
         ),
-      ),
+        ElevatedButton.icon(
+          key: const Key('practice-round-resolve'),
+          onPressed: _roundBusy ? null : _answerRoundQuestion,
+          icon: const Icon(Icons.edit_outlined),
+          label: Text(_roundBusy ? 'Analisando resposta…' : 'Responder'),
+        ),
+      ],
     );
   }
 
-  Widget _roundSummaryCard(PracticeRoundSummary summary) => Card(
-    key: const Key('practice-round-summary'),
-    color: mapSurface,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Resumo da rodada',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: mapTitleBlue,
+  Widget _roundSummaryCard() {
+    final summary = PracticeRoundSummary(_roundEntries);
+    final missed = summary.mostMissedConcepts;
+    return _roundCard(
+      key: const Key('practice-round-summary'),
+      title: 'Resumo da rodada',
+      children: [
+        Wrap(
+          spacing: 16,
+          runSpacing: 12,
+          children: [
+            _roundMetric(
+              'Acertos',
+              summary.correctCount,
+              summary.correctPercentage,
             ),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 16,
-            runSpacing: 12,
-            children: [
-              _roundMetric(
-                'Acertos',
-                summary.correctCount,
-                summary.correctPercentage,
-              ),
-              _roundMetric(
-                'Erros',
-                summary.incorrectCount,
-                summary.incorrectPercentage,
-              ),
-              _roundMetric('Inconclusivas', summary.inconclusiveCount, null),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            summary.assessedCount == 0
-                ? 'A IA não conseguiu classificar respostas nesta rodada; '
-                      'não há percentual de acerto calculável.'
-                : 'Percentuais calculados sobre ${summary.assessedCount} '
-                      'resposta(s) classificadas. Inconclusivas ficam fora do cálculo.',
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Assuntos mais errados',
-            style: TextStyle(fontWeight: FontWeight.w600, color: mapTitleBlue),
-          ),
-          const SizedBox(height: 8),
-          if (summary.mostMissedConcepts.isEmpty)
-            const Text(
-              'Nenhum assunto incorreto foi identificado nesta rodada.',
-            )
-          else
-            for (final concept in summary.mostMissedConcepts)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.bubble_chart_outlined),
-                title: Text(concept.label),
-                trailing: Text('${concept.count} questão(ões)'),
-              ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            key: const Key('practice-round-new'),
-            onPressed: _busy || _roundBusy ? null : _generate,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Gerar nova rodada'),
-          ),
-        ],
-      ),
-    ),
-  );
+            _roundMetric(
+              'Erros',
+              summary.incorrectCount,
+              summary.incorrectPercentage,
+            ),
+            _roundMetric('Inconclusivas', summary.inconclusiveCount, null),
+          ],
+        ),
+        Text(
+          summary.assessedCount == 0
+              ? 'A IA não conseguiu classificar respostas nesta rodada; '
+                    'não há percentual de acerto calculável.'
+              : 'Percentuais calculados sobre ${summary.assessedCount} '
+                    'resposta(s) classificadas. Inconclusivas ficam fora do cálculo.',
+        ),
+        const Text(
+          'Assuntos mais errados',
+          style: TextStyle(fontWeight: FontWeight.w600, color: mapTitleBlue),
+        ),
+        if (missed.isEmpty)
+          const Text('Nenhum assunto incorreto foi identificado nesta rodada.')
+        else
+          for (final concept in missed)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.bubble_chart_outlined),
+              title: Text(concept.label),
+              trailing: Text('${concept.count} questão(ões)'),
+            ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final summary = PracticeRoundSummary(_roundEntries);
-    final roundComplete =
-        _roundExercises.isNotEmpty &&
-        _roundEntries.length == _roundExercises.length &&
-        !_roundActive;
     final controlsDisabled = _busy || _roundBusy || _roundActive;
 
     return Scaffold(
@@ -1427,7 +1350,7 @@ class _PracticeViewState extends State<PracticeView> {
               label: Text(
                 _busy
                     ? 'Preparando exercícios…'
-                    : roundComplete
+                    : _roundComplete
                     ? 'Gerar nova rodada'
                     : 'Gerar exercícios',
               ),
@@ -1444,12 +1367,13 @@ class _PracticeViewState extends State<PracticeView> {
                   ),
                 ),
               ),
-            if (_roundExercises.isNotEmpty &&
-                _roundEntries.isEmpty &&
-                !_roundActive)
-              _roundSetupCard(),
-            if (_roundActive) _roundProgressCard(),
-            if (roundComplete) _roundSummaryCard(summary),
+            if (_roundExercises.firstOrNull?.subjectId == _subject)
+              if (!_roundStarted)
+                _roundSetupCard()
+              else if (_roundActive)
+                _roundProgressCard()
+              else
+                _roundSummaryCard(),
             for (var index = 0; index < _exercises.length; index++)
               if (_exercises[index].subjectId == _subject)
                 Card(
@@ -1473,7 +1397,7 @@ class _PracticeViewState extends State<PracticeView> {
                         OutlinedButton(
                           onPressed: controlsDisabled
                               ? null
-                              : () => _resolveExercise(_exercises[index]),
+                              : () => _openExercise(_exercises[index]),
                           child: const Text('Resolver'),
                         ),
                       ],

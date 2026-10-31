@@ -217,21 +217,62 @@ class PracticeRoundEntry {
   const PracticeRoundEntry({required this.exercise, required this.attempt});
 }
 
+/// Result of a finished practice round, computed once from its entries.
 class PracticeRoundSummary {
-  final List<PracticeRoundEntry> entries;
+  final int correctCount;
+  final int incorrectCount;
+  final int inconclusiveCount;
 
-  PracticeRoundSummary(Iterable<PracticeRoundEntry> entries)
-    : entries = List.unmodifiable(entries);
+  /// Concepts of the wrong answers, most missed first.
+  final List<InsightCount> mostMissedConcepts;
 
-  int get correctCount =>
-      entries.where((entry) => entry.attempt.analysis?.isCorrect == true).length;
+  const PracticeRoundSummary._(
+    this.correctCount,
+    this.incorrectCount,
+    this.inconclusiveCount,
+    this.mostMissedConcepts,
+  );
 
-  int get incorrectCount =>
-      entries.where((entry) => entry.attempt.analysis?.isCorrect == false).length;
+  factory PracticeRoundSummary(Iterable<PracticeRoundEntry> entries) {
+    var correct = 0, incorrect = 0, inconclusive = 0;
+    final attemptsByConcept = <String, Set<String>>{};
+    for (final entry in entries) {
+      final analysis = entry.attempt.analysis;
+      switch (analysis?.isCorrect) {
+        case true:
+          correct++;
+        case null:
+          inconclusive++;
+        case false:
+          incorrect++;
+          final concepts = {
+            for (final error in analysis!.errors)
+              if (error.concept.trim().isNotEmpty) error.concept.trim(),
+          };
+          final focus = entry.exercise.focusConcept.trim();
+          if (concepts.isEmpty && focus.isNotEmpty) concepts.add(focus);
+          for (final concept in concepts) {
+            (attemptsByConcept[concept] ??= {}).add(entry.attempt.id);
+          }
+      }
+    }
+    final missed =
+        [
+          for (final entry in attemptsByConcept.entries)
+            InsightCount(entry.key, entry.key, entry.value),
+        ]..sort((a, b) {
+          final byCount = b.count.compareTo(a.count);
+          return byCount != 0 ? byCount : a.label.compareTo(b.label);
+        });
+    return PracticeRoundSummary._(
+      correct,
+      incorrect,
+      inconclusive,
+      List.unmodifiable(missed),
+    );
+  }
 
-  int get inconclusiveCount =>
-      entries.where((entry) => entry.attempt.analysis?.isCorrect == null).length;
-
+  /// Answers the AI classified; inconclusive ones stay out of the percentages.
   int get assessedCount => correctCount + incorrectCount;
 
   double? get correctPercentage =>
@@ -239,36 +280,6 @@ class PracticeRoundSummary {
 
   double? get incorrectPercentage =>
       assessedCount == 0 ? null : incorrectCount * 100 / assessedCount;
-
-  List<InsightCount> get mostMissedConcepts {
-    final attemptsByConcept = <String, Set<String>>{};
-    for (final entry in entries) {
-      final analysis = entry.attempt.analysis;
-      if (analysis?.isCorrect != false) continue;
-
-      final concepts = analysis!.errors
-          .map((error) => error.concept.trim())
-          .where((concept) => concept.isNotEmpty)
-          .toSet();
-      if (concepts.isEmpty && entry.exercise.focusConcept.trim().isNotEmpty) {
-        concepts.add(entry.exercise.focusConcept.trim());
-      }
-      for (final concept in concepts) {
-        attemptsByConcept.putIfAbsent(concept, () => <String>{}).add(
-          entry.attempt.id,
-        );
-      }
-    }
-
-    final counts = attemptsByConcept.entries
-        .map((entry) => InsightCount(entry.key, entry.key, entry.value))
-        .toList();
-    counts.sort((a, b) {
-      final byCount = b.count.compareTo(a.count);
-      return byCount != 0 ? byCount : a.label.compareTo(b.label);
-    });
-    return counts;
-  }
 }
 
 class GraphNode {
