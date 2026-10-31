@@ -59,6 +59,9 @@ class FakeRepository implements AnalysisRepository {
   int? practiceCount;
   String? savedDifficulty;
   PracticeExercise? savedPractice;
+  String? currentAttemptId;
+  List<bool?> analysisOutcomes = [];
+
   @override
   Future<List<AttemptRecord>> loadAttempts(String userId) async {
     if (failLoad) {
@@ -84,8 +87,26 @@ class FakeRepository implements AnalysisRepository {
     savedAnswer = answer;
     savedDifficulty = difficulty;
     savedPractice = practice;
-    attempts = [sample()];
-    return 'a1';
+    if (practice == null) {
+      currentAttemptId = 'a1';
+      attempts = [sample()];
+    } else {
+      currentAttemptId = 'practice-attempt-$created';
+      attempts = [
+        ...attempts,
+        AttemptRecord(
+          id: currentAttemptId!,
+          exerciseId: practice.id,
+          subjectId: practice.subjectId,
+          subjectName: practice.subjectName,
+          prompt: practice.prompt,
+          answer: answer,
+          status: 'pending',
+          attemptedAt: DateTime(2026).add(Duration(seconds: created)),
+        ),
+      ];
+    }
+    return currentAttemptId!;
   }
 
   int savedOffline = 0;
@@ -115,6 +136,40 @@ class FakeRepository implements AnalysisRepository {
         'A IA ainda não foi configurada no servidor. Seu exercício está salvo.',
       );
     }
+    final practice = savedPractice;
+    if (practice == null || currentAttemptId != attemptId) return;
+    final index = attempts.indexWhere((attempt) => attempt.id == attemptId);
+    if (index < 0) return;
+    final isCorrect = analysisOutcomes.isEmpty
+        ? false
+        : analysisOutcomes.removeAt(0);
+    attempts[index] = AttemptRecord(
+      id: attemptId,
+      exerciseId: practice.id,
+      subjectId: practice.subjectId,
+      subjectName: practice.subjectName,
+      prompt: practice.prompt,
+      answer: savedAnswer ?? '',
+      status: 'completed',
+      attemptedAt: DateTime(2026).add(Duration(seconds: created)),
+      analysis: AttemptAnalysis(
+        attemptId: attemptId,
+        subjectId: practice.subjectId,
+        isCorrect: isCorrect,
+        correctAnswer: 'Resposta correta',
+        explanation: 'Reveja o conceito.',
+        errors: isCorrect == false
+            ? [
+                IdentifiedError(
+                  category: 'conceito',
+                  concept: practice.focusConcept,
+                  evidence: 'Conceito não aplicado.',
+                  confidence: .9,
+                ),
+              ]
+            : const [],
+      ),
+    );
   }
 
   @override
@@ -169,6 +224,79 @@ void main() {
       sample(id: 'a2', concept: ' frações '),
     ]);
     expect(insights.concepts.single.count, 2);
+  });
+
+  test('practice round metrics separate inconclusive answers', () {
+    AttemptRecord result(String id, bool? isCorrect, {bool duplicate = false}) {
+      final error = IdentifiedError(
+        category: 'conceito',
+        concept: 'Frações',
+        evidence: 'Denominadores somados.',
+        confidence: .9,
+      );
+      return AttemptRecord(
+        id: id,
+        exerciseId: id,
+        subjectId: 'math',
+        subjectName: 'Matemática',
+        prompt: 'Exercício $id',
+        answer: 'Resposta',
+        status: 'completed',
+        attemptedAt: DateTime(2026),
+        analysis: AttemptAnalysis(
+          attemptId: id,
+          subjectId: 'math',
+          isCorrect: isCorrect,
+          correctAnswer: 'Resposta correta',
+          explanation: 'Reveja o conceito.',
+          errors: isCorrect == false ? [error, if (duplicate) error] : const [],
+        ),
+      );
+    }
+
+    final summary = PracticeRoundSummary([
+      PracticeRoundEntry(
+        exercise: const PracticeExercise(
+          id: 'p1',
+          subjectId: 'math',
+          subjectName: 'Matemática',
+          prompt: 'Exercício 1',
+          difficulty: 'facil',
+          focusConcept: 'Frações',
+        ),
+        attempt: result('a1', false, duplicate: true),
+      ),
+      PracticeRoundEntry(
+        exercise: const PracticeExercise(
+          id: 'p2',
+          subjectId: 'math',
+          subjectName: 'Matemática',
+          prompt: 'Exercício 2',
+          difficulty: 'facil',
+          focusConcept: 'Frações',
+        ),
+        attempt: result('a2', true),
+      ),
+      PracticeRoundEntry(
+        exercise: const PracticeExercise(
+          id: 'p3',
+          subjectId: 'math',
+          subjectName: 'Matemática',
+          prompt: 'Exercício 3',
+          difficulty: 'facil',
+          focusConcept: 'Frações',
+        ),
+        attempt: result('a3', null),
+      ),
+    ]);
+
+    expect(summary.correctCount, 1);
+    expect(summary.incorrectCount, 1);
+    expect(summary.inconclusiveCount, 1);
+    expect(summary.assessedCount, 2);
+    expect(summary.correctPercentage, 50);
+    expect(summary.incorrectPercentage, 50);
+    expect(summary.mostMissedConcepts.single.count, 1);
   });
 
   test(
@@ -419,5 +547,82 @@ void main() {
     await tester.tap(find.text('Gerar exercícios'));
     await tester.pumpAndSettle();
     expect(repository.practiceCategory, isNull);
+  });
+
+  testWidgets('practice round shows metrics after analyzed answers', (
+    tester,
+  ) async {
+    final repository = FakeRepository()
+      ..practice = [
+        const PracticeExercise(
+          id: 'p1',
+          subjectId: 'math',
+          subjectName: 'Matemática',
+          prompt: 'Exercício 1',
+          difficulty: 'facil',
+          focusConcept: 'Frações',
+        ),
+        const PracticeExercise(
+          id: 'p2',
+          subjectId: 'math',
+          subjectName: 'Matemática',
+          prompt: 'Exercício 2',
+          difficulty: 'facil',
+          focusConcept: 'Frações',
+        ),
+        const PracticeExercise(
+          id: 'p3',
+          subjectId: 'math',
+          subjectName: 'Matemática',
+          prompt: 'Exercício 3',
+          difficulty: 'facil',
+          focusConcept: 'Frações',
+        ),
+      ]
+      ..analysisOutcomes = [false, true, null];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PracticeView(
+          userId: 'u',
+          repository: repository,
+          subjects: const {'math': 'Matemática'},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gerar exercícios'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('practice-round-start')));
+    await tester.tap(find.byKey(const Key('practice-round-start')));
+    await tester.pumpAndSettle();
+
+    Future<void> answerNextQuestion() async {
+      await tester.ensureVisible(
+        find.byKey(const Key('practice-round-resolve')),
+      );
+      await tester.tap(find.byKey(const Key('practice-round-resolve')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('exercise-answer')),
+        'Resposta',
+      );
+      await tester.ensureVisible(find.byKey(const Key('submit-exercise')));
+      await tester.tap(find.byKey(const Key('submit-exercise')));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+    }
+
+    await answerNextQuestion();
+    await answerNextQuestion();
+    await answerNextQuestion();
+
+    expect(find.byKey(const Key('practice-round-summary')), findsOneWidget);
+    expect(find.text('Acertos'), findsOneWidget);
+    expect(find.text('Erros'), findsOneWidget);
+    expect(find.text('Inconclusivas'), findsOneWidget);
+    expect(find.text('Frações'), findsOneWidget);
+    expect(find.text('1 questão(ões)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

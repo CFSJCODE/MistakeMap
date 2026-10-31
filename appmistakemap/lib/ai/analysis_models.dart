@@ -210,6 +210,67 @@ class InsightCount {
   InsightCount(this.key, this.label, this.attemptIds);
 }
 
+class PracticeRoundEntry {
+  final PracticeExercise exercise;
+  final AttemptRecord attempt;
+
+  const PracticeRoundEntry({required this.exercise, required this.attempt});
+}
+
+class PracticeRoundSummary {
+  final List<PracticeRoundEntry> entries;
+
+  PracticeRoundSummary(Iterable<PracticeRoundEntry> entries)
+    : entries = List.unmodifiable(entries);
+
+  int get correctCount =>
+      entries.where((entry) => entry.attempt.analysis?.isCorrect == true).length;
+
+  int get incorrectCount =>
+      entries.where((entry) => entry.attempt.analysis?.isCorrect == false).length;
+
+  int get inconclusiveCount =>
+      entries.where((entry) => entry.attempt.analysis?.isCorrect == null).length;
+
+  int get assessedCount => correctCount + incorrectCount;
+
+  double? get correctPercentage =>
+      assessedCount == 0 ? null : correctCount * 100 / assessedCount;
+
+  double? get incorrectPercentage =>
+      assessedCount == 0 ? null : incorrectCount * 100 / assessedCount;
+
+  List<InsightCount> get mostMissedConcepts {
+    final attemptsByConcept = <String, Set<String>>{};
+    for (final entry in entries) {
+      final analysis = entry.attempt.analysis;
+      if (analysis?.isCorrect != false) continue;
+
+      final concepts = analysis!.errors
+          .map((error) => error.concept.trim())
+          .where((concept) => concept.isNotEmpty)
+          .toSet();
+      if (concepts.isEmpty && entry.exercise.focusConcept.trim().isNotEmpty) {
+        concepts.add(entry.exercise.focusConcept.trim());
+      }
+      for (final concept in concepts) {
+        attemptsByConcept.putIfAbsent(concept, () => <String>{}).add(
+          entry.attempt.id,
+        );
+      }
+    }
+
+    final counts = attemptsByConcept.entries
+        .map((entry) => InsightCount(entry.key, entry.key, entry.value))
+        .toList();
+    counts.sort((a, b) {
+      final byCount = b.count.compareTo(a.count);
+      return byCount != 0 ? byCount : a.label.compareTo(b.label);
+    });
+    return counts;
+  }
+}
+
 class GraphNode {
   final String id;
   final String label;
