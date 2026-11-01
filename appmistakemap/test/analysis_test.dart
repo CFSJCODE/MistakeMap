@@ -420,9 +420,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Tipos de erro'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    // A chamada para estudar fica no topo; os gráficos vêm logo abaixo.
+    expect(find.byKey(const Key('map-study-callout')), findsOneWidget);
+    await tester.ensureVisible(find.text('Nuvem'));
     await tester.tap(find.text('Nuvem'));
     await tester.pumpAndSettle();
     expect(find.text('Frações (1)'), findsOneWidget);
+    await tester.ensureVisible(find.text('Frações (1)'));
     await tester.tap(find.text('Frações (1)'));
     await tester.pumpAndSettle();
     expect(find.text('Frações · 1 tentativa(s)'), findsOneWidget);

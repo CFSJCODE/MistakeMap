@@ -3,6 +3,9 @@
   "allowLegacyEdits": true,
   "allowedPaths": [
     "appmistakemap/lib/**",
-    "appmistakemap/test/**"
+    "appmistakemap/test/**",
+    "supabase/functions/**",
+    "scripts/**",
+    "appmistakemap/database/**"
   ]
 }

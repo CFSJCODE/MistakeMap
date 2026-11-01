@@ -239,5 +239,39 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Raiz de f(x) = 2x - 6?'), findsOneWidget);
     });
+
+    testWidgets('aba Exercícios abre a rodada na matéria escolhida', (
+      tester,
+    ) async {
+      String? aberta;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StudyMaterialView(
+            repository: _FakeStudyRepository(),
+            subjects: const {'s1': 'Matemática', 's2': 'Física'},
+            initialSubjectId: 's2',
+            practiceBuilder: (subject) {
+              aberta = subject;
+              return const Scaffold(body: Text('rodada'));
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Exercícios'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('study-exercises')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('study-open-practice')));
+      await tester.pumpAndSettle();
+      expect(aberta, 's2');
+      expect(find.text('rodada'), findsOneWidget);
+    });
+
+    testWidgets('sem rodada configurada, a aba Exercícios não aparece', (
+      tester,
+    ) async {
+      await _pump(tester, _FakeStudyRepository());
+      expect(find.text('Exercícios'), findsNothing);
+    });
   });
 }

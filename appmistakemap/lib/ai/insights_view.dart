@@ -210,6 +210,35 @@ class _ErrorMapViewState extends State<ErrorMapView> {
     );
   }
 
+  /// Estudar reúne resumo, cartões, quiz e a rodada de exercícios corrigidos
+  /// pela IA; abre na matéria filtrada no mapa.
+  void _openStudy(Map<String, String> subjects) {
+    final study = _study;
+    Navigator.push(
+      context,
+      MistakeMapPageRoute<void>(
+        context: context,
+        builder: (_) => study == null
+            ? PracticeView(
+                userId: widget.userId,
+                repository: widget.repository,
+                subjects: subjects,
+              )
+            : StudyMaterialView(
+                repository: study,
+                subjects: subjects,
+                initialSubjectId: _subject,
+                practiceBuilder: (subject) => PracticeView(
+                  userId: widget.userId,
+                  repository: widget.repository,
+                  subjects: subjects,
+                  initialSubjectId: subject,
+                ),
+              ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final subjectNames = <String, String>{
@@ -294,6 +323,11 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                     style: TextStyle(fontSize: 16, color: mapContentBlue),
                   ),
                 ] else ...[
+                  _StudyCallout(
+                    onStudy: () => _openStudy(subjectNames),
+                    subjectName: subjectNames[_subject],
+                  ),
+                  const SizedBox(height: 24),
                   DropdownButtonFormField<String>(
                     initialValue: _subject ?? '',
                     isExpanded: true,
@@ -439,40 +473,6 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                       'Bordas e linhas mais espessas têm mais tentativas. Os mesmos dados estão disponíveis na nuvem e nos gráficos.',
                     ),
                   ],
-                  const SizedBox(height: 24),
-                  OutlinedButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MistakeMapPageRoute<void>(
-                        context: context,
-                        builder: (_) => PracticeView(
-                          userId: widget.userId,
-                          repository: widget.repository,
-                          subjects: subjectNames,
-                        ),
-                      ),
-                    ),
-                    icon: const Icon(Icons.school_outlined),
-                    label: const Text('Praticar meus pontos de dificuldade'),
-                  ),
-                  if (_study case final study?) ...[
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      key: const Key('open-study-material'),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MistakeMapPageRoute<void>(
-                          context: context,
-                          builder: (_) => StudyMaterialView(
-                            repository: study,
-                            subjects: subjectNames,
-                          ),
-                        ),
-                      ),
-                      icon: const Icon(Icons.auto_stories_outlined),
-                      label: const Text('Estudar: resumo, cartões e quiz'),
-                    ),
-                  ],
                 ],
                 const SizedBox(height: 24),
                 // A análise fica fora do carregamento do mapa: recarregar
@@ -487,6 +487,58 @@ class _ErrorMapViewState extends State<ErrorMapView> {
       ),
     );
   }
+}
+
+/// Chamada principal do mapa: transformar os erros em estudo.
+class _StudyCallout extends StatelessWidget {
+  final VoidCallback onStudy;
+  final String? subjectName;
+  const _StudyCallout({required this.onStudy, this.subjectName});
+
+  @override
+  Widget build(BuildContext context) => Card(
+    key: const Key('map-study-callout'),
+    color: mapSurface,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        spacing: 16,
+        children: [
+          const Icon(
+            Icons.auto_stories_outlined,
+            size: 32,
+            color: MistakeMapDesign.violetInk,
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 4,
+              children: [
+                const Text(
+                  'Estude seus pontos fracos',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: mapTitleBlue,
+                  ),
+                ),
+                Text(
+                  subjectName == null
+                      ? 'Resumo, cartões, quiz e exercícios feitos a partir dos seus erros.'
+                      : 'Resumo, cartões, quiz e exercícios de $subjectName.',
+                ),
+              ],
+            ),
+          ),
+          FilledButton(
+            key: const Key('open-study-material'),
+            onPressed: onStudy,
+            child: const Text('Estudar'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class SectionLabel extends StatelessWidget {
@@ -1021,7 +1073,11 @@ class PracticeView extends StatefulWidget {
     required this.userId,
     required this.repository,
     required this.subjects,
+    this.initialSubjectId,
   });
+
+  /// Matéria já escolhida ao abrir (por exemplo, a filtrada no mapa).
+  final String? initialSubjectId;
   @override
   State<PracticeView> createState() => _PracticeViewState();
 }
@@ -1049,7 +1105,9 @@ class _PracticeViewState extends State<PracticeView> {
   @override
   void initState() {
     super.initState();
-    _subject = widget.subjects.keys.firstOrNull;
+    _subject = widget.subjects.containsKey(widget.initialSubjectId)
+        ? widget.initialSubjectId
+        : widget.subjects.keys.firstOrNull;
     _loadExisting();
   }
 

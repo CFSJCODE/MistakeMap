@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../theme/design_tokens.dart';
+import '../theme/motion.dart';
 import 'analysis_repository.dart' show friendlyFailure;
 import 'exercise_submission_view.dart';
 import 'study_material.dart';
 
-/// Material de estudo no estilo caderno guiado: resumo, flashcards e quiz
-/// gerados pela IA a partir dos exercícios e erros da matéria.
+/// Ponto único de estudo da matéria: resumo, cartões e quiz gerados pela IA a
+/// partir dos exercícios e erros, mais a rodada de exercícios corrigidos.
 class StudyMaterialView extends StatefulWidget {
   final StudyMaterialRepository repository;
   final Map<String, String> subjects;
@@ -17,13 +18,18 @@ class StudyMaterialView extends StatefulWidget {
     required this.repository,
     required this.subjects,
     this.initialSubjectId,
+    this.practiceBuilder,
   });
+
+  /// Abre a rodada de exercícios dissertativos da matéria escolhida. Sem ele,
+  /// a aba Exercícios não aparece.
+  final Widget Function(String subjectId)? practiceBuilder;
 
   @override
   State<StudyMaterialView> createState() => _StudyMaterialViewState();
 }
 
-enum _StudyTab { summary, flashcards, quiz }
+enum _StudyTab { summary, flashcards, quiz, exercises }
 
 class _StudyMaterialViewState extends State<StudyMaterialView> {
   String? _subject;
@@ -109,9 +115,9 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
           children: [
             const Text(
               'A IA lê os exercícios que você registrou e os erros que ela '
-              'identificou nesta matéria e monta um resumo, flashcards e um '
-              'quiz de múltipla escolha. O gabarito só aparece depois que você '
-              'responde.',
+              'identificou nesta matéria e monta um resumo, cartões de revisão '
+              'e um quiz de múltipla escolha. O gabarito só aparece depois que '
+              'você responde.',
             ),
             const SizedBox(height: 24),
             if (widget.subjects.isEmpty)
@@ -177,34 +183,57 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
               const SizedBox(height: 16),
               if (material != null) ...[
                 _materialHeader(material, history),
-                const SizedBox(height: 16),
-                SegmentedButton<_StudyTab>(
-                  key: const Key('study-tabs'),
-                  showSelectedIcon: false,
-                  segments: [
-                    const ButtonSegment(
-                      value: _StudyTab.summary,
-                      icon: Icon(Icons.article_outlined),
-                      label: Text('Resumo'),
-                    ),
-                    ButtonSegment(
-                      value: _StudyTab.flashcards,
-                      icon: const Icon(Icons.style_outlined),
-                      label: Text('Cartões (${material.flashcards.length})'),
-                    ),
-                    ButtonSegment(
-                      value: _StudyTab.quiz,
-                      icon: const Icon(Icons.quiz_outlined),
-                      label: Text('Quiz (${material.quiz.length})'),
-                    ),
-                  ],
-                  selected: {_tab},
-                  onSelectionChanged: (value) =>
-                      setState(() => _tab = value.first),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+              ],
+              Wrap(
+                key: const Key('study-tabs'),
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final tab in _StudyTab.values)
+                    if (tab != _StudyTab.exercises ||
+                        widget.practiceBuilder != null)
+                      ChoiceChip(
+                        avatar: Icon(switch (tab) {
+                          _StudyTab.summary => Icons.article_outlined,
+                          _StudyTab.flashcards => Icons.style_outlined,
+                          _StudyTab.quiz => Icons.quiz_outlined,
+                          _StudyTab.exercises => Icons.edit_note_outlined,
+                        }, size: 18),
+                        showCheckmark: false,
+                        label: Text(switch (tab) {
+                          _StudyTab.summary => 'Resumo',
+                          _StudyTab.flashcards =>
+                            material == null
+                                ? 'Cartões'
+                                : 'Cartões (${material.flashcards.length})',
+                          _StudyTab.quiz =>
+                            material == null
+                                ? 'Quiz'
+                                : 'Quiz (${material.quiz.length})',
+                          _StudyTab.exercises => 'Exercícios',
+                        }),
+                        selected: _tab == tab,
+                        onSelected: (_) => setState(() => _tab = tab),
+                      ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (_tab == _StudyTab.exercises)
+                _PracticeEntry(
+                  subjectName: widget.subjects[_subject] ?? '',
+                  onOpen: _subject == null
+                      ? null
+                      : () => Navigator.push(
+                          context,
+                          MistakeMapPageRoute<void>(
+                            context: context,
+                            builder: (_) => widget.practiceBuilder!(_subject!),
+                          ),
+                        ),
+                )
+              else if (material != null)
                 switch (_tab) {
-                  _StudyTab.summary => _SummaryPanel(material.summary),
                   _StudyTab.flashcards => FlashcardDeck(
                     key: ValueKey('deck-${material.id}'),
                     cards: material.flashcards,
@@ -214,8 +243,9 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
                     material: material,
                     repository: widget.repository,
                   ),
-                },
-              ] else if (!_loading && !_generating)
+                  _ => _SummaryPanel(material.summary),
+                }
+              else if (!_loading && !_generating)
                 const _StudyEmptyState(
                   key: Key('study-empty'),
                   icon: Icons.auto_stories_outlined,
@@ -269,6 +299,32 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
       ],
     );
   }
+}
+
+/// Entrada da rodada de exercícios dissertativos, corrigidos um a um pela IA.
+class _PracticeEntry extends StatelessWidget {
+  final String subjectName;
+  final VoidCallback? onOpen;
+  const _PracticeEntry({required this.subjectName, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) => _panel(
+    key: const Key('study-exercises'),
+    children: [
+      const Text('Exercícios corrigidos pela IA', style: _panelTitle),
+      Text(
+        'Uma rodada de 3 a 5 exercícios inéditos de $subjectName, criados a '
+        'partir dos enunciados que você errou. Você resolve com suas palavras '
+        'e a IA corrige cada resposta; no fim, vê acertos e assuntos a revisar.',
+      ),
+      ElevatedButton.icon(
+        key: const Key('study-open-practice'),
+        onPressed: onOpen,
+        icon: const Icon(Icons.play_arrow),
+        label: const Text('Começar rodada de exercícios'),
+      ),
+    ],
+  );
 }
 
 class _StudyEmptyState extends StatelessWidget {
