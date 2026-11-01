@@ -67,9 +67,13 @@ void main() {
         await tester.pumpAndSettle();
         expect(selected, 4);
       }
-      // Sobre é fatia da barra em celular/tablet; destino no trilho em desktop.
-      if (scenario.$1 < 840) {
+      // Sobre fica na barra do celular, no menu do trilho compacto ou no trilho largo.
+      if (scenario.$1 / scenario.$2 < 600) {
         await tester.tap(find.byKey(const ValueKey('navigation-about')));
+      } else if (scenario.$1 / scenario.$2 < 840) {
+        await tester.tap(find.byKey(const ValueKey('navigation-more')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Sobre o App'));
       } else {
         await tester.tap(find.text('Sobre o App'));
       }
@@ -129,8 +133,8 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      // Barra compacta de 7 fatias: Estudar é fatia da barra em celular/tablet.
-      if (width < 840) {
+      // Estudar fica na barra do celular e no menu do trilho compacto.
+      if (width < 600) {
         await tester.tap(find.byKey(const ValueKey('navigation-study')));
       } else {
         await abrirMais();

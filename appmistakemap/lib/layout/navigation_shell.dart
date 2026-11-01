@@ -364,7 +364,7 @@ class AppNavigationShell extends StatelessWidget {
   /// Menu Mais: Admin, Estudar (se disponível), Sobre o App, Sair (se
   /// disponível). Na barra de 7 fatias, Estudar e Sobre estão na barra;
   /// o flyout contém Admin e Sair.
-  Widget _more(BuildContext context) => Semantics(
+  Widget _more(BuildContext context, {bool compactRail = false}) => Semantics(
     selected: selectedIndex == 4,
     child: DropDownButton(
       title: const Text('Mais'),
@@ -417,6 +417,20 @@ class AppNavigationShell extends StatelessWidget {
         ),
       ),
       items: [
+        if (compactRail && onStudy != null)
+          _flyoutItem(
+            context,
+            icon: WindowsIcons.education,
+            label: 'Estudar com a IA',
+            action: onStudy!,
+          ),
+        if (compactRail)
+          _flyoutItem(
+            context,
+            icon: WindowsIcons.info,
+            label: 'Sobre o App',
+            action: onAbout,
+          ),
         if (hasAdmin)
           _flyoutItem(
             context,
@@ -625,7 +639,7 @@ class AppNavigationShell extends StatelessWidget {
             context,
             selected: selectedIndex == 4,
             accent: accents[4],
-            child: _more(context),
+            child: _more(context, compactRail: true),
           ),
         ],
       ),
@@ -691,7 +705,7 @@ class AppNavigationShell extends StatelessWidget {
   static const _compactFont = 11.0;
   static const _compactGap = 6.0;
 
-  /// Ordem dos botões na barra inferior — cinco fatias fixas em qualquer
+  /// Ordem dos botões na barra inferior — até sete fatias em qualquer
   /// largura de celular: Início · Lista · Mapa · Estudar · Caderno · Sobre ·
   /// Mais. Ícones compactos para que os 7 destinos caibam em qualquer celular.
   /// Analisar não tem fatia: o Mapa já traz o painel. Cada entrada é um índice
@@ -707,8 +721,6 @@ class AppNavigationShell extends StatelessWidget {
   /// pílula que desliza entre os destinos e se acomoda no atual, brilho que
   /// segue o dedo e a área de gestos coberta pelo próprio vidro.
   Widget _bottomBar(BuildContext context) {
-    // O Mais aparece quando há pelo menos um item no flyout
-    // (Estudar, Sobre, Admin ou Sair).
     // Mais aparece quando há Admin ou Sair no flyout (Estudar e Sobre estão
     // na barra; o flyout fica só com Admin e Sair).
     final moreEmpty = !hasAdmin && onSignOut == null;
@@ -716,7 +728,6 @@ class AppNavigationShell extends StatelessWidget {
       for (final slot in _barSlots)
         if (!(slot == _actionSlot && onAnalysis == null) &&
             !(slot == _studySlot && onStudy == null) &&
-            !(slot == _aboutSlot && onAbout == null) &&
             !(slot == _moreSlot && moreEmpty))
           slot,
     ];
