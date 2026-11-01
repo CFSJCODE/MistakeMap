@@ -348,6 +348,15 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
   }
 
   Future<JsonMap> _invoke(String name, JsonMap body) async {
+    // A IA roda no servidor: sem rede, avisa na hora em vez de esperar o
+    // tempo-limite. O exercício enviado já fica salvo na fila do aparelho.
+    if (!_sincronizador.online.value || _sincronizador.semSessao) {
+      throw const AnalysisFailure(
+        'Esta etapa usa a IA e precisa de internet. O que você já registrou '
+        'fica salvo no aparelho e é enviado quando a conexão voltar.',
+        network: true,
+      );
+    }
     try {
       final response = await client.functions
           .invoke(name, body: body)
@@ -510,7 +519,24 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
 
   @override
   Future<List<PracticeExercise>> loadPractice(String userId) async {
-    final exercises = <PracticeExercise>[];
+    // Os exercícios já gerados ficam no cache local e abrem sem rede.
+    final rows = await _sincronizador.consultar(
+      userId,
+      'ia_pratica',
+      () => _loadPracticeRows(userId),
+    );
+    return [
+      for (final item in rows is List ? rows.whereType<Map>() : const <Map>[])
+        PracticeExercise.fromJson(
+          jsonMap(item),
+          subjectId: textValue(item['subject_id']),
+          subjectName: textValue(jsonMap(item['subjects'])['name'], 'Matéria'),
+        ),
+    ];
+  }
+
+  Future<List<Object?>> _loadPracticeRows(String userId) async {
+    final rows = <Object?>[];
     const pageSize = 200;
     for (var offset = 0; ; offset += pageSize) {
       final page = await client
@@ -523,19 +549,8 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
           .order('created_at', ascending: false)
           .order('id')
           .range(offset, offset + pageSize - 1);
-      for (final item in page) {
-        exercises.add(
-          PracticeExercise.fromJson(
-            item,
-            subjectId: textValue(item['subject_id']),
-            subjectName: textValue(
-              jsonMap(item['subjects'])['name'],
-              'Matéria',
-            ),
-          ),
-        );
-      }
-      if (page.length < pageSize) return exercises;
+      rows.addAll(page);
+      if (page.length < pageSize) return rows;
     }
   }
 }

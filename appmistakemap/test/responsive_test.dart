@@ -246,6 +246,10 @@ void main() {
         size: Size(width, 900),
       );
       expect(find.text('Analisar exercício com IA'), findsNothing);
+      // O Início mostra o ciclo de estudo em passos, com o primeiro indicado.
+      expect(find.text('O que fazer agora'), findsOneWidget);
+      expect(find.text('Próximo passo'), findsOneWidget);
+      expect(find.text('Estudar com a IA', skipOffstage: false), findsWidgets);
       // Atalho do Início: abre o Mapa com o painel de análise aberto.
       await tester.tap(find.text('Analisar um exercício'));
       await _settle(tester);

@@ -1,4 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
@@ -16,6 +17,8 @@ class AppNavigationShell extends StatelessWidget {
     required this.onSelected,
     required this.onAbout,
     this.onErrorMap,
+    this.onStudy,
+    this.onSignOut,
     required this.hasAdmin,
     required this.child,
   });
@@ -24,6 +27,12 @@ class AppNavigationShell extends StatelessWidget {
   final ValueChanged<int> onSelected;
   final VoidCallback onAbout;
   final VoidCallback? onErrorMap;
+
+  /// Abre o Estudar direto, sem passar pelo Mapa.
+  final VoidCallback? onStudy;
+
+  /// Sair da conta fica junto das outras opções, não escondido numa tela.
+  final VoidCallback? onSignOut;
   final bool hasAdmin;
   final Widget child;
 
@@ -362,13 +371,68 @@ class AppNavigationShell extends StatelessWidget {
             selected: selectedIndex == 4,
             action: () => onSelected(4),
           ),
+        if (onStudy != null)
+          _flyoutItem(
+            context,
+            icon: WindowsIcons.education,
+            label: 'Estudar com a IA',
+            action: onStudy!,
+          ),
         _flyoutItem(
           context,
           icon: WindowsIcons.info,
           label: 'Sobre o App',
           action: onAbout,
         ),
+        if (onSignOut != null)
+          _flyoutItem(
+            context,
+            icon: WindowsIcons.sign_out,
+            label: 'Sair',
+            action: onSignOut!,
+          ),
       ],
+    ),
+  );
+
+  /// Cápsula da barra inferior. Com alto contraste ligado no aparelho, o
+  /// vidro vira superfície sólida, como nas demais telas.
+  Widget _bottomGlass(BuildContext context, Widget child) {
+    if (MediaQuery.highContrastOf(context)) {
+      return GlassSurface(tier: GlassTier.liquid, radius: 28, child: child);
+    }
+    return LiquidGlass.withOwnLayer(
+      shape: const LiquidRoundedSuperellipse(borderRadius: 28),
+      settings: LiquidGlassSettings.ios27Regular(brightness: Brightness.light),
+      shadows: MistakeMapDesign.liquidShadow,
+      child: child,
+    );
+  }
+
+  /// Ação do trilho que abre uma página em vez de trocar de aba.
+  Widget _railAction(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    Color accent = MistakeMapDesign.mist,
+    Color ink = MistakeMapDesign.steel,
+  }) => _surface(
+    context,
+    false,
+    Button(
+      style: _style(false),
+      onPressed: onPressed,
+      child: _NavigationHoverInk(
+        child: Row(
+          children: [
+            _icon(context, icon, false, accent: accent, ink: ink),
+            const SizedBox(width: 12),
+            Expanded(child: Text(label, textAlign: TextAlign.start)),
+            const SizedBox(width: 12),
+          ],
+        ),
+      ),
     ),
   );
 
@@ -420,43 +484,47 @@ class AppNavigationShell extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      _section('ESTUDO'),
-                      for (final i in [0, 1, 3]) ...[
+                      // O ciclo de estudo de cima para baixo, na ordem de uso:
+                      // registrar e conferir, entender o padrão, estudar e
+                      // anotar.
+                      _section('SEU ESTUDO'),
+                      for (final i in [0, 1, 2]) ...[
                         _destination(context, i, compact: false),
                         const SizedBox(height: 8),
                       ],
+                      if (onStudy != null) ...[
+                        _railAction(
+                          context,
+                          icon: WindowsIcons.education,
+                          label: 'Estudar com a IA',
+                          onPressed: onStudy!,
+                          accent: MistakeMapDesign.violet,
+                          ink: MistakeMapDesign.violetInk,
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      _destination(context, 3, compact: false),
                       const SizedBox(height: 24),
-                      _section('INTELIGÊNCIA ARTIFICIAL'),
-                      _destination(context, 2, compact: false),
-                      const SizedBox(height: 24),
-                      _section('SISTEMA'),
+                      _section('CONTA'),
                       if (hasAdmin) ...[
                         _destination(context, 4, compact: false),
                         const SizedBox(height: 8),
                       ],
-                      _surface(
+                      _railAction(
                         context,
-                        false,
-                        Button(
-                          style: _style(false),
-                          onPressed: onAbout,
-                          child: _NavigationHoverInk(
-                            child: Row(
-                              children: [
-                                _icon(context, WindowsIcons.info, false),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Text(
-                                    'Sobre o App',
-                                    textAlign: TextAlign.start,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                              ],
-                            ),
-                          ),
-                        ),
+                        icon: WindowsIcons.info,
+                        label: 'Sobre o App',
+                        onPressed: onAbout,
                       ),
+                      if (onSignOut != null) ...[
+                        const SizedBox(height: 8),
+                        _railAction(
+                          context,
+                          icon: WindowsIcons.sign_out,
+                          label: 'Sair',
+                          onPressed: onSignOut!,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -478,23 +546,26 @@ class AppNavigationShell extends StatelessWidget {
                 // continua ocupando o próprio espaço, abaixo do conteúdo.
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  child: GlassSurface(
-                    tier: GlassTier.liquid,
-                    radius: 24,
-                    blur: true,
+                  // Vidro líquido de verdade (refração, brilho e borda) pelo
+                  // liquid_glass_renderer. Sem Impeller com Flutter GPU, o
+                  // próprio pacote troca por vidro fosco, sem refração.
+                  child: _bottomGlass(
+                    context,
                     // Same 8px rhythm around and between the buttons, so
                     // each destination reads as its own control.
-                    padding: const EdgeInsets.all(8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 8,
-                      children: [
-                        for (var i = 0; i < 4; i++)
-                          Expanded(
-                            child: _destination(context, i, compact: true),
-                          ),
-                        Expanded(child: _more(context)),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: 8,
+                        children: [
+                          for (var i = 0; i < 4; i++)
+                            Expanded(
+                              child: _destination(context, i, compact: true),
+                            ),
+                          Expanded(child: _more(context)),
+                        ],
+                      ),
                     ),
                   ),
                 ),

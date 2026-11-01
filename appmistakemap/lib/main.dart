@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' show ImageFilter;
 import 'dart:async';
 
 import 'package:flutter/foundation.dart'
@@ -26,6 +27,7 @@ import 'admin/metrics_panel.dart';
 import 'assets/profile_photo.dart';
 import 'about/external_profile.dart';
 import 'about/linkedin_profile_button.dart';
+import 'local/conta_offline.dart';
 import 'local/preferencias_caderno.dart';
 import 'local/registro_erro.dart';
 import 'local/registro_erro_dao.dart';
@@ -99,6 +101,25 @@ final FluentThemeData temaFluent = FluentThemeData(
     controlStrokeColorDefault: MistakeMapDesign.edge,
     solidBackgroundFillColorBase: MistakeMapDesign.canvas,
   ),
+  // Diálogos em acrílico: quase opacos para o texto, cantos de cartão, borda
+  // clara e véu escuro suave atrás.
+  dialogTheme: const ContentDialogThemeData(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFAFFFFFF), Color(0xF2F8FAFB)],
+      ),
+      borderRadius: BorderRadius.all(Radius.circular(20)),
+      border: Border.fromBorderSide(BorderSide(color: Color(0xE6FFFFFF))),
+      boxShadow: MistakeMapDesign.liquidShadow,
+    ),
+    actionsDecoration: BoxDecoration(
+      color: Color(0x0A11212D),
+      borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+    ),
+    barrierColor: Color(0x6606141B),
+  ),
   fasterAnimationDuration: MistakeMapMotion.hover,
   fastAnimationDuration: MistakeMapMotion.controls,
   mediumAnimationDuration: MistakeMapMotion.page,
@@ -157,6 +178,7 @@ SupabaseClient get _db => Supabase.instance.client;
 // Sincronizador do usuário logado: Supabase primeiro, SQLite sem rede.
 Sincronizador _sync(String usuarioId) {
   final sync = Sincronizador.instancia;
+  sync.temSessao = () => _db.auth.currentSession != null;
   if (sync.usuarioId != usuarioId) sync.iniciar(usuarioId, RemotoSupabase(_db));
   return sync;
 }
@@ -217,29 +239,81 @@ class _PaginaVidro extends StatelessWidget {
       statusBarStyle: GlassStatusBarStyle.dark,
       // Conteúdo e títulos permanecem nítidos; vidro apenas nos controles.
       edgeFade: false,
-      appBar: GlassAppBar(
-        // Barra de título branca e opaca sobre a luz Aurora: o conteúdo que
-        // rola por baixo não aparece através do título.
-        backgroundColor: MistakeMapDesign.white,
-        centerTitle: false,
-        toolbarHeight: _alturaBarraSuperior(context),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        leading: voltar
-            ? _BotaoBarra(
-                icone: WindowsIcons.back,
-                dica: 'Voltar',
-                onPressed: () => Navigator.of(context).maybePop(),
-              )
-            : null,
-        title: Text(
-          titulo,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: context.tipo.subtitle?.copyWith(color: titleBlue),
+      appBar: _BarraVidro(
+        child: GlassAppBar(
+          backgroundColor: Cores.transparente,
+          centerTitle: false,
+          toolbarHeight: _alturaBarraSuperior(context),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          leading: voltar
+              ? _BotaoBarra(
+                  icone: WindowsIcons.back,
+                  dica: 'Voltar',
+                  onPressed: () => Navigator.of(context).maybePop(),
+                )
+              : null,
+          title: Text(
+            titulo,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: context.tipo.subtitle?.copyWith(color: titleBlue),
+          ),
+          actions: [const _IndicadorConexao(), ...acoes],
         ),
-        actions: [const _IndicadorConexao(), ...acoes],
       ),
       body: corpo,
+    );
+  }
+}
+
+/// Barra superior em vidro líquido: fixa no topo, com o conteúdo rolando por
+/// baixo e desfocado (o vidro precisa de algo atrás para ter efeito). O
+/// preenchimento quase opaco mantém o título legível sobre qualquer texto.
+/// Com alto contraste ligado no aparelho, a barra fica sólida.
+class _BarraVidro extends StatelessWidget implements PreferredSizeWidget {
+  const _BarraVidro({required this.child});
+
+  final GlassAppBar child;
+
+  @override
+  Size get preferredSize => child.preferredSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final solida = MediaQuery.highContrastOf(context);
+    final barra = DecoratedBox(
+      decoration: BoxDecoration(
+        color: solida ? MistakeMapDesign.white : null,
+        gradient: solida
+            ? null
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xE0FFFFFF), Color(0xC7FFFFFF)],
+              ),
+        // Borda especular embaixo: a aresta do vidro pega a luz.
+        border: const Border(
+          bottom: BorderSide(color: MistakeMapDesign.hairline),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1411212D),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+    if (solida) return barra;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: MistakeMapDesign.liquidBlur,
+          sigmaY: MistakeMapDesign.liquidBlur,
+        ),
+        child: barra,
+      ),
     );
   }
 }
@@ -256,6 +330,24 @@ class _IndicadorConexao extends StatelessWidget {
       builder: (context, _) {
         final online = sync.online.value;
         final pendentes = sync.pendentes.value;
+        if (sync.semSessao) {
+          // Entrou sem rede: o envio espera um login com internet.
+          return const Tooltip(
+            message:
+                'Você entrou sem internet. Para enviar o que fez neste '
+                'aparelho, saia e entre de novo quando estiver conectado.',
+            child: Padding(
+              padding: EdgeInsetsDirectional.only(end: 8),
+              child: Center(
+                child: _Pilula(
+                  texto: 'Modo offline',
+                  icone: WindowsIcons.cloud_not_synced,
+                  cor: Cores.laranja700,
+                ),
+              ),
+            ),
+          );
+        }
         if (online && pendentes == 0) return const SizedBox.shrink();
         final aguardando = pendentes == 1
             ? '1 alteração aguardando envio.'
@@ -753,17 +845,29 @@ Future<({AppUser user, Object? erro})> _carregarPerfil(User supaUser) async {
         .eq('id', supaUser.id)
         .maybeSingle()
         .timeout(const Duration(seconds: 12));
-    return (
-      user: AppUser(
+    final papel = data?['role'] as String? ?? 'user';
+    // Guardar o papel é reserva para o modo offline; não segura a entrada.
+    unawaited(
+      _contaOffline.lembrarPapel(
         id: supaUser.id,
         email: supaUser.email ?? '',
-        role: data?['role'] as String? ?? 'user',
+        papel: papel,
       ),
+    );
+    return (
+      user: AppUser(id: supaUser.id, email: supaUser.email ?? '', role: papel),
       erro: null,
     );
   } catch (erro) {
     return (user: padrao, erro: erro);
   }
+}
+
+/// Usuário com o papel salvo no aparelho, para abrir o app sem esperar a rede.
+Future<AppUser?> _perfilSalvo(User supaUser) async {
+  final papel = await _contaOffline.papel(supaUser.id);
+  if (papel == null) return null;
+  return AppUser(id: supaUser.id, email: supaUser.email ?? '', role: papel);
 }
 
 /// Mensagem exibida quando o perfil não carrega; o app segue no modo
@@ -827,6 +931,22 @@ class MistakeMapApp extends StatelessWidget {
   }
 }
 
+// Conta que entrou sem rede (senha conferida com o hash salvo no aparelho).
+final _sessaoOffline = ValueNotifier<AppUser?>(null);
+const _contaOffline = ContaOffline();
+
+/// Sai da conta mesmo sem rede: o logout no servidor é tentado, mas a sessão
+/// local é apagada de qualquer jeito.
+Future<void> _sairDaConta() async {
+  _sessaoOffline.value = null;
+  if (_db.auth.currentSession == null) return;
+  try {
+    await _db.auth.signOut().timeout(const Duration(seconds: 8));
+  } catch (_) {
+    await _db.auth.signOut(scope: SignOutScope.local);
+  }
+}
+
 // ─── AuthGate ─────────────────────────────────────────────────────────────────
 // Redireciona para login ou app conforme o estado da sessão Supabase. O link
 // de recuperação de senha abre uma sessão temporária: enquanto ela durar, a
@@ -842,12 +962,32 @@ class _AuthGateState extends State<AuthGate> {
   bool _recuperandoSenha = false;
 
   @override
+  void initState() {
+    super.initState();
+    _sessaoOffline.addListener(_atualizar);
+  }
+
+  @override
+  void dispose() {
+    _sessaoOffline.removeListener(_atualizar);
+    super.dispose();
+  }
+
+  void _atualizar() => setState(() {});
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<AuthState>(
       stream: _db.auth.onAuthStateChange,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const _LoadingScaffold();
+        }
+        // Entrou sem rede com a conta salva neste aparelho: o app funciona
+        // pelo cache e pela fila até a próxima entrada com internet.
+        if (_db.auth.currentSession == null) {
+          final offline = _sessaoOffline.value;
+          if (offline != null) return TelaNavegacao(user: offline);
         }
         final evento = snapshot.data?.event;
         if (evento == AuthChangeEvent.passwordRecovery) {
@@ -907,6 +1047,13 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
   }
 
   Future<void> _carregar() async {
+    // O papel salvo abre o app na hora, mesmo sem rede; o servidor confirma
+    // logo em seguida.
+    if (_appUser == null) {
+      final salvo = await _perfilSalvo(widget.supaUser);
+      if (!mounted) return;
+      if (salvo != null) setState(() => _appUser = salvo);
+    }
     final resultado = await _carregarPerfil(widget.supaUser);
     if (!mounted) return;
     final primeiraCarga = _appUser == null;
@@ -989,7 +1136,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
 
   // Mapa e análise por IA são uma página só; [analisar] abre o painel de
   // envio já expandido (atalho do Início).
-  Future<void> _abrirIa({bool analisar = false}) async {
+  Future<void> _abrirIa({bool analisar = false, bool estudar = false}) async {
     if (_paginaAberta) return;
     setState(() => _paginaAberta = true);
     try {
@@ -1001,6 +1148,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
             repository: _analysisRepository,
             showMap: true,
             startWithAnalysis: analisar,
+            startWithStudy: estudar,
             onClose: () => Navigator.of(context).pop(),
           ),
         ),
@@ -1033,6 +1181,16 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     }
   }
 
+  Future<void> _sair() async {
+    final ok = await _confirmar(
+      context,
+      titulo: 'Sair da conta',
+      mensagem: 'Deseja sair do MistakeMap neste aparelho?',
+      confirmar: 'Sair',
+    );
+    if (ok) await _sairDaConta();
+  }
+
   void _selecionar(int i) {
     if (i == _indiceAtual) return;
     setState(() => _indiceAtual = i);
@@ -1051,6 +1209,10 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       user: widget.user,
       onAnalysis: () => _abrirIa(analisar: true),
       onAbout: _abrirSobre,
+      onExercicios: () => _selecionar(1),
+      onMapa: _abrirIa,
+      onEstudar: () => _abrirIa(estudar: true),
+      onCaderno: () => _selecionar(3),
     ),
     TelaPrincipal(key: _listaKey, user: widget.user),
     TelaMapaConceitual(key: _mapaKey, user: widget.user),
@@ -1066,6 +1228,8 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       onSelected: _selecionar,
       hasAdmin: widget.user.isAdmin,
       onErrorMap: _abrirIa,
+      onStudy: () => _abrirIa(estudar: true),
+      onSignOut: _sair,
       onAbout: _abrirSobre,
       child: PopScope(
         canPop: _indiceAtual == 0,
@@ -1159,13 +1323,52 @@ class _TelaCadastroState extends State<TelaCadastro> {
           _snack('Verifique seu e-mail para confirmar o cadastro.');
         }
       } else {
-        await _db.auth.signInWithPassword(email: email, password: senha);
+        final res = await _db.auth.signInWithPassword(
+          email: email,
+          password: senha,
+        );
+        final user = res.user;
+        if (user != null) {
+          await _contaOffline.lembrarLogin(
+            id: user.id,
+            email: user.email ?? email,
+            senha: senha,
+          );
+        }
       }
-    } on AuthException catch (e) {
-      _snack(_traduzirErroAuth(e.message), erro: true);
+    } catch (e) {
+      if (!_modoCadastro &&
+          ehFalhaDeRede(e) &&
+          await _entrarOffline(email, senha)) {
+        return;
+      }
+      _snack(_mensagemErroAuth(e), erro: true);
     } finally {
       if (mounted) setState(() => _carregando = false);
     }
+  }
+
+  /// Sem rede, confere a senha com a última conta que entrou neste aparelho.
+  Future<bool> _entrarOffline(String email, String senha) async {
+    final conta = await _contaOffline.entrar(email, senha);
+    if (conta == null) {
+      _snack(
+        'Sem conexão. Para entrar offline, use a conta que já entrou neste '
+        'aparelho com e-mail e senha.',
+        erro: true,
+      );
+      return true;
+    }
+    _sessaoOffline.value = AppUser(
+      id: conta.id,
+      email: conta.email,
+      role: conta.papel,
+    );
+    _snack(
+      'Você entrou sem internet. O que fizer fica salvo no aparelho e é '
+      'enviado quando a conexão voltar.',
+    );
+    return true;
   }
 
   Future<void> _entrarComGoogle() async {
@@ -1734,7 +1937,7 @@ class _TelaNovaSenhaState extends State<TelaNovaSenha> {
                     ),
                     const SizedBox(height: 8),
                     MistakeMapHyperlinkButton(
-                      onPressed: _salvando ? null : () => _db.auth.signOut(),
+                      onPressed: _salvando ? null : _sairDaConta,
                       child: const Text('Cancelar e voltar ao login'),
                     ),
                   ],
@@ -1755,11 +1958,21 @@ class TelaInicial extends StatefulWidget {
   final AppUser user;
   final VoidCallback? onAnalysis;
   final VoidCallback? onAbout;
+
+  /// Atalhos do ciclo de estudo, na ordem em que o estudante os usa.
+  final VoidCallback? onExercicios;
+  final VoidCallback? onMapa;
+  final VoidCallback? onEstudar;
+  final VoidCallback? onCaderno;
   const TelaInicial({
     super.key,
     required this.user,
     this.onAnalysis,
     this.onAbout,
+    this.onExercicios,
+    this.onMapa,
+    this.onEstudar,
+    this.onCaderno,
   });
 
   @override
@@ -1833,7 +2046,7 @@ class _TelaInicialState extends State<TelaInicial> {
       confirmar: 'Sair',
     );
     if (!ok) return;
-    await _db.auth.signOut();
+    await _sairDaConta();
   }
 
   @override
@@ -1855,35 +2068,126 @@ class _TelaInicialState extends State<TelaInicial> {
                 constraints: const BoxConstraints(maxWidth: 1120),
                 child: SingleChildScrollView(
                   padding: _paddingCorpo(context, horizontal: 24, topo: 8),
+                  // Ordem de leitura = ordem de uso: quem é, o que fazer
+                  // agora (o ciclo de estudo em passos) e só depois os números.
                   child: Column(
                     children: [
                       _cabecalho(context),
                       const SizedBox(height: 24),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 720),
+                        child: _proximosPassos(context),
+                      ),
+                      const SizedBox(height: 32),
                       _resumo(context),
                       const SizedBox(height: 24),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 480),
-                        child: Column(
-                          children: [
-                            // O Caderno virou aba; o atalho do Início leva
-                            // direto à análise de um exercício novo.
-                            if (widget.onAnalysis != null) ...[
-                              _botaoAtalho(
-                                icone: WindowsIcons.lightbulb,
-                                texto: 'Analisar um exercício',
-                                onPressed: widget.onAnalysis!,
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            _botaoSobre(context),
-                          ],
-                        ),
+                        child: _botaoSobre(context),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
+    );
+  }
+
+  /// O ciclo de estudo em passos: registrar, conferir, entender o padrão,
+  /// estudar e anotar. O passo indicado agora fica em destaque, para o
+  /// estudante seguir o caminho sem procurar a função no app.
+  Widget _proximosPassos(BuildContext context) {
+    final indicado = _totalExercicios == 0
+        ? 0
+        : _paraRevisar > 0
+        ? 1
+        : 3;
+    final passos =
+        <
+          ({
+            IconData icone,
+            String titulo,
+            String descricao,
+            Color acento,
+            Color tinta,
+            VoidCallback? acao,
+          })
+        >[
+          (
+            icone: WindowsIcons.lightbulb,
+            titulo: 'Analisar um exercício',
+            descricao:
+                'Envie a foto ou o texto da sua resposta; a IA corrige '
+                'e aponta onde está o erro.',
+            acento: MistakeMapDesign.aqua,
+            tinta: MistakeMapDesign.aquaInk,
+            acao: widget.onAnalysis,
+          ),
+          (
+            icone: WindowsIcons.bulleted_list,
+            titulo: _paraRevisar > 0
+                ? 'Revisar $_paraRevisar exercício(s)'
+                : 'Ver meus exercícios',
+            descricao:
+                'Confira a correção de cada tentativa e edite o que '
+                'precisar.',
+            acento: MistakeMapDesign.azure,
+            tinta: MistakeMapDesign.azureInk,
+            acao: widget.onExercicios,
+          ),
+          (
+            icone: WindowsIcons.relationship,
+            titulo: 'Ver o mapa de erros',
+            descricao:
+                'Descubra quais tipos de erro se repetem e em quais '
+                'matérias.',
+            acento: MistakeMapDesign.violet,
+            tinta: MistakeMapDesign.violetInk,
+            acao: widget.onMapa,
+          ),
+          (
+            icone: WindowsIcons.education,
+            titulo: 'Estudar com a IA',
+            descricao:
+                'Resumo, cartões, quiz e exercícios novos feitos a '
+                'partir dos seus erros.',
+            acento: MistakeMapDesign.violet,
+            tinta: MistakeMapDesign.violetInk,
+            acao: widget.onEstudar,
+          ),
+          (
+            icone: WindowsIcons.quick_note,
+            titulo: 'Anotar no caderno de erros',
+            descricao: 'Guarde a regra que você aprendeu para revisar depois.',
+            acento: MistakeMapDesign.amber,
+            tinta: MistakeMapDesign.amberInk,
+            acao: widget.onCaderno,
+          ),
+        ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'O que fazer agora',
+          style: context.tipo.subtitle?.copyWith(color: titleBlue),
+        ),
+        const SizedBox(height: 12),
+        for (final (i, passo) in passos.indexed)
+          if (passo.acao != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _PassoCard(
+                numero: i + 1,
+                icone: passo.icone,
+                titulo: passo.titulo,
+                descricao: passo.descricao,
+                acento: passo.acento,
+                tinta: passo.tinta,
+                indicado: i == indicado,
+                onPressed: passo.acao!,
+              ),
+            ),
+      ],
     );
   }
 
@@ -2057,6 +2361,133 @@ class _ResumoCard extends StatelessWidget {
             style: context.tipo.caption?.copyWith(color: contentBlue),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Retorno físico do toque: o vidro afunda para 97% em 120 ms e volta.
+class _EscalaAoTocar extends StatefulWidget {
+  const _EscalaAoTocar({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_EscalaAoTocar> createState() => _EscalaAoTocarState();
+}
+
+class _EscalaAoTocarState extends State<_EscalaAoTocar> {
+  bool _pressionado = false;
+
+  void _marcar(bool valor) {
+    if (_pressionado != valor) setState(() => _pressionado = valor);
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    onPointerDown: (_) => _marcar(true),
+    onPointerUp: (_) => _marcar(false),
+    onPointerCancel: (_) => _marcar(false),
+    child: AnimatedScale(
+      scale: _pressionado ? .97 : 1,
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 120),
+      curve: MistakeMapMotion.hoverCurve,
+      child: widget.child,
+    ),
+  );
+}
+
+/// Um passo do ciclo de estudo no Início: o cartão inteiro é o botão.
+class _PassoCard extends StatelessWidget {
+  const _PassoCard({
+    required this.numero,
+    required this.icone,
+    required this.titulo,
+    required this.descricao,
+    required this.acento,
+    required this.tinta,
+    required this.indicado,
+    required this.onPressed,
+  });
+
+  final int numero;
+  final IconData icone;
+  final String titulo;
+  final String descricao;
+  final Color acento;
+  final Color tinta;
+
+  /// O passo sugerido agora: fundo tingido e etiqueta "Próximo passo".
+  final bool indicado;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final fundo = indicado
+        ? Color.alphaBlend(acento.withValues(alpha: .16), Cores.branco)
+        : kGlassBg;
+    return _EscalaAoTocar(
+      child: SizedBox(
+        width: double.infinity,
+        child: MistakeMapButton(
+          onPressed: onPressed,
+          style: MistakeMapControls.button(
+            radius: kRadius,
+            padding: const EdgeInsets.all(16),
+            background: fundo,
+            foreground: MistakeMapDesign.abyss,
+          ),
+          child: Row(
+            children: [
+              GlassIconTile(icon: icone, ink: tinta, accent: acento),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          'PASSO $numero',
+                          style: context.tipo.caption?.copyWith(
+                            color: tinta,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        if (indicado)
+                          _Pilula(texto: 'Próximo passo', cor: tinta),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      titulo,
+                      textAlign: TextAlign.start,
+                      style: context.tipo.bodyStrong?.copyWith(
+                        color: MistakeMapDesign.abyss,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      descricao,
+                      textAlign: TextAlign.start,
+                      style: context.tipo.caption?.copyWith(
+                        color: MistakeMapDesign.steel,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(WindowsIcons.chevron_right, size: 14, color: tinta),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -4215,7 +4646,10 @@ class _TelaAdminState extends State<TelaAdmin> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _erro = 'Falha ao carregar usuários: $e';
+          _erro = ehFalhaDeRede(e)
+              ? 'A lista de usuários precisa de internet. Conecte-se e toque '
+                    'em atualizar.'
+              : 'Não foi possível carregar os usuários. Tente novamente.';
           _carregando = false;
         });
       }
