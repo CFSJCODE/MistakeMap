@@ -54,20 +54,30 @@ void main() {
           greaterThanOrEqualTo(44),
         );
       }
+      final effective = scenario.$1 / scenario.$2;
+      // Na barra do celular (360 a 600 px efetivos), Sobre é uma fatia
+      // própria; abaixo de 360 px e nos trilhos ele mora no Mais.
+      final aboutInBar = effective >= 360 && effective < 600;
       if (scenario.$1 < 840) {
         await tester.tap(find.byKey(const ValueKey('navigation-more')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Admin'));
         await tester.pumpAndSettle();
         expect(selected, 4);
-        await tester.tap(find.byKey(const ValueKey('navigation-more')));
-        await tester.pumpAndSettle();
+        if (!aboutInBar) {
+          await tester.tap(find.byKey(const ValueKey('navigation-more')));
+          await tester.pumpAndSettle();
+        }
       } else {
         await tester.tap(find.byKey(const ValueKey('navigation-4')));
         await tester.pumpAndSettle();
         expect(selected, 4);
       }
-      await tester.tap(find.text('Sobre o App'));
+      if (aboutInBar) {
+        await tester.tap(find.byKey(const ValueKey('navigation-about')));
+      } else {
+        await tester.tap(find.text('Sobre o App'));
+      }
       await tester.pumpAndSettle();
       expect(about, 1);
       expect(tester.takeException(), isNull);
@@ -90,6 +100,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('navigation-more')));
     await tester.pumpAndSettle();
     expect(find.text('Admin'), findsNothing);
+    // Janela padrão de 800 px: trilho compacto, onde Sobre mora no Mais.
     expect(find.text('Sobre o App'), findsOneWidget);
   });
 
@@ -123,8 +134,13 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      await abrirMais();
-      await tester.tap(find.text('Estudar com a IA'));
+      if (width < 600) {
+        // Fatia própria da barra do celular.
+        await tester.tap(find.byKey(const ValueKey('navigation-study')));
+      } else {
+        await abrirMais();
+        await tester.tap(find.text('Estudar com a IA'));
+      }
       await tester.pumpAndSettle();
       expect(study, 1);
       await abrirMais();

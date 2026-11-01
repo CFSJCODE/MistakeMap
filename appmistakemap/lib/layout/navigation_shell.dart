@@ -84,10 +84,16 @@ class AppNavigationShell extends StatelessWidget {
     Color accent = MistakeMapDesign.mist,
   }) => ButtonStyle(
     textStyle: WidgetStatePropertyAll(
-      TextStyle(fontSize: compact ? 12 : 14, fontWeight: FontWeight.w600),
+      TextStyle(
+        fontSize: compact ? _compactFont : 14,
+        fontWeight: FontWeight.w600,
+      ),
     ),
     padding: WidgetStatePropertyAll(
-      EdgeInsets.symmetric(horizontal: compact ? 4 : 12, vertical: 10),
+      EdgeInsets.symmetric(
+        horizontal: compact ? 0 : 12,
+        vertical: compact ? 8 : 10,
+      ),
     ),
     shape: WidgetStateProperty.resolveWith(
       (states) => RoundedRectangleBorder(
@@ -257,7 +263,7 @@ class AppNavigationShell extends StatelessWidget {
       maxLines: compact ? 1 : null,
       softWrap: !compact,
       style: TextStyle(
-        fontSize: compact ? 12 : 14,
+        fontSize: compact ? _compactFont : 14,
         fontWeight: FontWeight.w600,
       ),
     );
@@ -282,7 +288,11 @@ class AppNavigationShell extends StatelessWidget {
               child: compact
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
-                      children: [icon, const SizedBox(height: 8), label],
+                      children: [
+                        icon,
+                        const SizedBox(height: _compactGap),
+                        label,
+                      ],
                     )
                   : Row(
                       children: [
@@ -351,7 +361,9 @@ class AppNavigationShell extends StatelessWidget {
     ),
   );
 
-  Widget _more(BuildContext context) => Semantics(
+  /// Menu Mais. Na barra do celular ([full] falso) Estudar e Sobre já são
+  /// fatias da barra, então o menu fica só com Admin e Sair.
+  Widget _more(BuildContext context, {bool full = true}) => Semantics(
     selected: selectedIndex == 4,
     child: DropDownButton(
       title: const Text('Mais'),
@@ -382,7 +394,7 @@ class AppNavigationShell extends StatelessWidget {
                     selectedIndex == 4,
                     compact: true,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: _compactGap),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
@@ -391,7 +403,7 @@ class AppNavigationShell extends StatelessWidget {
                       maxLines: 1,
                       softWrap: false,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: _compactFont,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -412,19 +424,20 @@ class AppNavigationShell extends StatelessWidget {
             selected: selectedIndex == 4,
             action: () => onSelected(4),
           ),
-        if (onStudy != null)
+        if (full && onStudy != null)
           _flyoutItem(
             context,
             icon: WindowsIcons.education,
             label: 'Estudar com a IA',
             action: onStudy!,
           ),
-        _flyoutItem(
-          context,
-          icon: WindowsIcons.info,
-          label: 'Sobre o App',
-          action: onAbout,
-        ),
+        if (full)
+          _flyoutItem(
+            context,
+            icon: WindowsIcons.info,
+            label: 'Sobre o App',
+            action: onAbout,
+          ),
         if (onSignOut != null)
           _flyoutItem(
             context,
@@ -678,7 +691,7 @@ class AppNavigationShell extends StatelessWidget {
                 container: true,
                 explicitChildNodes: true,
                 label: 'Navegação principal',
-                child: _bottomBar(context),
+                child: _bottomBar(context, wide: width >= 360),
               ),
           ],
         ),
@@ -686,21 +699,52 @@ class AppNavigationShell extends StatelessWidget {
     },
   );
 
-  /// Ordem dos botões na barra inferior: a ação principal fica no centro,
-  /// entre os destinos, como o "+" das barras do Material 3 e do iOS.
-  /// Cada entrada é um índice de destino, ou [_actionSlot]/[_moreSlot].
+  /// Medidas dos botões compactos (barra do celular e trilho compacto):
+  /// pequenos o bastante para oito fatias caberem em 320 px.
+  static const _compactFont = 11.0;
+  static const _compactGap = 6.0;
+
+  /// Ordem dos botões na barra inferior, na ordem do ciclo de estudo: a ação
+  /// principal fica no centro, entre os destinos, como o "+" das barras do
+  /// Material 3 e do iOS; Estudar vem logo depois do Mapa, de onde nasce.
+  /// Cada entrada é um índice de destino ou um dos atalhos negativos.
   static const _actionSlot = -1;
   static const _moreSlot = -2;
-  static const _barSlots = [0, 1, _actionSlot, 2, 3, _moreSlot];
+  static const _studySlot = -3;
+  static const _aboutSlot = -4;
+  static const _barSlots = [
+    0,
+    1,
+    _actionSlot,
+    2,
+    _studySlot,
+    3,
+    _aboutSlot,
+    _moreSlot,
+  ];
+
+  /// Abaixo de 360 px por unidade de fonte não há largura para oito fatias:
+  /// Estudar e Sobre voltam para o Mais.
+  static const _narrowBarSlots = [0, 1, _actionSlot, 2, 3, _moreSlot];
 
   /// Barra inferior de ponta a ponta, no modelo do NavigationBar do
   /// Material 3 com o vidro do app: fatias iguais para todos os botões, a
   /// pílula que desliza entre os destinos e se acomoda no atual, brilho que
   /// segue o dedo e a área de gestos coberta pelo próprio vidro.
-  Widget _bottomBar(BuildContext context) {
+  Widget _bottomBar(BuildContext context, {required bool wide}) {
+    // Um atalho sem ação não vira botão apagado: a fatia some. O Mais só
+    // existe se tiver o que listar (na barra larga, Admin e Sair).
+    final moreEmpty = wide && !hasAdmin && onSignOut == null;
+    final slots = [
+      for (final slot in wide ? _barSlots : _narrowBarSlots)
+        if (!(slot == _actionSlot && onAnalysis == null) &&
+            !(slot == _studySlot && onStudy == null) &&
+            !(slot == _moreSlot && moreEmpty))
+          slot,
+    ];
     final selectedSlot = selectedIndex >= 4
-        ? _barSlots.indexOf(_moreSlot)
-        : _barSlots.indexOf(selectedIndex);
+        ? slots.indexOf(_moreSlot)
+        : slots.indexOf(selectedIndex);
     final accent = accents[selectedIndex.clamp(0, 4)];
     final inset = MediaQuery.paddingOf(context).bottom;
     final content = GlassGlow(
@@ -712,8 +756,8 @@ class AppNavigationShell extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(8, 8, 8, 8 + inset),
         child: LayoutBuilder(
           builder: (context, box) {
-            const gap = 4.0;
-            final n = _barSlots.length;
+            const gap = 2.0;
+            final n = slots.length;
             final width = (box.maxWidth - gap * (n - 1)) / n;
             return Stack(
               children: [
@@ -736,11 +780,40 @@ class AppNavigationShell extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: gap,
                   children: [
-                    for (final slot in _barSlots)
+                    for (final slot in slots)
                       Expanded(
                         child: switch (slot) {
-                          _actionSlot => _actionTab(context),
-                          _moreSlot => _more(context),
+                          _actionSlot => _actionTab(
+                            context,
+                            key: const ValueKey('navigation-action'),
+                            icon: WindowsIcons.lightbulb,
+                            label: 'Analisar',
+                            tooltip: 'Analisar um exercício',
+                            accent: MistakeMapDesign.aqua,
+                            ink: MistakeMapDesign.aquaInk,
+                            onPressed: onAnalysis,
+                          ),
+                          _studySlot => _actionTab(
+                            context,
+                            key: const ValueKey('navigation-study'),
+                            icon: WindowsIcons.education,
+                            label: 'Estudar',
+                            tooltip: 'Estudar com a IA',
+                            accent: MistakeMapDesign.violet,
+                            ink: MistakeMapDesign.violetInk,
+                            onPressed: onStudy,
+                          ),
+                          _aboutSlot => _actionTab(
+                            context,
+                            key: const ValueKey('navigation-about'),
+                            icon: WindowsIcons.info,
+                            label: 'Sobre',
+                            tooltip: 'Sobre o App',
+                            accent: MistakeMapDesign.mist,
+                            ink: MistakeMapDesign.steel,
+                            onPressed: onAbout,
+                          ),
+                          _moreSlot => _more(context, full: !wide),
                           _ => _destination(context, slot, compact: true),
                         },
                       ),
@@ -776,36 +849,45 @@ class AppNavigationShell extends StatelessWidget {
     );
   }
 
-  /// A ação principal como uma fatia da barra: mesmo tamanho dos destinos,
-  /// mas com o bloco do ícone sempre aceso no acento, porque é um botão de
-  /// executar, não de ir a algum lugar.
-  Widget _actionTab(BuildContext context) => Tooltip(
-    message: 'Analisar um exercício',
+  /// Um atalho como fatia da barra: mesmo tamanho dos destinos, mas sem
+  /// pílula (a pílula marca onde o aluno está; isto executa ou abre uma
+  /// página por cima). A ação principal fica com o bloco sempre aceso.
+  Widget _actionTab(
+    BuildContext context, {
+    required Key key,
+    required IconData icon,
+    required String label,
+    required String tooltip,
+    required Color accent,
+    required Color ink,
+    required VoidCallback? onPressed,
+  }) => Tooltip(
+    message: tooltip,
     child: Button(
-      key: const ValueKey('navigation-action'),
+      key: key,
       style: _style(false, compact: true),
-      onPressed: onAnalysis,
+      onPressed: onPressed,
       child: _NavigationHoverInk(
         compact: true,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const _NavigationIcon(
-              icon: WindowsIcons.lightbulb,
-              selected: true,
+            _NavigationIcon(
+              icon: icon,
+              selected: key == const ValueKey('navigation-action'),
               compact: true,
-              accent: MistakeMapDesign.aqua,
-              ink: MistakeMapDesign.aquaInk,
+              accent: accent,
+              ink: ink,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _compactGap),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                'Analisar',
+                label,
                 maxLines: 1,
                 softWrap: false,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: _compactFont,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -970,8 +1052,8 @@ class _NavigationIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = selected ? 1.0 : _NavigationHoverProgress.of(context);
     return Container(
-      width: compact ? 24 : 32,
-      height: compact ? 24 : 32,
+      width: compact ? 22 : 32,
+      height: compact ? 22 : 32,
       decoration: BoxDecoration(
         color: accent.withValues(alpha: .16 + .14 * progress),
         borderRadius: BorderRadius.circular(compact ? 8 : 10),
@@ -988,7 +1070,7 @@ class _NavigationIcon extends StatelessWidget {
               ]
             : null,
       ),
-      child: Icon(icon, size: compact ? 17 : 18, color: ink),
+      child: Icon(icon, size: compact ? 15 : 18, color: ink),
     );
   }
 }
