@@ -25,8 +25,9 @@ navegação. Nada aqui foi presumido: cada item aponta para o código.
 | 10 | Barra e trilho **sem região semântica** de navegação | `AppNavigationShell` | Leitor de tela não anunciava "navegação" ao entrar nos botões |
 | 11 | Voltar numa aba que não é o Início **voltava ao Início** (correto), mas dentro do Mapa fechava **o fluxo inteiro** de uma vez quando o pop interno falhava | `PopScope` do shell + `_AiMaterialShellState` | Perda de contexto inesperada |
 
-Mantidos por funcionarem: a cápsula de vidro com pílula deslizante e botão
-redondo de analisar (PR #30), o guia "O que fazer agora" do Início (PR #29),
+Mantidos por funcionarem: a pílula deslizante e o vidro líquido da barra
+(PR #30; a cápsula flutuante virou barra de ponta a ponta a pedido do
+Cláudio), o guia "O que fazer agora" do Início (PR #29),
 lista e detalhe lado a lado em janelas expandidas e em telas duplas
 (`DoisPaineis`), as páginas de detalhe/edição/registro como rotas empilhadas
 com Voltar na barra.
@@ -36,7 +37,7 @@ com Voltar na barra.
 ```
 NÍVEL PRIMÁRIO — sempre à vista (barra inferior, trilho compacto ou trilho largo)
 ├── ⚡ Analisar exercício  (ação principal, não é destino)
-│       celular: botão redondo de vidro ao lado da cápsula (≥ 360 px)
+│       celular: sem botão na barra; o painel de análise do Mapa faz o papel
 │       trilho compacto: botão redondo no topo
 │       trilho largo: botão cheio no acento, acima dos destinos
 ├── Início (aqua)               raiz do app; Voltar aqui sai do app
@@ -84,7 +85,7 @@ NÍVEL TERCIÁRIO — menu Mais (celular e trilho compacto) · seção CONTA (tr
 
 | Largura efetiva | Componente | Observações |
 |---|---|---|
-| < 600 px | Cápsula inferior de vidro líquido | 4 abas + Mais; botão redondo de analisar a partir de 360 px; some com o teclado aberto |
+| < 600 px | Barra inferior de vidro de ponta a ponta | 7 fatias iguais: Início · Lista · Mapa · Estudar · Caderno · Sobre · Mais (Admin, Sair); sem Analisar, porque o Mapa já traz o painel de análise; abaixo de 360 px efetivos, Estudar e Sobre voltam ao Mais (5 fatias); cantos só em cima, área de gestos dentro do vidro; some com o teclado aberto |
 | 600 – 840 px | Trilho compacto (88 px) | Mesmos 4 destinos e Mais, ícone sobre rótulo, pílula no destino atual, analisar no topo; o mesmo padrão do `NavigationRail` do Material 3 |
 | ≥ 840 px | Trilho largo (224 px) | Rótulos inteiros em duas seções (SEU ESTUDO, CONTA), Estudar como atalho logo abaixo do Mapa, Analisar como botão cheio |
 
