@@ -257,7 +257,14 @@ class _MistakeMapButtonState extends State<BaseButton> {
                     },
                     child: DecoratedBox(
                       decoration: ShapeDecoration(
-                        color: background,
+                        // A ação principal leva o gradiente Aqua → Azure; os
+                        // demais botões, a cor lisa.
+                        color: rest == MistakeMapDesign.accent && !disabled
+                            ? null
+                            : background,
+                        gradient: rest == MistakeMapDesign.accent && !disabled
+                            ? MistakeMapDesign.primaryGradientFor(background)
+                            : null,
                         shape: shape,
                       ),
                       child: Padding(

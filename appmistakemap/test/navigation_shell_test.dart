@@ -54,26 +54,21 @@ void main() {
           greaterThanOrEqualTo(44),
         );
       }
-      final effective = scenario.$1 / scenario.$2;
-      // Na barra do celular (360 a 600 px efetivos), Sobre é uma fatia
-      // própria; abaixo de 360 px e nos trilhos ele mora no Mais.
-      final aboutInBar = effective >= 360 && effective < 600;
+      // Barra compacta de 7 fatias: Admin no flyout do Mais; Sobre é fatia da
+      // barra (celular/tablet) ou destino direto no trilho (desktop).
       if (scenario.$1 < 840) {
         await tester.tap(find.byKey(const ValueKey('navigation-more')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Admin'));
         await tester.pumpAndSettle();
         expect(selected, 4);
-        if (!aboutInBar) {
-          await tester.tap(find.byKey(const ValueKey('navigation-more')));
-          await tester.pumpAndSettle();
-        }
       } else {
         await tester.tap(find.byKey(const ValueKey('navigation-4')));
         await tester.pumpAndSettle();
         expect(selected, 4);
       }
-      if (aboutInBar) {
+      // Sobre é fatia da barra em celular/tablet; destino no trilho em desktop.
+      if (scenario.$1 < 840) {
         await tester.tap(find.byKey(const ValueKey('navigation-about')));
       } else {
         await tester.tap(find.text('Sobre o App'));
@@ -134,8 +129,8 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      if (width < 600) {
-        // Fatia própria da barra do celular.
+      // Barra compacta de 7 fatias: Estudar é fatia da barra em celular/tablet.
+      if (width < 840) {
         await tester.tap(find.byKey(const ValueKey('navigation-study')));
       } else {
         await abrirMais();

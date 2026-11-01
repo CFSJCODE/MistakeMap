@@ -85,7 +85,7 @@ NÍVEL TERCIÁRIO — menu Mais (celular e trilho compacto) · seção CONTA (tr
 
 | Largura efetiva | Componente | Observações |
 |---|---|---|
-| < 600 px | Barra inferior de vidro de ponta a ponta | 7 fatias iguais: Início · Lista · Mapa · Estudar · Caderno · Sobre · Mais (Admin, Sair); sem Analisar, porque o Mapa já traz o painel de análise; abaixo de 360 px efetivos, Estudar e Sobre voltam ao Mais (5 fatias); cantos só em cima, área de gestos dentro do vidro; some com o teclado aberto |
+| < 600 px | Barra inferior de vidro de ponta a ponta | **5 fatias fixas**: Início · Lista · Mapa · Caderno · Mais — design Obsidian Glass; Estudar, Sobre, Admin e Sair ficam no flyout do Mais; sem Analisar, porque o Mapa já traz o painel de análise; cantos só em cima, área de gestos dentro do vidro; some com o teclado aberto |
 | 600 – 840 px | Trilho compacto (88 px) | Mesmos 4 destinos e Mais, ícone sobre rótulo, pílula no destino atual, analisar no topo; o mesmo padrão do `NavigationRail` do Material 3 |
 | ≥ 840 px | Trilho largo (224 px) | Rótulos inteiros em duas seções (SEU ESTUDO, CONTA), Estudar como atalho logo abaixo do Mapa, Analisar como botão cheio |
 

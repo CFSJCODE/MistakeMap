@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../theme/design_tokens.dart';
+import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
 import 'analysis_models.dart';
 import 'analysis_repository.dart';
@@ -695,14 +696,10 @@ class FrequencyBars extends StatelessWidget {
                       const SizedBox(height: 8),
                       // Barra no violeta da IA: a frequência é uma leitura
                       // do Mapa, e o rótulo ao lado já traz o número.
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value: value.count / highest,
-                          minHeight: 12,
-                          backgroundColor: const Color(0xB3FFFFFF),
-                          color: MistakeMapDesign.violet,
-                        ),
+                      GradientBar(
+                        value: value.count / highest,
+                        height: 12,
+                        semanticsLabel: value.label,
                       ),
                     ],
                   ),
