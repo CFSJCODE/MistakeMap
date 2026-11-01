@@ -1,10 +1,86 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
 import 'analysis_repository.dart';
 import 'exercise_submission_view.dart';
 import 'insights_view.dart';
 import '../theme/design_tokens.dart';
 import 'material_control_styles.dart';
+
+/// O Mapa de erros como aba da navegação principal: a barra e o trilho
+/// continuam à vista, e correções e Estudar abrem dentro da aba, com estado
+/// preservado ao trocar de aba.
+///
+/// Usa um [Navigator] simples em vez de um MaterialApp: um segundo
+/// WidgetsApp também recebe o Voltar do sistema e desempilharia a aba
+/// escondida quando o aluno está no Início. O Voltar chega aqui pela
+/// navegação principal, por [navigatorKey].
+class ErrorMapTab extends StatefulWidget {
+  const ErrorMapTab({
+    super.key,
+    required this.userId,
+    required this.repository,
+    required this.controller,
+    required this.navigatorKey,
+  });
+
+  final String userId;
+  final AnalysisRepository repository;
+  final ErrorMapController controller;
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  @override
+  State<ErrorMapTab> createState() => _ErrorMapTabState();
+}
+
+class _ErrorMapTabState extends State<ErrorMapTab> {
+  final _heroes = MaterialApp.createMaterialHeroController();
+
+  @override
+  void dispose() {
+    _heroes.dispose();
+    super.dispose();
+  }
+
+  /// A navegação só esconde a ação principal na barra inferior de janelas
+  /// estreitas (menos de 360 px por unidade de fonte); nesse caso o Mapa
+  /// mantém o próprio botão de analisar, para a ação ficar a um toque em
+  /// toda largura.
+  static bool navigationShowsAnalysis(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    return MediaQuery.sizeOf(context).width / scale >= 360;
+  }
+
+  @override
+  Widget build(BuildContext context) => Theme(
+    data: AiMaterialShell._theme(context),
+    child: ScrollConfiguration(
+      behavior: const MaterialScrollBehavior(),
+      child: ScaffoldMessenger(
+        child: HeroControllerScope(
+          controller: _heroes,
+          // Quem informa ao sistema se o app trata o Voltar é a navegação
+          // principal; a pilha da aba não pode desmentir.
+          child: NotificationListener<NavigationNotification>(
+            onNotification: (_) => true,
+            child: Navigator(
+              key: widget.navigatorKey,
+              onGenerateRoute: (settings) => MaterialPageRoute<void>(
+                settings: settings,
+                builder: (_) => ErrorMapView(
+                  userId: widget.userId,
+                  repository: widget.repository,
+                  controller: widget.controller,
+                  showAnalysisButton: !navigationShowsAnalysis(context),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
 /// Hosts the new analysis flow within the existing Fluent navigation.
 class AiMaterialShell extends StatefulWidget {
@@ -152,6 +228,10 @@ class AiMaterialShell extends StatefulWidget {
         foregroundColor: MistakeMapDesign.strong,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        // Ícones escuros na barra de status, como nas páginas Fluent: a barra
+        // transparente seria lida como fundo escuro e deixaria o relógio
+        // branco sobre a luz Aurora e o trilho claro.
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         // Mesmo recuo de 12 px das barras Fluent: os botões não encostam na
         // borda da tela.
         actionsPadding: EdgeInsets.only(right: 12),

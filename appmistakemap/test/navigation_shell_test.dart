@@ -4,7 +4,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  for (final scenario in [(320.0, 2.0), (390.0, 1.0), (1280.0, 1.0)]) {
+  // 320 e 390: barra inferior; 768: trilho compacto (tablet em pé); 1280:
+  // trilho largo.
+  for (final scenario in [
+    (320.0, 2.0),
+    (390.0, 1.0),
+    (768.0, 1.0),
+    (1280.0, 1.0),
+  ]) {
     testWidgets('Navegação em ${scenario.$1}px com fonte ${scenario.$2}x', (
       tester,
     ) async {
@@ -86,7 +93,7 @@ void main() {
     expect(find.text('Sobre o App'), findsOneWidget);
   });
 
-  for (final width in [390.0, 1280.0]) {
+  for (final width in [390.0, 768.0, 1280.0]) {
     testWidgets('Estudar e Sair ficam à vista em ${width.toInt()}px', (
       tester,
     ) async {
@@ -128,23 +135,25 @@ void main() {
     });
   }
 
-  testWidgets('Mapa é um destino só e o Caderno substitui o Novo', (
+  testWidgets('Mapa é uma aba e tocar na aba atual avisa de novo', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    var map = 0;
+    var taps = 0;
     var selected = 0;
     await tester.pumpWidget(
       FluentApp(
         home: StatefulBuilder(
           builder: (context, setState) => AppNavigationShell(
             selectedIndex: selected,
-            onSelected: (index) => setState(() => selected = index),
+            onSelected: (index) {
+              taps++;
+              setState(() => selected = index);
+            },
             onAbout: () {},
-            onErrorMap: () => map++,
             hasAdmin: false,
             child: const SizedBox.expand(),
           ),
@@ -154,15 +163,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Novo'), findsNothing);
     expect(find.text('Analisar com IA'), findsNothing);
-    // Um toque no Mapa abre a página unificada, sem menu intermediário.
+    // O Mapa troca de aba como as demais: a barra continua à vista.
     await tester.tap(find.byKey(const ValueKey('navigation-2')));
     await tester.pumpAndSettle();
-    expect(map, 1);
+    expect(selected, 2);
+    // Tocar de novo na aba atual avisa outra vez, para a página voltar à raiz.
+    await tester.tap(find.byKey(const ValueKey('navigation-2')));
+    await tester.pumpAndSettle();
+    expect(taps, 2);
     await tester.tap(find.text('Caderno'));
     await tester.pumpAndSettle();
     expect(selected, 3);
     expect(tester.takeException(), isNull);
   });
+
+  for (final width in [390.0, 768.0, 1280.0]) {
+    testWidgets('Analisar fica à vista em ${width.toInt()}px', (tester) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var analysis = 0;
+      await tester.pumpWidget(
+        FluentApp(
+          home: AppNavigationShell(
+            selectedIndex: 0,
+            onSelected: (_) {},
+            onAbout: () {},
+            onAnalysis: () => analysis++,
+            hasAdmin: false,
+            child: const SizedBox.expand(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final action = find.byKey(const ValueKey('navigation-action'));
+      expect(action, findsOneWidget);
+      // Alvo de toque do Material (48) e do Fluent (40) em qualquer largura.
+      expect(tester.getSize(action).height, greaterThanOrEqualTo(44));
+      await tester.tap(action);
+      await tester.pumpAndSettle();
+      expect(analysis, 1);
+      expect(tester.takeException(), isNull);
+    });
+  }
   for (final reduced in [false, true]) {
     testWidgets('Hover rápido mantém botões e rótulos estáveis '
         '(movimento reduzido: $reduced)', (tester) async {

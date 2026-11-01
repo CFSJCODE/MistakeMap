@@ -12,6 +12,30 @@ import 'exercise_submission_view.dart';
 import 'study_material.dart';
 import 'study_material_view.dart';
 
+/// O que os atalhos de fora do Mapa podem pedir a ele.
+enum ErrorMapRequest { analysis, study }
+
+/// Liga a aba do Mapa aos atalhos da navegação (botão de analisar, Estudar,
+/// passos do Início). Um pedido feito antes de o Mapa existir espera por ele.
+class ErrorMapController {
+  _ErrorMapViewState? _view;
+  ErrorMapRequest? _pending;
+
+  /// Volta à raiz do Mapa (fechando correções, Estudar e folhas abertas) e
+  /// atende o pedido. Pedir Estudar com o Estudar já aberto só o mostra.
+  void request(ErrorMapRequest request) {
+    final view = _view;
+    if (view == null || !view.mounted) {
+      _pending = request;
+      return;
+    }
+    view._handle(request);
+  }
+
+  /// Atualiza o mapa sem trocar o conteúdo pelo indicador de carregamento.
+  void refresh() => _view?._reload();
+}
+
 class ErrorMapView extends StatefulWidget {
   final String userId;
   final AnalysisRepository repository;
@@ -24,7 +48,20 @@ class ErrorMapView extends StatefulWidget {
     this.startWithAnalysis = false,
     this.startWithStudy = false,
     this.studyRepository,
+    this.controller,
+    this.showAnalysisButton = true,
   });
+
+  /// Nome da rota do Estudar, para os atalhos reconhecerem que ele já está
+  /// aberto.
+  static const studyRoute = 'mapa/estudar';
+
+  /// Atalhos de fora da página (aba do Mapa na navegação principal).
+  final ErrorMapController? controller;
+
+  /// O botão flutuante de analisar. Na aba, a navegação já tem a ação
+  /// principal, então ele sairia repetido na mesma tela.
+  final bool showAnalysisButton;
 
   /// Abre direto o Estudar (atalho do Início e da navegação) assim que as
   /// matérias chegam; voltar dele leva ao mapa.
@@ -59,7 +96,11 @@ class _ErrorMapViewState extends State<ErrorMapView> {
   int _request = 0;
   final _analysis = ExpansibleController();
   final _analysisKey = GlobalKey();
-  late bool _analysisOpen = widget.startWithAnalysis;
+  late bool _startAnalysis;
+  late bool _analysisOpen;
+
+  // Estudar pedido antes de as tentativas chegarem: abre quando chegarem.
+  late bool _studyPending;
 
   // Botão flutuante e atalho do Início: abre o painel e rola até ele.
   void _openAnalysis() {
@@ -78,15 +119,55 @@ class _ErrorMapViewState extends State<ErrorMapView> {
     });
   }
 
+  void _handle(ErrorMapRequest request) {
+    final page = ModalRoute.of(context);
+    var studyOpen = false;
+    Navigator.of(context).popUntil((route) {
+      if (request == ErrorMapRequest.study &&
+          route.settings.name == ErrorMapView.studyRoute) {
+        studyOpen = true;
+        return true;
+      }
+      return route == page || route.isFirst;
+    });
+    if (studyOpen) return;
+    // Um pedido novo substitui o anterior: só um deles pode abrir algo depois.
+    _studyPending = false;
+    switch (request) {
+      case ErrorMapRequest.analysis:
+        _openAnalysis();
+      case ErrorMapRequest.study:
+        if (_attempts.isNotEmpty) {
+          // Com o mapa já carregado, abre na hora, mesmo com uma atualização
+          // em andamento: ela não muda o que há para estudar.
+          _openStudy({for (final a in _attempts) a.subjectId: a.subjectName});
+        } else if (_loading) {
+          _studyPending = true;
+        } else {
+          // Sem erros ainda não há o que estudar: o caminho é analisar.
+          _openAnalysis();
+        }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    final controller = widget.controller;
+    final pending = controller?._pending;
+    controller?._pending = null;
+    controller?._view = this;
+    _startAnalysis =
+        widget.startWithAnalysis || pending == ErrorMapRequest.analysis;
+    _analysisOpen = _startAnalysis;
+    _studyPending = widget.startWithStudy || pending == ErrorMapRequest.study;
     analysisChanges.addListener(_reload);
     _reload();
   }
 
   @override
   void dispose() {
+    if (widget.controller?._view == this) widget.controller!._view = null;
     analysisChanges.removeListener(_reload);
     _analysis.dispose();
     super.dispose();
@@ -106,7 +187,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
     ),
     child: ExpansionTile(
       controller: _analysis,
-      initiallyExpanded: widget.startWithAnalysis,
+      initiallyExpanded: _startAnalysis,
       onExpansionChanged: (open) => setState(() => _analysisOpen = open),
       // O formulário guarda o que já foi digitado ao recolher o painel.
       maintainState: true,
@@ -147,13 +228,19 @@ class _ErrorMapViewState extends State<ErrorMapView> {
         });
         // Sem tentativas o mapa não tem o que mostrar: começa pela análise.
         if (result.isEmpty && !_analysis.isExpanded) _analysis.expand();
-        if (widget.startWithAnalysis && request == 1) _openAnalysis();
-        if (widget.startWithStudy && request == 1 && result.isNotEmpty) {
-          _openStudy({for (final a in result) a.subjectId: a.subjectName});
+        if (_startAnalysis && request == 1) _openAnalysis();
+        if (_studyPending) {
+          _studyPending = false;
+          if (result.isNotEmpty) {
+            _openStudy({for (final a in result) a.subjectId: a.subjectName});
+          }
         }
       }
     } catch (error) {
       if (mounted && request == _request) {
+        // O pedido de Estudar morre com a carga que falhou: uma atualização
+        // qualquer, minutos depois, não pode abrir uma página sozinha.
+        _studyPending = false;
         setState(() {
           _error = friendlyFailure(error);
           _loading = false;
@@ -226,6 +313,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
       context,
       MistakeMapPageRoute<void>(
         context: context,
+        settings: const RouteSettings(name: ErrorMapView.studyRoute),
         builder: (_) => study == null
             ? PracticeView(
                 userId: widget.userId,
@@ -278,7 +366,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
           ),
         ],
       ),
-      floatingActionButton: _analysisOpen
+      floatingActionButton: _analysisOpen || !widget.showAnalysisButton
           ? null
           : FloatingActionButton.extended(
               onPressed: _openAnalysis,
@@ -298,7 +386,9 @@ class _ErrorMapViewState extends State<ErrorMapView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (_loading)
+                // Ao atualizar, o mapa já carregado fica na tela: filtros e
+                // rolagem não se perdem ao voltar à aba.
+                if (_loading && _attempts.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(32),
                     child: Center(child: CircularProgressIndicator()),
