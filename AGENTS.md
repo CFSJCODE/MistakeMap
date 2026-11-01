@@ -43,6 +43,60 @@ deno check --frozen */index.ts
 deno test --frozen --allow-env
 ```
 
+## Decisões registradas
+
+Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
+
+**Arquitetura e dados**
+- Offline-first (PR #24): o app consulta o Supabase primeiro e cai no SQLite sem rede;
+  escritas offline vão para `fila_sync` e sobem ao reconectar; Realtime em
+  `subjects`, `attempts` e `attempt_analyses`. Código em `appmistakemap/lib/sync/`.
+- Caderno de erros (PR #18) é local (SQLite); ainda **não** sincroniza com o Supabase.
+- No `flutter test` o `Sincronizador` nasce desabilitado; `test/sincronizacao_test.dart` liga com SQLite em memória.
+- Evite `path_provider` (puxa `jni` e quebra o build Windows sem JDK).
+- `web/sqlite3.wasm` deve casar com a versão do pacote `sqlite3` no `pubspec.lock`.
+- O workflow `supabase-deploy` aplica migrations no merge do main; Edge Functions
+  alteradas podem exigir `supabase functions deploy <nome>`.
+- Prática (PR #20): `generate-practice` aceita `category` e ranqueia conceitos por
+  frequência × recência (meia-vida 14 d), descontando recuperação via `mastery_events`.
+
+**Visual e navegação**
+- Identidade Obsidian Glass em **modo claro** com acentos Aurora, linguagem Fluent 2 + Liquid Glass.
+  Tokens em `appmistakemap/lib/theme/design_tokens.dart`; paleta em [PALETA.md](appmistakemap/PALETA.md).
+  Acentos vivos só como preenchimento; texto colorido usa as variantes "Ink" (≥ 4,5:1).
+- Animação de toque uniforme em todos os botões: escala 0,97 em 120 ms.
+- Navegação documentada em [NAVEGACAO.md](appmistakemap/NAVEGACAO.md). Mapa é aba com pilha
+  própria; trilho lateral em janelas médias/largas; Voltar previsível (PR #31).
+- Barra inferior (celular): de ponta a ponta, fatias iguais
+  **Início · Lista · Mapa · Estudar · Caderno · Sobre · Mais**. Sem botão Analisar na barra:
+  o Mapa já cumpre essa função. "Mais" guarda só Admin e Sair.
+- Material de estudo estilo NotebookLM na aba Estudar (PR #27).
+
+**Plataformas e processo**
+- iOS adiado até haver Mac ou conta Apple Developer.
+- Release Android atual é assinado com chave de debug (não serve para a Play Store).
+- Commits de Dart/UI: autor Cláudio, com `Co-Authored-By` do Lucas e do Claude.
+- PRs pequenos e focados; cada tópico de trabalho mexe só nos arquivos combinados.
+
+## Em andamento (atualizado em 2026-11-01)
+
+| Frente | Estado | Arquivos de responsabilidade |
+|---|---|---|
+| PR #32 — barra inferior de ponta a ponta (7 fatias, sem Analisar) | aberto; ajuste da animação do botão em curso | `lib/layout/navigation_shell.dart`, `lib/ai/ai_material_shell.dart`, `NAVEGACAO.md`, `test/navigation_shell_test.dart` |
+| Redesenho Fluent + Liquid Glass (dois artefatos de design) | em implementação **sobre a branch do PR #32** | `lib/main.dart` (telas), `lib/theme/**`, `lib/ai/study_material_view.dart`, `insights_view.dart`, `exercise_submission_view.dart`, `material_control_styles.dart`, `lib/caderno_erros.dart`, `lib/admin/**` e os testes dessas telas |
+
+Regra da divisão: token novo em `lib/theme/` é pedido ao tópico do redesenho, não editado
+pelo de navegação. O PR do redesenho entra depois do #32 (ou com base na branch dele).
+
+Mergeados recentes: #27 (material de estudo), #29/#30 (barra de vidro líquido), #31 (reestruturação da navegação).
+
+**Pendências conhecidas**
+- Fórmula de prioridade P = F × R × I × (1 − M): falta o termo I (importância).
+- Fila de revisão; validação dos `error_events` pelo aluno; `focus_concept` some ao recarregar a prática.
+- Decidir se o Caderno de erros sincroniza (exigiria tabela `error_notes` + RLS).
+- Insights não mostra itens ainda na fila de sync; sync não testado em aparelho real.
+- Avisos de validação do Caderno só somem ao salvar de novo.
+
 ## Reversa
 
 Framework de engenharia reversa instalado (skills em `.agents/skills/`). Quando o
