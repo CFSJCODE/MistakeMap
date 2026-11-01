@@ -395,6 +395,20 @@ class AppNavigationShell extends StatelessWidget {
     ),
   );
 
+  /// Cápsula da barra inferior. Com alto contraste ligado no aparelho, o
+  /// vidro vira superfície sólida, como nas demais telas.
+  Widget _bottomGlass(BuildContext context, Widget child) {
+    if (MediaQuery.highContrastOf(context)) {
+      return GlassSurface(tier: GlassTier.liquid, radius: 28, child: child);
+    }
+    return LiquidGlass.withOwnLayer(
+      shape: const LiquidRoundedSuperellipse(borderRadius: 28),
+      settings: LiquidGlassSettings.ios27Regular(brightness: Brightness.light),
+      shadows: MistakeMapDesign.liquidShadow,
+      child: child,
+    );
+  }
+
   /// Ação do trilho que abre uma página em vez de trocar de aba.
   Widget _railAction(
     BuildContext context, {
@@ -535,15 +549,11 @@ class AppNavigationShell extends StatelessWidget {
                   // Vidro líquido de verdade (refração, brilho e borda) pelo
                   // liquid_glass_renderer. Sem Impeller com Flutter GPU, o
                   // próprio pacote troca por vidro fosco, sem refração.
-                  child: LiquidGlass.withOwnLayer(
-                    shape: const LiquidRoundedSuperellipse(borderRadius: 28),
-                    settings: LiquidGlassSettings.ios27Regular(
-                      brightness: Brightness.light,
-                    ),
-                    shadows: MistakeMapDesign.liquidShadow,
+                  child: _bottomGlass(
+                    context,
                     // Same 8px rhythm around and between the buttons, so
                     // each destination reads as its own control.
-                    child: Padding(
+                    Padding(
                       padding: const EdgeInsets.all(8),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,

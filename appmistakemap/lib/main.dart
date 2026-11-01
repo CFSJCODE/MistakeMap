@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' show ImageFilter;
 import 'dart:async';
 
 import 'package:flutter/foundation.dart'
@@ -99,6 +100,25 @@ final FluentThemeData temaFluent = FluentThemeData(
     cardStrokeColorDefault: MistakeMapDesign.hairline,
     controlStrokeColorDefault: MistakeMapDesign.edge,
     solidBackgroundFillColorBase: MistakeMapDesign.canvas,
+  ),
+  // Diálogos em acrílico: quase opacos para o texto, cantos de cartão, borda
+  // clara e véu escuro suave atrás.
+  dialogTheme: const ContentDialogThemeData(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFAFFFFFF), Color(0xF2F8FAFB)],
+      ),
+      borderRadius: BorderRadius.all(Radius.circular(20)),
+      border: Border.fromBorderSide(BorderSide(color: Color(0xE6FFFFFF))),
+      boxShadow: MistakeMapDesign.liquidShadow,
+    ),
+    actionsDecoration: BoxDecoration(
+      color: Color(0x0A11212D),
+      borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+    ),
+    barrierColor: Color(0x6606141B),
   ),
   fasterAnimationDuration: MistakeMapMotion.hover,
   fastAnimationDuration: MistakeMapMotion.controls,
@@ -219,29 +239,81 @@ class _PaginaVidro extends StatelessWidget {
       statusBarStyle: GlassStatusBarStyle.dark,
       // Conteúdo e títulos permanecem nítidos; vidro apenas nos controles.
       edgeFade: false,
-      appBar: GlassAppBar(
-        // Barra de título branca e opaca sobre a luz Aurora: o conteúdo que
-        // rola por baixo não aparece através do título.
-        backgroundColor: MistakeMapDesign.white,
-        centerTitle: false,
-        toolbarHeight: _alturaBarraSuperior(context),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        leading: voltar
-            ? _BotaoBarra(
-                icone: WindowsIcons.back,
-                dica: 'Voltar',
-                onPressed: () => Navigator.of(context).maybePop(),
-              )
-            : null,
-        title: Text(
-          titulo,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: context.tipo.subtitle?.copyWith(color: titleBlue),
+      appBar: _BarraVidro(
+        child: GlassAppBar(
+          backgroundColor: Cores.transparente,
+          centerTitle: false,
+          toolbarHeight: _alturaBarraSuperior(context),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          leading: voltar
+              ? _BotaoBarra(
+                  icone: WindowsIcons.back,
+                  dica: 'Voltar',
+                  onPressed: () => Navigator.of(context).maybePop(),
+                )
+              : null,
+          title: Text(
+            titulo,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: context.tipo.subtitle?.copyWith(color: titleBlue),
+          ),
+          actions: [const _IndicadorConexao(), ...acoes],
         ),
-        actions: [const _IndicadorConexao(), ...acoes],
       ),
       body: corpo,
+    );
+  }
+}
+
+/// Barra superior em vidro líquido: fixa no topo, com o conteúdo rolando por
+/// baixo e desfocado (o vidro precisa de algo atrás para ter efeito). O
+/// preenchimento quase opaco mantém o título legível sobre qualquer texto.
+/// Com alto contraste ligado no aparelho, a barra fica sólida.
+class _BarraVidro extends StatelessWidget implements PreferredSizeWidget {
+  const _BarraVidro({required this.child});
+
+  final GlassAppBar child;
+
+  @override
+  Size get preferredSize => child.preferredSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final solida = MediaQuery.highContrastOf(context);
+    final barra = DecoratedBox(
+      decoration: BoxDecoration(
+        color: solida ? MistakeMapDesign.white : null,
+        gradient: solida
+            ? null
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xE0FFFFFF), Color(0xC7FFFFFF)],
+              ),
+        // Borda especular embaixo: a aresta do vidro pega a luz.
+        border: const Border(
+          bottom: BorderSide(color: MistakeMapDesign.hairline),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1411212D),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+    if (solida) return barra;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: MistakeMapDesign.liquidBlur,
+          sigmaY: MistakeMapDesign.liquidBlur,
+        ),
+        child: barra,
+      ),
     );
   }
 }
@@ -2294,6 +2366,39 @@ class _ResumoCard extends StatelessWidget {
   }
 }
 
+/// Retorno físico do toque: o vidro afunda para 97% em 120 ms e volta.
+class _EscalaAoTocar extends StatefulWidget {
+  const _EscalaAoTocar({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_EscalaAoTocar> createState() => _EscalaAoTocarState();
+}
+
+class _EscalaAoTocarState extends State<_EscalaAoTocar> {
+  bool _pressionado = false;
+
+  void _marcar(bool valor) {
+    if (_pressionado != valor) setState(() => _pressionado = valor);
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    onPointerDown: (_) => _marcar(true),
+    onPointerUp: (_) => _marcar(false),
+    onPointerCancel: (_) => _marcar(false),
+    child: AnimatedScale(
+      scale: _pressionado ? .97 : 1,
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 120),
+      curve: MistakeMapMotion.hoverCurve,
+      child: widget.child,
+    ),
+  );
+}
+
 /// Um passo do ciclo de estudo no Início: o cartão inteiro é o botão.
 class _PassoCard extends StatelessWidget {
   const _PassoCard({
@@ -2323,8 +2428,7 @@ class _PassoCard extends StatelessWidget {
     final fundo = indicado
         ? Color.alphaBlend(acento.withValues(alpha: .16), Cores.branco)
         : kGlassBg;
-    return Semantics(
-      label: 'Passo $numero: $titulo',
+    return _EscalaAoTocar(
       child: SizedBox(
         width: double.infinity,
         child: MistakeMapButton(

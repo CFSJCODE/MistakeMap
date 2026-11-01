@@ -42,8 +42,20 @@ class GlassSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final liquid = tier == GlassTier.liquid;
     final shape = BorderRadius.circular(radius);
+    // Alto contraste ligado no aparelho: superfície sólida, sem transparência,
+    // tom ou desfoque, e borda visível.
+    if (MediaQuery.highContrastOf(context)) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: MistakeMapDesign.white,
+          borderRadius: shape,
+          border: Border.all(color: MistakeMapDesign.steel),
+        ),
+        child: Padding(padding: padding, child: child),
+      );
+    }
+    final liquid = tier == GlassTier.liquid;
     final tone = accent;
     Widget body = DecoratedBox(
       decoration: BoxDecoration(
