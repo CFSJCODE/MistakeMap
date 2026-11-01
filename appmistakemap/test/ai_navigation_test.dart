@@ -1,6 +1,7 @@
 import 'package:appmistakemap/ai/ai_material_shell.dart';
 import 'package:appmistakemap/ai/analysis_models.dart';
 import 'package:appmistakemap/ai/analysis_repository.dart';
+import 'package:appmistakemap/ai/insights_view.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -10,6 +11,30 @@ class _EmptyRepository extends Fake implements AnalysisRepository {
 }
 
 void main() {
+  testWidgets('Estudar abre sem tentativas e a seleção volta ao fechar', (
+    tester,
+  ) async {
+    final controller = ErrorMapController();
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      FluentApp(
+        home: ErrorMapTab(
+          userId: 'student',
+          repository: _EmptyRepository(),
+          controller: controller,
+          navigatorKey: navigator,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    controller.request(ErrorMapRequest.study);
+    await tester.pumpAndSettle();
+    expect(controller.studyOpen.value, isTrue);
+    expect(navigator.currentState!.canPop(), isTrue);
+    navigator.currentState!.pop();
+    await tester.pumpAndSettle();
+    expect(controller.studyOpen.value, isFalse);
+  });
   testWidgets('analysis opens from Fluent navigation and returns to it', (
     tester,
   ) async {

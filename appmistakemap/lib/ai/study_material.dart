@@ -179,6 +179,7 @@ class QuizRoundResult {
 
 abstract class StudyMaterialRepository {
   Future<StudyMaterial> generate(String subjectId, String subjectName);
+  Future<StudyMaterial> regenerateQuiz(StudyMaterial previous);
 
   Future<List<StudyMaterial>> loadMaterials(Map<String, String> subjects);
 
@@ -197,6 +198,22 @@ class SupabaseStudyMaterialRepository implements StudyMaterialRepository {
   SupabaseStudyMaterialRepository(this.client);
 
   static const _function = 'study-material';
+
+  @override
+  Future<StudyMaterial> regenerateQuiz(StudyMaterial previous) async {
+    final data = await _invoke({
+      'action': 'generate',
+      'subject_id': previous.subjectId,
+      'previous_material_id': previous.id,
+    });
+    final material = jsonMap(data['material']);
+    if (textValue(material['id']).isEmpty) {
+      throw const AnalysisFailure(
+        'Não foi possível carregar o novo quiz. Tente novamente.',
+      );
+    }
+    return StudyMaterial.fromJson(material, subjectName: previous.subjectName);
+  }
 
   @override
   Future<StudyMaterial> generate(String subjectId, String subjectName) async {

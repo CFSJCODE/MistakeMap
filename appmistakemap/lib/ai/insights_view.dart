@@ -21,6 +21,7 @@ enum ErrorMapRequest { analysis, study }
 class ErrorMapController {
   _ErrorMapViewState? _view;
   ErrorMapRequest? _pending;
+  final ValueNotifier<bool> studyOpen = ValueNotifier(false);
 
   /// Volta à raiz do Mapa (fechando correções, Estudar e folhas abertas) e
   /// atende o pedido. Pedir Estudar com o Estudar já aberto só o mostra.
@@ -138,15 +139,10 @@ class _ErrorMapViewState extends State<ErrorMapView> {
       case ErrorMapRequest.analysis:
         _openAnalysis();
       case ErrorMapRequest.study:
-        if (_attempts.isNotEmpty) {
-          // Com o mapa já carregado, abre na hora, mesmo com uma atualização
-          // em andamento: ela não muda o que há para estudar.
-          _openStudy({for (final a in _attempts) a.subjectId: a.subjectName});
-        } else if (_loading) {
+        if (_loading && _attempts.isEmpty) {
           _studyPending = true;
         } else {
-          // Sem erros ainda não há o que estudar: o caminho é analisar.
-          _openAnalysis();
+          _openStudy({for (final a in _attempts) a.subjectId: a.subjectName});
         }
     }
   }
@@ -161,9 +157,14 @@ class _ErrorMapViewState extends State<ErrorMapView> {
     _startAnalysis =
         widget.startWithAnalysis || pending == ErrorMapRequest.analysis;
     _analysisOpen = _startAnalysis;
-    _studyPending = widget.startWithStudy || pending == ErrorMapRequest.study;
+    _studyPending = false;
     analysisChanges.addListener(_reload);
     _reload();
+    if (widget.startWithStudy || pending == ErrorMapRequest.study) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _handle(ErrorMapRequest.study);
+      });
+    }
   }
 
   @override
@@ -232,20 +233,20 @@ class _ErrorMapViewState extends State<ErrorMapView> {
         if (_startAnalysis && request == 1) _openAnalysis();
         if (_studyPending) {
           _studyPending = false;
-          if (result.isNotEmpty) {
-            _openStudy({for (final a in result) a.subjectId: a.subjectName});
-          }
+          _openStudy({for (final a in result) a.subjectId: a.subjectName});
         }
       }
     } catch (error) {
       if (mounted && request == _request) {
-        // O pedido de Estudar morre com a carga que falhou: uma atualização
-        // qualquer, minutos depois, não pode abrir uma página sozinha.
+        final openStudy = _studyPending;
         _studyPending = false;
         setState(() {
           _error = friendlyFailure(error);
           _loading = false;
         });
+        if (openStudy) {
+          _openStudy({for (final a in _attempts) a.subjectId: a.subjectName});
+        }
       }
     }
   }
@@ -308,9 +309,10 @@ class _ErrorMapViewState extends State<ErrorMapView> {
 
   /// Estudar reúne resumo, cartões, quiz e a rodada de exercícios corrigidos
   /// pela IA; abre na matéria filtrada no mapa.
-  void _openStudy(Map<String, String> subjects) {
+  Future<void> _openStudy(Map<String, String> subjects) async {
     final study = _study;
-    Navigator.push(
+    widget.controller?.studyOpen.value = true;
+    await Navigator.push(
       context,
       MistakeMapPageRoute<void>(
         context: context,
@@ -334,6 +336,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
               ),
       ),
     );
+    widget.controller?.studyOpen.value = false;
   }
 
   @override

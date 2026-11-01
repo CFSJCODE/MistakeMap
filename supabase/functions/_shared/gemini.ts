@@ -1,5 +1,12 @@
 import { PublicError } from "./ai_contract.ts";
 import { env, type Environment, readLimited, required } from "./ai_http.ts";
+import { type RoutingEvidence, selectModel } from "./model_router.ts";
+import {
+  type ClaudeBudgetStore,
+  claudeCharge,
+  databaseBudget,
+  reserveClaude,
+} from "./claude_budget.ts";
 
 // Gemini API (generateContent). Contract verified against ai.google.dev on
 // 2026-09-29:
@@ -31,7 +38,30 @@ const REFUSALS = new Set([
 ]);
 
 export function aiConfig(get: Environment = env) {
+  const provider = (get("AI_PROVIDER")?.trim() || "gemini").toLowerCase();
+  if (provider === "anthropic" || provider === "openrouter") {
+    const prefix = provider === "anthropic" ? "ANTHROPIC" : "OPENROUTER";
+    return {
+      provider,
+      workspaceId: provider === "anthropic"
+        ? get("ANTHROPIC_WORKSPACE_ID")?.trim()
+        : undefined,
+      key: required(`${prefix}_API_KEY`, get),
+      model: required(`${prefix}_MODEL`, get),
+      fallbackModel: "off",
+      liteModel: "off",
+    };
+  }
+  if (provider !== "gemini") {
+    throw new PublicError(
+      500,
+      "ai_configuration",
+      "Provedor de IA não configurado.",
+    );
+  }
   return {
+    provider,
+    workspaceId: undefined,
     key: required("GEMINI_API_KEY", get),
     model: get("GEMINI_MODEL")?.trim() || "gemini-flash-latest",
     fallbackModel: get("GEMINI_FALLBACK_MODEL")?.trim() || "gemini-3.6-flash",
@@ -43,7 +73,12 @@ export function aiConfig(get: Environment = env) {
 
 // Three attempts, each on the next distinct model; a short chain repeats its
 // last model so a single configured model still gets retried.
-export function modelChain(config: ReturnType<typeof aiConfig>): string[] {
+export function modelChain(
+  config: Pick<
+    ReturnType<typeof aiConfig>,
+    "key" | "model" | "fallbackModel" | "liteModel"
+  >,
+): string[] {
   const models = [
     ...new Set([config.model, config.fallbackModel, config.liteModel]),
   ]
@@ -87,7 +122,31 @@ async function logProviderError(response: Response): Promise<void> {
   }));
 }
 
-export async function structuredResponse(
+// Os validadores locais continuam sendo a autoridade para limites e conteúdo.
+function portableSchema(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(portableSchema);
+  if (!value || typeof value !== "object") return value;
+  const input = value as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  const unsupported = new Set([
+    "minLength",
+    "maxLength",
+    "minimum",
+    "maximum",
+    "minItems",
+    "maxItems",
+    "uniqueItems",
+    "pattern",
+  ]);
+  for (const [key, item] of Object.entries(input)) {
+    if (!unsupported.has(key)) result[key] = portableSchema(item);
+  }
+  if (input.type === "object") result.additionalProperties = false;
+  return result;
+}
+
+async function otherProviderResponse(
+  config: ReturnType<typeof aiConfig>,
   options: {
     schema: object;
     name: string;
@@ -97,10 +156,258 @@ export async function structuredResponse(
     maxOutputTokens?: number;
     onModelUsed?: (model: string) => void;
   },
+  fetcher: typeof fetch,
+  budget: ClaudeBudgetStore,
+): Promise<unknown> {
+  const anthropic = config.provider === "anthropic";
+  const content: unknown[] = [{ type: "text", text: options.text }];
+  for (const image of options.images ?? []) {
+    const match = image.match(
+      /^data:(image\/(?:png|jpeg|webp|gif));base64,(.+)$/s,
+    );
+    if (!match) throw invalid();
+    content.push(
+      anthropic
+        ? {
+          type: "image",
+          source: { type: "base64", media_type: match[1], data: match[2] },
+        }
+        : { type: "image_url", image_url: { url: image } },
+    );
+  }
+  const schema = portableSchema(options.schema);
+  const request = anthropic
+    ? {
+      model: config.model,
+      max_tokens: options.maxOutputTokens ?? 12000,
+      system: options.instructions,
+      messages: [{ role: "user", content }],
+      output_config: { format: { type: "json_schema", schema } },
+    }
+    : {
+      model: config.model,
+      max_tokens: options.maxOutputTokens ?? 12000,
+      messages: [{ role: "system", content: options.instructions }, {
+        role: "user",
+        content,
+      }],
+      provider: { require_parameters: true },
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: options.name, strict: true, schema },
+      },
+    };
+  const reservation = anthropic
+    ? await reserveClaude(config, request, budget, fetcher)
+    : null;
+  let response: Response;
+  try {
+    response = await fetcher(
+      anthropic
+        ? "https://api.anthropic.com/v1/messages"
+        : "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: anthropic
+          ? {
+            "Content-Type": "application/json",
+            "x-api-key": config.key,
+            "anthropic-version": "2023-06-01",
+            ...(config.workspaceId
+              ? { "anthropic-workspace-id": config.workspaceId }
+              : {}),
+          }
+          : {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${config.key}`,
+          },
+        body: JSON.stringify(request),
+        signal: AbortSignal.timeout(80000),
+      },
+    );
+  } catch {
+    throw new PublicError(
+      502,
+      "ai_unavailable",
+      "O serviço de IA está indisponível. Tente novamente.",
+    );
+  }
+  if (!response.ok) {
+    await response.body?.cancel().catch(() => {});
+    throw new PublicError(
+      response.status === 429 ? 429 : 502,
+      response.status === 429 ? "ai_rate_limited" : "ai_unavailable",
+      "O serviço de IA não concluiu a solicitação.",
+    );
+  }
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(
+      new TextDecoder().decode(await readLimited(response.body, 256000)),
+    );
+  } catch {
+    throw invalid();
+  }
+  if (reservation) {
+    const charge = claudeCharge(data.usage);
+    if (charge !== null) {
+      // If settlement fails the full reservation remains held.
+      await budget.settle(reservation, charge).catch(() => {});
+    }
+  }
+  let result: unknown;
+  if (anthropic) {
+    if (data.stop_reason !== "end_turn") throw invalid();
+    result = Array.isArray(data.content)
+      ? data.content.filter((part) => part?.type === "text").map((part) =>
+        part.text
+      ).join("")
+      : null;
+  } else {
+    const choice = Array.isArray(data.choices) ? data.choices[0] : null;
+    if (choice?.finish_reason !== "stop" || choice?.message?.refusal) {
+      throw invalid();
+    }
+    result = choice?.message?.content;
+  }
+  if (typeof result !== "string") throw invalid();
+  try {
+    const parsed = JSON.parse(result);
+    options.onModelUsed?.(`${config.provider}/${config.model}`);
+    return parsed;
+  } catch {
+    throw invalid();
+  }
+}
+
+type StructuredOptions = {
+  schema: object;
+  name: string;
+  instructions: string;
+  text: string;
+  images?: string[];
+  maxOutputTokens?: number;
+  onModelUsed?: (model: string) => void;
+};
+
+export async function structuredResponse(
+  options: StructuredOptions,
   get: Environment = env,
   fetcher: typeof fetch = fetch,
+  budget: ClaudeBudgetStore = databaseBudget(get),
 ): Promise<unknown> {
-  const config = aiConfig(get);
+  try {
+    return await structuredResponseImpl(options, get, fetcher, budget);
+  } catch (error) {
+    if (
+      get("AI_CLAUDE_FALLBACK_ENABLED") !== "true" ||
+      !(error instanceof PublicError) ||
+      ![
+        "ai_unavailable",
+        "ai_rate_limited",
+        "invalid_ai_output",
+        "incomplete_ai_output",
+      ].includes(error.code)
+    ) throw error;
+    const tier = options.images?.length
+      ? "VISION"
+      : options.name === "mistakemap_study"
+      ? "STUDY"
+      : options.name === "mistakemap_practice"
+      ? "PRACTICE"
+      : "ANALYSIS";
+    const fallbackGet: Environment = (key) => {
+      if (key === "AI_PROVIDER" || key === `AI_${tier}_PROVIDER`) {
+        return "anthropic";
+      }
+      if (key === "ANTHROPIC_MODEL" || key === `AI_${tier}_MODEL`) {
+        return "claude-sonnet-5-5";
+      }
+      if (
+        key === "AI_ROUTING_EVIDENCE" || key === "AI_CLAUDE_FALLBACK_ENABLED"
+      ) return undefined;
+      return get(key);
+    };
+    return await structuredResponseImpl(options, fallbackGet, fetcher, budget);
+  }
+}
+
+async function structuredResponseImpl(
+  options: StructuredOptions,
+  get: Environment = env,
+  fetcher: typeof fetch = fetch,
+  budget: ClaudeBudgetStore = databaseBudget(get),
+): Promise<unknown> {
+  const tier = options.images?.length
+    ? "VISION"
+    : options.name === "mistakemap_study"
+    ? "STUDY"
+    : options.name === "mistakemap_practice"
+    ? "PRACTICE"
+    : "ANALYSIS";
+  let evidence: RoutingEvidence[] = [];
+  try {
+    const parsed = JSON.parse(get("AI_ROUTING_EVIDENCE") ?? "[]");
+    if (Array.isArray(parsed)) evidence = parsed;
+  } catch {
+    // Evidência ausente ou inválida mantém a configuração já existente.
+  }
+  // Claude Sonnet is the only paid model with a guarded price and reservation.
+  const freeEvidence = evidence.filter((item) =>
+    item && typeof item.model === "string" &&
+    ((item.provider === "gemini" &&
+      item.model === (get("GEMINI_MODEL")?.trim() || "gemini-flash-latest") &&
+      Boolean(get("GEMINI_API_KEY")?.trim())) ||
+      (item.provider === "anthropic" && item.model === "claude-sonnet-5-5" &&
+        Boolean(get("ANTHROPIC_API_KEY")?.trim())) ||
+      (item.provider === "openrouter" &&
+        (item.model === "openrouter/free" || item.model.endsWith(":free")) &&
+        Boolean(get("OPENROUTER_API_KEY")?.trim())))
+  );
+  const automatic = selectModel(
+    freeEvidence,
+    tier.toLowerCase(),
+    (options.images?.length ?? 0) > 0,
+    Date.now(),
+    1,
+  );
+  const selectedProvider = automatic?.provider ??
+    get(`AI_${tier}_PROVIDER`)?.trim();
+  const selectedModel = automatic?.model ?? get(`AI_${tier}_MODEL`)?.trim();
+  const selectedGet: Environment = (name) => {
+    if (name === "AI_PROVIDER" && selectedProvider) return selectedProvider;
+    const provider = (selectedProvider || get("AI_PROVIDER") || "gemini")
+      .toUpperCase();
+    if (name === `${provider}_MODEL` && selectedModel) return selectedModel;
+    return get(name);
+  };
+  const config = aiConfig(selectedGet);
+  if (config.provider !== "gemini") {
+    try {
+      return await otherProviderResponse(config, options, fetcher, budget);
+    } catch (error) {
+      if (
+        automatic && error instanceof PublicError &&
+        [
+          "ai_unavailable",
+          "ai_rate_limited",
+          "invalid_ai_output",
+          "ai_budget_unavailable",
+          "ai_budget_exhausted",
+        ].includes(
+          error.code,
+        )
+      ) {
+        return await structuredResponseImpl(
+          options,
+          (key) => key === "AI_ROUTING_EVIDENCE" ? "[]" : get(key),
+          fetcher,
+          budget,
+        );
+      }
+      throw error;
+    }
+  }
 
   const parts: unknown[] = [{ text: options.text }];
   for (const dataUri of options.images ?? []) {

@@ -100,6 +100,27 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
     }
   }
 
+  Future<void> _regenerateQuiz(StudyMaterial previous) async {
+    if (_generating) return;
+    setState(() {
+      _generating = true;
+      _error = null;
+    });
+    try {
+      final material = await widget.repository.regenerateQuiz(previous);
+      if (!mounted) return;
+      setState(() {
+        _materials = [material, ..._materials];
+        _openMaterialId = material.id;
+        _tab = _StudyTab.quiz;
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = friendlyFailure(error));
+    } finally {
+      if (mounted) setState(() => _generating = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final material = _open;
@@ -245,6 +266,8 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
                     key: ValueKey('quiz-${material.id}'),
                     material: material,
                     repository: widget.repository,
+                    onRestart: () => _regenerateQuiz(material),
+                    generating: _generating,
                   ),
                   _ => _SummaryPanel(material.summary),
                 }
@@ -597,10 +620,14 @@ class _FlashcardDeckState extends State<FlashcardDeck> {
 class QuizPanel extends StatefulWidget {
   final StudyMaterial material;
   final StudyMaterialRepository repository;
+  final VoidCallback onRestart;
+  final bool generating;
   const QuizPanel({
     super.key,
     required this.material,
     required this.repository,
+    required this.onRestart,
+    this.generating = false,
   });
 
   @override
@@ -634,13 +661,6 @@ class _QuizPanelState extends State<QuizPanel> {
       if (mounted) setState(() => _grading = false);
     }
   }
-
-  void _restart() => setState(() {
-    _answers.clear();
-    _index = 0;
-    _result = null;
-    _error = null;
-  });
 
   Widget _metric(String label, String value, String? detail) => SizedBox(
     width: 96,
@@ -810,9 +830,13 @@ class _QuizPanelState extends State<QuizPanel> {
             _review(question, item),
         ElevatedButton.icon(
           key: const Key('quiz-restart'),
-          onPressed: _restart,
+          onPressed: widget.generating ? null : widget.onRestart,
           icon: const Icon(Icons.replay),
-          label: const Text('Refazer o quiz'),
+          label: Text(
+            widget.generating
+                ? 'Gerando novas perguntas…'
+                : 'Refazer com novas perguntas',
+          ),
         ),
       ],
     );

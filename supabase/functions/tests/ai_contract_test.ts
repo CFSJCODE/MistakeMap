@@ -411,6 +411,291 @@ Deno.test("generateContent sends JSON Schema output, low thinking and the key on
   );
   assert.deepEqual(validateAnalysis(result), sample());
 });
+Deno.test("Anthropic e OpenRouter recebem imagem e retornam JSON estruturado", async () => {
+  for (const provider of ["anthropic", "openrouter"]) {
+    const values: Record<string, string> = {
+      AI_PROVIDER: provider,
+      ANTHROPIC_API_KEY: "test-only-key",
+      ANTHROPIC_MODEL: "claude-sonnet-5-5",
+      ANTHROPIC_WORKSPACE_ID: "wrkspc_test",
+      OPENROUTER_API_KEY: "test-only-key",
+      OPENROUTER_MODEL: "test/model",
+    };
+    const result = await structuredResponse(
+      { ...options, images: ["data:image/png;base64,AAAA"] },
+      (key) => values[key],
+      fetchMock((url, init) => {
+        assert.match(
+          String(url),
+          provider === "anthropic" ? /api\.anthropic\.com/ : /openrouter\.ai/,
+        );
+        const request = JSON.parse(String(init?.body));
+        assert.equal(
+          new Headers(init?.headers).get("anthropic-workspace-id"),
+          provider === "anthropic" ? "wrkspc_test" : null,
+        );
+        assert.equal(JSON.stringify(request).includes("test-only-key"), false);
+        assert.equal(request.messages.at(-1).content.length, 2);
+        if (String(url).endsWith("/count_tokens")) {
+          return new Response(JSON.stringify({ input_tokens: 100 }));
+        }
+        return new Response(
+          JSON.stringify(
+            provider === "anthropic"
+              ? {
+                stop_reason: "end_turn",
+                usage: { input_tokens: 100, output_tokens: 50 },
+                content: [{ type: "text", text: JSON.stringify(sample()) }],
+              }
+              : {
+                choices: [{
+                  finish_reason: "stop",
+                  message: { content: JSON.stringify(sample()) },
+                }],
+              },
+          ),
+        );
+      }),
+      {
+        reserve: () => Promise.resolve("test-reservation"),
+        settle: () => Promise.resolve(),
+      },
+    );
+    assert.deepEqual(validateAnalysis(result), sample());
+  }
+});
+Deno.test("Claude não recebe chamada de geração quando orçamento foi esgotado", async () => {
+  const values: Record<string, string> = {
+    AI_PROVIDER: "anthropic",
+    ANTHROPIC_API_KEY: "test",
+    ANTHROPIC_MODEL: "claude-sonnet-5-5",
+  };
+  const calls: string[] = [];
+  await assert.rejects(
+    () =>
+      structuredResponse(
+        options,
+        (key) => values[key],
+        fetchMock((url) => {
+          calls.push(String(url));
+          return new Response(JSON.stringify({ input_tokens: 100 }));
+        }),
+        {
+          reserve: () => Promise.resolve(null),
+          settle: () => Promise.resolve(),
+        },
+      ),
+    (error: unknown) =>
+      error instanceof PublicError && error.code === "ai_budget_exhausted",
+  );
+  assert.equal(calls.length, 1);
+  assert.match(calls[0], /count_tokens$/);
+});
+Deno.test("fallback para Claude reserva orçamento antes de gerar", async () => {
+  const values: Record<string, string> = {
+    GEMINI_API_KEY: "test",
+    ANTHROPIC_API_KEY: "test",
+    AI_CLAUDE_FALLBACK_ENABLED: "true",
+  };
+  const calls: string[] = [];
+  let reserved = false;
+  let charged = false;
+  const result = await structuredResponse(
+    options,
+    (key) => values[key],
+    fetchMock((url) => {
+      calls.push(String(url));
+      if (String(url).includes("generativelanguage")) {
+        return new Response("{}", { status: 400 });
+      }
+      if (String(url).endsWith("/count_tokens")) {
+        return new Response(JSON.stringify({ input_tokens: 100 }));
+      }
+      assert.equal(reserved, true);
+      return new Response(
+        JSON.stringify({
+          stop_reason: "end_turn",
+          usage: { input_tokens: 100, output_tokens: 50 },
+          content: [{ type: "text", text: JSON.stringify(sample()) }],
+        }),
+      );
+    }),
+    {
+      reserve: () => {
+        reserved = true;
+        return Promise.resolve("reservation");
+      },
+      settle: () => {
+        charged = true;
+        return Promise.resolve();
+      },
+    },
+  );
+  assert.equal(calls.length, 3);
+  assert.equal(charged, true);
+  assert.deepEqual(validateAnalysis(result), sample());
+});
+Deno.test("roteamento por tipo de solicitação seleciona provedor e modelo configurados", async () => {
+  const values: Record<string, string> = {
+    AI_STUDY_PROVIDER: "openrouter",
+    AI_STUDY_MODEL: "test/study-model",
+    OPENROUTER_API_KEY: "test-only-key",
+    GEMINI_API_KEY: "test-only-key",
+  };
+  const result = await structuredResponse(
+    { ...options, name: "mistakemap_study" },
+    (key) => values[key],
+    fetchMock((url, init) => {
+      assert.match(String(url), /openrouter\.ai/);
+      assert.equal(JSON.parse(String(init?.body)).model, "test/study-model");
+      return new Response(
+        JSON.stringify({
+          choices: [{
+            finish_reason: "stop",
+            message: { content: JSON.stringify(sample()) },
+          }],
+        }),
+      );
+    }),
+  );
+  assert.deepEqual(validateAnalysis(result), sample());
+});
+Deno.test("comparação seleciona modelo gratuito avaliado para a tarefa", async () => {
+  const records = [
+    {
+      provider: "anthropic",
+      model: "claude-sonnet-5-5",
+      task: "analysis",
+      datasetId: "test-v1",
+      vision: true,
+      samples: 30,
+      quality: .99,
+      latencyMs: 1000,
+      costUsdPerRequest: 0,
+      evaluatedAt: new Date().toISOString(),
+    },
+    {
+      provider: "openrouter",
+      model: "openrouter/free",
+      task: "analysis",
+      datasetId: "test-v1",
+      vision: true,
+      samples: 30,
+      quality: .9,
+      latencyMs: 1000,
+      costUsdPerRequest: 0,
+      evaluatedAt: new Date().toISOString(),
+    },
+    {
+      provider: "gemini",
+      model: "gemini-flash-latest",
+      task: "analysis",
+      datasetId: "test-v1",
+      vision: true,
+      samples: 30,
+      quality: .85,
+      latencyMs: 1000,
+      costUsdPerRequest: 0,
+      evaluatedAt: new Date().toISOString(),
+    },
+  ];
+  const values: Record<string, string> = {
+    GEMINI_API_KEY: "key",
+    OPENROUTER_API_KEY: "key",
+    AI_ROUTING_EVIDENCE: JSON.stringify(records),
+  };
+  const result = await structuredResponse(
+    { ...options, name: "mistakemap_analysis" },
+    (key) => values[key],
+    fetchMock((url, init) => {
+      assert.match(String(url), /openrouter\.ai/);
+      assert.equal(JSON.parse(String(init?.body)).model, "openrouter/free");
+      return new Response(
+        JSON.stringify({
+          choices: [{
+            finish_reason: "stop",
+            message: { content: JSON.stringify(sample()) },
+          }],
+        }),
+      );
+    }),
+  );
+  assert.deepEqual(validateAnalysis(result), sample());
+});
+Deno.test("falha do modelo gratuito retorna à configuração anterior", async () => {
+  const records = [{
+    provider: "openrouter",
+    model: "openrouter/free",
+    task: "analysis",
+    datasetId: "test-v1",
+    vision: false,
+    samples: 30,
+    quality: .9,
+    latencyMs: 1000,
+    costUsdPerRequest: 0,
+    evaluatedAt: new Date().toISOString(),
+  }, {
+    provider: "gemini",
+    model: "gemini-flash-latest",
+    task: "analysis",
+    datasetId: "test-v1",
+    vision: false,
+    samples: 30,
+    quality: .85,
+    latencyMs: 1000,
+    costUsdPerRequest: 0,
+    evaluatedAt: new Date().toISOString(),
+  }];
+  const values: Record<string, string> = {
+    GEMINI_API_KEY: "key",
+    OPENROUTER_API_KEY: "key",
+    AI_ROUTING_EVIDENCE: JSON.stringify(records),
+  };
+  const calls: string[] = [];
+  const result = await structuredResponse(
+    { ...options, name: "mistakemap_analysis" },
+    (key) => values[key],
+    fetchMock((url) => {
+      calls.push(String(url));
+      return String(url).includes("openrouter.ai")
+        ? new Response("", { status: 503 })
+        : wrapped(sample());
+    }),
+  );
+  assert.equal(calls.length, 2);
+  assert.match(calls[1], /generativelanguage\.googleapis\.com/);
+  assert.deepEqual(validateAnalysis(result), sample());
+});
+Deno.test("comparação mantém Gemini quando supera o modelo gratuito", async () => {
+  const base = {
+    task: "analysis",
+    datasetId: "test-v1",
+    vision: false,
+    samples: 30,
+    latencyMs: 1000,
+    costUsdPerRequest: 0,
+    evaluatedAt: new Date().toISOString(),
+  };
+  const records = [
+    { ...base, provider: "gemini", model: "test-model", quality: .96 },
+    { ...base, provider: "openrouter", model: "openrouter/free", quality: .89 },
+  ];
+  const values: Record<string, string> = {
+    GEMINI_API_KEY: "key",
+    GEMINI_MODEL: "test-model",
+    OPENROUTER_API_KEY: "key",
+    AI_ROUTING_EVIDENCE: JSON.stringify(records),
+  };
+  const result = await structuredResponse(
+    { ...options, name: "mistakemap_analysis" },
+    (key) => values[key],
+    fetchMock((url) => {
+      assert.match(String(url), /generativelanguage\.googleapis\.com/);
+      return wrapped(sample());
+    }),
+  );
+  assert.deepEqual(validateAnalysis(result), sample());
+});
 Deno.test("thought parts are skipped and split text parts are joined", async () => {
   const json = JSON.stringify(sample());
   const result = await structuredResponse(

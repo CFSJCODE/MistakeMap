@@ -18,6 +18,17 @@ export type StudyQuestion = {
   explanation: string;
   concept: string;
 };
+
+/** Evita repetir literalmente questões anteriores, inclusive variações de espaço e caixa. */
+export function hasRepeatedQuestions(
+  questions: { prompt: string }[],
+  previous: string[],
+): boolean {
+  const normalize = (s: string) =>
+    s.normalize("NFKC").trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " ");
+  const old = new Set(previous.map(normalize));
+  return questions.some((q) => old.has(normalize(q.prompt)));
+}
 export type StudyMaterial = {
   summary: StudySummary;
   flashcards: StudyFlashcard[];

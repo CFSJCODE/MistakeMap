@@ -25,7 +25,10 @@ export async function handler(req: Request): Promise<Response> {
     }
     const subject = uuid(input.subject_id);
     sql = database();
-    return json(req, await generateStudy(sql, user, subject));
+    const previous = input.previous_material_id == null
+      ? undefined
+      : uuid(input.previous_material_id);
+    return json(req, await generateStudy(sql, user, subject, previous));
   } catch (error) {
     return failure(req, error);
   } finally {

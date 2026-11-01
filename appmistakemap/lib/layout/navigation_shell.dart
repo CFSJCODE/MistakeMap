@@ -19,6 +19,7 @@ class AppNavigationShell extends StatelessWidget {
     required this.onSelected,
     required this.onAbout,
     this.onStudy,
+    this.studySelected = false,
     this.onSignOut,
     this.onAnalysis,
     required this.hasAdmin,
@@ -39,6 +40,7 @@ class AppNavigationShell extends StatelessWidget {
 
   /// Atalho para o Estudar, que mora dentro do Mapa.
   final VoidCallback? onStudy;
+  final bool studySelected;
 
   /// Sair da conta fica junto das outras opções, não escondido numa tela.
   final VoidCallback? onSignOut;
@@ -245,7 +247,7 @@ class AppNavigationShell extends StatelessWidget {
     int index, {
     required bool compact,
   }) {
-    final selected = index == selectedIndex;
+    final selected = index == selectedIndex && !studySelected;
     final accent = accents[index];
     final icon = _icon(
       context,
@@ -731,7 +733,9 @@ class AppNavigationShell extends StatelessWidget {
             !(slot == _moreSlot && moreEmpty))
           slot,
     ];
-    final selectedSlot = selectedIndex >= 4
+    final selectedSlot = studySelected && slots.contains(_studySlot)
+        ? slots.indexOf(_studySlot)
+        : selectedIndex >= 4
         ? slots.indexOf(_moreSlot)
         : slots.indexOf(selectedIndex);
     final accent = accents[selectedIndex.clamp(0, 4)];
