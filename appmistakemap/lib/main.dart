@@ -218,7 +218,9 @@ class _PaginaVidro extends StatelessWidget {
       // Conteúdo e títulos permanecem nítidos; vidro apenas nos controles.
       edgeFade: false,
       appBar: GlassAppBar(
-        backgroundColor: kScaffoldBg,
+        // Barra de título branca e opaca sobre a luz Aurora: o conteúdo que
+        // rola por baixo não aparece através do título.
+        backgroundColor: MistakeMapDesign.white,
         centerTitle: false,
         toolbarHeight: _alturaBarraSuperior(context),
         padding: const EdgeInsets.symmetric(horizontal: 12),

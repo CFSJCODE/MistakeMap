@@ -104,6 +104,9 @@ class AppNavigationShell extends StatelessWidget {
       return Colors.transparent;
     }),
     foregroundColor: const WidgetStatePropertyAll(MistakeMapDesign.content),
+    // A sombra da aba atual vem da superfície; sobre o vidro líquido a sombra
+    // padrão do botão escurecia as abas em repouso.
+    elevation: const WidgetStatePropertyAll(0),
   );
 
   Duration _motionDuration(

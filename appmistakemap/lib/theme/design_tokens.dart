@@ -128,8 +128,8 @@ abstract final class MistakeMapDesign {
   static RadialGradient tint(Color accent) => RadialGradient(
     center: Alignment.topLeft,
     radius: 1.2,
-    colors: [accent.withValues(alpha: .22), accent.withValues(alpha: 0)],
-    stops: const [0, .6],
+    colors: [accent.withValues(alpha: .30), accent.withValues(alpha: 0)],
+    stops: const [0, .65],
   );
 
   /// Bloco de ícone preenchido: da tinta ao acento vivo, com glifo branco.
