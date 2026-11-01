@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
+import 'package:appmistakemap/ai/insights_view.dart' show ErrorMapView;
 import 'package:appmistakemap/layout/navigation_shell.dart';
 import 'package:appmistakemap/main.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -12,7 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'analysis_test.dart' show FakeRepository;
+import 'analysis_test.dart' show FakeRepository, sample;
 
 const _user = AppUser(
   id: '11111111-1111-4111-8111-111111111111',
@@ -87,6 +88,19 @@ Future<void> _settle(WidgetTester tester) => tester.pumpAndSettle(
   EnginePhase.sendSemanticsUpdate,
   const Duration(seconds: 5),
 );
+
+/// Voltar do sistema (botão ou gesto do Android), como o engine o entrega
+/// ao app: o mesmo caminho do aparelho, sem depender de um botão na tela.
+Future<void> _voltar(WidgetTester tester) async {
+  await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+    SystemChannels.navigation.name,
+    SystemChannels.navigation.codec.encodeMethodCall(
+      const MethodCall('popRoute'),
+    ),
+    (_) {},
+  );
+  await _settle(tester);
+}
 
 void _expectOutsideTopFade(WidgetTester tester, Finder content) {
   final edgeFinder = find.ancestor(
@@ -204,7 +218,7 @@ void main() {
   tearDownAll(() => Supabase.instance.dispose());
 
   testWidgets(
-    'Navegação inicia sob demanda e não empilha IA por clique duplo',
+    'Navegação inicia sob demanda e o atalho de analisar não empilha páginas',
     (tester) async {
       await _render(
         tester,
@@ -217,21 +231,21 @@ void main() {
         findsNothing,
       );
       expect(find.byType(TelaAdmin, skipOffstage: false), findsNothing);
-      // Dois taps seguidos não servem: o segundo é absorvido pelo
-      // AbsorbPointer do Navigator durante a transição e a guarda contra
-      // clique duplo nunca roda. Chamar o callback duas vezes no mesmo frame
-      // reproduz o clique duplo que chega antes da rota bloquear a entrada.
+      // Dois pedidos no mesmo frame (clique duplo no botão de analisar): o
+      // Mapa é uma aba, então nada é empilhado e o painel existe uma vez só.
       final shell = tester.widget<AppNavigationShell>(
         find.byType(AppNavigationShell),
       );
-      shell.onErrorMap!();
-      shell.onErrorMap!();
+      shell.onAnalysis!();
+      shell.onAnalysis!();
       await _settle(tester);
+      expect(find.byType(ErrorMapView), findsOneWidget);
       expect(find.text('Sua resposta'), findsOneWidget);
-      await tester.tap(find.byTooltip('Voltar'));
-      await _settle(tester);
-      expect(find.text('Início — Resumo'), findsOneWidget);
-      expect(find.text('Sua resposta', skipOffstage: false), findsNothing);
+      // O trilho continua à vista com o Mapa aberto.
+      expect(find.byKey(const ValueKey('navigation-0')), findsOneWidget);
+      await _voltar(tester);
+      expect(find.text('O que fazer agora'), findsOneWidget);
+      expect(find.text('Sua resposta'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -250,26 +264,59 @@ void main() {
       expect(find.text('O que fazer agora'), findsOneWidget);
       expect(find.text('Próximo passo'), findsOneWidget);
       expect(find.text('Estudar com a IA', skipOffstage: false), findsWidgets);
-      // Atalho do Início: abre o Mapa com o painel de análise aberto.
+      // Atalho do Início: troca para a aba do Mapa com o painel de análise
+      // aberto; a navegação continua à vista.
       await tester.tap(find.text('Analisar um exercício'));
       await _settle(tester);
-      expect(find.text('Mapa de erros'), findsOneWidget);
+      expect(find.byType(ErrorMapView), findsOneWidget);
       expect(find.text('Sua resposta'), findsOneWidget);
-      await tester.tap(find.byTooltip('Voltar'));
-      await _settle(tester);
-      expect(find.text('Início — Resumo'), findsOneWidget);
+      expect(find.byKey(const ValueKey('navigation-0')), findsOneWidget);
+      // Voltar do sistema leva ao Início; o Mapa continua vivo, fora da tela.
+      await _voltar(tester);
+      expect(find.text('O que fazer agora'), findsOneWidget);
+      expect(find.text('Sua resposta'), findsNothing);
+      expect(find.text('Sua resposta', skipOffstage: false), findsOneWidget);
       // Mapa e análise na mesma página: sem tentativas, o painel já abre.
       await tester.tap(find.byKey(const ValueKey('navigation-2')));
       await _settle(tester);
       expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
       expect(find.text('Analisar exercício com IA'), findsOneWidget);
       expect(find.text('Sua resposta'), findsOneWidget);
-      await tester.tap(find.byTooltip('Voltar'));
-      await _settle(tester);
-      expect(find.text('Início — Resumo'), findsOneWidget);
+      await _voltar(tester);
+      expect(find.text('O que fazer agora'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('Estudar abre dentro da aba do Mapa e o Voltar desempilha '
+      'antes de trocar de aba', (tester) async {
+    final repository = FakeRepository()..attempts = [sample()];
+    await _render(
+      tester,
+      TelaNavegacao(user: _user, analysisRepository: repository),
+      size: const Size(390, 900),
+    );
+    // Atalho do menu Mais: troca para o Mapa e abre o Estudar por cima dele.
+    final shell = tester.widget<AppNavigationShell>(
+      find.byType(AppNavigationShell),
+    );
+    shell.onStudy!();
+    await _settle(tester);
+    expect(find.text('Praticar meus erros'), findsOneWidget);
+    // A barra continua à vista, com o Mapa como aba atual.
+    expect(find.byKey(const ValueKey('navigation-2')), findsOneWidget);
+    // Pedir Estudar de novo só mostra o que já está aberto.
+    shell.onStudy!();
+    await _settle(tester);
+    expect(find.text('Praticar meus erros'), findsOneWidget);
+    // Voltar: primeiro fecha o Estudar e mostra o Mapa; depois volta ao Início.
+    await _voltar(tester);
+    expect(find.text('Praticar meus erros'), findsNothing);
+    expect(find.byType(ErrorMapView), findsOneWidget);
+    await _voltar(tester);
+    expect(find.text('O que fazer agora'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   for (final width in [390.0, 1280.0]) {
     testWidgets('Prévias do início e Sobre em ${width.toInt()}px', (
@@ -356,8 +403,9 @@ void main() {
     final progress = tester.getTopLeft(find.text('Evolução'));
     expect(exercises.dy, lessThan(review.dy));
     expect(review.dy, lessThan(progress.dy));
-    await tester.ensureVisible(find.text('Sobre o App'));
-    expect(find.text('Sobre o App').hitTestable(), findsOneWidget);
+    // Sobre e Sair moram na navegação (Mais e trilho), não no Início.
+    expect(find.text('Sobre o App'), findsNothing);
+    expect(find.byTooltip('Sair'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -383,11 +431,6 @@ void main() {
         .ancestor(of: find.text('Tentativas'), matching: find.byType(Container))
         .first;
     expect(tester.getSize(cards).width, lessThanOrEqualTo(360));
-    final aboutButton = find.ancestor(
-      of: find.text('Sobre o App'),
-      matching: find.byWidgetPredicate((widget) => widget is Button),
-    );
-    expect(tester.getSize(aboutButton).width, lessThanOrEqualTo(480));
     expect(find.text('3'), findsOneWidget);
   });
 
@@ -459,14 +502,15 @@ void main() {
         await _settle(tester);
         expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
         expect(tester.takeException(), isNull);
-        await tester.tap(find.byTooltip('Voltar'));
-        await _settle(tester);
+        // Voltar do sistema numa aba que não é o Início leva ao Início.
+        await _voltar(tester);
+        expect(find.text('O que fazer agora'), findsOneWidget);
         if (user.isAdmin) {
           await tester.tap(find.byKey(const ValueKey('navigation-more')));
           await _settle(tester);
           await tester.tap(find.text('Admin').hitTestable().first);
           await _settle(tester);
-          expect(find.text('Painel Administrativo'), findsOneWidget);
+          expect(find.text('Administração'), findsOneWidget);
           expect(tester.takeException(), isNull);
         }
       },
@@ -507,7 +551,7 @@ void main() {
       expect(find.text('DESCRIÇÃO DO ERRO'), findsOneWidget);
       // A lista continua visível ao lado do detalhe.
       expect(find.text(prompt), findsWidgets);
-      expect(find.text('Meus Exercícios'), findsOneWidget);
+      expect(find.text('Meus exercícios'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

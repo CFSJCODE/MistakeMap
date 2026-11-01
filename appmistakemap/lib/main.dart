@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart'
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/cupertino.dart' show CupertinoSliverRefreshControl;
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -22,6 +23,7 @@ import 'layout/navigation_shell.dart';
 import 'auth/google_sign_in.dart';
 import 'ai/ai_material_shell.dart';
 import 'ai/analysis_repository.dart';
+import 'ai/insights_view.dart' show ErrorMapController, ErrorMapRequest;
 import 'ai/analysis_models.dart' show AttemptStatusGroup, attemptStatusGroup;
 import 'admin/metrics_panel.dart';
 import 'assets/profile_photo.dart';
@@ -1097,13 +1099,27 @@ class TelaNavegacao extends StatefulWidget {
   State<TelaNavegacao> createState() => _TelaNavegacaoState();
 }
 
+// Arquitetura da navegação (diagnóstico, mapa e decisões em NAVEGACAO.md):
+// - Primário, sempre à vista na barra ou no trilho: Início, Meus exercícios,
+//   Mapa de erros e Caderno de erros, mais a ação principal Analisar.
+// - Secundário, dentro de cada destino: detalhe, correção e edição na Lista;
+//   Estudar, correções e evidências na pilha própria do Mapa; registro no
+//   Caderno.
+// - Terciário, no Mais do celular e na seção Conta do trilho: Administração
+//   (só administradores), Sobre o App e Sair.
 class _TelaNavegacaoState extends State<TelaNavegacao> {
+  static const _mapa = 2;
+
   int _indiceAtual = 0;
   bool _paginaAberta = false;
   final _inicioKey = GlobalKey<_TelaInicialState>();
   final _listaKey = GlobalKey<_TelaPrincipalState>();
-  final _mapaKey = GlobalKey<_TelaMapaConceitualState>();
   final _cadernoKey = GlobalKey<_TelaCadernoErrosState>();
+
+  // O Mapa é uma aba de verdade, com pilha própria: Estudar e correções
+  // abrem dentro dela e a barra continua à vista.
+  final _mapaNavegador = GlobalKey<NavigatorState>();
+  final _mapaControle = ErrorMapController();
   late final AnalysisRepository _analysisRepository =
       widget.analysisRepository ?? SupabaseAnalysisRepository(_db);
   late final Sincronizador _sincronizador = _sync(widget.user.id);
@@ -1128,7 +1144,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   void _recarregarAbas() {
     _inicioKey.currentState?.carregarEstatisticas();
     _listaKey.currentState?.carregarExercicios();
-    _mapaKey.currentState?.carregar();
+    _mapaControle.refresh();
   }
 
   void _mostrarAviso() {
@@ -1138,36 +1154,12 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     _avisar(context, mensagem, erro: true);
   }
 
-  // Mapa e análise por IA são uma página só; [analisar] abre o painel de
-  // envio já expandido (atalho do Início).
-  Future<void> _abrirIa({bool analisar = false, bool estudar = false}) async {
-    if (_paginaAberta) return;
-    setState(() => _paginaAberta = true);
-    try {
-      await Navigator.of(context).push(
-        MistakeMapPageRoute(
-          context: context,
-          builder: (_) => AiMaterialShell(
-            userId: widget.user.id,
-            repository: _analysisRepository,
-            showMap: true,
-            startWithAnalysis: analisar,
-            startWithStudy: estudar,
-            onClose: () => Navigator.of(context).pop(),
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _paginaAberta = false);
-        // Recarrega o Início se estiver visível: uma tentativa pode ter sido
-        // criada dentro do fluxo de IA. O índice 0 pode estar ativo mesmo
-        // quando a guarda `i == _indiceAtual` impediu a troca de aba.
-        if (_indiceAtual == 0) {
-          _inicioKey.currentState?.carregarEstatisticas();
-        }
-      }
-    }
+  /// Atalhos para dentro do Mapa (analisar, estudar): troca para a aba e
+  /// leva a pilha dela até o que foi pedido.
+  void _irAoMapa(ErrorMapRequest pedido) {
+    // Já no Mapa, a pilha fica como está: o controle decide o que fechar.
+    if (_indiceAtual != _mapa) _selecionar(_mapa);
+    _mapaControle.request(pedido);
   }
 
   Future<void> _abrirSobre() async {
@@ -1196,30 +1188,52 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   }
 
   void _selecionar(int i) {
-    if (i == _indiceAtual) return;
+    if (i == _indiceAtual) {
+      // Tocar na aba atual volta à raiz dela, como nas barras do Android e
+      // do iOS.
+      if (i == _mapa) {
+        _mapaNavegador.currentState?.popUntil((rota) => rota.isFirst);
+      }
+      return;
+    }
+    HapticFeedback.selectionClick();
     setState(() => _indiceAtual = i);
     if (i == 0) _inicioKey.currentState?.carregarEstatisticas();
     if (i == 1) _listaKey.currentState?.carregarExercicios();
-    if (i == 2) _mapaKey.currentState?.carregar();
+    if (i == _mapa) _mapaControle.refresh();
     if (i == 3) _cadernoKey.currentState?._carregar();
   }
 
-  // Índice 3 era "Novo exercício", que só repetia a análise por IA (hoje
-  // dentro do Mapa). O Caderno, antes escondido num botão do Início, ocupa
-  // a vaga como aba própria.
+  /// Voltar do sistema: primeiro desempilha o que estiver aberto dentro do
+  /// Mapa; numa aba que não é o Início, volta ao Início; no Início, sai.
+  void _voltar() {
+    if (_indiceAtual == _mapa) {
+      final pilha = _mapaNavegador.currentState;
+      if (pilha != null && pilha.canPop()) {
+        pilha.maybePop();
+        return;
+      }
+    }
+    _selecionar(0);
+  }
+
   List<Widget> get _telas => [
     TelaInicial(
       key: _inicioKey,
       user: widget.user,
-      onAnalysis: () => _abrirIa(analisar: true),
-      onAbout: _abrirSobre,
+      onAnalysis: () => _irAoMapa(ErrorMapRequest.analysis),
       onExercicios: () => _selecionar(1),
-      onMapa: _abrirIa,
-      onEstudar: () => _abrirIa(estudar: true),
+      onMapa: () => _selecionar(_mapa),
+      onEstudar: () => _irAoMapa(ErrorMapRequest.study),
       onCaderno: () => _selecionar(3),
     ),
     TelaPrincipal(key: _listaKey, user: widget.user),
-    TelaMapaConceitual(key: _mapaKey, user: widget.user),
+    ErrorMapTab(
+      userId: widget.user.id,
+      repository: _analysisRepository,
+      controller: _mapaControle,
+      navigatorKey: _mapaNavegador,
+    ),
     TelaCadernoErros(key: _cadernoKey, user: widget.user, aba: true),
     if (widget.user.isAdmin)
       TelaAdmin(user: widget.user, active: _indiceAtual == 4 && !_paginaAberta),
@@ -1231,15 +1245,14 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       selectedIndex: _indiceAtual,
       onSelected: _selecionar,
       hasAdmin: widget.user.isAdmin,
-      onErrorMap: _abrirIa,
-      onStudy: () => _abrirIa(estudar: true),
-      onAnalysis: () => _abrirIa(analisar: true),
+      onStudy: () => _irAoMapa(ErrorMapRequest.study),
+      onAnalysis: () => _irAoMapa(ErrorMapRequest.analysis),
       onSignOut: _sair,
       onAbout: _abrirSobre,
       child: PopScope(
         canPop: _indiceAtual == 0,
         onPopInvokedWithResult: (didPop, result) {
-          if (!didPop && _indiceAtual != 0) _selecionar(0);
+          if (!didPop) _voltar();
         },
         child: NavigationPages(
           index: _indiceAtual,
@@ -1962,7 +1975,6 @@ class _TelaNovaSenhaState extends State<TelaNovaSenha> {
 class TelaInicial extends StatefulWidget {
   final AppUser user;
   final VoidCallback? onAnalysis;
-  final VoidCallback? onAbout;
 
   /// Atalhos do ciclo de estudo, na ordem em que o estudante os usa.
   final VoidCallback? onExercicios;
@@ -1973,7 +1985,6 @@ class TelaInicial extends StatefulWidget {
     super.key,
     required this.user,
     this.onAnalysis,
-    this.onAbout,
     this.onExercicios,
     this.onMapa,
     this.onEstudar,
@@ -2042,29 +2053,13 @@ class _TelaInicialState extends State<TelaInicial> {
     }
   }
 
-  Future<void> _sair() async {
-    // O ícone fica ao lado do título: um toque acidental não deve deslogar.
-    final ok = await _confirmar(
-      context,
-      titulo: 'Sair da conta',
-      mensagem: 'Deseja sair do MistakeMap neste aparelho?',
-      confirmar: 'Sair',
-    );
-    if (!ok) return;
-    await _sairDaConta();
-  }
-
+  // O título repete o nome do destino na navegação: o aluno sabe onde está.
+  // Sair e Sobre ficam só no Mais e no trilho, junto da conta; no Início
+  // eles competiam com o ciclo de estudo.
   @override
   Widget build(BuildContext context) {
     return _PaginaVidro(
-      titulo: 'Início — Resumo',
-      acoes: [
-        _BotaoBarra(
-          icone: WindowsIcons.sign_out,
-          dica: 'Sair',
-          onPressed: _sair,
-        ),
-      ],
+      titulo: 'Início',
       corpo: _carregando
           ? const Center(child: ProgressRing())
           : Align(
@@ -2085,11 +2080,6 @@ class _TelaInicialState extends State<TelaInicial> {
                       ),
                       const SizedBox(height: 32),
                       _resumo(context),
-                      const SizedBox(height: 24),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 480),
-                        child: _botaoSobre(context),
-                      ),
                     ],
                   ),
                 ),
@@ -2274,52 +2264,6 @@ class _TelaInicialState extends State<TelaInicial> {
           ],
         ),
       ],
-    );
-  }
-
-  // Botão "Sobre o App"
-  Widget _botaoSobre(BuildContext context) {
-    return _botaoAtalho(
-      icone: WindowsIcons.info,
-      texto: 'Sobre o App',
-      onPressed:
-          widget.onAbout ??
-          () {
-            if (ModalRoute.of(context)?.isCurrent != true) return;
-            Navigator.of(context).push(
-              MistakeMapPageRoute(
-                context: context,
-                builder: (_) => const TelaSobre(),
-              ),
-            );
-          },
-    );
-  }
-
-  Widget _botaoAtalho({
-    required IconData icone,
-    required String texto,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      child: MistakeMapButton(
-        // Mesma superfície e mesmos cantos dos cards de resumo acima.
-        style: _estiloBotao(
-          raio: kRadiusSm,
-          texto: contentBlue,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        ),
-        onPressed: onPressed,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icone, size: 18),
-            const SizedBox(width: 8),
-            Flexible(child: Text(texto, textAlign: TextAlign.center)),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -3871,7 +3815,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   @override
   Widget build(BuildContext context) {
     final lista = _PaginaVidro(
-      titulo: 'Meus Exercícios',
+      titulo: 'Meus exercícios',
       acoes: [
         _BotaoBarra(
           icone: WindowsIcons.refresh,
@@ -4748,7 +4692,7 @@ class _TelaAdminState extends State<TelaAdmin> {
   @override
   Widget build(BuildContext context) {
     return _PaginaVidro(
-      titulo: 'Painel Administrativo',
+      titulo: 'Administração',
       acoes: [
         _BotaoBarra(
           icone: WindowsIcons.refresh,

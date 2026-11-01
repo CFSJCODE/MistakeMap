@@ -1,9 +1,11 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
+import '../theme/control_styles.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
+import 'adaptativo.dart';
 
 // Acrílico Fluent no trilho lateral: topo mais opaco, base mais translúcida.
 const _railGradient = MistakeMapDesign.acrylic;
@@ -16,7 +18,6 @@ class AppNavigationShell extends StatelessWidget {
     required this.selectedIndex,
     required this.onSelected,
     required this.onAbout,
-    this.onErrorMap,
     this.onStudy,
     this.onSignOut,
     this.onAnalysis,
@@ -24,16 +25,19 @@ class AppNavigationShell extends StatelessWidget {
     required this.child,
   });
 
-  /// Ação principal (analisar um exercício): no celular vira um botão
-  /// redondo de vidro ao lado da cápsula, como a busca da barra do iOS 26.
+  /// Ação principal (analisar um exercício), à vista em todo tamanho de tela:
+  /// no celular, botão redondo de vidro ao lado da cápsula (como a busca da
+  /// barra do iOS 26); no trilho, o primeiro controle, no lugar do FAB do
+  /// NavigationRail do Material 3.
   final VoidCallback? onAnalysis;
 
+  /// Destino atual. Tocar de novo no destino atual também chama
+  /// [onSelected], para a página voltar à raiz.
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final VoidCallback onAbout;
-  final VoidCallback? onErrorMap;
 
-  /// Abre o Estudar direto, sem passar pelo Mapa.
+  /// Atalho para o Estudar, que mora dentro do Mapa.
   final VoidCallback? onStudy;
 
   /// Sair da conta fica junto das outras opções, não escondido numa tela.
@@ -195,11 +199,45 @@ class AppNavigationShell extends StatelessWidget {
     ),
   );
 
+  /// A pílula da aba atual na cápsula e no trilho compacto: o acento do
+  /// destino sobre vidro claro.
+  static BoxDecoration _pill(Color accent) => BoxDecoration(
+    color: Color.alphaBlend(
+      accent.withValues(alpha: .22),
+      const Color(0xC7FFFFFF),
+    ),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: accent.withValues(alpha: .55)),
+    boxShadow: [
+      BoxShadow(
+        color: accent.withValues(alpha: .35),
+        blurRadius: 16,
+        spreadRadius: -6,
+        offset: const Offset(0, 6),
+      ),
+    ],
+  );
+
+  /// No trilho compacto não há espaço medido para a pílula deslizar: ela
+  /// acende no próprio destino.
+  Widget _pilled(
+    BuildContext context, {
+    required bool selected,
+    required Color accent,
+    required Widget child,
+  }) => AnimatedContainer(
+    duration: _motionDuration(context),
+    curve: MistakeMapMotion.curve,
+    decoration: selected
+        ? _pill(accent)
+        : BoxDecoration(borderRadius: BorderRadius.circular(12)),
+    child: child,
+  );
+
   Widget _destination(
     BuildContext context,
     int index, {
     required bool compact,
-    VoidCallback? onPressed,
   }) {
     final selected = index == selectedIndex;
     final accent = accents[index];
@@ -237,11 +275,7 @@ class AppNavigationShell extends StatelessWidget {
           Button(
             key: ValueKey('navigation-$index'),
             style: _style(selected, compact: compact, accent: accent),
-            onPressed:
-                onPressed ??
-                (index == 2 && onErrorMap != null
-                    ? onErrorMap
-                    : () => onSelected(index)),
+            onPressed: () => onSelected(index),
             child: _NavigationHoverInk(
               selected: selected,
               compact: compact,
@@ -457,109 +491,209 @@ class AppNavigationShell extends StatelessWidget {
     ),
   );
 
+  /// Painel acrílico dos trilhos: topo mais opaco, base mais translúcida.
+  Widget _railPanel(
+    BuildContext context, {
+    required double width,
+    required Widget child,
+  }) => Container(
+    // Em paisagem o recorte da câmera fica à esquerda: o trilho passa por
+    // baixo dele e mantém a largura útil (senão os rótulos quebram no
+    // meio da palavra).
+    width: width + MediaQuery.paddingOf(context).left,
+    decoration: const BoxDecoration(
+      gradient: _railGradient,
+      border: Border(
+        // Borda especular: a luz pega a aresta do painel acrílico.
+        right: BorderSide(color: Color(0xE6FFFFFF)),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Color(0x1F11212D),
+          blurRadius: 28,
+          offset: Offset(6, 0),
+        ),
+      ],
+    ),
+    child: Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: 'Navegação principal',
+      child: SafeArea(right: false, child: child),
+    ),
+  );
+
+  /// Ação principal no trilho largo: botão cheio no acento, acima dos
+  /// destinos, para não ser confundido com uma aba selecionada.
+  Widget _railPrimary(BuildContext context) => Tooltip(
+    message: 'Analisar um exercício',
+    child: MistakeMapButton(
+      key: const ValueKey('navigation-action'),
+      style: MistakeMapControls.button(
+        radius: 12,
+        fontSize: 14,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        background: MistakeMapDesign.accent,
+        foreground: MistakeMapDesign.abyss,
+      ),
+      onPressed: onAnalysis,
+      child: const Row(
+        children: [
+          Icon(WindowsIcons.lightbulb, size: 18),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text('Analisar exercício', textAlign: TextAlign.start),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  /// Trilho largo (janelas expandidas, a partir de 840 px): destinos com
+  /// rótulo inteiro, agrupados em estudo e conta.
+  Widget _expandedRail(BuildContext context) => _railPanel(
+    context,
+    width: 224,
+    child: ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          // A marca leva o gradiente Aurora escurecido; o resto do trilho fica
+          // sóbrio.
+          child: ShaderMask(
+            blendMode: BlendMode.srcIn,
+            shaderCallback: MistakeMapDesign.hero.createShader,
+            child: const Text(
+              'MistakeMap',
+              style: TextStyle(
+                color: MistakeMapDesign.strong,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.4,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (onAnalysis != null) ...[
+          _railPrimary(context),
+          const SizedBox(height: 24),
+        ],
+        // O ciclo de estudo de cima para baixo, na ordem de uso: registrar e
+        // conferir, entender o padrão, estudar e anotar. Estudar mora dentro
+        // do Mapa e aparece logo abaixo dele.
+        _section('SEU ESTUDO'),
+        for (final i in [0, 1, 2]) ...[
+          _destination(context, i, compact: false),
+          const SizedBox(height: 8),
+        ],
+        if (onStudy != null) ...[
+          _railAction(
+            context,
+            icon: WindowsIcons.education,
+            label: 'Estudar com a IA',
+            onPressed: onStudy!,
+            accent: MistakeMapDesign.violet,
+            ink: MistakeMapDesign.violetInk,
+          ),
+          const SizedBox(height: 8),
+        ],
+        _destination(context, 3, compact: false),
+        const SizedBox(height: 24),
+        _section('CONTA'),
+        if (hasAdmin) ...[
+          _destination(context, 4, compact: false),
+          const SizedBox(height: 8),
+        ],
+        _railAction(
+          context,
+          icon: WindowsIcons.info,
+          label: 'Sobre o App',
+          onPressed: onAbout,
+        ),
+        if (onSignOut != null) ...[
+          const SizedBox(height: 8),
+          _railAction(
+            context,
+            icon: WindowsIcons.sign_out,
+            label: 'Sair',
+            onPressed: onSignOut!,
+          ),
+        ],
+      ],
+    ),
+  );
+
+  /// Trilho compacto (janelas médias, de 600 a 840 px: tablet em pé,
+  /// dobrável aberto, celular deitado): o NavigationRail do Material 3 com o
+  /// vidro do app. Os mesmos destinos e o mesmo Mais da barra inferior, sem
+  /// gastar a altura, que é o que falta nessas telas.
+  Widget _compactRail(BuildContext context) => _railPanel(
+    context,
+    width: 88,
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: Column(
+        children: [
+          if (onAnalysis != null) ...[
+            _actionButton(context),
+            const SizedBox(height: 16),
+          ],
+          for (var i = 0; i < 4; i++) ...[
+            _pilled(
+              context,
+              selected: i == selectedIndex,
+              accent: accents[i],
+              child: _destination(context, i, compact: true),
+            ),
+            const SizedBox(height: 8),
+          ],
+          _pilled(
+            context,
+            selected: selectedIndex == 4,
+            accent: accents[4],
+            child: _more(context),
+          ),
+        ],
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-      final desktop = constraints.maxWidth / scale >= 840;
-      if (desktop) {
+      final width = constraints.maxWidth / scale;
+      if (width >= LimitesLargura.media) {
         return AuroraBackground(
           child: Row(
+            // O painel do trilho ocupa a altura toda, mesmo com poucos
+            // destinos (o trilho compacto rola em vez de preencher).
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 224,
-                decoration: const BoxDecoration(
-                  gradient: _railGradient,
-                  border: Border(
-                    // Borda especular: a luz pega a aresta do painel acrílico.
-                    right: BorderSide(color: Color(0xE6FFFFFF)),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x1F11212D),
-                      blurRadius: 28,
-                      offset: Offset(6, 0),
-                    ),
-                  ],
-                ),
-                child: SafeArea(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        // A marca leva o gradiente Aurora escurecido; o resto do
-                        // trilho fica sóbrio.
-                        child: ShaderMask(
-                          blendMode: BlendMode.srcIn,
-                          shaderCallback: MistakeMapDesign.hero.createShader,
-                          child: const Text(
-                            'MistakeMap',
-                            style: TextStyle(
-                              color: MistakeMapDesign.strong,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.4,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // O ciclo de estudo de cima para baixo, na ordem de uso:
-                      // registrar e conferir, entender o padrão, estudar e
-                      // anotar.
-                      _section('SEU ESTUDO'),
-                      for (final i in [0, 1, 2]) ...[
-                        _destination(context, i, compact: false),
-                        const SizedBox(height: 8),
-                      ],
-                      if (onStudy != null) ...[
-                        _railAction(
-                          context,
-                          icon: WindowsIcons.education,
-                          label: 'Estudar com a IA',
-                          onPressed: onStudy!,
-                          accent: MistakeMapDesign.violet,
-                          ink: MistakeMapDesign.violetInk,
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      _destination(context, 3, compact: false),
-                      const SizedBox(height: 24),
-                      _section('CONTA'),
-                      if (hasAdmin) ...[
-                        _destination(context, 4, compact: false),
-                        const SizedBox(height: 8),
-                      ],
-                      _railAction(
-                        context,
-                        icon: WindowsIcons.info,
-                        label: 'Sobre o App',
-                        onPressed: onAbout,
-                      ),
-                      if (onSignOut != null) ...[
-                        const SizedBox(height: 8),
-                        _railAction(
-                          context,
-                          icon: WindowsIcons.sign_out,
-                          label: 'Sair',
-                          onPressed: onSignOut!,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
+              width >= LimitesLargura.expandida
+                  ? _expandedRail(context)
+                  : _compactRail(context),
               Expanded(child: child),
             ],
           ),
         );
       }
+      final withBar = MediaQuery.viewInsetsOf(context).bottom == 0;
       return AuroraBackground(
         child: Column(
           children: [
-            Expanded(child: child),
-            if (MediaQuery.viewInsetsOf(context).bottom == 0)
+            // A barra já reserva a área de gestos: a página não soma de novo
+            // esse recuo no fim da lista.
+            Expanded(
+              child: MediaQuery.removePadding(
+                context: context,
+                removeBottom: withBar,
+                child: child,
+              ),
+            ),
+            if (withBar)
               SafeArea(
                 top: false,
                 minimum: const EdgeInsets.only(bottom: 8),
@@ -567,13 +701,16 @@ class AppNavigationShell extends StatelessWidget {
                 // continua ocupando o próprio espaço, abaixo do conteúdo.
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  child: _bottomBar(
-                    context,
-                    // A ação principal só cabe ao lado da cápsula quando há
-                    // largura para as cinco abas continuarem legíveis.
-                    withAction:
-                        onAnalysis != null &&
-                        constraints.maxWidth / scale >= 360,
+                  child: Semantics(
+                    container: true,
+                    explicitChildNodes: true,
+                    label: 'Navegação principal',
+                    child: _bottomBar(
+                      context,
+                      // A ação principal só cabe ao lado da cápsula quando há
+                      // largura para as cinco abas continuarem legíveis.
+                      withAction: onAnalysis != null && width >= 360,
+                    ),
                   ),
                 ),
               ),
@@ -615,24 +752,7 @@ class AppNavigationShell extends StatelessWidget {
                     child: AnimatedContainer(
                       duration: _motionDuration(context),
                       curve: MistakeMapMotion.curve,
-                      decoration: BoxDecoration(
-                        color: Color.alphaBlend(
-                          accent.withValues(alpha: .22),
-                          const Color(0xC7FFFFFF),
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: accent.withValues(alpha: .55),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accent.withValues(alpha: .35),
-                            blurRadius: 16,
-                            spreadRadius: -6,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
+                      decoration: _pill(accent),
                     ),
                   ),
                   // Same 8px rhythm around and between the buttons, so each
