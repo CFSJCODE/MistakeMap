@@ -86,6 +86,48 @@ void main() {
     expect(find.text('Sobre o App'), findsOneWidget);
   });
 
+  for (final width in [390.0, 1280.0]) {
+    testWidgets('Estudar e Sair ficam à vista em ${width.toInt()}px', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var study = 0;
+      var signOut = 0;
+      await tester.pumpWidget(
+        FluentApp(
+          home: AppNavigationShell(
+            selectedIndex: 0,
+            onSelected: (_) {},
+            onAbout: () {},
+            onStudy: () => study++,
+            onSignOut: () => signOut++,
+            hasAdmin: false,
+            child: const SizedBox.expand(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      Future<void> abrirMais() async {
+        if (width >= 840) return;
+        await tester.tap(find.byKey(const ValueKey('navigation-more')));
+        await tester.pumpAndSettle();
+      }
+
+      await abrirMais();
+      await tester.tap(find.text('Estudar com a IA'));
+      await tester.pumpAndSettle();
+      expect(study, 1);
+      await abrirMais();
+      await tester.tap(find.text('Sair'));
+      await tester.pumpAndSettle();
+      expect(signOut, 1);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('Mapa é um destino só e o Caderno substitui o Novo', (
     tester,
   ) async {

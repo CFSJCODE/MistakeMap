@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'analysis_models.dart';
 import 'analysis_repository.dart' show AnalysisFailure;
+import '../sync/sincronizador.dart';
 
 /// Resumo teórico gerado a partir dos erros e exercícios da matéria.
 class StudySummary {
@@ -213,11 +214,18 @@ class SupabaseStudyMaterialRepository implements StudyMaterialRepository {
   Future<List<StudyMaterial>> loadMaterials(
     Map<String, String> subjects,
   ) async {
-    final rows = await client
+    Future<Object?> remoto() => client
         .from('study_materials')
         .select('id,subject_id,created_at,summary,flashcards,quiz,source_count')
         .order('created_at', ascending: false)
         .limit(30);
+    // Sem rede, o material já gerado continua disponível pelo cache local.
+    final sync = Sincronizador.instancia;
+    final usuario = sync.usuarioId;
+    final dados = usuario == null
+        ? await remoto()
+        : await sync.consultar(usuario, 'estudo_materiais', remoto);
+    final rows = _maps(dados);
     return [
       for (final row in rows)
         StudyMaterial.fromJson(
@@ -250,6 +258,16 @@ class SupabaseStudyMaterialRepository implements StudyMaterialRepository {
   }
 
   Future<JsonMap> _invoke(JsonMap body) async {
+    // Gerar e corrigir dependem da IA no servidor: sem rede, avisa na hora em
+    // vez de deixar o estudante olhando um carregamento.
+    final sync = Sincronizador.instancia;
+    if (!sync.online.value || sync.semSessao) {
+      throw const AnalysisFailure(
+        'Gerar e corrigir o material precisa de internet. O material que você '
+        'já gerou continua disponível aqui, mesmo offline.',
+        network: true,
+      );
+    }
     try {
       final response = await client.functions
           .invoke(_function, body: body)

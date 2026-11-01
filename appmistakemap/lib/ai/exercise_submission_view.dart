@@ -138,7 +138,10 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
     });
     // Already known to be offline: save on the device without waiting for
     // the request to time out.
-    if (!Sincronizador.instancia.online.value && await _saveOffline()) return;
+    final sync = Sincronizador.instancia;
+    if ((!sync.online.value || sync.semSessao) && await _saveOffline()) {
+      return;
+    }
     try {
       _attemptId ??= await widget.repository.createAttempt(
         userId: widget.userId,

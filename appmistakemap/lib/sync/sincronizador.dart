@@ -73,6 +73,13 @@ class Sincronizador {
 
   String? get usuarioId => _usuarioId;
 
+  /// Falso enquanto a conta entrou sem rede e ainda não tem sessão no
+  /// servidor: leituras ficam no cache (o servidor devolveria listas vazias
+  /// e apagaria o cache) e a fila espera um login com internet.
+  bool Function() temSessao = () => true;
+
+  bool get semSessao => habilitado && !temSessao();
+
   void iniciar(String usuarioId, RemotoSync remoto) {
     if (_usuarioId == usuarioId && identical(_remoto, remoto)) return;
     parar();
@@ -120,6 +127,11 @@ class Sincronizador {
     Future<Object?> Function() remoto,
   ) async {
     if (!habilitado) return remoto();
+    if (!temSessao()) {
+      final salvo = await _lerCache(usuarioId, chave);
+      if (salvo != null) return salvo.dados;
+      throw TimeoutException('Sem sessão no servidor; nada salvo no aparelho.');
+    }
     try {
       final dados = await remoto().timeout(limiteConsulta);
       _ficarOnline();
@@ -306,7 +318,7 @@ class Sincronizador {
     Future<void> Function() noServidor,
   ) async {
     // Já sabidamente offline: não espera o tempo limite de novo.
-    if (habilitado && !online.value) {
+    if (habilitado && (!online.value || semSessao)) {
       await _guardar(usuarioId, operacao, dados);
       return ResultadoEscrita.naFila;
     }
@@ -360,7 +372,7 @@ class Sincronizador {
 
   /// Envia a fila em ordem. Chamadas simultâneas aguardam o mesmo envio.
   Future<void> sincronizar() {
-    if (!habilitado || _remoto == null || _usuarioId == null) {
+    if (!habilitado || _remoto == null || _usuarioId == null || semSessao) {
       return Future.value();
     }
     return _enviando ??= _enviarFila().whenComplete(() => _enviando = null);

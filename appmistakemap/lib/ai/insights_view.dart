@@ -22,8 +22,13 @@ class ErrorMapView extends StatefulWidget {
     required this.repository,
     this.onClose,
     this.startWithAnalysis = false,
+    this.startWithStudy = false,
     this.studyRepository,
   });
+
+  /// Abre direto o Estudar (atalho do Início e da navegação) assim que as
+  /// matérias chegam; voltar dele leva ao mapa.
+  final bool startWithStudy;
 
   /// Material de estudo (resumo, cartões e quiz). Sem ele, a página usa o
   /// cliente Supabase do repositório de análise, quando houver.
@@ -143,6 +148,9 @@ class _ErrorMapViewState extends State<ErrorMapView> {
         // Sem tentativas o mapa não tem o que mostrar: começa pela análise.
         if (result.isEmpty && !_analysis.isExpanded) _analysis.expand();
         if (widget.startWithAnalysis && request == 1) _openAnalysis();
+        if (widget.startWithStudy && request == 1 && result.isNotEmpty) {
+          _openStudy({for (final a in result) a.subjectId: a.subjectName});
+        }
       }
     } catch (error) {
       if (mounted && request == _request) {
