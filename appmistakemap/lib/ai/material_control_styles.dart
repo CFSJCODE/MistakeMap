@@ -155,20 +155,24 @@ class _MaterialHoverSurface extends StatelessWidget {
                   progress,
                 ),
               );
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: fill,
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.fromBorderSide(outline),
-          ),
-          child: IconTheme.merge(
-            data: IconThemeData(color: ink),
-            child: ListTileTheme(
-              data: ListTileTheme.of(context)
-                  .copyWith(textColor: ink, iconColor: ink),
-              child: DefaultTextStyle.merge(
-                style: TextStyle(color: ink),
-                child: child!,
+        // O mesmo afundar ao toque dos botões Fluent (PressScale).
+        return PressScale(
+          pressed: states.contains(WidgetState.pressed) && !disabled,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.fromBorderSide(outline),
+            ),
+            child: IconTheme.merge(
+              data: IconThemeData(color: ink),
+              child: ListTileTheme(
+                data: ListTileTheme.of(context)
+                    .copyWith(textColor: ink, iconColor: ink),
+                child: DefaultTextStyle.merge(
+                  style: TextStyle(color: ink),
+                  child: child!,
+                ),
               ),
             ),
           ),

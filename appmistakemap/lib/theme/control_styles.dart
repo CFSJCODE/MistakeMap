@@ -222,62 +222,68 @@ class _MistakeMapButtonState extends State<BaseButton> {
           enabled: widget.enabled,
           child: FocusBorder(
             focused: states.contains(WidgetState.focused),
-            child: TweenAnimationBuilder<Color?>(
-              tween: ColorTween(begin: fill, end: fill),
-              duration: duration,
-              curve: MistakeMapMotion.hoverCurve,
-              child: widget.child,
-              builder: (context, color, child) {
-                final background = color ?? fill;
-                final ink = disabled
-                    ? style.foregroundColor?.resolve(states) ?? restingInk
-                    : MistakeMapDesign.hoverInk(
-                        background,
-                        restingInk,
-                        restingFill: theme.scaffoldBackgroundColor,
-                      );
-                return PhysicalModel(
-                  color: Colors.transparent,
-                  shadowColor:
-                      style.shadowColor?.resolve(states) ?? Colors.black,
-                  elevation: style.elevation?.resolve(states) ?? 0,
-                  // The shadow must follow the rounded corners of either
-                  // border type; a square shadow shows behind rounded cards.
-                  borderRadius: switch (shape) {
-                    RoundedRectangleBorder(:final BorderRadius borderRadius) ||
-                    RoundedRectangleGradientBorder(
-                      :final BorderRadius borderRadius,
-                    ) => borderRadius,
-                    _ => BorderRadius.zero,
-                  },
-                  child: DecoratedBox(
-                    decoration: ShapeDecoration(
-                      color: background,
-                      shape: shape,
-                    ),
-                    child: Padding(
-                      padding: padding,
-                      child: IconTheme.merge(
-                        data: IconThemeData(
-                          color: ink,
-                          size: style.iconSize?.resolve(states) ?? 14,
-                        ),
-                        child: DefaultTextStyle.merge(
-                          style: theme.typography.body
-                              ?.merge(style.textStyle?.resolve(states))
-                              .copyWith(color: ink),
-                          textAlign: TextAlign.center,
-                          child: Center(
-                            widthFactor: 1,
-                            heightFactor: 1,
-                            child: child,
+            // O mesmo afundar ao toque de todos os botões do app.
+            child: PressScale(
+              pressed: !disabled && states.contains(WidgetState.pressed),
+              child: TweenAnimationBuilder<Color?>(
+                tween: ColorTween(begin: fill, end: fill),
+                duration: duration,
+                curve: MistakeMapMotion.hoverCurve,
+                child: widget.child,
+                builder: (context, color, child) {
+                  final background = color ?? fill;
+                  final ink = disabled
+                      ? style.foregroundColor?.resolve(states) ?? restingInk
+                      : MistakeMapDesign.hoverInk(
+                          background,
+                          restingInk,
+                          restingFill: theme.scaffoldBackgroundColor,
+                        );
+                  return PhysicalModel(
+                    color: Colors.transparent,
+                    shadowColor:
+                        style.shadowColor?.resolve(states) ?? Colors.black,
+                    elevation: style.elevation?.resolve(states) ?? 0,
+                    // The shadow must follow the rounded corners of either
+                    // border type; a square shadow shows behind rounded cards.
+                    borderRadius: switch (shape) {
+                      RoundedRectangleBorder(
+                        :final BorderRadius borderRadius,
+                      ) ||
+                      RoundedRectangleGradientBorder(
+                        :final BorderRadius borderRadius,
+                      ) => borderRadius,
+                      _ => BorderRadius.zero,
+                    },
+                    child: DecoratedBox(
+                      decoration: ShapeDecoration(
+                        color: background,
+                        shape: shape,
+                      ),
+                      child: Padding(
+                        padding: padding,
+                        child: IconTheme.merge(
+                          data: IconThemeData(
+                            color: ink,
+                            size: style.iconSize?.resolve(states) ?? 14,
+                          ),
+                          child: DefaultTextStyle.merge(
+                            style: theme.typography.body
+                                ?.merge(style.textStyle?.resolve(states))
+                                .copyWith(color: ink),
+                            textAlign: TextAlign.center,
+                            child: Center(
+                              widthFactor: 1,
+                              heightFactor: 1,
+                              child: child,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         );

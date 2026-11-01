@@ -19,9 +19,14 @@ class AppNavigationShell extends StatelessWidget {
     this.onErrorMap,
     this.onStudy,
     this.onSignOut,
+    this.onAnalysis,
     required this.hasAdmin,
     required this.child,
   });
+
+  /// Ação principal (analisar um exercício): no celular vira um botão
+  /// redondo de vidro ao lado da cápsula, como a busca da barra do iOS 26.
+  final VoidCallback? onAnalysis;
 
   final int selectedIndex;
   final ValueChanged<int> onSelected;
@@ -88,7 +93,9 @@ class AppNavigationShell extends StatelessWidget {
             : BorderSide(
                 // A aba atual fica marcada mesmo sem foco: borda e fundo
                 // no acento do destino.
-                color: selected
+                // Na barra inferior a aba atual é marcada pela pílula que
+                // desliza por trás dos botões, não pelo botão.
+                color: selected && !compact
                     ? accent.withValues(alpha: .55)
                     : states.contains(WidgetState.hovered) ||
                           states.contains(WidgetState.pressed)
@@ -100,7 +107,7 @@ class AppNavigationShell extends StatelessWidget {
     backgroundColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) return Colors.transparent;
       // Opaco: a sombra da aba atual não pode aparecer através do fundo.
-      if (selected) {
+      if (selected && !compact) {
         return Color.alphaBlend(
           accent.withValues(alpha: .16),
           MistakeMapDesign.white,
@@ -401,11 +408,25 @@ class AppNavigationShell extends StatelessWidget {
     if (MediaQuery.highContrastOf(context)) {
       return GlassSurface(tier: GlassTier.liquid, radius: 28, child: child);
     }
-    return LiquidGlass.withOwnLayer(
-      shape: const LiquidRoundedSuperellipse(borderRadius: 28),
-      settings: LiquidGlassSettings.ios27Regular(brightness: Brightness.light),
-      shadows: MistakeMapDesign.liquidShadow,
-      child: child,
+    // Vidro líquido de verdade (refração, brilho e borda) pelo
+    // liquid_glass_renderer; com o Flutter GPU desligado o próprio pacote
+    // troca por vidro fosco. LiquidStretch dá a física de mola: a cápsula
+    // estica um pouco ao ser arrastada e volta. GlassGlowLayer pinta o brilho
+    // que segue o dedo, enviado pelo GlassGlow de dentro.
+    return LiquidStretch(
+      interactionScale: 1.02,
+      stretch: .25,
+      child: GlassGlowLayer(
+        child: LiquidGlass.withOwnLayer(
+          useBackdropGroup: true,
+          shape: const LiquidRoundedSuperellipse(borderRadius: 28),
+          settings: LiquidGlassSettings.ios27Regular(
+            brightness: Brightness.light,
+          ),
+          shadows: MistakeMapDesign.liquidShadow,
+          child: child,
+        ),
+      ),
     );
   }
 
@@ -546,27 +567,13 @@ class AppNavigationShell extends StatelessWidget {
                 // continua ocupando o próprio espaço, abaixo do conteúdo.
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  // Vidro líquido de verdade (refração, brilho e borda) pelo
-                  // liquid_glass_renderer. Sem Impeller com Flutter GPU, o
-                  // próprio pacote troca por vidro fosco, sem refração.
-                  child: _bottomGlass(
+                  child: _bottomBar(
                     context,
-                    // Same 8px rhythm around and between the buttons, so
-                    // each destination reads as its own control.
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        spacing: 8,
-                        children: [
-                          for (var i = 0; i < 4; i++)
-                            Expanded(
-                              child: _destination(context, i, compact: true),
-                            ),
-                          Expanded(child: _more(context)),
-                        ],
-                      ),
-                    ),
+                    // A ação principal só cabe ao lado da cápsula quando há
+                    // largura para as cinco abas continuarem legíveis.
+                    withAction:
+                        onAnalysis != null &&
+                        constraints.maxWidth / scale >= 360,
                   ),
                 ),
               ),
@@ -575,6 +582,151 @@ class AppNavigationShell extends StatelessWidget {
       );
     },
   );
+
+  /// Barra inferior no modelo das barras de abas do iOS 26 e do Material 3:
+  /// cápsula flutuante de vidro, uma pílula que desliza entre as abas e se
+  /// acomoda na aba atual, brilho que segue o dedo e a cápsula que estica ao
+  /// ser arrastada; a ação principal fica num botão redondo separado.
+  Widget _bottomBar(BuildContext context, {required bool withAction}) {
+    final slot = selectedIndex.clamp(0, 4);
+    final accent = accents[slot];
+    final capsule = _bottomGlass(
+      context,
+      GlassGlow(
+        glowColor: accent.withValues(alpha: .35),
+        glowRadius: .9,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: LayoutBuilder(
+            builder: (context, box) {
+              const gap = 8.0;
+              final width = (box.maxWidth - gap * 4) / 5;
+              return Stack(
+                children: [
+                  // A pílula da aba atual: mesma geometria dos botões, desliza
+                  // e troca de cor com o acento do destino.
+                  AnimatedPositioned(
+                    duration: _motionDuration(context, MistakeMapMotion.page),
+                    curve: MistakeMapMotion.curve,
+                    left: slot * (width + gap),
+                    top: 0,
+                    bottom: 0,
+                    width: width,
+                    child: AnimatedContainer(
+                      duration: _motionDuration(context),
+                      curve: MistakeMapMotion.curve,
+                      decoration: BoxDecoration(
+                        color: Color.alphaBlend(
+                          accent.withValues(alpha: .22),
+                          const Color(0xC7FFFFFF),
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: accent.withValues(alpha: .55),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: accent.withValues(alpha: .35),
+                            blurRadius: 16,
+                            spreadRadius: -6,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Same 8px rhythm around and between the buttons, so each
+                  // destination reads as its own control.
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: gap,
+                    children: [
+                      for (var i = 0; i < 4; i++)
+                        Expanded(
+                          child: _destination(context, i, compact: true),
+                        ),
+                      Expanded(child: _more(context)),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    if (!withAction) return capsule;
+    // Cápsula e botão ficam sobre o mesmo conteúdo: uma captura do fundo
+    // serve aos dois (sem isso, cada vidro lê a tela inteira por quadro).
+    return BackdropGroup(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        spacing: 8,
+        children: [
+          Expanded(child: capsule),
+          _actionButton(context),
+        ],
+      ),
+    );
+  }
+
+  /// Botão redondo de vidro para a ação principal, separado da cápsula.
+  Widget _actionButton(BuildContext context) {
+    const size = 56.0;
+    final button = Tooltip(
+      message: 'Analisar um exercício',
+      child: Button(
+        key: const ValueKey('navigation-action'),
+        style: ButtonStyle(
+          padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+          backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
+          elevation: const WidgetStatePropertyAll(0),
+          shape: WidgetStateProperty.resolveWith(
+            (states) => CircleBorder(
+              side: states.contains(WidgetState.focused)
+                  ? const BorderSide(color: MistakeMapDesign.aquaInk, width: 2)
+                  : BorderSide.none,
+            ),
+          ),
+        ),
+        onPressed: onAnalysis,
+        child: _NavigationHoverInk(
+          child: SizedBox.square(
+            dimension: size,
+            child: Center(
+              child: _NavigationIcon(
+                icon: WindowsIcons.lightbulb,
+                selected: true,
+                compact: false,
+                accent: MistakeMapDesign.aqua,
+                ink: MistakeMapDesign.aquaInk,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (MediaQuery.highContrastOf(context)) {
+      return GlassSurface(
+        tier: GlassTier.liquid,
+        radius: size / 2,
+        child: button,
+      );
+    }
+    return LiquidStretch(
+      interactionScale: 1.04,
+      stretch: .3,
+      child: LiquidGlass.withOwnLayer(
+        useBackdropGroup: true,
+        shape: const LiquidOval(),
+        settings: LiquidGlassSettings.ios27Regular(
+          brightness: Brightness.light,
+        ),
+        shadows: MistakeMapDesign.liquidShadow,
+        child: button,
+      ),
+    );
+  }
 }
 
 /// Synchronizes content with Fluent's own hover state and fill animation.
@@ -615,11 +767,17 @@ class _NavigationHoverInk extends StatelessWidget {
         )!;
         return _NavigationHoverProgress(
           progress: progress,
-          child: DefaultTextStyle.merge(
-            style: TextStyle(color: ink),
-            child: IconTheme.merge(
-              data: IconThemeData(color: ink),
-              child: child!,
+          // O mesmo afundar ao toque dos demais botões do app.
+          child: PressScale(
+            pressed:
+                !states.contains(WidgetState.disabled) &&
+                states.contains(WidgetState.pressed),
+            child: DefaultTextStyle.merge(
+              style: TextStyle(color: ink),
+              child: IconTheme.merge(
+                data: IconThemeData(color: ink),
+                child: child!,
+              ),
             ),
           ),
         );
