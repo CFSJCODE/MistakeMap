@@ -131,14 +131,18 @@ class _ErrorMapViewState extends State<ErrorMapView> {
       return route == page || route.isFirst;
     });
     if (studyOpen) return;
+    // Um pedido novo substitui o anterior: só um deles pode abrir algo depois.
+    _studyPending = false;
     switch (request) {
       case ErrorMapRequest.analysis:
         _openAnalysis();
       case ErrorMapRequest.study:
-        if (_loading) {
-          _studyPending = true;
-        } else if (_attempts.isNotEmpty) {
+        if (_attempts.isNotEmpty) {
+          // Com o mapa já carregado, abre na hora, mesmo com uma atualização
+          // em andamento: ela não muda o que há para estudar.
           _openStudy({for (final a in _attempts) a.subjectId: a.subjectName});
+        } else if (_loading) {
+          _studyPending = true;
         } else {
           // Sem erros ainda não há o que estudar: o caminho é analisar.
           _openAnalysis();
@@ -234,6 +238,9 @@ class _ErrorMapViewState extends State<ErrorMapView> {
       }
     } catch (error) {
       if (mounted && request == _request) {
+        // O pedido de Estudar morre com a carga que falhou: uma atualização
+        // qualquer, minutos depois, não pode abrir uma página sozinha.
+        _studyPending = false;
         setState(() {
           _error = friendlyFailure(error);
           _loading = false;

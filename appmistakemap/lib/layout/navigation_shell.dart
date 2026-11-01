@@ -675,7 +675,15 @@ class AppNavigationShell extends StatelessWidget {
               width >= LimitesLargura.expandida
                   ? _expandedRail(context)
                   : _compactRail(context),
-              Expanded(child: child),
+              // O trilho já cobre o recorte da esquerda: o conteúdo não
+              // precisa recuar de novo.
+              Expanded(
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeLeft: true,
+                  child: child,
+                ),
+              ),
             ],
           ),
         );

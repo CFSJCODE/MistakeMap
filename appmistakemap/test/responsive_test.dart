@@ -6,6 +6,7 @@ import 'package:appmistakemap/ai/insights_view.dart' show ErrorMapView;
 import 'package:appmistakemap/layout/navigation_shell.dart';
 import 'package:appmistakemap/main.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart' show FloatingActionButton;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -501,6 +502,15 @@ void main() {
         await tester.tap(find.text('Mapa'));
         await _settle(tester);
         expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
+        // Estreito demais para o botão redondo da barra: o Mapa mantém o
+        // próprio botão de analisar, que some só com o painel aberto.
+        expect(find.byKey(const ValueKey('navigation-action')), findsNothing);
+        expect(find.byType(FloatingActionButton), findsNothing);
+        await tester.ensureVisible(find.text('Analisar exercício com IA'));
+        await _settle(tester);
+        await tester.tap(find.text('Analisar exercício com IA'));
+        await _settle(tester);
+        expect(find.byType(FloatingActionButton), findsOneWidget);
         expect(tester.takeException(), isNull);
         // Voltar do sistema numa aba que não é o Início leva ao Início.
         await _voltar(tester);
