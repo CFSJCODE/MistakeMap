@@ -436,34 +436,6 @@ class AppNavigationShell extends StatelessWidget {
     ),
   );
 
-  /// Cápsula da barra inferior. Com alto contraste ligado no aparelho, o
-  /// vidro vira superfície sólida, como nas demais telas.
-  Widget _bottomGlass(BuildContext context, Widget child) {
-    if (MediaQuery.highContrastOf(context)) {
-      return GlassSurface(tier: GlassTier.liquid, radius: 28, child: child);
-    }
-    // Vidro líquido de verdade (refração, brilho e borda) pelo
-    // liquid_glass_renderer; com o Flutter GPU desligado o próprio pacote
-    // troca por vidro fosco. LiquidStretch dá a física de mola: a cápsula
-    // estica um pouco ao ser arrastada e volta. GlassGlowLayer pinta o brilho
-    // que segue o dedo, enviado pelo GlassGlow de dentro.
-    return LiquidStretch(
-      interactionScale: 1.02,
-      stretch: .25,
-      child: GlassGlowLayer(
-        child: LiquidGlass.withOwnLayer(
-          useBackdropGroup: true,
-          shape: const LiquidRoundedSuperellipse(borderRadius: 28),
-          settings: LiquidGlassSettings.ios27Regular(
-            brightness: Brightness.light,
-          ),
-          shadows: MistakeMapDesign.liquidShadow,
-          child: child,
-        ),
-      ),
-    );
-  }
-
   /// Ação do trilho que abre uma página em vez de trocar de aba.
   Widget _railAction(
     BuildContext context, {
@@ -702,25 +674,11 @@ class AppNavigationShell extends StatelessWidget {
               ),
             ),
             if (withBar)
-              SafeArea(
-                top: false,
-                minimum: const EdgeInsets.only(bottom: 8),
-                // Cápsula de vidro líquido que flutua sobre a luz Aurora;
-                // continua ocupando o próprio espaço, abaixo do conteúdo.
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  child: Semantics(
-                    container: true,
-                    explicitChildNodes: true,
-                    label: 'Navegação principal',
-                    child: _bottomBar(
-                      context,
-                      // A ação principal só cabe ao lado da cápsula quando há
-                      // largura para as cinco abas continuarem legíveis.
-                      withAction: onAnalysis != null && width >= 360,
-                    ),
-                  ),
-                ),
+              Semantics(
+                container: true,
+                explicitChildNodes: true,
+                label: 'Navegação principal',
+                child: _bottomBar(context),
               ),
           ],
         ),
@@ -728,75 +686,135 @@ class AppNavigationShell extends StatelessWidget {
     },
   );
 
-  /// Barra inferior no modelo das barras de abas do iOS 26 e do Material 3:
-  /// cápsula flutuante de vidro, uma pílula que desliza entre as abas e se
-  /// acomoda na aba atual, brilho que segue o dedo e a cápsula que estica ao
-  /// ser arrastada; a ação principal fica num botão redondo separado.
-  Widget _bottomBar(BuildContext context, {required bool withAction}) {
-    final slot = selectedIndex.clamp(0, 4);
-    final accent = accents[slot];
-    final capsule = _bottomGlass(
-      context,
-      GlassGlow(
-        glowColor: accent.withValues(alpha: .35),
-        glowRadius: .9,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: LayoutBuilder(
-            builder: (context, box) {
-              const gap = 8.0;
-              final width = (box.maxWidth - gap * 4) / 5;
-              return Stack(
-                children: [
-                  // A pílula da aba atual: mesma geometria dos botões, desliza
-                  // e troca de cor com o acento do destino.
-                  AnimatedPositioned(
-                    duration: _motionDuration(context, MistakeMapMotion.page),
+  /// Ordem dos botões na barra inferior: a ação principal fica no centro,
+  /// entre os destinos, como o "+" das barras do Material 3 e do iOS.
+  /// Cada entrada é um índice de destino, ou [_actionSlot]/[_moreSlot].
+  static const _actionSlot = -1;
+  static const _moreSlot = -2;
+  static const _barSlots = [0, 1, _actionSlot, 2, 3, _moreSlot];
+
+  /// Barra inferior de ponta a ponta, no modelo do NavigationBar do
+  /// Material 3 com o vidro do app: fatias iguais para todos os botões, a
+  /// pílula que desliza entre os destinos e se acomoda no atual, brilho que
+  /// segue o dedo e a área de gestos coberta pelo próprio vidro.
+  Widget _bottomBar(BuildContext context) {
+    final selectedSlot = selectedIndex >= 4
+        ? _barSlots.indexOf(_moreSlot)
+        : _barSlots.indexOf(selectedIndex);
+    final accent = accents[selectedIndex.clamp(0, 4)];
+    final inset = MediaQuery.paddingOf(context).bottom;
+    final content = GlassGlow(
+      glowColor: accent.withValues(alpha: .35),
+      glowRadius: .9,
+      child: Padding(
+        // Sem margem lateral: a barra usa a largura toda, e o recuo de
+        // gestos fica dentro do vidro.
+        padding: EdgeInsets.fromLTRB(8, 8, 8, 8 + inset),
+        child: LayoutBuilder(
+          builder: (context, box) {
+            const gap = 4.0;
+            final n = _barSlots.length;
+            final width = (box.maxWidth - gap * (n - 1)) / n;
+            return Stack(
+              children: [
+                // A pílula da aba atual: mesma geometria dos botões, desliza
+                // e troca de cor com o acento do destino.
+                AnimatedPositioned(
+                  duration: _motionDuration(context, MistakeMapMotion.page),
+                  curve: MistakeMapMotion.curve,
+                  left: selectedSlot * (width + gap),
+                  top: 0,
+                  bottom: 0,
+                  width: width,
+                  child: AnimatedContainer(
+                    duration: _motionDuration(context),
                     curve: MistakeMapMotion.curve,
-                    left: slot * (width + gap),
-                    top: 0,
-                    bottom: 0,
-                    width: width,
-                    child: AnimatedContainer(
-                      duration: _motionDuration(context),
-                      curve: MistakeMapMotion.curve,
-                      decoration: _pill(accent),
-                    ),
+                    decoration: _pill(accent),
                   ),
-                  // Same 8px rhythm around and between the buttons, so each
-                  // destination reads as its own control.
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: gap,
-                    children: [
-                      for (var i = 0; i < 4; i++)
-                        Expanded(
-                          child: _destination(context, i, compact: true),
-                        ),
-                      Expanded(child: _more(context)),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: gap,
+                  children: [
+                    for (final slot in _barSlots)
+                      Expanded(
+                        child: switch (slot) {
+                          _actionSlot => _actionTab(context),
+                          _moreSlot => _more(context),
+                          _ => _destination(context, slot, compact: true),
+                        },
+                      ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
-    if (!withAction) return capsule;
-    // Cápsula e botão ficam sobre o mesmo conteúdo: uma captura do fundo
-    // serve aos dois (sem isso, cada vidro lê a tela inteira por quadro).
-    return BackdropGroup(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        spacing: 8,
-        children: [
-          Expanded(child: capsule),
-          _actionButton(context),
-        ],
-      ),
+    // Vidro retangular recortado com cantos só em cima: encosta nas laterais
+    // e no fim da tela. Vidro líquido de verdade pelo liquid_glass_renderer
+    // (vidro fosco sem Flutter GPU); GlassGlowLayer pinta o brilho que segue
+    // o dedo, enviado pelo GlassGlow de dentro. Com alto contraste,
+    // superfície sólida.
+    final glass = MediaQuery.highContrastOf(context)
+        ? GlassSurface(tier: GlassTier.liquid, radius: 0, child: content)
+        : GlassGlowLayer(
+            child: LiquidGlass.withOwnLayer(
+              useBackdropGroup: true,
+              shape: const LiquidRoundedRectangle(borderRadius: 0),
+              settings: LiquidGlassSettings.ios27Regular(
+                brightness: Brightness.light,
+              ),
+              shadows: MistakeMapDesign.liquidShadow,
+              child: content,
+            ),
+          );
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: glass,
     );
   }
+
+  /// A ação principal como uma fatia da barra: mesmo tamanho dos destinos,
+  /// mas com o bloco do ícone sempre aceso no acento, porque é um botão de
+  /// executar, não de ir a algum lugar.
+  Widget _actionTab(BuildContext context) => Tooltip(
+    message: 'Analisar um exercício',
+    child: Button(
+      key: const ValueKey('navigation-action'),
+      style: _style(false, compact: true),
+      onPressed: onAnalysis,
+      child: _NavigationHoverInk(
+        compact: true,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const _NavigationIcon(
+              icon: WindowsIcons.lightbulb,
+              selected: true,
+              compact: true,
+              accent: MistakeMapDesign.aqua,
+              ink: MistakeMapDesign.aquaInk,
+            ),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                'Analisar',
+                maxLines: 1,
+                softWrap: false,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   /// Botão redondo de vidro para a ação principal, separado da cápsula.
   Widget _actionButton(BuildContext context) {

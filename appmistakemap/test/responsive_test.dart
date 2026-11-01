@@ -502,15 +502,10 @@ void main() {
         await tester.tap(find.text('Mapa'));
         await _settle(tester);
         expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
-        // Estreito demais para o botão redondo da barra: o Mapa mantém o
-        // próprio botão de analisar, que some só com o painel aberto.
-        expect(find.byKey(const ValueKey('navigation-action')), findsNothing);
+        // A ação principal é uma fatia da barra mesmo em 320 px: o Mapa não
+        // precisa de botão flutuante.
+        expect(find.byKey(const ValueKey('navigation-action')), findsOneWidget);
         expect(find.byType(FloatingActionButton), findsNothing);
-        await tester.ensureVisible(find.text('Analisar exercício com IA'));
-        await _settle(tester);
-        await tester.tap(find.text('Analisar exercício com IA'));
-        await _settle(tester);
-        expect(find.byType(FloatingActionButton), findsOneWidget);
         expect(tester.takeException(), isNull);
         // Voltar do sistema numa aba que não é o Início leva ao Início.
         await _voltar(tester);

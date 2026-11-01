@@ -42,15 +42,6 @@ class _ErrorMapTabState extends State<ErrorMapTab> {
     super.dispose();
   }
 
-  /// A navegação só esconde a ação principal na barra inferior de janelas
-  /// estreitas (menos de 360 px por unidade de fonte); nesse caso o Mapa
-  /// mantém o próprio botão de analisar, para a ação ficar a um toque em
-  /// toda largura.
-  static bool navigationShowsAnalysis(BuildContext context) {
-    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    return MediaQuery.sizeOf(context).width / scale >= 360;
-  }
-
   @override
   Widget build(BuildContext context) => Theme(
     data: AiMaterialShell._theme(context),
@@ -71,7 +62,9 @@ class _ErrorMapTabState extends State<ErrorMapTab> {
                   userId: widget.userId,
                   repository: widget.repository,
                   controller: widget.controller,
-                  showAnalysisButton: !navigationShowsAnalysis(context),
+                  // A ação principal está na barra e nos trilhos em toda
+                  // largura; o botão flutuante sairia repetido.
+                  showAnalysisButton: false,
                 ),
               ),
             ),
