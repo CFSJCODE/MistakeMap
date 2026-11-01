@@ -294,21 +294,26 @@ class GlassSegmented<T> extends StatelessWidget {
     tier: GlassTier.liquid,
     radius: 999,
     padding: const EdgeInsets.all(4),
-    child: Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: [
-        for (final segment in segments)
-          _Segment<T>(
-            key: segment.key,
-            label: segment.label,
-            icon: segment.icon,
-            selected: segment.value == selected,
-            accent: accent,
-            ink: ink,
-            onTap: () => onSelected(segment.value),
-          ),
-      ],
+    // Uma linha só, como no protótipo: em telas estreitas a cápsula rola
+    // de lado em vez de quebrar em duas linhas.
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 4,
+        children: [
+          for (final segment in segments)
+            _Segment<T>(
+              key: segment.key,
+              label: segment.label,
+              icon: segment.icon,
+              selected: segment.value == selected,
+              accent: accent,
+              ink: ink,
+              onTap: () => onSelected(segment.value),
+            ),
+        ],
+      ),
     ),
   );
 }
