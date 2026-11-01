@@ -53,6 +53,15 @@ abstract final class MistakeMapDesign {
 
   // ─── Papéis usados pelas telas ────────────────────────────────────────────
   static const accent = aqua; // preenchimento do botão principal
+
+  /// Ação principal: gradiente Aqua → Azure (artefatos Obsidian e Aurora).
+  /// [primaryGradientFor] parte da cor animada do botão, para hover e
+  /// pressão continuarem suaves.
+  static LinearGradient primaryGradientFor(Color start) => LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [start, Color.lerp(start, azure, .6)!],
+  );
   static const navy = abyss; // tinta mais escura e sombras
   static const primary = abyss; // títulos e item selecionado
   static const content = slate; // texto corrido

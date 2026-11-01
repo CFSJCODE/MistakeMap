@@ -226,6 +226,171 @@ class GlassIconTile extends StatelessWidget {
   );
 }
 
+/// Barra de progresso com o gradiente da tinta ao acento, sobre trilho claro.
+class GradientBar extends StatelessWidget {
+  const GradientBar({
+    super.key,
+    required this.value,
+    this.accent = MistakeMapDesign.violet,
+    this.ink = MistakeMapDesign.violetInk,
+    this.height = 8,
+    this.semanticsLabel,
+  });
+
+  /// Fração preenchida, de 0 a 1.
+  final double value;
+  final Color accent;
+  final Color ink;
+  final double height;
+  final String? semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = value.isNaN ? 0.0 : value.clamp(0.0, 1.0);
+    return Semantics(
+      label: semanticsLabel,
+      value: '${(fraction * 100).round()}%',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(height / 2),
+        child: Container(
+          height: height,
+          color: const Color(0x1411212D),
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: fraction,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [ink, accent]),
+                borderRadius: BorderRadius.circular(height / 2),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Controle segmentado em cápsula de vidro: o segmento atual é uma pílula
+/// branca com a borda do acento (artefatos Aurora e Obsidian).
+class GlassSegmented<T> extends StatelessWidget {
+  const GlassSegmented({
+    super.key,
+    required this.segments,
+    required this.selected,
+    required this.onSelected,
+    this.accent = MistakeMapDesign.violet,
+    this.ink = MistakeMapDesign.violetInk,
+  });
+
+  final List<({T value, Widget label, IconData? icon, Key? key})> segments;
+  final T selected;
+  final ValueChanged<T> onSelected;
+  final Color accent;
+  final Color ink;
+
+  @override
+  Widget build(BuildContext context) => GlassSurface(
+    tier: GlassTier.liquid,
+    radius: 999,
+    padding: const EdgeInsets.all(4),
+    child: Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: [
+        for (final segment in segments)
+          _Segment<T>(
+            key: segment.key,
+            label: segment.label,
+            icon: segment.icon,
+            selected: segment.value == selected,
+            accent: accent,
+            ink: ink,
+            onTap: () => onSelected(segment.value),
+          ),
+      ],
+    ),
+  );
+}
+
+class _Segment<T> extends StatelessWidget {
+  const _Segment({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.accent,
+    required this.ink,
+    required this.onTap,
+  });
+
+  final Widget label;
+  final IconData? icon;
+  final bool selected;
+  final Color accent;
+  final Color ink;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = selected
+        ? MistakeMapDesign.abyss
+        : MistakeMapDesign.steel;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          constraints: const BoxConstraints(minHeight: 40),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? MistakeMapDesign.white : const Color(0x00FFFFFF),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? accent.withValues(alpha: .55)
+                  : const Color(0x00FFFFFF),
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: MistakeMapDesign.deep.withValues(alpha: .18),
+                      blurRadius: 10,
+                      spreadRadius: -4,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 18, color: selected ? ink : textColor),
+                const SizedBox(width: 6),
+              ],
+              DefaultTextStyle.merge(
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                child: label,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Fundo Aurora (L0): canvas Pearl com quatro focos de luz fixos.
 class AuroraBackground extends StatelessWidget {
   const AuroraBackground({super.key, this.child});

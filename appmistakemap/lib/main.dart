@@ -548,6 +548,14 @@ class _Pilula extends StatelessWidget {
           if (icone != null) ...[
             Icon(icone, size: 12, color: frente),
             const SizedBox(width: 4),
+          ] else ...[
+            // Sempre rótulo e ponto: a cor nunca é o único sinal.
+            Container(
+              width: 6,
+              height: 6,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(color: frente, shape: BoxShape.circle),
+            ),
           ],
           Text(
             texto,

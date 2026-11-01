@@ -185,38 +185,41 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
                 _materialHeader(material, history),
                 const SizedBox(height: 12),
               ],
-              Wrap(
-                key: const Key('study-tabs'),
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final tab in _StudyTab.values)
-                    if (tab != _StudyTab.exercises ||
-                        widget.practiceBuilder != null)
-                      ChoiceChip(
-                        avatar: Icon(switch (tab) {
-                          _StudyTab.summary => Icons.article_outlined,
-                          _StudyTab.flashcards => Icons.style_outlined,
-                          _StudyTab.quiz => Icons.quiz_outlined,
-                          _StudyTab.exercises => Icons.edit_note_outlined,
-                        }, size: 18),
-                        showCheckmark: false,
-                        label: Text(switch (tab) {
-                          _StudyTab.summary => 'Resumo',
-                          _StudyTab.flashcards =>
-                            material == null
-                                ? 'Cartões'
-                                : 'Cartões (${material.flashcards.length})',
-                          _StudyTab.quiz =>
-                            material == null
-                                ? 'Quiz'
-                                : 'Quiz (${material.quiz.length})',
-                          _StudyTab.exercises => 'Exercícios',
-                        }),
-                        selected: _tab == tab,
-                        onSelected: (_) => setState(() => _tab = tab),
-                      ),
-                ],
+              // Seções do material em cápsula de vidro, como no protótipo.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GlassSegmented<_StudyTab>(
+                  key: const Key('study-tabs'),
+                  selected: _tab,
+                  onSelected: (tab) => setState(() => _tab = tab),
+                  segments: [
+                    for (final tab in _StudyTab.values)
+                      if (tab != _StudyTab.exercises ||
+                          widget.practiceBuilder != null)
+                        (
+                          value: tab,
+                          key: null,
+                          icon: switch (tab) {
+                            _StudyTab.summary => Icons.article_outlined,
+                            _StudyTab.flashcards => Icons.style_outlined,
+                            _StudyTab.quiz => Icons.quiz_outlined,
+                            _StudyTab.exercises => Icons.edit_note_outlined,
+                          },
+                          label: Text(switch (tab) {
+                            _StudyTab.summary => 'Resumo',
+                            _StudyTab.flashcards =>
+                              material == null
+                                  ? 'Cartões'
+                                  : 'Cartões (${material.flashcards.length})',
+                            _StudyTab.quiz =>
+                              material == null
+                                  ? 'Quiz'
+                                  : 'Quiz (${material.quiz.length})',
+                            _StudyTab.exercises => 'Exercícios',
+                          }),
+                        ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               if (_tab == _StudyTab.exercises)
@@ -518,35 +521,40 @@ class _FlashcardDeckState extends State<FlashcardDeck> {
           '${card.concept.isEmpty ? '' : ' · ${card.concept}'}',
           style: const TextStyle(color: MistakeMapDesign.steel),
         ),
-        LinearProgressIndicator(value: _index / _deck.length),
+        GradientBar(
+          value: _index / _deck.length,
+          semanticsLabel: 'Progresso do baralho',
+        ),
         Semantics(
           button: true,
           label: _flipped ? 'Resposta. Toque para ver a pergunta' : null,
           child: InkWell(
             key: const Key('flashcard-face'),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(18),
             onTap: () => setState(() => _flipped = !_flipped),
             child: AnimatedSwitcher(
               duration: MediaQuery.disableAnimationsOf(context)
                   ? Duration.zero
                   : const Duration(milliseconds: 220),
-              child: Container(
+              // Cartão em vidro líquido, como no protótipo; a resposta ganha
+              // o tom violeta da IA.
+              child: GlassSurface(
                 key: ValueKey(_flipped),
-                constraints: const BoxConstraints(minHeight: 160),
-                alignment: Alignment.center,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: _flipped ? MistakeMapDesign.well : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: MistakeMapDesign.mist),
-                ),
-                child: Text(
-                  _flipped ? card.back : card.front,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: _flipped ? 16 : 18,
-                    fontWeight: _flipped ? FontWeight.w400 : FontWeight.w600,
-                    color: mapTitleBlue,
+                tier: GlassTier.liquid,
+                radius: 18,
+                accent: _flipped ? MistakeMapDesign.violet : null,
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 160),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    _flipped ? card.back : card.front,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: _flipped ? 16 : 18,
+                      fontWeight: _flipped ? FontWeight.w400 : FontWeight.w600,
+                      color: mapTitleBlue,
+                    ),
                   ),
                 ),
               ),
@@ -677,16 +685,28 @@ class _QuizPanelState extends State<QuizPanel> {
           '${question.concept.isEmpty ? '' : ' · ${question.concept}'}',
           style: const TextStyle(color: MistakeMapDesign.steel),
         ),
-        LinearProgressIndicator(value: _index / _quiz.length),
+        GradientBar(
+          value: _index / _quiz.length,
+          semanticsLabel: 'Progresso do quiz',
+        ),
         Text(question.prompt, style: const TextStyle(fontSize: 16)),
+        // A opção escolhida acende no violeta da IA, com borda e tom.
         for (var option = 0; option < question.options.length; option++)
           Card(
             margin: EdgeInsets.zero,
-            color: chosen == option ? MistakeMapDesign.well : Colors.white,
+            color: chosen == option
+                ? Color.alphaBlend(
+                    MistakeMapDesign.violet.withValues(alpha: .14),
+                    Colors.white,
+                  )
+                : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
-                color: chosen == option ? mapTitleBlue : MistakeMapDesign.mist,
+                color: chosen == option
+                    ? MistakeMapDesign.violetInk
+                    : MistakeMapDesign.mist,
+                width: chosen == option ? 2 : 1,
               ),
             ),
             child: ListTile(
@@ -696,7 +716,9 @@ class _QuizPanelState extends State<QuizPanel> {
                 chosen == option
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
-                color: mapTitleBlue,
+                color: chosen == option
+                    ? MistakeMapDesign.violetInk
+                    : MistakeMapDesign.steel,
               ),
               title: Text(question.options[option]),
               onTap: _grading

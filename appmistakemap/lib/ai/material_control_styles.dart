@@ -160,7 +160,13 @@ class _MaterialHoverSurface extends StatelessWidget {
           pressed: states.contains(WidgetState.pressed) && !disabled,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: fill,
+              // A ação principal leva o gradiente Aqua → Azure, como no Fluent.
+              color: background == MistakeMapDesign.accent && !disabled
+                  ? null
+                  : fill,
+              gradient: background == MistakeMapDesign.accent && !disabled
+                  ? MistakeMapDesign.primaryGradientFor(fill)
+                  : null,
               borderRadius: BorderRadius.circular(radius),
               border: Border.fromBorderSide(outline),
             ),
