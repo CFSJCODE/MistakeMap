@@ -127,13 +127,10 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      if (width < 600) {
-        // Fatia própria da barra do celular.
-        await tester.tap(find.byKey(const ValueKey('navigation-study')));
-      } else {
-        await abrirMais();
-        await tester.tap(find.text('Estudar com a IA'));
-      }
+      // Obsidian Glass: Estudar está sempre no flyout do Mais, em qualquer
+      // largura de celular ou tablet (barra sempre com 5 fatias fixas).
+      await abrirMais();
+      await tester.tap(find.text('Estudar com a IA'));
       await tester.pumpAndSettle();
       expect(study, 1);
       await abrirMais();

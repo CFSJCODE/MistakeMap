@@ -727,8 +727,6 @@ class AppNavigationShell extends StatelessWidget {
     final slots = [
       for (final slot in _barSlots)
         if (!(slot == _actionSlot && onAnalysis == null) &&
-            !(slot == _studySlot && onStudy == null) &&
-            !(slot == _aboutSlot && onAbout == null) &&
             !(slot == _moreSlot && moreEmpty))
           slot,
     ];
@@ -750,6 +748,7 @@ class AppNavigationShell extends StatelessWidget {
             final n = slots.length;
             final width = (box.maxWidth - gap * (n - 1)) / n;
             return Stack(
+              clipBehavior: Clip.hardEdge,
               children: [
                 // A pílula da aba atual: mesma geometria dos botões, desliza
                 // e troca de cor com o acento do destino.
