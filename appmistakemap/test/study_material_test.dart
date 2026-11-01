@@ -22,7 +22,9 @@ StudyMaterial _material({String id = 'm1'}) => StudyMaterial.fromJson({
   'quiz': [
     {
       'id': 'q1',
-      'prompt': 'Raiz de f(x) = 2x - 6?',
+      'prompt': id == 'nova-rodada'
+          ? 'Raiz de f(x) = 3x - 9?'
+          : 'Raiz de f(x) = 2x - 6?',
       'options': ['2', '3', '-3', '6'],
       'concept': 'Raiz',
     },
@@ -44,6 +46,13 @@ class _FakeStudyRepository implements StudyMaterialRepository {
   final List<StudyMaterial> existing;
   Map<String, int>? graded;
   int generated = 0;
+  StudyMaterial? previousQuiz;
+
+  @override
+  Future<StudyMaterial> regenerateQuiz(StudyMaterial previous) async {
+    previousQuiz = previous;
+    return _material(id: 'nova-rodada');
+  }
 
   _FakeStudyRepository({this.existing = const []});
 
@@ -237,7 +246,8 @@ void main() {
 
       await tester.tap(find.byKey(const Key('quiz-restart')));
       await tester.pumpAndSettle();
-      expect(find.text('Raiz de f(x) = 2x - 6?'), findsOneWidget);
+      expect(repo.previousQuiz?.subjectId, 's1');
+      expect(find.text('Raiz de f(x) = 3x - 9?'), findsOneWidget);
     });
 
     testWidgets('aba Exercícios abre a rodada na matéria escolhida', (

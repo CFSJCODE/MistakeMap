@@ -1137,12 +1137,18 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     super.initState();
     _sincronizador.alteracoes.addListener(_recarregarAbas);
     _sincronizador.aviso.addListener(_mostrarAviso);
+    _mapaControle.studyOpen.addListener(_atualizarEstudo);
+  }
+
+  void _atualizarEstudo() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _sincronizador.alteracoes.removeListener(_recarregarAbas);
     _sincronizador.aviso.removeListener(_mostrarAviso);
+    _mapaControle.studyOpen.removeListener(_atualizarEstudo);
     _sincronizador.parar();
     super.dispose();
   }
@@ -1251,6 +1257,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   Widget build(BuildContext context) {
     return AppNavigationShell(
       selectedIndex: _indiceAtual,
+      studySelected: _indiceAtual == _mapa && _mapaControle.studyOpen.value,
       onSelected: _selecionar,
       hasAdmin: widget.user.isAdmin,
       onStudy: () => _irAoMapa(ErrorMapRequest.study),
@@ -3708,6 +3715,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   List<Exercicio> _exercicios = [];
   Exercicio? _selecionado;
   bool _carregando = true;
+  bool _falhaAoCarregar = false;
 
   @override
   void initState() {
@@ -3750,6 +3758,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
       if (mounted) {
         setState(() {
           _exercicios = lista;
+          _falhaAoCarregar = false;
           if (_selecionado != null) {
             _selecionado = lista
                 .where((e) => e.id == _selecionado!.id)
@@ -3759,7 +3768,12 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _carregando = false);
+      if (mounted) {
+        setState(() {
+          _carregando = false;
+          _falhaAoCarregar = true;
+        });
+      }
     }
   }
 
@@ -3861,10 +3875,39 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         child: const Center(child: ProgressRing()),
       );
     }
+    if (_exercicios.isEmpty && _falhaAoCarregar) {
+      return Padding(
+        padding: _paddingCorpo(context, horizontal: 32),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Não foi possível carregar seus exercícios. Verifique a conexão e tente novamente.',
+                textAlign: TextAlign.center,
+                style: context.tipo.body?.copyWith(color: contentBlue),
+              ),
+              const SizedBox(height: 16),
+              Button(
+                onPressed: carregarExercicios,
+                child: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     if (_exercicios.isEmpty) return const _MapaVazio();
     return _ListaAtualizavel(
       onRefresh: carregarExercicios,
       children: [
+        if (_falhaAoCarregar)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 16),
+            child: Text(
+              'Não foi possível atualizar. Exibindo os exercícios já carregados.',
+            ),
+          ),
         for (final ex in _exercicios)
           _ExercicioCard(
             exercicio: ex,
@@ -5026,7 +5069,6 @@ class TelaSobre extends StatelessWidget {
                     _Pilula(texto: 'PostgreSQL', cor: contentBlue),
                     _Pilula(texto: 'Cloudflare R2', cor: contentBlue),
                     _Pilula(texto: 'Edge Functions', cor: contentBlue),
-                    _Pilula(texto: 'Rust Worker', cor: contentBlue),
                     _Pilula(texto: 'OCR', cor: contentBlue),
                     _Pilula(texto: 'LLM', cor: contentBlue),
                   ],

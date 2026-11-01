@@ -2,12 +2,28 @@ import { strict as assert } from "node:assert";
 import { PublicError } from "../_shared/ai_contract.ts";
 import {
   gradeQuiz,
+  hasRepeatedQuestions,
   quizAnswers,
   splitQuiz,
   studyAction,
   validateStudy,
 } from "../_shared/study_contract.ts";
 import { handler as studyHandler } from "../study-material/handler.ts";
+
+Deno.test("nova rodada rejeita perguntas repetidas com diferenças de caixa ou espaço", () => {
+  assert.equal(
+    hasRepeatedQuestions([{ prompt: "  Qual   é a raiz? " }], [
+      "qual é a raiz?",
+    ]),
+    true,
+  );
+  assert.equal(
+    hasRepeatedQuestions([{ prompt: "Qual é o coeficiente?" }], [
+      "qual é a raiz?",
+    ]),
+    false,
+  );
+});
 
 const question = (n: number) => ({
   prompt: `Questão ${n}?`,
