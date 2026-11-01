@@ -116,8 +116,35 @@ class AiMaterialShell extends StatefulWidget {
         linearTrackColor: MistakeMapDesign.disabledFill,
         circularTrackColor: MistakeMapDesign.disabledFill,
       ),
+      // Cartões em acrílico: branco quase opaco, borda clara e sombra suave.
+      cardTheme: CardThemeData(
+        color: const Color(0xEBFFFFFF),
+        surfaceTintColor: Colors.transparent,
+        shadowColor: MistakeMapDesign.deep.withValues(alpha: .22),
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MistakeMapDesign.cardRadius),
+          side: const BorderSide(color: Color(0xE6FFFFFF)),
+        ),
+      ),
+      // Abas de seção em cápsula: a selecionada acende no acento da IA.
+      chipTheme: ChipThemeData(
+        backgroundColor: const Color(0xD9FFFFFF),
+        selectedColor: Color.alphaBlend(
+          MistakeMapDesign.violet.withValues(alpha: .22),
+          MistakeMapDesign.white,
+        ),
+        side: const BorderSide(color: MistakeMapDesign.border),
+        shape: const StadiumBorder(),
+        labelStyle: const TextStyle(
+          color: MistakeMapDesign.deep,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: const IconThemeData(color: MistakeMapDesign.violetInk),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: MistakeMapDesign.background,
+        backgroundColor: Colors.transparent,
         foregroundColor: MistakeMapDesign.strong,
         surfaceTintColor: Colors.transparent,
         elevation: 0,

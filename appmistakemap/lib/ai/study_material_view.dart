@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../theme/design_tokens.dart';
+import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
 import 'analysis_repository.dart' show friendlyFailure;
 import 'exercise_submission_view.dart';
+import 'material_control_styles.dart';
 import 'study_material.dart';
 
 /// Ponto único de estudo da matéria: resumo, cartões e quiz gerados pela IA a
@@ -102,13 +104,11 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
   Widget build(BuildContext context) {
     final material = _open;
     final history = _subjectMaterials;
-    return Scaffold(
+    return AuroraScaffold(
       appBar: AppBar(
         title: const Text('Estudar com a IA'),
-        backgroundColor: mapSurface,
         foregroundColor: mapTitleBlue,
       ),
-      backgroundColor: mapBackground,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(24),
@@ -340,14 +340,19 @@ class _StudyEmptyState extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Card(
-    color: mapSurface,
+  Widget build(BuildContext context) => GlassSurface(
+    accent: MistakeMapDesign.violet,
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       child: Column(
         spacing: 12,
         children: [
-          Icon(icon, size: 40, color: mapTitleBlue),
+          GlassIconTile(
+            icon: icon,
+            ink: MistakeMapDesign.violetInk,
+            accent: MistakeMapDesign.violet,
+            size: 56,
+          ),
           Text(
             title,
             textAlign: TextAlign.center,
@@ -364,9 +369,10 @@ class _StudyEmptyState extends StatelessWidget {
   );
 }
 
-Widget _panel({required List<Widget> children, Key? key}) => Card(
+// Painel de acrílico com o tom violeta da IA; o mesmo vidro do Fluent.
+Widget _panel({required List<Widget> children, Key? key}) => GlassSurface(
   key: key,
-  color: mapSurface,
+  accent: MistakeMapDesign.violet,
   child: Padding(
     padding: const EdgeInsets.all(16),
     child: Column(
@@ -530,7 +536,7 @@ class _FlashcardDeckState extends State<FlashcardDeck> {
                 alignment: Alignment.center,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: _flipped ? mapBackground : Colors.white,
+                  color: _flipped ? MistakeMapDesign.well : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: MistakeMapDesign.mist),
                 ),
@@ -676,7 +682,7 @@ class _QuizPanelState extends State<QuizPanel> {
         for (var option = 0; option < question.options.length; option++)
           Card(
             margin: EdgeInsets.zero,
-            color: chosen == option ? mapBackground : Colors.white,
+            color: chosen == option ? MistakeMapDesign.well : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(

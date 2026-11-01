@@ -69,11 +69,74 @@ abstract final class MistakeMapDesign {
     colors: [aquaInk, azureInk, violetInk],
   );
 
+  // ─── Aurora Glass: hierarquia Fluent + vidro líquido ─────────────────────
+  // L0 Mica: o fundo Aurora fixo. L1 Acrílico: cartões e painéis, quase
+  // opacos para o texto. L2 Vidro líquido: só o que flutua (navegação, barras).
+
   /// Vidro branco fosco: topo mais opaco, base deixando o fundo aparecer.
   static const glass = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [Color(0xEBFFFFFF), Color(0xC7F7F9FA)],
+  );
+
+  /// L1 Acrílico: branco 90→76%, legível sobre qualquer ponto do fundo.
+  static const acrylic = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xE6FFFFFF), Color(0xC2F8FAFB)],
+  );
+
+  /// L2 Vidro líquido: mais transparente, com desfoque e saturação altos.
+  static const liquid = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xB8FFFFFF), Color(0x75FFFFFF)],
+  );
+
+  /// Borda especular: a luz pega o topo e a base fica um tom mais escura.
+  static const rim = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xF2FFFFFF), Color(0x40FFFFFF), Color(0x2411212D)],
+    stops: [0, .45, 1],
+  );
+
+  static const acrylicBlur = 20.0;
+  static const liquidBlur = 28.0;
+  static const cardRadius = 20.0;
+
+  /// Sombra do acrílico e a mais funda do vidro que flutua.
+  static const acrylicShadow = [
+    BoxShadow(
+      color: Color(0x3811212D),
+      blurRadius: 24,
+      spreadRadius: -10,
+      offset: Offset(0, 8),
+    ),
+  ];
+  static const liquidShadow = [
+    BoxShadow(
+      color: Color(0x4D11212D),
+      blurRadius: 40,
+      spreadRadius: -14,
+      offset: Offset(0, 18),
+    ),
+  ];
+
+  /// Tom do acento no canto superior esquerdo de um cartão da seção.
+  static RadialGradient tint(Color accent) => RadialGradient(
+    center: Alignment.topLeft,
+    radius: 1.2,
+    colors: [accent.withValues(alpha: .30), accent.withValues(alpha: 0)],
+    stops: const [0, .65],
+  );
+
+  /// Bloco de ícone preenchido: da tinta ao acento vivo, com glifo branco.
+  static LinearGradient iconTile(Color ink, Color accent) => LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [ink, Color.lerp(accent, ink, .2)!],
   );
 
   /// Preenchimento de hover e pressão para um controle com este repouso.

@@ -251,10 +251,9 @@ class _ErrorMapViewState extends State<ErrorMapView> {
           (_days == 0 || !a.attemptedAt.isBefore(cutoff)),
     );
     final insights = ErrorInsights.fromAttempts(filtered);
-    return Scaffold(
+    return AuroraScaffold(
       appBar: AppBar(
         title: const Text('Mapa de erros'),
-        backgroundColor: mapSurface,
         foregroundColor: mapTitleBlue,
         leading: widget.onClose != null
             ? IconButton(
@@ -271,7 +270,6 @@ class _ErrorMapViewState extends State<ErrorMapView> {
           ),
         ],
       ),
-      backgroundColor: mapBackground,
       floatingActionButton: _analysisOpen
           ? null
           : FloatingActionButton.extended(
@@ -597,11 +595,16 @@ class FrequencyBars extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      LinearProgressIndicator(
-                        value: value.count / highest,
-                        minHeight: 12,
-                        backgroundColor: mapSurface,
-                        color: mapContentBlue,
+                      // Barra no violeta da IA: a frequência é uma leitura
+                      // do Mapa, e o rótulo ao lado já traz o número.
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: value.count / highest,
+                          minHeight: 12,
+                          backgroundColor: const Color(0xB3FFFFFF),
+                          color: MistakeMapDesign.violet,
+                        ),
                       ),
                     ],
                   ),
@@ -900,10 +903,9 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
   Widget build(BuildContext context) {
     final attempt = _attempt;
     final analysis = attempt?.analysis;
-    return Scaffold(
+    return AuroraScaffold(
       appBar: AppBar(
         title: const Text('Correção e evidências'),
-        backgroundColor: mapSurface,
         foregroundColor: mapTitleBlue,
         actions: [
           IconButton(
@@ -913,7 +915,6 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
           ),
         ],
       ),
-      backgroundColor: mapBackground,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(24),
@@ -1351,13 +1352,11 @@ class _PracticeViewState extends State<PracticeView> {
   Widget build(BuildContext context) {
     final controlsDisabled = _busy || _roundBusy || _roundActive;
 
-    return Scaffold(
+    return AuroraScaffold(
       appBar: AppBar(
         title: const Text('Praticar meus erros'),
-        backgroundColor: mapSurface,
         foregroundColor: mapTitleBlue,
       ),
-      backgroundColor: mapBackground,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(24),

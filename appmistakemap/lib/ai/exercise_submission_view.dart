@@ -253,14 +253,13 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
   Widget build(BuildContext context) {
     final form = _buildForm(context);
     if (widget.embedded) return form;
-    return Scaffold(
+    return AuroraScaffold(
       appBar: AppBar(
         title: Text(
           widget.practice == null
               ? 'Adicionar exercício'
               : 'Resolver exercício',
         ),
-        backgroundColor: mapSurface,
         foregroundColor: mapTitleBlue,
         leading: widget.onClose != null
             ? IconButton(
@@ -270,7 +269,6 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
               )
             : null,
       ),
-      backgroundColor: mapBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
