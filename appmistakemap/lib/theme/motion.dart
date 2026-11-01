@@ -8,6 +8,31 @@ abstract final class MistakeMapMotion {
   static const back = Duration(milliseconds: 180);
   static const curve = Curves.easeOutCubic;
   static const hoverCurve = Curves.easeInOutCubic;
+
+  /// Retorno físico do toque, igual em todo o app: o controle afunda para
+  /// [pressScale] em [press] e volta ao soltar. Só no toque, nunca no hover.
+  static const press = Duration(milliseconds: 120);
+  static const pressScale = .97;
+}
+
+/// Afunda o filho enquanto [pressed] for verdadeiro, respeitando a
+/// preferência de movimento reduzido. Envolve o conteúdo de todos os botões
+/// Fluent e Material do app, para o toque ser o mesmo em qualquer tela.
+class PressScale extends StatelessWidget {
+  const PressScale({super.key, required this.pressed, required this.child});
+
+  final bool pressed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => AnimatedScale(
+    scale: pressed ? MistakeMapMotion.pressScale : 1,
+    duration: MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : MistakeMapMotion.press,
+    curve: MistakeMapMotion.hoverCurve,
+    child: child,
+  );
 }
 
 /// Visits each destination once, retaining drafts and scroll on later visits.

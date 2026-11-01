@@ -482,6 +482,7 @@ class _CartaoFluent extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.acento,
+    this.cor = kGlassBg,
     this.onPressed,
   });
 
@@ -490,6 +491,9 @@ class _CartaoFluent extends StatelessWidget {
 
   /// Acento da seção que tinge o canto do vidro.
   final Color? acento;
+
+  /// Preenchimento opaco do cartão clicável (um tom do estado, por exemplo).
+  final Color cor;
   final VoidCallback? onPressed;
 
   @override
@@ -505,7 +509,7 @@ class _CartaoFluent extends StatelessWidget {
       style: MistakeMapControls.button(
         radius: kRadius,
         padding: padding,
-        background: kGlassBg,
+        background: cor,
       ),
       child: child,
     );
@@ -1229,6 +1233,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       hasAdmin: widget.user.isAdmin,
       onErrorMap: _abrirIa,
       onStudy: () => _abrirIa(estudar: true),
+      onAnalysis: () => _abrirIa(analisar: true),
       onSignOut: _sair,
       onAbout: _abrirSobre,
       child: PopScope(
@@ -2366,39 +2371,6 @@ class _ResumoCard extends StatelessWidget {
   }
 }
 
-/// Retorno físico do toque: o vidro afunda para 97% em 120 ms e volta.
-class _EscalaAoTocar extends StatefulWidget {
-  const _EscalaAoTocar({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_EscalaAoTocar> createState() => _EscalaAoTocarState();
-}
-
-class _EscalaAoTocarState extends State<_EscalaAoTocar> {
-  bool _pressionado = false;
-
-  void _marcar(bool valor) {
-    if (_pressionado != valor) setState(() => _pressionado = valor);
-  }
-
-  @override
-  Widget build(BuildContext context) => Listener(
-    onPointerDown: (_) => _marcar(true),
-    onPointerUp: (_) => _marcar(false),
-    onPointerCancel: (_) => _marcar(false),
-    child: AnimatedScale(
-      scale: _pressionado ? .97 : 1,
-      duration: MediaQuery.disableAnimationsOf(context)
-          ? Duration.zero
-          : const Duration(milliseconds: 120),
-      curve: MistakeMapMotion.hoverCurve,
-      child: widget.child,
-    ),
-  );
-}
-
 /// Um passo do ciclo de estudo no Início: o cartão inteiro é o botão.
 class _PassoCard extends StatelessWidget {
   const _PassoCard({
@@ -2428,7 +2400,9 @@ class _PassoCard extends StatelessWidget {
     final fundo = indicado
         ? Color.alphaBlend(acento.withValues(alpha: .16), Cores.branco)
         : kGlassBg;
-    return _EscalaAoTocar(
+    // O afundar ao toque vem do MistakeMapButton, igual em todo o app.
+    return Semantics(
+      label: 'Passo $numero: $titulo',
       child: SizedBox(
         width: double.infinity,
         child: MistakeMapButton(
@@ -3962,10 +3936,11 @@ class _MapaVazio extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              WindowsIcons.relationship,
+            const GlassIconTile(
+              icon: WindowsIcons.bulleted_list,
+              ink: MistakeMapDesign.azureInk,
+              accent: MistakeMapDesign.azure,
               size: 72,
-              color: contentBlue.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 24),
             Text(
@@ -4009,59 +3984,64 @@ class _ExercicioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final estado = _EstadoTentativa.de(exercicio.status);
+    final inicial = exercicio.subjectName.trim().isEmpty
+        ? '?'
+        : exercicio.subjectName.trim()[0].toUpperCase();
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
+      // Mesma anatomia dos passos do Início: bloco da matéria, rótulo pequeno
+      // com matéria e data, enunciado como título e o estado em cor com
+      // função. O fundo leva um tom do estado, para a lista se ler em um
+      // relance; o cartão inteiro é o botão e afunda ao toque.
       child: _CartaoFluent(
         onPressed: onTap,
-        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-        // O botão centraliza o conteúdo; o texto do card segue alinhado à
-        // esquerda, como a data.
+        cor: Color.alphaBlend(
+          estado.acento.withValues(alpha: estado.pedeAcao ? .12 : .05),
+          kGlassBg,
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
         child: Builder(
           builder: (context) => DefaultTextStyle.merge(
             textAlign: TextAlign.start,
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _InicialMateria(inicial: inicial),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              exercicio.subjectName,
-                              style: context.tipo.bodyStrong?.copyWith(
-                                color: DefaultTextStyle.of(context).style.color,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _StatusBadge(status: exercicio.status),
-                        ],
+                      Text(
+                        exercicio.createdAt == null
+                            ? exercicio.subjectName.toUpperCase()
+                            : '${exercicio.subjectName.toUpperCase()} · '
+                                  '${_fmtData(exercicio.createdAt!)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.tipo.caption?.copyWith(
+                          color: MistakeMapDesign.azureInk,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
                         exercicio.promptText,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: context.tipo.body?.copyWith(
-                          color: DefaultTextStyle.of(context).style.color,
+                        style: context.tipo.bodyStrong?.copyWith(
+                          color: MistakeMapDesign.abyss,
+                          height: 1.3,
                         ),
                       ),
-                      if (exercicio.createdAt != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          _fmtData(exercicio.createdAt!),
-                          style: context.tipo.caption?.copyWith(
-                            color: DefaultTextStyle.of(context).style.color,
-                          ),
-                        ),
-                      ],
+                      const SizedBox(height: 8),
+                      _StatusBadge(status: exercicio.status),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 _menu(),
               ],
             ),
@@ -4107,52 +4087,150 @@ class _ExercicioCard extends StatelessWidget {
   }
 }
 
+/// Bloco com a inicial da matéria, no acento azure da Lista.
+class _InicialMateria extends StatelessWidget {
+  const _InicialMateria({required this.inicial});
+
+  final String inicial;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: MistakeMapDesign.iconTile(
+          MistakeMapDesign.azureInk,
+          MistakeMapDesign.azure,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0x40FFFFFF)),
+        boxShadow: [
+          BoxShadow(
+            color: MistakeMapDesign.azureInk.withValues(alpha: .35),
+            blurRadius: 14,
+            spreadRadius: -6,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Text(
+        inicial,
+        style: const TextStyle(
+          color: MistakeMapDesign.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+  );
+}
+
+/// Cor com função para cada status: menta é resolvido, âmbar pede ação do
+/// estudante, violeta é a IA trabalhando, azure é transporte e coral é erro.
+class _EstadoTentativa {
+  const _EstadoTentativa(
+    this.label,
+    this.acento,
+    this.tinta,
+    this.icone, {
+    this.pedeAcao = false,
+  });
+
+  final String label;
+  final Color acento;
+  final Color tinta;
+  final IconData icone;
+
+  /// O estudante precisa fazer algo: o cartão ganha um tom mais forte.
+  final bool pedeAcao;
+
+  static _EstadoTentativa de(String status) => switch (status) {
+    'completed' => const _EstadoTentativa(
+      'Concluído',
+      MistakeMapDesign.mint,
+      MistakeMapDesign.mintInk,
+      WindowsIcons.completed,
+    ),
+    'pending' => const _EstadoTentativa(
+      'Pendente',
+      MistakeMapDesign.amber,
+      MistakeMapDesign.amberInk,
+      WindowsIcons.history,
+      pedeAcao: true,
+    ),
+    'uploading' => const _EstadoTentativa(
+      'Enviando',
+      MistakeMapDesign.azure,
+      MistakeMapDesign.azureInk,
+      WindowsIcons.upload,
+    ),
+    // Estados do pipeline de IA (attempts_status_check).
+    'queued' || 'processing' => const _EstadoTentativa(
+      'Analisando',
+      MistakeMapDesign.violet,
+      MistakeMapDesign.violetInk,
+      WindowsIcons.lightbulb,
+    ),
+    'awaiting_review' => const _EstadoTentativa(
+      'Revisar',
+      MistakeMapDesign.amber,
+      MistakeMapDesign.amberInk,
+      WindowsIcons.view,
+      pedeAcao: true,
+    ),
+    'retryable_failed' => const _EstadoTentativa(
+      'Nova tentativa',
+      MistakeMapDesign.amber,
+      MistakeMapDesign.amberInk,
+      WindowsIcons.refresh,
+      pedeAcao: true,
+    ),
+    'dead_letter' || 'error' => const _EstadoTentativa(
+      'Erro',
+      MistakeMapDesign.coral,
+      MistakeMapDesign.coralInk,
+      WindowsIcons.error_badge,
+      pedeAcao: true,
+    ),
+    'cancelled' => const _EstadoTentativa(
+      'Cancelado',
+      MistakeMapDesign.mist,
+      MistakeMapDesign.steel,
+      WindowsIcons.cancel,
+    ),
+    // Só no aparelho (fila offline), ainda sem resposta do servidor.
+    statusOffline => const _EstadoTentativa(
+      'Aguardando conexão',
+      MistakeMapDesign.azure,
+      MistakeMapDesign.azureInk,
+      WindowsIcons.cloud_not_synced,
+    ),
+    statusRecusado => const _EstadoTentativa(
+      'Não enviado',
+      MistakeMapDesign.coral,
+      MistakeMapDesign.coralInk,
+      WindowsIcons.error_badge,
+      pedeAcao: true,
+    ),
+    _ => const _EstadoTentativa(
+      'Sem tentativa',
+      MistakeMapDesign.mist,
+      MistakeMapDesign.steel,
+      WindowsIcons.unknown,
+    ),
+  };
+}
+
 class _StatusBadge extends StatelessWidget {
   final String status;
   const _StatusBadge({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final Color cor;
-    final String label;
-    switch (status) {
-      case 'completed':
-        label = 'Concluído';
-        cor = Cores.verde600;
-      case 'pending':
-        label = 'Pendente';
-        cor = Cores.laranja700;
-      case 'uploading':
-        label = 'Enviando';
-        cor = Cores.azul600;
-      // Estados do pipeline de IA (attempts_status_check).
-      case 'queued' || 'processing':
-        label = 'Analisando';
-        cor = Cores.azul600;
-      case 'awaiting_review':
-        label = 'Revisar';
-        cor = Cores.laranja700;
-      case 'retryable_failed':
-        label = 'Nova tentativa';
-        cor = Cores.laranja700;
-      case 'dead_letter' || 'error':
-        label = 'Erro';
-        cor = Cores.vermelho600;
-      case 'cancelled':
-        label = 'Cancelado';
-        cor = Cores.cinza;
-      // Só no aparelho (fila offline), ainda sem resposta do servidor.
-      case statusOffline:
-        label = 'Aguardando conexão';
-        cor = Cores.azul600;
-      case statusRecusado:
-        label = 'Não enviado';
-        cor = Cores.vermelho600;
-      default:
-        label = 'Sem tentativa';
-        cor = Cores.cinza;
-    }
-    return _Pilula(texto: label, cor: cor);
+    final estado = _EstadoTentativa.de(status);
+    return _Pilula(texto: estado.label, cor: estado.tinta, icone: estado.icone);
   }
 }
 

@@ -6,6 +6,7 @@
     "appmistakemap/test/**",
     "supabase/functions/**",
     "scripts/**",
-    "appmistakemap/database/**"
+    "appmistakemap/database/**",
+    "appmistakemap/android/app/src/main/AndroidManifest.xml"
   ]
 }
