@@ -54,30 +54,23 @@ void main() {
           greaterThanOrEqualTo(44),
         );
       }
-      final effective = scenario.$1 / scenario.$2;
-      // Na barra do celular (360 a 600 px efetivos), Sobre é uma fatia
-      // própria; abaixo de 360 px e nos trilhos ele mora no Mais.
-      final aboutInBar = effective >= 360 && effective < 600;
+      // Design Obsidian Glass: barra sempre com 5 fatias; Sobre mora sempre
+      // no flyout do Mais (celular) ou diretamente no trilho (desktop).
       if (scenario.$1 < 840) {
         await tester.tap(find.byKey(const ValueKey('navigation-more')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Admin'));
         await tester.pumpAndSettle();
         expect(selected, 4);
-        if (!aboutInBar) {
-          await tester.tap(find.byKey(const ValueKey('navigation-more')));
-          await tester.pumpAndSettle();
-        }
+        // Sobre está no flyout; reabrir o Mais para acessá-lo.
+        await tester.tap(find.byKey(const ValueKey('navigation-more')));
+        await tester.pumpAndSettle();
       } else {
         await tester.tap(find.byKey(const ValueKey('navigation-4')));
         await tester.pumpAndSettle();
         expect(selected, 4);
       }
-      if (aboutInBar) {
-        await tester.tap(find.byKey(const ValueKey('navigation-about')));
-      } else {
-        await tester.tap(find.text('Sobre o App'));
-      }
+      await tester.tap(find.text('Sobre o App'));
       await tester.pumpAndSettle();
       expect(about, 1);
       expect(tester.takeException(), isNull);

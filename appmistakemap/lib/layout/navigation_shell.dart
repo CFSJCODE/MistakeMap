@@ -361,9 +361,10 @@ class AppNavigationShell extends StatelessWidget {
     ),
   );
 
-  /// Menu Mais. Na barra do celular ([full] falso) Estudar e Sobre já são
-  /// fatias da barra, então o menu fica só com Admin e Sair.
-  Widget _more(BuildContext context, {bool full = true}) => Semantics(
+  /// Menu Mais: Admin, Estudar (se disponível), Sobre o App, Sair (se
+  /// disponível). Na barra de cinco fatias do design Obsidian Glass, Estudar e
+  /// Sobre moram sempre neste flyout, não na barra.
+  Widget _more(BuildContext context) => Semantics(
     selected: selectedIndex == 4,
     child: DropDownButton(
       title: const Text('Mais'),
@@ -424,20 +425,19 @@ class AppNavigationShell extends StatelessWidget {
             selected: selectedIndex == 4,
             action: () => onSelected(4),
           ),
-        if (full && onStudy != null)
+        if (onStudy != null)
           _flyoutItem(
             context,
             icon: WindowsIcons.education,
             label: 'Estudar com a IA',
             action: onStudy!,
           ),
-        if (full)
-          _flyoutItem(
-            context,
-            icon: WindowsIcons.info,
-            label: 'Sobre o App',
-            action: onAbout,
-          ),
+        _flyoutItem(
+          context,
+          icon: WindowsIcons.info,
+          label: 'Sobre o App',
+          action: onAbout,
+        ),
         if (onSignOut != null)
           _flyoutItem(
             context,
@@ -691,7 +691,7 @@ class AppNavigationShell extends StatelessWidget {
                 container: true,
                 explicitChildNodes: true,
                 label: 'Navegação principal',
-                child: _bottomBar(context, wide: width >= 360),
+                child: _bottomBar(context),
               ),
           ],
         ),
@@ -704,33 +704,31 @@ class AppNavigationShell extends StatelessWidget {
   static const _compactFont = 11.0;
   static const _compactGap = 6.0;
 
-  /// Ordem dos botões na barra inferior, na ordem do ciclo de estudo;
-  /// Estudar vem logo depois do Mapa, de onde nasce. Analisar não tem fatia:
-  /// o Mapa já traz o painel de análise (pedido do Cláudio); nos trilhos a
-  /// ação continua com botão próprio. Cada entrada é um índice de destino
-  /// ou um dos atalhos negativos.
+  /// Ordem dos botões na barra inferior — cinco fatias fixas em qualquer
+  /// largura de celular: Início · Lista · Mapa · Caderno · Mais. Estudar e
+  /// Sobre ficam no flyout do Mais (design Obsidian Glass). Analisar não tem
+  /// fatia: o Mapa já traz o painel de análise. Cada entrada é um índice de
+  /// destino ou um dos atalhos negativos.
   static const _actionSlot = -1;
   static const _moreSlot = -2;
   static const _studySlot = -3;
   static const _aboutSlot = -4;
-  static const _barSlots = [0, 1, 2, _studySlot, 3, _aboutSlot, _moreSlot];
-
-  /// Abaixo de 360 px por unidade de fonte não há largura para sete fatias:
-  /// Estudar e Sobre voltam para o Mais.
-  static const _narrowBarSlots = [0, 1, 2, 3, _moreSlot];
+  static const _barSlots = [0, 1, 2, 3, _moreSlot];
 
   /// Barra inferior de ponta a ponta, no modelo do NavigationBar do
   /// Material 3 com o vidro do app: fatias iguais para todos os botões, a
   /// pílula que desliza entre os destinos e se acomoda no atual, brilho que
   /// segue o dedo e a área de gestos coberta pelo próprio vidro.
-  Widget _bottomBar(BuildContext context, {required bool wide}) {
-    // Um atalho sem ação não vira botão apagado: a fatia some. O Mais só
-    // existe se tiver o que listar (na barra larga, Admin e Sair).
-    final moreEmpty = wide && !hasAdmin && onSignOut == null;
+  Widget _bottomBar(BuildContext context) {
+    // O Mais aparece quando há pelo menos um item no flyout
+    // (Estudar, Sobre, Admin ou Sair).
+    final moreEmpty =
+        onStudy == null && onAbout == null && !hasAdmin && onSignOut == null;
     final slots = [
-      for (final slot in wide ? _barSlots : _narrowBarSlots)
+      for (final slot in _barSlots)
         if (!(slot == _actionSlot && onAnalysis == null) &&
             !(slot == _studySlot && onStudy == null) &&
+            !(slot == _aboutSlot && onAbout == null) &&
             !(slot == _moreSlot && moreEmpty))
           slot,
     ];
@@ -805,7 +803,7 @@ class AppNavigationShell extends StatelessWidget {
                             ink: MistakeMapDesign.steel,
                             onPressed: onAbout,
                           ),
-                          _moreSlot => _more(context, full: !wide),
+                          _moreSlot => _more(context),
                           _ => _destination(context, slot, compact: true),
                         },
                       ),
