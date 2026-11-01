@@ -704,28 +704,20 @@ class AppNavigationShell extends StatelessWidget {
   static const _compactFont = 11.0;
   static const _compactGap = 6.0;
 
-  /// Ordem dos botões na barra inferior, na ordem do ciclo de estudo: a ação
-  /// principal fica no centro, entre os destinos, como o "+" das barras do
-  /// Material 3 e do iOS; Estudar vem logo depois do Mapa, de onde nasce.
-  /// Cada entrada é um índice de destino ou um dos atalhos negativos.
+  /// Ordem dos botões na barra inferior, na ordem do ciclo de estudo;
+  /// Estudar vem logo depois do Mapa, de onde nasce. Analisar não tem fatia:
+  /// o Mapa já traz o painel de análise (pedido do Cláudio); nos trilhos a
+  /// ação continua com botão próprio. Cada entrada é um índice de destino
+  /// ou um dos atalhos negativos.
   static const _actionSlot = -1;
   static const _moreSlot = -2;
   static const _studySlot = -3;
   static const _aboutSlot = -4;
-  static const _barSlots = [
-    0,
-    1,
-    _actionSlot,
-    2,
-    _studySlot,
-    3,
-    _aboutSlot,
-    _moreSlot,
-  ];
+  static const _barSlots = [0, 1, 2, _studySlot, 3, _aboutSlot, _moreSlot];
 
-  /// Abaixo de 360 px por unidade de fonte não há largura para oito fatias:
+  /// Abaixo de 360 px por unidade de fonte não há largura para sete fatias:
   /// Estudar e Sobre voltam para o Mais.
-  static const _narrowBarSlots = [0, 1, _actionSlot, 2, 3, _moreSlot];
+  static const _narrowBarSlots = [0, 1, 2, 3, _moreSlot];
 
   /// Barra inferior de ponta a ponta, no modelo do NavigationBar do
   /// Material 3 com o vidro do app: fatias iguais para todos os botões, a

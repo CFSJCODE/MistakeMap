@@ -193,7 +193,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  for (final width in [390.0, 768.0, 1280.0]) {
+  // No celular a barra não tem Analisar (o Mapa já traz o painel); os
+  // trilhos mantêm o botão.
+  for (final width in [768.0, 1280.0]) {
     testWidgets('Analisar fica à vista em ${width.toInt()}px', (tester) async {
       tester.view.physicalSize = Size(width, 900);
       tester.view.devicePixelRatio = 1;
