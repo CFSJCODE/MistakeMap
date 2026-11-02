@@ -34,6 +34,7 @@ import 'local/preferencias_caderno.dart';
 import 'local/registro_erro.dart';
 import 'local/registro_erro_dao.dart';
 import 'sync/armazem_sync.dart' show OperacaoFila;
+import 'sync/caderno_sync.dart' show SincronizacaoCaderno;
 import 'sync/conexao.dart' show ehFalhaDeRede;
 import 'sync/remoto_supabase.dart';
 import 'sync/sincronizador.dart';

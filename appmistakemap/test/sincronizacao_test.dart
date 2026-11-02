@@ -7,6 +7,7 @@ import 'package:appmistakemap/local/banco_local.dart';
 import 'package:appmistakemap/local/registro_erro.dart';
 import 'package:appmistakemap/local/registro_erro_dao.dart';
 import 'package:appmistakemap/sync/armazem_sync.dart';
+import 'package:appmistakemap/sync/caderno_sync.dart';
 import 'package:appmistakemap/sync/conexao.dart';
 import 'package:appmistakemap/sync/remoto_supabase.dart';
 import 'package:appmistakemap/sync/remoto_sync.dart';
@@ -794,6 +795,24 @@ void main() {
       await a.sync.sincronizar();
       expect(await a.dao.listar(_usuario), isEmpty);
       expect(a.sync.notificacao.value, contains('outro aparelho'));
+    });
+
+    test('registro antigo acima do limite do servidor sobe cortado', () {
+      final linha = SincronizacaoCaderno.paraServidor({
+        'uid': 'u-1',
+        'disciplina': '  ${'M' * 130}  ',
+        'titulo': '😀' * 250,
+        'descricao': 'd' * 6000,
+        'tipo_erro': 'calculo',
+        'revisado': 0,
+        'criado_em': '2026-11-02T09:00:00.000',
+        'atualizado_em': '2026-11-02T09:00:00.000',
+        'excluido_em': null,
+      }, _usuario);
+      expect((linha['subject'] as String).runes.length, 120);
+      expect(linha['title'], '😀' * 200);
+      expect((linha['description'] as String).length, 5000);
+      expect(SincronizacaoCaderno.cortar('curto', 200), 'curto');
     });
 
     test('evento seguinte no debounce não cancela a rodada pedida', () async {

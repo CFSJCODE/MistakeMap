@@ -44,6 +44,11 @@ class SincronizacaoCaderno {
   static const margem = Duration(seconds: 5);
   static const lote = 200;
 
+  /// Limites das colunas de `error_notes` (char_length, em caracteres).
+  static const limiteDisciplina = 120;
+  static const limiteTitulo = 200;
+  static const limiteDescricao = 5000;
+
   Future<ResultadoCaderno> sincronizar(
     String usuarioId,
     RemotoSync remoto,
@@ -124,15 +129,25 @@ class SincronizacaoCaderno {
     return {
       'id': l['uid'],
       'user_id': usuarioId,
-      'subject': l['disciplina'],
-      'title': l['titulo'],
-      'description': l['descricao'],
+      // Registros antigos não tinham limite: cortar aqui evita que um só
+      // registro grande trave o lote inteiro no CHECK do servidor.
+      'subject': cortar((l['disciplina'] as String).trim(), limiteDisciplina),
+      'title': cortar(l['titulo'] as String, limiteTitulo),
+      'description': cortar(l['descricao'] as String, limiteDescricao),
       'error_type': l['tipo_erro'],
       'reviewed': l['revisado'] == 1,
       'created_at': _utc(l['criado_em'] as String),
       'updated_at': _utc(l['atualizado_em'] as String),
       'deleted_at': excluido == null ? null : _utc(excluido),
     };
+  }
+
+  /// Corta em [maximo] caracteres (code points, como o char_length do
+  /// Postgres), sem partir emoji ao meio.
+  static String cortar(String texto, int maximo) {
+    final runas = texto.runes;
+    if (runas.length <= maximo) return texto;
+    return String.fromCharCodes(runas.take(maximo));
   }
 
   static Map<String, Object?> _tombstone(Map<String, dynamic> remota) {

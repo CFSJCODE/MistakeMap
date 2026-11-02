@@ -467,8 +467,12 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
     }
   }
 
-  String? _obrigatorio(String? v, String mensagem) =>
-      v == null || v.trim().isEmpty ? mensagem : null;
+  /// Obrigatório e dentro do limite de `error_notes` no servidor.
+  String? _obrigatorio(String? v, String mensagem, int maximo) {
+    if (v == null || v.trim().isEmpty) return mensagem;
+    if (v.trim().runes.length > maximo) return 'Use até $maximo caracteres';
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -503,15 +507,22 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
                           rotulo: 'Disciplina',
                           dica: 'Ex.: Matemática',
                           controller: _disciplinaCtrl,
-                          validator: (v) =>
-                              _obrigatorio(v, 'Informe a disciplina'),
+                          validator: (v) => _obrigatorio(
+                            v,
+                            'Informe a disciplina',
+                            SincronizacaoCaderno.limiteDisciplina,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         _AdicionarCampoTexto(
                           rotulo: 'Título',
                           dica: 'Ex.: Sinal na fórmula de Bhaskara',
                           controller: _tituloCtrl,
-                          validator: (v) => _obrigatorio(v, 'Informe o título'),
+                          validator: (v) => _obrigatorio(
+                            v,
+                            'Informe o título',
+                            SincronizacaoCaderno.limiteTitulo,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         _AdicionarCampoTexto(
@@ -520,7 +531,11 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
                           controller: _descricaoCtrl,
                           minLines: 4,
                           maxLines: 8,
-                          validator: (v) => _obrigatorio(v, 'Descreva o erro'),
+                          validator: (v) => _obrigatorio(
+                            v,
+                            'Descreva o erro',
+                            SincronizacaoCaderno.limiteDescricao,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         InfoLabel(
