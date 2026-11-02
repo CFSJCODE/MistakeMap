@@ -94,7 +94,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
   String? _error;
   String? _subject;
   int _days = 0;
-  int _view = 0;
+  int _view = 2;
   int _request = 0;
   final _analysis = ExpansibleController();
   final _analysisKey = GlobalKey();
@@ -484,9 +484,9 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                     runSpacing: 8,
                     children: [
                       for (final view in [
+                        (2, 'Conexões'),
                         (0, 'Gráficos'),
                         (1, 'Nuvem'),
-                        (2, 'Conexões'),
                         (3, 'Tentativas'),
                       ])
                         ChoiceChip(
@@ -556,9 +556,9 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                           .toList(),
                     ),
                   ] else ...[
-                    const SectionLabel('Matéria → conceito → tipo de erro'),
+                    const SectionLabel('Grafo de erros'),
                     const Text(
-                      'As linhas indicam ocorrência na mesma tentativa, sem inferir pré-requisitos. Amplie e arraste para explorar.',
+                      'Nós maiores representam mais tentativas com erros. As linhas ligam ocorrências na mesma tentativa; toque em um nó para ver os exercícios.',
                     ),
                     const SizedBox(height: 16),
                     ConceptGraph(
@@ -570,7 +570,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Bordas e linhas mais espessas têm mais tentativas. Os mesmos dados estão disponíveis na nuvem e nos gráficos.',
+                      'Arraste e amplie para explorar. As conexões não indicam pré-requisitos.',
                     ),
                   ],
                 ],
@@ -726,16 +726,18 @@ class ConceptGraph extends StatefulWidget {
 
 class _ConceptGraphState extends State<ConceptGraph> {
   final _transform = TransformationController();
-  double? _width;
+  Size? _viewport;
+  double? _canvasSize;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final width = MediaQuery.sizeOf(context).width - 48;
-    if (_width != width) {
-      _width = width;
-      _transform.value = Matrix4.identity();
-    }
+  void _fit(Size viewport, double canvasSize) {
+    final scale = math
+        .min(viewport.width / canvasSize, viewport.height / canvasSize)
+        .clamp(.0001, 1.0);
+    final x = (viewport.width - canvasSize * scale) / 2;
+    final y = (viewport.height - canvasSize * scale) / 2;
+    _transform.value = Matrix4.identity()
+      ..translateByDouble(x, y, 0, 1)
+      ..scaleByDouble(scale, scale, scale, 1);
   }
 
   @override
@@ -747,83 +749,206 @@ class _ConceptGraphState extends State<ConceptGraph> {
   @override
   Widget build(BuildContext context) {
     final insights = widget.insights;
-    final graphWidth = math.max(312.0, math.min(900.0, _width ?? 680));
-    final nodeWidth = math.min(176.0, graphWidth / 3 - 16);
     final groups = ['Matéria', 'Conceito', 'Tipo de erro']
-        .map((kind) => insights.nodes.where((n) => n.kind == kind).toList())
+        .map(
+          (kind) =>
+              insights.nodes.where((n) => n.kind == kind).toList()
+                ..sort((a, b) => a.label.compareTo(b.label)),
+        )
         .toList();
-    final height = math.max(
-      360.0,
-      groups.fold<int>(0, (v, e) => math.max(v, e.length)) * 96.0 + 64,
-    );
+    final largestGroup = groups.fold<int>(0, (v, e) => math.max(v, e.length));
+    final canvasSize = math.max(440.0, largestGroup * 64.0 + 180);
     final points = <String, Offset>{};
-    for (var column = 0; column < groups.length; column++) {
-      for (var row = 0; row < groups[column].length; row++) {
-        points[groups[column][row].id] = Offset(
-          (column + .5) * graphWidth / 3,
-          48 + (height - 96) * (row + .5) / groups[column].length,
+    for (var ring = 0; ring < groups.length; ring++) {
+      final nodes = groups[ring];
+      final radius = canvasSize * [.16, .29, .41][ring];
+      for (var i = 0; i < nodes.length; i++) {
+        final angle =
+            -math.pi / 2 + 2 * math.pi * (i + ring * .18) / nodes.length;
+        points[nodes[i].id] = Offset(
+          canvasSize / 2 + radius * math.cos(angle),
+          canvasSize / 2 + radius * math.sin(angle),
         );
       }
     }
-    return SizedBox(
-      height: 400,
-      child: ClipRect(
-        child: InteractiveViewer(
-          transformationController: _transform,
-          constrained: false,
-          minScale: .8,
-          maxScale: 3,
-          boundaryMargin: const EdgeInsets.all(48),
-          child: SizedBox(
-            width: graphWidth,
-            height: height,
-            child: Stack(
+    final maxCount = insights.nodes.fold<int>(
+      1,
+      (m, n) => math.max(m, n.attemptIds.length),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewport = Size(constraints.maxWidth, 420);
+        final labelScale = MediaQuery.textScalerOf(context).scale(12) / 12;
+        final nodeHeight = 56.0 + 32.0 * math.max(1.0, labelScale);
+        if (_viewport != viewport || _canvasSize != canvasSize) {
+          _viewport = viewport;
+          _canvasSize = canvasSize;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _viewport == viewport && _canvasSize == canvasSize) {
+              _fit(viewport, canvasSize);
+            }
+          });
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
               children: [
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: _GraphPainter(points, insights.edges),
-                  ),
-                ),
-                for (final node in insights.nodes)
-                  Positioned(
-                    left: points[node.id]!.dx - nodeWidth / 2,
-                    top: points[node.id]!.dy - 36,
-                    width: nodeWidth,
-                    height: 72,
-                    child: Tooltip(
-                      message:
-                          '${node.kind}: ${node.label}. ${node.attemptIds.length} tentativa(s)',
-                      child: OutlinedButton(
-                        onPressed: () => widget.onNode(node),
-                        style:
-                            MistakeMapMaterialControls.button(
-                              context,
-                              background: Colors.white,
-                              radius: 10,
-                              border: BorderSide(
-                                color: node.kind == 'Conceito'
-                                    ? MistakeMapDesign.violetInk
-                                    : MistakeMapDesign.azureInk,
-                                width:
-                                    1 + math.min(3, node.attemptIds.length) / 2,
-                              ),
-                            ).copyWith(
-                              padding: const WidgetStatePropertyAll(
-                                EdgeInsets.all(8),
-                              ),
-                            ),
-                        child: Text(
-                          '${node.label}\n${node.attemptIds.length} tentativa(s)',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 12),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
+                for (final entry in [
+                  ('Matéria', MistakeMapDesign.aquaInk),
+                  ('Conceito', MistakeMapDesign.violetInk),
+                  ('Tipo de erro', MistakeMapDesign.azureInk),
+                ])
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.circle, size: 12, color: entry.$2),
+                      const SizedBox(width: 6),
+                      Text(
+                        entry.$1,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: mapContentBlue,
                         ),
                       ),
-                    ),
+                    ],
                   ),
               ],
             ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: viewport.height,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: ColoredBox(
+                  color: MistakeMapDesign.white.withValues(alpha: .72),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: InteractiveViewer(
+                          transformationController: _transform,
+                          constrained: false,
+                          minScale: .0001,
+                          maxScale: 4,
+                          boundaryMargin: EdgeInsets.all(canvasSize),
+                          child: SizedBox(
+                            width: canvasSize,
+                            height: canvasSize,
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _GraphPainter(
+                                      points,
+                                      insights.edges,
+                                    ),
+                                  ),
+                                ),
+                                for (final node in insights.nodes)
+                                  Positioned(
+                                    left: points[node.id]!.dx - 60,
+                                    top: points[node.id]!.dy - 30,
+                                    width: 120,
+                                    height: nodeHeight,
+                                    child: _GraphNodeButton(
+                                      node: node,
+                                      maxCount: maxCount,
+                                      onTap: () => widget.onNode(node),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: IconButton.filledTonal(
+                          tooltip: 'Reajustar grafo',
+                          onPressed: () => _fit(viewport, canvasSize),
+                          icon: const Icon(Icons.center_focus_strong),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _GraphNodeButton extends StatelessWidget {
+  const _GraphNodeButton({
+    required this.node,
+    required this.maxCount,
+    required this.onTap,
+  });
+  final GraphNode node;
+  final int maxCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (node.kind) {
+      'Matéria' => MistakeMapDesign.aquaInk,
+      'Conceito' => MistakeMapDesign.violetInk,
+      _ => MistakeMapDesign.azureInk,
+    };
+    final diameter = 16.0 + 32 * math.sqrt(node.attemptIds.length / maxCount);
+    return Tooltip(
+      message:
+          '${node.kind}: ${node.label}. ${node.attemptIds.length} tentativa(s)',
+      child: Semantics(
+        button: true,
+        label:
+            '${node.kind}: ${node.label}, ${node.attemptIds.length} tentativa(s) com erros',
+        child: InkWell(
+          key: ValueKey('graph-node-${node.id}'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 56,
+                child: Center(
+                  child: Container(
+                    key: ValueKey('graph-marker-${node.id}'),
+                    width: diameter,
+                    height: diameter,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color.withValues(alpha: .85),
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: .25),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Text(
+                node.label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.1,
+                  fontWeight: FontWeight.w600,
+                  color: mapTitleBlue,
+                ),
+              ),
+            ],
           ),
         ),
       ),
