@@ -8,12 +8,29 @@
 
 Plataforma de aprendizagem orientada a erros que transforma exercícios corrigidos em uma estrutura navegável de **conceitos, padrões recorrentes, evidências de recuperação e evolução**.
 
-[![GitHub](https://img.shields.io/badge/GitHub-CFSJCODE%2FMISTAKEMAP-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/CFSJCODE/MISTAKEMAP)
+[![Abrir a versão web](https://img.shields.io/badge/Abrir%20no%20navegador-mistakemap--tau.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://mistakemap-tau.vercel.app/)
+
+[![CI](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml)
+[![Migrations Supabase](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-deploy.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-deploy.yml)
+[![Edge Functions](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-functions-deploy.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-functions-deploy.yml)
+[![Deploy web (Vercel)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/web-deploy-vercel.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/web-deploy-vercel.yml)
+[![Metadados](https://github.com/CFSJCODE/MistakeMap/actions/workflows/sync-repository-metadata.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/sync-repository-metadata.yml)
+[![Site](https://img.shields.io/website?url=https%3A%2F%2Fmistakemap-tau.vercel.app&style=flat-square&label=site&logo=vercel&logoColor=white&up_message=no%20ar&down_message=fora%20do%20ar)](https://mistakemap-tau.vercel.app/)
+
+[![Licença](https://img.shields.io/badge/Licença-PolyForm%20Noncommercial%201.0.0-6B7280?style=flat-square)](LICENSE)
+![Flutter](https://img.shields.io/badge/Flutter-3.47.2-02569B?style=flat-square&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Auth%20%C2%B7%20Postgres%20%C2%B7%20Realtime-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
+![Deno](https://img.shields.io/badge/Edge%20Functions-Deno%202-000000?style=flat-square&logo=deno&logoColor=white)
+![Gemini](https://img.shields.io/badge/IA-Google%20Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
+![SQLite](https://img.shields.io/badge/Offline-SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
+![Plataformas](https://img.shields.io/badge/Plataformas-Android%20%C2%B7%20Windows%20%C2%B7%20Web-3DDC84?style=flat-square)
+
 ![Status](https://img.shields.io/badge/Status-MVP%20funcional-F59E0B?style=flat-square)
 ![Versão](https://img.shields.io/badge/Versão-1.0.0-0A7F5A?style=flat-square)
 ![PUC Minas](https://img.shields.io/badge/Projeto%20Acadêmico-PUC%20Minas-003B71?style=flat-square)
-![Fluent UI](https://img.shields.io/badge/Design%20System-Fluent%20UI-0078D4?style=flat-square&logo=windows11&logoColor=white)
-[![CI](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml/badge.svg)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml)
+![Fluent UI](https://img.shields.io/badge/Design%20System-Fluent%202%20%2B%20Liquid%20Glass-0078D4?style=flat-square&logo=windows11&logoColor=white)
+[![GitHub](https://img.shields.io/badge/GitHub-CFSJCODE%2FMISTAKEMAP-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/CFSJCODE/MISTAKEMAP)
 
 **MistakeMap não é apenas um corretor de certo ou errado.**  
 Ele procura responder a uma pergunta mais útil:
@@ -134,6 +151,8 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/RLS-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="Row Level Security">
   <img src="https://img.shields.io/badge/Edge_Functions-Deno-000000?style=flat-square&logo=deno&logoColor=white" alt="Edge Functions">
+  <img src="https://img.shields.io/badge/Realtime-Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase Realtime">
+  <img src="https://img.shields.io/badge/SQLite-Offline--first-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite offline-first">
   <img src="https://img.shields.io/badge/Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white" alt="Cloudflare R2">
 </p>
 
@@ -153,6 +172,7 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
   <img src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android">
   <img src="https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Windows">
   <img src="https://img.shields.io/badge/Web-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Web">
+  <a href="https://mistakemap-tau.vercel.app/"><img src="https://img.shields.io/badge/Vercel-mistakemap--tau-000000?style=flat-square&logo=vercel&logoColor=white" alt="Versão web na Vercel"></a>
 </p>
 
 ### Stack principal
@@ -196,13 +216,15 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
 | **Camada flutuante** | `liquid_glass_widgets` | Barras, botões da barra e avisos (toasts) |
 | **Telas de IA** | Material 3 isolado (`AiMaterialShell`) | Envio, mapa de erros, correção e prática |
 | **Estado** | `StatefulWidget` + `setState` | Estado local por tela, sem framework externo |
-| **Navegação** | `Navigator` + shell adaptativo | Barra inferior no celular e menu lateral a partir de 840 px |
+| **Navegação** | `Navigator` + shell adaptativo | Barra de vidro com 7 fatias no celular (< 600 px), trilho compacto (600–840 px) e trilho largo (≥ 840 px); Mapa como aba com pilha própria (ver [`NAVEGACAO.md`](../appmistakemap/NAVEGACAO.md)) |
+| **Banco local** | SQLite (`sqflite`, `sqflite_common_ffi`, `sqflite_common_ffi_web`) + `shared_preferences` | Caderno de erros, cache offline e fila de envio (ver [`BANCO_LOCAL.md`](../appmistakemap/BANCO_LOCAL.md)) |
+| **Sincronização** | Supabase Realtime + `lib/sync/` | Offline-first: Supabase primeiro, SQLite sem rede, fila `fila_sync` ao reconectar |
 | **Autenticação** | Supabase Auth | E-mail e senha, e login com Google (OAuth) |
 | **Backend** | Supabase | Auth, banco, Edge Functions e jobs (`pg_cron` + `pg_net`) |
 | **Banco** | PostgreSQL | Eventos e grafo conceitual via tabelas, com RLS |
 | **Armazenamento de arquivos** | Cloudflare R2 | Fotos de exercícios via URL pré-assinada (10GB grátis, compatível S3, egress zero) |
 | **OCR** | Google Gemini (multimodal) | Transcrição da foto com revisão manual |
-| **IA** | Gemini nas Edge Functions | Sugestão de conceitos, erros e exercícios de prática |
+| **IA** | Gemini nas Edge Functions (Anthropic e OpenRouter opcionais) | Sugestão de conceitos, erros, material de estudo e exercícios de prática, com orçamento por reserva e escolha de modelo por avaliação |
 | **Visualização** | `CustomPaint` | Grafo de conceitos e barras de frequência |
 
 ---
@@ -231,7 +253,7 @@ A interface deve utilizar, sempre que aplicável, os componentes e princípios d
 
 ## Estado atual da implementação
 
-O núcleo do MVP está implementado e publicado: o estudante cadastra exercícios, envia a foto da tentativa, recebe uma análise de erros com evidências, navega pelo mapa de erros e pratica com exercícios direcionados.
+O núcleo do MVP está implementado e publicado: o estudante cadastra exercícios, envia a foto da tentativa, recebe uma análise de erros com evidências, navega pelo mapa de erros, estuda com material gerado pela IA, pratica com exercícios direcionados e mantém um caderno de erros que funciona sem internet e sincroniza entre aparelhos.
 
 | Área | Situação | Onde está |
 |:---|:---:|:---|
@@ -241,18 +263,50 @@ O núcleo do MVP está implementado e publicado: o estudante cadastra exercício
 | **Análise por IA** (transcrição, erros por categoria, conceito, evidência e confiança) | ✅ | função `analyze-attempt`, `lib/ai/insights_view.dart` |
 | **Mapa de erros** (grafo de conceitos e frequência por categoria) | ✅ | `lib/ai/insights_view.dart` |
 | **Exercícios de prática** gerados a partir dos erros (3 a 5 por pedido) | ✅ | função `generate-practice` |
+| **Prática por tipo de erro** (7 categorias, conceitos ranqueados por frequência × recência, meia-vida de 14 dias, descontando a recuperação) | ✅ | `generate-practice`, seletor "Tipo de erro para reforçar" |
+| **Catálogo de exercícios revisados** (30 exercícios, 5 por matéria/assunto/tema, gabarito fora do alcance do cliente) | ✅ | `catalog_exercises`, `_shared/catalog.ts` |
+| **Material de estudo** estilo NotebookLM (resumo, cartões e quiz → Praticar) | ✅ | função `study-material`, `lib/ai/study_material_view.dart` |
+| **Caderno de erros** (CRUD local em SQLite, filtros persistidos) | ✅ | `lib/caderno_erros.dart`, `lib/local/` |
+| **Modo offline** (Supabase primeiro, SQLite sem rede, fila local de envio) | ✅ | `lib/sync/` |
+| **Tempo real e sincronização entre aparelhos** (caderno em `error_notes`, exclusões propagadas, barreira `MM410` contra filas antigas) | ✅ | `lib/sync/caderno_sync.dart`, `deleted_records` |
+| **Orçamento e roteamento de provedores de IA** (reserva de custo, troca de modelo só com avaliação) | ✅ | `_shared/claude_budget.ts`, `_shared/model_router.ts` |
 | **Fila em lote** processada pelo `pg_cron` | ✅ | função `process-batch` |
 | **Painel administrativo** (papéis, uso e cotas da IA por modelo) | ✅ | `lib/admin/`, tela Admin |
 | **Layout adaptativo** (celular, tablet, desktop, dobráveis e telas duplas) | ✅ | `lib/layout/` |
-| **Fórmula de prioridade** $P = F \times R \times I \times (1 - M)$ | 🔜 | prevista como função PostgreSQL |
+| **Navegação Fluent + Liquid Glass** (barra de 7 fatias: Início · Lista · Mapa · Estudar · Caderno · Sobre · Mais; trilho em janelas médias e largas; Voltar previsível) | ✅ | `lib/layout/navigation_shell.dart`, [`NAVEGACAO.md`](../appmistakemap/NAVEGACAO.md) |
+| **Identidade visual** Obsidian Glass em modo claro com acentos Aurora | ✅ | `lib/theme/`, [`PALETA.md`](../appmistakemap/PALETA.md) |
+| **Fórmula de prioridade** $P = F \times R \times I \times (1 - M)$ | 🟡 | F, R e M já ranqueiam a prática; falta o termo I (importância) e a fila de revisão |
 | **Validação humana** dos erros sugeridos (confirmar, corrigir, rejeitar) | 🔜 | hoje a análise é exibida, ainda sem confirmação por evento |
-| **Modo offline** e fila local de envio | 🔜 | não iniciado |
 | **Relatórios** PDF/CSV | 🔜 | não iniciado |
 
 A taxonomia de erros usada pela IA tem 7 categorias: `calculo`, `conceito`, `sinal`, `interpretacao`, `procedimento`, `unidade` e `outro`. Cada usuário tem um limite diário de análises e de pedidos de prática, controlado no banco (`ai_daily_usage`).
 
 > [!NOTE]
 > O worker Rust em `worker/` foi a primeira implementação do pipeline e está **arquivado**: desde 28/09/2026 o processamento roda nas Supabase Edge Functions. Os detalhes de backend, deploy e pendências estão em [`BACKEND.md`](../BACKEND.md), e as migrações em [`appmistakemap/database/README.md`](../appmistakemap/database/README.md).
+
+---
+
+<a id="novidades"></a>
+
+## Novidades recentes
+
+O que entrou no `main` entre outubro e novembro de 2026:
+
+| PR | Entrega |
+|:---:|:---|
+| [#17](https://github.com/CFSJCODE/MistakeMap/pull/17) | Análise da IA gravada como objeto JSON e fallback do Gemini ampliado |
+| [#18](https://github.com/CFSJCODE/MistakeMap/pull/18) | **Caderno de erros offline**: SQLite (`sqflite`/`ffi`/`ffi_web`) com CRUD completo e filtros persistidos ([`BANCO_LOCAL.md`](../appmistakemap/BANCO_LOCAL.md)) |
+| [#20](https://github.com/CFSJCODE/MistakeMap/pull/20) | **Prática por tipo de erro**: `generate-practice` aceita `category` e ranqueia conceitos por frequência × recência, descontando a recuperação registrada em `mastery_events` |
+| [#22](https://github.com/CFSJCODE/MistakeMap/pull/22) | Navegação repensada, Mapa e análise unificados e correções de usabilidade |
+| [#23](https://github.com/CFSJCODE/MistakeMap/pull/23) | **Identidade Obsidian Glass** em modo claro, com acentos Aurora e texto colorido sempre em contraste ≥ 4,5:1 ([`PALETA.md`](../appmistakemap/PALETA.md)) |
+| [#24](https://github.com/CFSJCODE/MistakeMap/pull/24) | **Offline-first**: o app consulta o Supabase primeiro, cai no SQLite sem rede, guarda escritas em `fila_sync` e recebe mudanças por Realtime |
+| [#27](https://github.com/CFSJCODE/MistakeMap/pull/27) | **Material de estudo** estilo NotebookLM na aba Estudar: resumo, cartões e quiz que levam à prática |
+| [#29](https://github.com/CFSJCODE/MistakeMap/pull/29) · [#30](https://github.com/CFSJCODE/MistakeMap/pull/30) | Navegação guiada pelo ciclo de estudo ("O que fazer agora" no Início), app inteiro offline, barra em vidro líquido real e toque uniforme |
+| [#31](https://github.com/CFSJCODE/MistakeMap/pull/31) | **Navegação reestruturada**: Mapa como aba com pilha própria, trilho em janelas médias e Voltar previsível |
+| [#32](https://github.com/CFSJCODE/MistakeMap/pull/32) · [#34](https://github.com/CFSJCODE/MistakeMap/pull/34) · [#35](https://github.com/CFSJCODE/MistakeMap/pull/35) · [#37](https://github.com/CFSJCODE/MistakeMap/pull/37) | **Barra inferior de ponta a ponta com 7 fatias** (Início · Lista · Mapa · Estudar · Caderno · Sobre · Mais) e trilho compacto com todas as opções ([`NAVEGACAO.md`](../appmistakemap/NAVEGACAO.md)) |
+| [#36](https://github.com/CFSJCODE/MistakeMap/pull/36) | Estudo atualizado, controle de provedores de IA (Gemini, Anthropic, OpenRouter) e orçamento por reserva |
+| [#38](https://github.com/CFSJCODE/MistakeMap/pull/38) | **Caderno sincronizado entre aparelhos** (`error_notes`), **exclusões em tempo real** com barreira `MM410` contra filas antigas e **catálogo de 30 exercícios revisados** |
+| [#39](https://github.com/CFSJCODE/MistakeMap/pull/39) | Histórico de migrations alinhado com o banco publicado e `generate-practice` seguindo para a IA quando o catálogo não fecha a rodada |
 
 ---
 
@@ -268,6 +322,7 @@ A taxonomia de erros usada pela IA tem 7 categorias: `calculo`, `conceito`, `sin
 - [Tecnologias](#stack-tecnologica)
 - [Informações do projeto](#metadados)
 - [Estado atual da implementação](#estado-atual)
+- [Novidades recentes](#novidades)
 - [Visão Executiva](#visao-executiva)
 - [Objetivos](#objetivos)
 - [Problema e Cenário de Uso](#problema-e-cenario-de-uso)
@@ -1164,13 +1219,16 @@ O MVP concentra as telas Fluent em `main.dart` e separa em pastas os módulos ma
 ```text
 appmistakemap/lib/
 ├── main.dart                    # Bootstrap, Auth, telas Fluent (início, lista, mapa, novo, detalhe, edição, admin, sobre)
+├── caderno_erros.dart           # Tela do Caderno de erros (CRUD e filtros)
 │
 ├── about/                       # Botão de perfil do LinkedIn e abertura de links externos
 ├── admin/                       # Painel de métricas, cotas por modelo e política de atualização
-├── ai/                          # Fluxo de IA: shell Material, repositório, envio, mapa, correção e prática
+├── ai/                          # Fluxo de IA: shell, repositório, envio, mapa, correção, material de estudo e prática
 ├── assets/                      # Foto de perfil embutida
 ├── auth/                        # Login com Google e verificação da configuração OAuth
 ├── layout/                      # Classes de largura, dobráveis e shell de navegação adaptativo
+├── local/                       # Banco SQLite (Android, Windows e Web), DAO do caderno e conta offline
+├── sync/                        # Sincronizador offline-first, fila, Realtime e sincronização do caderno
 └── theme/                       # Tokens de design, paleta, estilos de controles e movimento
 ```
 
@@ -1329,17 +1387,38 @@ Fotografar e anotar exercício deve funcionar durante aula ou estudo **sem inter
 
 > **A IA pode esperar.** O usuário não deve perder a resolução original nem alterações manuais.
 
-### Recursos previstos
+### Como funciona hoje
 
-- [ ] Rascunhos locais de exercícios e tentativas.
-- [ ] Fila de imagens com hash para upload posterior.
+O app é **offline-first** (PR #24, ampliado no PR #38). O código fica em `appmistakemap/lib/sync/` e o esquema local em [`BANCO_LOCAL.md`](../appmistakemap/BANCO_LOCAL.md).
+
+```mermaid
+flowchart LR
+    UI["Telas"] --> S["Sincronizador"]
+    S -->|"com rede"| SB["Supabase<br/>Postgres + RLS"]
+    S -->|"sem rede"| DB["SQLite local"]
+    DB --> Q["fila_sync"]
+    Q -->|"ao reconectar"| SB
+    SB -->|"Realtime"| S
+```
+
+- **Leitura:** consulta o Supabase primeiro e usa o SQLite como cache quando não há rede.
+- **Escrita offline:** vai para a `fila_sync` com UUIDs gerados no aparelho e sobe ao reconectar (upsert idempotente).
+- **Tempo real:** `subjects`, `attempts`, `attempt_analyses`, `error_notes` e `deleted_records` chegam aos outros aparelhos pelo Supabase Realtime.
+- **Caderno de erros:** espelhado em `error_notes`, com última escrita vencendo por `updated_at` e exclusão sempre vencendo (tombstone `deleted_at`).
+- **Exclusões:** ficam registradas em `deleted_records`; o trigger `block_deleted_reinsert` (SQLSTATE `MM410`) impede que uma fila antiga recrie o que já foi apagado, e o outro aparelho mostra o aviso "excluído em outro aparelho".
+
+### Situação dos recursos
+
+- [x] Rascunhos locais de exercícios e tentativas.
+- [x] Fila local de envio com reenvio ao reconectar.
+- [x] Caderno de erros local e sincronizado.
+- [x] Exclusões propagadas entre aparelhos.
 - [ ] Cache do grafo.
-- [ ] Cache de eventos recentes.
-- [ ] Processamento de IA marcado como pendente.
+- [ ] Insights mostrando itens que ainda estão na fila.
 - [ ] Revisão explícita para conflitos em eventos confirmados.
 
 > [!NOTE]
-> No MVP, captura, digitação e consulta básica devem funcionar offline. OCR/LLM e recalculações globais podem ocorrer após sincronização.
+> OCR/LLM e recalculações globais continuam no backend e rodam depois da sincronização: **a IA pode esperar**.
 
 ---
 
@@ -1354,9 +1433,9 @@ Fotografar e anotar exercício deve funcionar durante aula ou estudo **sem inter
 | **Fase 2 — Tentativas** | Soluções, correções e anexos | Histórico de estudo completo | ✅ |
 | **Fase 3 — Erros** | Taxonomia e eventos manuais | Mapa funciona sem IA | 🟡 taxonomia pronta; eventos vêm da IA |
 | **Fase 4 — IA** | OCR, conceitos e erros sugeridos | Sugestões revisáveis com evidência | 🟡 sugestões com evidência; falta a revisão por evento |
-| **Fase 5 — Prioridade** | Agregação, recência e `mastery_events` | Fila de revisão explicável | 🔜 |
+| **Fase 5 — Prioridade** | Agregação, recência e `mastery_events` | Fila de revisão explicável | 🟡 prática já usa frequência × recência e `mastery_events`; falta a fila |
 | **Fase 6 — Relatórios** | PDF/CSV e compartilhamento seletivo | Portabilidade garantida | 🔜 |
-| **Fase 7 — Hardening** | RLS, acessibilidade, testes e avaliação educacional | Release estável | 🟡 RLS, CI e testes ativos |
+| **Fase 7 — Hardening** | RLS, acessibilidade, testes e avaliação educacional | Release estável | 🟡 RLS, CI, testes, modo offline e sincronização ativos |
 
 ### Visão do roadmap
 
@@ -1763,11 +1842,20 @@ dependencies:
 
   fluent_ui:
   liquid_glass_widgets:
+  liquid_glass_renderer:
   supabase_flutter:
   image_picker:
   http:
   crypto:
+  sqflite:
+  sqflite_common_ffi:
+  sqflite_common_ffi_web:
+  shared_preferences:
+  path:
 ```
+
+> [!TIP]
+> Na Web, o arquivo `web/sqlite3.wasm` precisa casar com a versão do pacote `sqlite3` registrada no `pubspec.lock`.
 
 > [!WARNING]
 > As versões das dependências ficam no `pubspec.yaml` e são validadas pelo CI. O README não fixa versões para não divergir do arquivo real.
@@ -1836,12 +1924,14 @@ para construir uma aplicação educacional na qual a interface não apenas apres
   <img src="https://img.shields.io/badge/Fluent_UI-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Fluent UI">
   <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite">
   <img src="https://img.shields.io/badge/Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white" alt="Cloudflare R2">
   <img src="https://img.shields.io/badge/Google_Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white" alt="Google Gemini">
+  <img src="https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white" alt="Vercel">
 </p>
 
 <p align="center">
-  <sub>Flutter · Dart · Fluent UI · Liquid Glass · Supabase · PostgreSQL · Edge Functions · Cloudflare R2 · Gemini</sub>
+  <sub>Flutter · Dart · Fluent UI · Liquid Glass · Supabase · PostgreSQL · SQLite · Realtime · Edge Functions · Cloudflare R2 · Gemini · Vercel</sub>
 </p>
 
 <p align="center"><sub>Versão 1.0.0 · Outubro de 2026</sub></p>
