@@ -67,3 +67,7 @@ desktop.ini
 
 # Reversa � configura��es pessoais (n�o versionar)
 .reversa/config.user.toml
+
+# SDK do Flutter baixado pelo build da Vercel
+/.vercel-flutter/
+.vercel
