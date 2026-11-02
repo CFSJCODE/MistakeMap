@@ -3843,11 +3843,40 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   Exercicio? _selecionado;
   bool _carregando = true;
   bool _falhaAoCarregar = false;
+  bool _adicionandoExemplos = false;
 
   @override
   void initState() {
     super.initState();
     carregarExercicios();
+  }
+
+  /// Conta vazia: o servidor copia exercícios revisados do catálogo
+  /// (seed_example_exercises) e a lista é recarregada.
+  Future<void> _adicionarExemplos() async {
+    setState(() => _adicionandoExemplos = true);
+    try {
+      final criados = await _db.rpc('seed_example_exercises');
+      if (!mounted) return;
+      _avisar(
+        context,
+        criados is int && criados > 0
+            ? '$criados exercícios de exemplo adicionados.'
+            : 'Sua conta já tem exercícios.',
+      );
+      await carregarExercicios();
+    } catch (e) {
+      if (!mounted) return;
+      _avisar(
+        context,
+        ehFalhaDeRede(e)
+            ? 'Sem conexão. Tente de novo quando estiver online.'
+            : 'Não foi possível adicionar os exemplos.',
+        erro: true,
+      );
+    } finally {
+      if (mounted) setState(() => _adicionandoExemplos = false);
+    }
   }
 
   Future<void> carregarExercicios() async {
@@ -4024,7 +4053,12 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         ),
       );
     }
-    if (_exercicios.isEmpty) return const _MapaVazio();
+    if (_exercicios.isEmpty) {
+      return ListaVazia(
+        onAdicionarExemplos: _adicionarExemplos,
+        adicionando: _adicionandoExemplos,
+      );
+    }
     return _ListaAtualizavel(
       onRefresh: carregarExercicios,
       children: [
@@ -4047,8 +4081,17 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   }
 }
 
-class _MapaVazio extends StatelessWidget {
-  const _MapaVazio();
+/// Estado vazio da lista. Com [onAdicionarExemplos], oferece começar com
+/// exercícios revisados do catálogo.
+class ListaVazia extends StatelessWidget {
+  final Future<void> Function()? onAdicionarExemplos;
+  final bool adicionando;
+
+  const ListaVazia({
+    super.key,
+    this.onAdicionarExemplos,
+    this.adicionando = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -4079,6 +4122,27 @@ class _MapaVazio extends StatelessWidget {
               textAlign: TextAlign.center,
               style: context.tipo.body?.copyWith(color: contentBlue),
             ),
+            if (onAdicionarExemplos != null) ...[
+              const SizedBox(height: 24),
+              MistakeMapFilledButton(
+                key: const Key('lista-vazia-exemplos'),
+                style: _estiloBotao(fonte: 14),
+                onPressed: adicionando ? null : onAdicionarExemplos,
+                child: adicionando
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: ProgressRing(strokeWidth: 2),
+                      )
+                    : const Text('Começar com exemplos'),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Um exercício revisado de cada tema do catálogo.',
+                textAlign: TextAlign.center,
+                style: context.tipo.caption?.copyWith(color: contentBlue),
+              ),
+            ],
           ],
         ),
       ),
