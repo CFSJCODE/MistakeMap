@@ -67,7 +67,7 @@ O MistakeMap trata cada erro como um **dado de aprendizagem**:
 | 🔁 **Recuperação conta** | Acertar de novo um conceito reduz o peso dele no plano de estudo. O mapa mostra melhora, não só fragilidade. |
 | 🔒 **Privado por padrão** | Os dados educacionais pertencem ao estudante. Isolamento por conta no próprio banco (RLS) e gabaritos que o cliente nunca enxerga. |
 | 🔄 **Sempre atualizado** | No Android e no Windows, correções chegam sozinhas em segundo plano e valem na próxima abertura, sem reinstalar. Na web, cada publicação já é a versão nova. |
-| 🤖 **Várias IAs, uma só interface** | Gemini por padrão, Claude Sonnet 5.5 e OpenRouter como alternativas, com cadeia de reserva automática: se um modelo cai, o próximo assume. |
+| 🤖 **A IA certa para cada tarefa** | Ler a foto, diagnosticar o erro, montar o material de estudo e gerar exercícios são tarefas diferentes, e cada uma vai para o modelo que se saiu melhor nela em avaliação medida, entre Gemini, Claude Sonnet 5.5 e OpenRouter. Com qualidade empatada, vence o mais barato e rápido. O Gemini é o ponto de partida enquanto não há avaliação que indique outro. |
 | 💸 **Custo de operação próximo de zero** | A infraestrutura roda em camadas gratuitas (Supabase, Cloudflare R2, Gemini, Vercel); o Claude, único modelo pago no padrão, só entra com reserva de custo e teto mensal controlados no banco. |
 
 ---
@@ -188,7 +188,7 @@ flowchart TB
 | Backend | Supabase Edge Functions (Deno 2, TypeScript) | IA, upload, prática, estudo, lote e saúde |
 | Jobs | `pg_cron` + `pg_net` | Processamento em lote sem HTTP síncrono em trigger |
 | Arquivos | Cloudflare R2 | Fotos dos exercícios, compatível com S3, sem custo de saída |
-| IA | Google Gemini (padrão), Anthropic Claude Sonnet 5.5, OpenRouter | OCR, classificação de erros, material e exercícios, com cadeia de reserva entre modelos ([detalhes](#provedores-ia)) |
+| IA | Google Gemini (padrão), Anthropic Claude Sonnet 5.5, OpenRouter | OCR, classificação de erros, material e exercícios, cada tarefa no modelo de melhor qualidade e eficiência para ela ([detalhes](#provedores-ia)) |
 | Web | Vercel | Build do Flutter na própria Vercel (`vercel.json` + `scripts/vercel-build.sh`) e hospedagem com rota SPA |
 | Atualizações | Shorebird (`shorebird_code_push`) + GitHub Releases | Patches de código Dart sem reinstalar; releases nativos com APK e ZIP |
 | CI/CD | GitHub Actions | Testes, migrations, funções, releases e patches |
@@ -236,8 +236,8 @@ Salvaguardas do pipeline:
 - **Saída estruturada e validada.** A resposta do modelo precisa passar pelo contrato em `ai_contract.ts`; o que não valida não é gravado.
 - **Idempotência e concorrência.** `processing_runs` com *lease* evita análise duplicada; uma tentativa já analisada devolve o diagnóstico em cache.
 - **Cotas e orçamento.** Limite diário por usuário (`ai_daily_usage`), reserva de custo antes de chamar provedores pagos (`ai_budget_reservations`) e falha fechada quando a tabela de preços precisa de revisão.
-- **Troca de modelo só com evidência.** O roteador só escolhe outro modelo se houver avaliação com pelo menos 20 amostras na mesma tarefa, qualidade ≥ 0,8 e dados com menos de 30 dias; dentro de 2 pontos de qualidade, vence o mais barato.
-- **Fallback em cadeia.** Se um modelo falha, o pedido passa ao próximo da cadeia (veja abaixo) sem expor o erro ao aluno.
+- **Modelo escolhido por tarefa, com evidência.** Cada tarefa vai para o modelo de melhor qualidade naquela tarefa, comparado em avaliação com pelo menos 20 amostras, qualidade ≥ 0,8 e dados com menos de 30 dias; dentro de 2 pontos de qualidade, vence o mais barato e rápido (veja abaixo).
+- **Reserva só para indisponibilidade.** Se o modelo escolhido estiver fora do ar, sem cota ou sem orçamento, o pedido segue para uma reserva sem expor o erro ao aluno. A reserva protege a disponibilidade; não é ela que decide qual IA atende.
 - **Contexto educacional.** Prática e material de estudo contextualizam as questões em tecnologia (computação, robótica, eletrônica, projetos digitais) quando isso ajuda a entender, sem mudar a matéria nem a dificuldade; matérias de domínio claro (como IoT) recebem tópicos de orientação próprios.
 - **Recusas tratadas.** Bloqueios de segurança do provedor viram uma mensagem clara ao aluno (HTTP 422); resposta truncada ou fora do contrato nunca é gravada.
 
@@ -249,25 +249,32 @@ Todas as chamadas passam por um único ponto, `structuredResponse()` em [`_share
 
 | Provedor | Modelo | Papel | Saída estruturada | Ativação |
 |:---|:---|:---|:---|:---|
-| **Google Gemini** | `gemini-flash-latest` | **Principal** (padrão) | `responseFormat` com JSON Schema, *thinking* `LOW` | `GEMINI_API_KEY`, `GEMINI_MODEL` |
-| **Google Gemini** | `gemini-3.6-flash` | 1ª reserva | idem | `GEMINI_FALLBACK_MODEL` |
-| **Google Gemini** | `gemini-3.5-flash-lite` | 2ª reserva, roda em capacidade separada e costuma responder quando os Flash estão sobrecarregados | idem | `GEMINI_LITE_MODEL` (`off` desliga) |
-| **Anthropic** | `claude-sonnet-5-5` | Alternativa paga e **última reserva** quando todo o Gemini falha | `output_config` com JSON Schema, imagens em base64 | Rota direta: `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` + `ANTHROPIC_MODEL=claude-sonnet-5-5` (obrigatório; o controle de custo só aceita esse modelo). Última reserva: `AI_CLAUDE_FALLBACK_ENABLED=true` + `ANTHROPIC_API_KEY` (o modelo é definido internamente) |
-| **OpenRouter** | configurável (`openrouter/free` ou modelos `:free` no roteador automático) | Alternativa, inclusive modelos gratuitos de terceiros | `response_format` `json_schema` estrito, `require_parameters` | `AI_PROVIDER=openrouter` + `OPENROUTER_API_KEY` + `OPENROUTER_MODEL` (obrigatório) |
+| **Google Gemini** | `gemini-flash-latest` | **Padrão** de cada tarefa enquanto a avaliação não indicar outro modelo; candidato do roteador | `responseFormat` com JSON Schema, *thinking* `LOW` | `GEMINI_API_KEY`, `GEMINI_MODEL` |
+| **Google Gemini** | `gemini-3.6-flash` | 1ª reserva do Gemini (só em indisponibilidade) | idem | `GEMINI_FALLBACK_MODEL` |
+| **Google Gemini** | `gemini-3.5-flash-lite` | 2ª reserva do Gemini, roda em capacidade separada e costuma responder quando os Flash estão sobrecarregados | idem | `GEMINI_LITE_MODEL` (`off` desliga) |
+| **Anthropic** | `claude-sonnet-5-5` | Candidato do roteador em qualquer tarefa (único pago, com teto de custo); opcionalmente também **última reserva** quando todo o Gemini falha | `output_config` com JSON Schema, imagens em base64 | Rota direta: `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` + `ANTHROPIC_MODEL=claude-sonnet-5-5` (obrigatório; o controle de custo só aceita esse modelo). Última reserva: `AI_CLAUDE_FALLBACK_ENABLED=true` + `ANTHROPIC_API_KEY` (o modelo é definido internamente) |
+| **OpenRouter** | configurável (`openrouter/free` ou modelos `:free` no roteador automático) | Candidato do roteador com modelos gratuitos de terceiros; também pode ser a rota fixa de uma tarefa | `response_format` `json_schema` estrito, `require_parameters` | `AI_PROVIDER=openrouter` + `OPENROUTER_API_KEY` + `OPENROUTER_MODEL` (obrigatório) |
 | **OpenAI** | `gpt-4.1-mini` (Responses API) | Integração preparada e validada localmente, **ainda não ativada** | Structured Outputs | pendente de chave e publicação ([`_reversa_forward/openai-integration`](../_reversa_forward/openai-integration/README.md)) |
 
-**Rotas por tarefa.** Cada tipo de chamada tem uma rota própria que pode apontar para outro provedor: `ANALYSIS` (texto), `VISION` (com imagem), `STUDY` (material de estudo) e `PRACTICE` (exercícios), configuradas por `AI_<ROTA>_PROVIDER` e `AI_<ROTA>_MODEL`. Sem configuração, todas usam `AI_PROVIDER` (padrão `gemini`).
+**Uma escolha para cada tarefa.** O servidor separa as chamadas em quatro tarefas, cada uma com exigências próprias: `VISION` (ler a foto da resolução), `ANALYSIS` (diagnosticar o erro a partir do texto), `STUDY` (material de estudo) e `PRACTICE` (exercícios). Para cada pedido, o roteador ([`_shared/model_router.ts`](../supabase/functions/_shared/model_router.ts)) escolhe o modelo assim:
 
-**Ordem de decisão e fallback:**
+1. **Só entram modelos testados naquela tarefa.** A evidência vem de avaliações independentes (`AI_ROUTING_EVIDENCE`, nunca dados de alunos): pelo menos 20 amostras, qualidade ≥ 0,8, medição com menos de 30 dias, suporte a imagem quando a tarefa é `VISION`, custo de até US$ 1 por pedido e chave do provedor configurada.
+2. **A comparação precisa ser justa.** Pelo menos dois modelos diferentes avaliados no mesmo conjunto de dados; sem isso, o roteador não troca nada.
+3. **Qualidade primeiro.** Ficam só os modelos a até 2 pontos percentuais do melhor resultado, para não trocar precisão por uma diferença pequena de preço.
+4. **Depois, eficiência.** Entre esses, vence o de menor custo por pedido, com o tempo de resposta como desempate.
+
+Assim a mesma interface pode usar, por exemplo, um modelo para ler fotos e outro para gerar exercícios, cada um onde rende mais. Quando não há evidência suficiente para uma tarefa, vale a rota configurada dela (`AI_<ROTA>_PROVIDER` e `AI_<ROTA>_MODEL`) ou, sem isso, `AI_PROVIDER` (padrão `gemini`).
+
+**Ordem de decisão** (a reserva só entra quando o modelo escolhido não responde):
 
 ```mermaid
 flowchart TD
     REQ["Pedido ao servidor"] --> CAT{"Prática coberta pelo<br/>catálogo revisado?"}
     CAT -->|"sim"| OUT["Resposta validada"]
     CAT -->|"não ou outra tarefa"| EV{"Há evidência de avaliação<br/>(AI_ROUTING_EVIDENCE)?"}
-    EV -->|"sim"| AUTO["Modelo escolhido pelo roteador<br/>Gemini · Claude · OpenRouter grátis"]
+    EV -->|"sim"| AUTO["Melhor modelo para a tarefa<br/>Gemini · Claude · OpenRouter grátis"]
     AUTO -->|"ok"| OUT
-    AUTO -->|"falha ou sem orçamento"| ROTA
+    AUTO -->|"indisponível ou sem orçamento"| ROTA
     EV -->|"não"| ROTA["Rota configurada<br/>AI_ROTA_PROVIDER ou AI_PROVIDER"]
     ROTA -->|"Gemini"| G1["gemini-flash-latest"]
     G1 -->|"404, 429, 5xx ou rede"| G2["gemini-3.6-flash"]
@@ -286,9 +293,9 @@ flowchart TD
 ```
 
 1. **Catálogo primeiro.** Na prática, se o catálogo revisado cobre a rodada, nenhuma IA é chamada.
-2. **Roteador automático.** Com evidência de avaliação, o roteador escolhe entre o Gemini principal, o Claude Sonnet 5.5 e modelos gratuitos do OpenRouter, desde que a chave do provedor esteja configurada e o custo seja de no máximo US$ 1 por pedido. Se o escolhido falhar, a chamada volta para a rota configurada.
-3. **Cadeia do Gemini.** Até três tentativas, cada uma em um modelo diferente (principal → `gemini-3.6-flash` → `gemini-3.5-flash-lite`), com espera exponencial (0,5 s, 1 s) e um prazo total de 110 s para caber no limite de 150 s das Edge Functions.
-4. **Última reserva: Claude.** Com `AI_CLAUDE_FALLBACK_ENABLED=true`, falhas de indisponibilidade, limite de taxa ou saída inválida/incompleta são repetidas no `claude-sonnet-5-5`.
+2. **Melhor modelo para a tarefa.** Com evidência de avaliação, o roteador escolhe, para aquela tarefa, entre o Gemini, o Claude Sonnet 5.5 e modelos gratuitos do OpenRouter pelos critérios acima. Se o escolhido estiver indisponível, sem cota ou sem orçamento, a chamada volta para a rota configurada da tarefa.
+3. **Reserva do Gemini (só em indisponibilidade).** Até três tentativas, cada uma em um modelo diferente (principal → `gemini-3.6-flash` → `gemini-3.5-flash-lite`), com espera exponencial (0,5 s, 1 s) e um prazo total de 110 s para caber no limite de 150 s das Edge Functions.
+4. **Última reserva opcional: Claude.** Com `AI_CLAUDE_FALLBACK_ENABLED=true`, falhas de indisponibilidade, limite de taxa ou saída inválida/incompleta são repetidas no `claude-sonnet-5-5`.
 5. **Sem resposta válida,** o aluno recebe uma mensagem amigável e a tentativa continua salva para uma nova análise.
 
 **Controle de custo do Claude** (`_shared/claude_budget.ts` + migration `ai_budget_reservations`):

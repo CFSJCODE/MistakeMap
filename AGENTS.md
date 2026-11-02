@@ -70,11 +70,15 @@ Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
   O secret `SHOREBIRD_TOKEN` é uma API key do Shorebird que **expira em 1 ano**: a atual vence
   ~2027-11-02; renove até ~2027-10-19 (passo a passo na seção 3 da configuração do ATUALIZACOES.md).
 - Provedores de IA (PR #36): toda chamada passa por `structuredResponse()` em
-  `_shared/gemini.ts`. Ordem: catálogo (só prática) → roteador por evidência
-  (`AI_ROUTING_EVIDENCE`) → rota configurada (`AI_<ANALYSIS|VISION|STUDY|PRACTICE>_PROVIDER`
-  ou `AI_PROVIDER`, padrão `gemini`) → cadeia Gemini `gemini-flash-latest` →
-  `gemini-3.6-flash` → `gemini-3.5-flash-lite` → `claude-sonnet-5-5` se
-  `AI_CLAUDE_FALLBACK_ENABLED=true`. Claude é o único modelo pago: reserva US$ 1 por
+  `_shared/gemini.ts`. O desenho é **escolher a melhor IA para cada tarefa**
+  (`VISION`, `ANALYSIS`, `STUDY`, `PRACTICE`), não "se uma cai, outra assume":
+  `model_router.ts` usa avaliações (`AI_ROUTING_EVIDENCE`; ≥ 20 amostras, qualidade ≥ 0,8,
+  < 30 dias, ≥ 2 modelos no mesmo dataset) e escolhe o de melhor qualidade; dentro de 2 p.p.,
+  o mais barato e rápido. Sem evidência, vale a rota da tarefa
+  (`AI_<ROTA>_PROVIDER`/`_MODEL`) ou `AI_PROVIDER` (padrão `gemini`). Catálogo revisado vem
+  antes de tudo na prática. Reserva só em indisponibilidade: cadeia Gemini
+  `gemini-flash-latest` → `gemini-3.6-flash` → `gemini-3.5-flash-lite` → `claude-sonnet-5-5`
+  se `AI_CLAUDE_FALLBACK_ENABLED=true`. Claude é o único modelo pago: reserva US$ 1 por
   pedido, teto de US$ 100 por 31 dias (`reserve_claude_budget`), falha fechada. OpenRouter só
   entra no roteador com modelos gratuitos; modelo pago configurado à mão nele não tem orçamento no banco. Integração OpenAI (`gpt-4.1-mini`) está preparada
   em `_reversa_forward/openai-integration/`, não ativada. Documentado no README (seção
