@@ -375,7 +375,7 @@ void main() {
       expect(remoto.chamadas, contains('foto:attempt-servidor'));
     });
 
-    test('edição recusada por já ter análise sai da fila com aviso', () async {
+    test('edição recusada por já ter análise fica preservada', () async {
       await iniciar();
       remoto.falha = _semRede;
       final resultado = await sync.editarExercicio(
@@ -393,8 +393,10 @@ void main() {
         code: '42501',
       );
       await sync.sincronizar();
-      expect(await sync.fila(_usuario), isEmpty);
-      expect(sync.aviso.value, contains('descartada'));
+      final fila = await sync.fila(_usuario);
+      expect(fila.single.comErro, isTrue);
+      expect(fila.single.dados['prompt'], 'novo');
+      expect(sync.aviso.value, contains('preservada'));
     });
 
     test('outra recusa fica marcada como erro e não repete', () async {
@@ -485,6 +487,42 @@ void main() {
           dados: dados,
           criadoEm: DateTime.utc(2026, 10, 27),
         );
+
+    test('operações recusadas preservam os dados do servidor', () {
+      final recusadas = [
+        OperacaoFila(
+          usuarioId: _usuario,
+          operacao: OperacaoFila.editarExercicio,
+          dados: {'exercise_id': 'ex-1', 'subject': 'Outra', 'prompt': 'local'},
+          situacao: 'erro',
+          criadoEm: DateTime.utc(2026),
+        ),
+        OperacaoFila(
+          usuarioId: _usuario,
+          operacao: OperacaoFila.excluirExercicio,
+          dados: {'exercise_id': 'ex-1'},
+          situacao: 'erro',
+          criadoEm: DateTime.utc(2026),
+        ),
+      ];
+      final resultado = sobreporExercicios(
+        [
+          {'id': 'sub-1', 'name': 'Física'},
+        ],
+        [
+          {'id': 'ex-1', 'subject_id': 'sub-1', 'prompt_text': 'servidor'},
+        ],
+        recusadas,
+        _usuario,
+      );
+      expect(resultado.exercicios.single['prompt_text'], 'servidor');
+      expect(
+        sobreporTentativas([
+          {'id': 'a', 'exercise_id': 'ex-1'},
+        ], recusadas),
+        hasLength(1),
+      );
+    });
 
     test('mostra criação, edição e exclusão feitas offline', () {
       final r = sobreporExercicios(

@@ -1,0 +1,3 @@
+/** Orientação pedagógica comum para questões geradas pelo MistakeMap. */
+export const technologyLearningContext =
+  "Sempre que for pedagogicamente adequado, contextualize as questões em situações acessíveis de tecnologia, como computação, robótica, eletrônica ou projetos digitais. Preserve a matéria, o conceito, o raciocínio, os dados necessários e a dificuldade apropriada ao nível demonstrado pelo estudante; não exija conhecimentos técnicos que não tenham sido explicados no enunciado. A tecnologia deve contribuir para a compreensão, sem forçar uma conexão artificial nem substituir o objetivo curricular. Inclua unidades, hipóteses e informações suficientes e confira a solução e o gabarito.";

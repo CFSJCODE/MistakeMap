@@ -64,12 +64,14 @@ sobreporExercicios(
           });
         }
       case OperacaoFila.editarExercicio:
+        if (op.comErro) continue;
         for (final e in listaExercicios) {
           if (e['id'] != op.exercicioId) continue;
           e['prompt_text'] = d['prompt'];
           e['subject_id'] = materia(d['subject'] as String);
         }
       case OperacaoFila.excluirExercicio:
+        if (op.comErro) continue;
         listaExercicios.removeWhere((e) => e['id'] == op.exercicioId);
     }
   }
@@ -83,7 +85,8 @@ List<Map<String, dynamic>> sobreporTentativas(
 ) {
   final excluidos = {
     for (final op in fila)
-      if (op.operacao == OperacaoFila.excluirExercicio) op.exercicioId,
+      if (op.operacao == OperacaoFila.excluirExercicio && !op.comErro)
+        op.exercicioId,
   };
   final ids = <Object?>{};
   final lista = <Map<String, dynamic>>[];

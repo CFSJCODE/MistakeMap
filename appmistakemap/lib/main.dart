@@ -45,6 +45,7 @@ import 'sync/sincronizador.dart';
 import 'sync/sobreposicao.dart';
 
 part 'caderno_erros.dart';
+part 'learning_platform.dart';
 
 // ─── Cores da identidade visual (Obsidian Glass, modo claro) ─────────────────
 // titleBlue e contentBlue mantêm o nome histórico; hoje são as tintas escuras
@@ -1247,6 +1248,21 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     }
   }
 
+  Future<void> _abrirAprender() async {
+    if (_paginaAberta) return;
+    setState(() => _paginaAberta = true);
+    try {
+      await Navigator.of(context).push(
+        MistakeMapPageRoute(
+          context: context,
+          builder: (_) => TelaAprender(isAdmin: widget.user.isAdmin),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _paginaAberta = false);
+    }
+  }
+
   Future<void> _sair() async {
     final ok = await _confirmar(
       context,
@@ -1296,6 +1312,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       onMapa: () => _selecionar(_mapa),
       onEstudar: () => _irAoMapa(ErrorMapRequest.study),
       onCaderno: () => _selecionar(3),
+      onAprender: _abrirAprender,
     ),
     TelaPrincipal(key: _listaKey, user: widget.user),
     ErrorMapTab(
@@ -2052,6 +2069,7 @@ class TelaInicial extends StatefulWidget {
   final VoidCallback? onMapa;
   final VoidCallback? onEstudar;
   final VoidCallback? onCaderno;
+  final VoidCallback? onAprender;
   const TelaInicial({
     super.key,
     required this.user,
@@ -2060,6 +2078,7 @@ class TelaInicial extends StatefulWidget {
     this.onMapa,
     this.onEstudar,
     this.onCaderno,
+    this.onAprender,
   });
 
   @override
@@ -2145,6 +2164,31 @@ class _TelaInicialState extends State<TelaInicial> {
                     children: [
                       _cabecalho(context),
                       const SizedBox(height: 24),
+                      if (widget.onAprender != null) ...[
+                        _PainelVidro(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Explore e aprenda',
+                                style: context.tipo.subtitle?.copyWith(
+                                  color: titleBlue,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Matérias, tecnologia e conhecimentos para sua jornada.',
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton(
+                                onPressed: widget.onAprender,
+                                child: const Text('Explorar conteúdos'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 720),
                         child: _proximosPassos(context),
