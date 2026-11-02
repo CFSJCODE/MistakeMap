@@ -4,11 +4,11 @@
 
 # MistakeMap
 
-### Mapa dos Padrões de Erro do Estudante
+### Transforme cada erro em um mapa do que estudar a seguir.
 
-Plataforma de aprendizagem orientada a erros que transforma exercícios corrigidos em uma estrutura navegável de **conceitos, padrões recorrentes, evidências de recuperação e evolução**.
+O **MistakeMap** lê a sua resolução, aponta **onde** e **por que** você errou, conecta esses erros aos conceitos certos e monta um plano de estudo a partir deles. Funciona no celular, no computador e no navegador, inclusive sem internet.
 
-[![Abrir a versão web](https://img.shields.io/badge/Abrir%20no%20navegador-mistakemap--tau.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://mistakemap-tau.vercel.app/)
+[![Abrir a versão web](https://img.shields.io/badge/Experimente%20agora-mistakemap--tau.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://mistakemap-tau.vercel.app/)
 
 [![CI](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml)
 [![Migrations Supabase](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-deploy.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-deploy.yml)
@@ -17,1408 +17,402 @@ Plataforma de aprendizagem orientada a erros que transforma exercícios corrigid
 [![Metadados](https://github.com/CFSJCODE/MistakeMap/actions/workflows/sync-repository-metadata.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/sync-repository-metadata.yml)
 [![Site](https://img.shields.io/website?url=https%3A%2F%2Fmistakemap-tau.vercel.app&style=flat-square&label=site&logo=vercel&logoColor=white&up_message=no%20ar&down_message=fora%20do%20ar)](https://mistakemap-tau.vercel.app/)
 
-[![Licença](https://img.shields.io/badge/Licença-PolyForm%20Noncommercial%201.0.0-6B7280?style=flat-square)](LICENSE)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47.2-02569B?style=flat-square&logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Auth%20%C2%B7%20Postgres%20%C2%B7%20Realtime-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
 ![Deno](https://img.shields.io/badge/Edge%20Functions-Deno%202-000000?style=flat-square&logo=deno&logoColor=white)
 ![Gemini](https://img.shields.io/badge/IA-Google%20Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
+![Cloudflare R2](https://img.shields.io/badge/Arquivos-Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white)
 ![SQLite](https://img.shields.io/badge/Offline-SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
 ![Plataformas](https://img.shields.io/badge/Plataformas-Android%20%C2%B7%20Windows%20%C2%B7%20Web-3DDC84?style=flat-square)
 
 ![Status](https://img.shields.io/badge/Status-MVP%20funcional-F59E0B?style=flat-square)
 ![Versão](https://img.shields.io/badge/Versão-1.0.0-0A7F5A?style=flat-square)
+[![Licença](https://img.shields.io/badge/Licença-PolyForm%20Noncommercial%201.0.0-6B7280?style=flat-square)](LICENSE)
 ![PUC Minas](https://img.shields.io/badge/Projeto%20Acadêmico-PUC%20Minas-003B71?style=flat-square)
-![Fluent UI](https://img.shields.io/badge/Design%20System-Fluent%202%20%2B%20Liquid%20Glass-0078D4?style=flat-square&logo=windows11&logoColor=white)
-[![GitHub](https://img.shields.io/badge/GitHub-CFSJCODE%2FMISTAKEMAP-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/CFSJCODE/MISTAKEMAP)
 
-**MistakeMap não é apenas um corretor de certo ou errado.**  
-Ele procura responder a uma pergunta mais útil:
-
-> **“Que padrão existe por trás dos meus erros e em quais conceitos esse padrão aparece repetidamente?”**
+[Por que o MistakeMap](#por-que) · [Como funciona](#como-funciona) · [Funcionalidades](#funcionalidades) · [Arquitetura](#arquitetura) · [Começar](#comecar) · [Roadmap](#roadmap)
 
 </div>
 
 ---
 
-<a id="sobre-o-projeto"></a>
+<a id="por-que"></a>
 
-## Sobre o projeto
+## Por que o MistakeMap
 
-O **MistakeMap** é um aplicativo que transforma exercícios corrigidos em um **grafo de fragilidades conceituais, tipos de erro, recorrência e evolução**, orientando o processo de revisão sem reduzir o estudante a uma nota.
+> **A nota diz que você errou. O MistakeMap diz o que fazer com isso.**
 
-O estudante pode fotografar exercícios corrigidos ou registrar sua resolução manualmente. A aplicação identifica conceitos envolvidos, sugere padrões de erro — como **negação lógica, unidade, sinal, condição de contorno ou interpretação** — e constrói um mapa temporal após validação do estudante.
+Quem estuda resolvendo exercícios conhece o ciclo: a prova volta corrigida, o aluno olha a nota, guarda a folha e repete o mesmo deslize semanas depois. O problema não é falta de esforço. É que **ninguém organiza os erros**: eles ficam espalhados em cadernos, provas e listas, e o padrão por trás deles nunca aparece.
 
-A essência do projeto é simples:
+O MistakeMap trata cada erro como um **dado de aprendizagem**:
 
-### Fluxo conceitual do MistakeMap
+| Sem o MistakeMap | Com o MistakeMap |
+|:---|:---|
+| "Errei a questão 4." | "Pela terceira vez em duas semanas, troquei o sinal ao isolar a variável em Cálculo." |
+| Revisar tudo, ou revisar o que parece mais difícil | Revisar primeiro o que **mais se repete, mais recentemente e com menos sinal de recuperação** |
+| Exercícios genéricos do livro | Exercícios **gerados para o seu tipo de erro**, com gabarito conferido no servidor |
+| Anotações soltas que se perdem | Um **caderno de erros** que funciona offline e acompanha você em qualquer aparelho |
+
+### Para quem
+
+- **Estudantes** do ensino fundamental (7º ao 9º ano), do ensino médio, do ensino superior e **autodidatas**: o catálogo de matérias do banco já cobre essas quatro etapas.
+- **Cursos de exatas e engenharias**, onde o erro de procedimento (sinal, unidade, condição de contorno) custa caro e se repete.
+- **Professores, tutores e instituições** (próxima fase): visão agregada dos padrões de erro de uma turma, sempre com compartilhamento explícito e revogável pelo aluno.
+
+### O que torna o produto diferente
+
+| Diferencial | O que significa na prática |
+|:---|:---|
+| 🧭 **Erro com evidência** | Cada erro apontado pela IA vem com o trecho da resolução que o justifica e um nível de confiança. Nada de "está errado" sem explicação. |
+| 🧑‍🏫 **O aluno decide** | A IA sugere hipóteses ("padrão sugerido"), o estudante confirma. O mapa nunca vira rótulo permanente. |
+| 📶 **Offline de verdade** | Exercícios, tentativas e o caderno funcionam sem rede e sincronizam sozinhos quando a conexão volta. |
+| 🔁 **Recuperação conta** | Acertar de novo um conceito reduz o peso dele no plano de estudo. O mapa mostra melhora, não só fragilidade. |
+| 🔒 **Privado por padrão** | Os dados educacionais pertencem ao estudante. Isolamento por conta no próprio banco (RLS) e gabaritos que o cliente nunca enxerga. |
+| 💸 **Custo de operação próximo de zero** | Toda a infraestrutura roda em camadas gratuitas (Supabase, Cloudflare R2, Gemini, Vercel), com cotas por usuário e orçamento de IA controlado no banco. |
+
+---
+
+<a id="como-funciona"></a>
+
+## Como funciona
+
+O app guia o estudante por um ciclo de cinco passos, sempre visível na tela inicial em **"O que fazer agora"**:
 
 ```mermaid
 flowchart LR
-    A["Exercício"] --> B["Tentativa"]
-    B --> C["Correção"]
-    C --> D["Conceitos envolvidos"]
-    D --> E["Padrões de erro"]
-    E --> F{"Validação humana"}
-    F -->|Confirmado| G["Eventos confiáveis"]
-    F -->|Revisado| H["Evento corrigido"]
-    G --> I["MistakeMap"]
-    H --> I
-    I --> J["Revisão priorizada"]
-    J --> K["Nova evidência de recuperação"]
+    A["1 · Analisar<br/>foto ou texto da resolução"] --> B["2 · Revisar<br/>correção com evidências"]
+    B --> C["3 · Mapa de erros<br/>padrões por tipo e conceito"]
+    C --> D["4 · Estudar<br/>resumo, cartões, quiz e prática"]
+    D --> E["5 · Caderno<br/>a regra aprendida, para revisar depois"]
+    E -.-> A
 ```
 
-> [!IMPORTANT]
-> O **MistakeMap trata o erro como dado de aprendizagem**: um evento contextual que pode ser observado, validado, relacionado a conceitos e acompanhado ao longo do tempo.
+1. **Analisar.** O estudante fotografa a resolução (ou digita) e envia. A imagem vai direto para um bucket privado por URL assinada; a IA transcreve, compara com o esperado e classifica cada erro.
+2. **Revisar.** A correção mostra cada erro com a categoria, o conceito envolvido, o trecho que serve de evidência e a confiança da IA. O exercício pode ser editado a qualquer momento.
+3. **Mapa de erros.** Os erros se acumulam em um grafo de conceitos e em gráficos de frequência por tipo, mostrando o que se repete e em quais matérias.
+4. **Estudar.** Para a matéria escolhida, a IA prepara um material no estilo NotebookLM: resumo, cartões de memorização e um quiz corrigido no servidor. Do quiz o aluno vai direto para a **prática direcionada**, escolhendo o tipo de erro que quer reforçar.
+5. **Caderno.** O estudante registra, com as próprias palavras, a regra que aprendeu. O caderno vive no aparelho, funciona sem internet e sincroniza entre dispositivos.
+
+### Taxonomia de erros
+
+A IA classifica cada ocorrência em uma de **7 categorias**, a mesma usada para escolher a prática:
+
+| `calculo` | `conceito` | `sinal` | `interpretacao` | `procedimento` | `unidade` | `outro` |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| conta errada | ideia mal aplicada | troca de sinal | enunciado mal lido | passo omitido ou fora de ordem | unidade ou dimensão | demais casos |
 
 ---
 
-<a id="identificacao-academica"></a>
+<a id="funcionalidades"></a>
 
-## Identificação acadêmica
+## Funcionalidades
 
-| Campo | Informação |
-|:---|:---|
-| **Instituição** | Pontifícia Universidade Católica de Minas Gerais — **PUC Minas** |
-| **Curso** | Engenharia de Computação |
-| **Disciplina** | Projeto Integrado I: Desenvolvimento Móvel |
-| **Discentes** | **Cláudio Francisco Dos Santos Júnior** · **Lucas Emanuel Simão Silva** |
-| **Orientação** | **Ilo Amy Saldanha Rivero** |
-| **Versão do documento** | 1.1 — Outubro de 2026 |
+### Disponível hoje
 
-> [!NOTE]
-> O projeto é desenvolvido no contexto acadêmico da disciplina **Projeto Integrado I: Desenvolvimento Móvel**, articulando engenharia de software, experiência do usuário, modelagem de dados e inteligência artificial aplicada à aprendizagem.
-
----
-
-<a id="stack-tecnologica"></a>
-
-## Tecnologias
-
-### Aplicação, arquitetura e interface Flutter
-
-<p>
-  <img src="https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter">
-  <img src="https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart">
-  <img src="https://img.shields.io/badge/Fluent_UI-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Fluent UI">
-  <img src="https://img.shields.io/badge/Liquid_Glass-Barras%20e%20toasts-5B8DEF?style=flat-square&logo=flutter&logoColor=white" alt="Liquid Glass">
-  <img src="https://img.shields.io/badge/Layout-Adaptativo-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Layout adaptativo">
-</p>
-
-### Design System
-
-<p>
-  <img src="https://img.shields.io/badge/Design_System-Fluent_UI-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Fluent UI">
-  <img src="https://img.shields.io/badge/App-FluentApp-0078D4?style=flat-square" alt="FluentApp">
-  <img src="https://img.shields.io/badge/Theme-FluentThemeData-0078D4?style=flat-square" alt="FluentThemeData">
-  <img src="https://img.shields.io/badge/Icons-FluentIcons-0078D4?style=flat-square" alt="FluentIcons">
-</p>
-
-O **MistakeMap utiliza Fluent UI como Design System oficial da camada de apresentação**.
-
-A interface deve utilizar, sempre que aplicável, os componentes e princípios do ecossistema Fluent:
-
-- `FluentApp`;
-- `FluentThemeData`;
-- `NavigationView`;
-- `NavigationPane`;
-- `CommandBar`;
-- `InfoBar`;
-- `ContentDialog`;
-- `Flyout`;
-- `FluentIcons`;
-- `FilledButton`;
-- `Button`;
-- `TextBox`;
-- `ComboBox`;
-- `AutoSuggestBox`;
-- `ProgressRing`;
-- `ProgressBar`;
-- `Acrylic`, quando houver justificativa funcional;
-- tipografia, hierarquia, profundidade, espaçamento e estados coerentes com o **Fluent Design System**.
-
-> [!IMPORTANT]
-> **Material Design não constitui a linguagem visual principal do MistakeMap.**
->
-> O projeto utiliza Flutter como framework de interface, porém sua identidade visual e seus componentes de apresentação são baseados em **Fluent UI**.
->
-> A única exceção são as telas de análise por IA (envio, mapa de erros, correção e prática), que rodam em uma rota Material 3 isolada (`AiMaterialShell`) para usar gráficos e formulários. Elas recebem os mesmos tokens de cor, raio e movimento da marca (`lib/theme/`), e nenhuma tela Fluent depende dessa rota.
-
-### Backend e dados
-
-<p>
-  <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
-  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/RLS-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="Row Level Security">
-  <img src="https://img.shields.io/badge/Edge_Functions-Deno-000000?style=flat-square&logo=deno&logoColor=white" alt="Edge Functions">
-  <img src="https://img.shields.io/badge/Realtime-Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase Realtime">
-  <img src="https://img.shields.io/badge/SQLite-Offline--first-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite offline-first">
-  <img src="https://img.shields.io/badge/Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white" alt="Cloudflare R2">
-</p>
-
-### Inteligência e processamento
-
-<p>
-  <img src="https://img.shields.io/badge/Google_Gemini-Multimodal-8E75B2?style=flat-square&logo=googlegemini&logoColor=white" alt="Google Gemini">
-  <img src="https://img.shields.io/badge/OCR-Revisão%20manual-4B5563?style=flat-square" alt="OCR">
-  <img src="https://img.shields.io/badge/LLM-Backend-6A5ACD?style=flat-square" alt="LLM">
-  <img src="https://img.shields.io/badge/Grafo-Conceitual-7C3AED?style=flat-square" alt="Grafo conceitual">
-  <img src="https://img.shields.io/badge/IA-Human--in--the--Loop-111827?style=flat-square" alt="Human in the Loop">
-</p>
+| Área | O que o estudante tem | Onde está no código |
+|:---|:---|:---|
+| **Conta** | Cadastro e login com e-mail/senha ou **Google**, sessão persistente | `lib/auth/`, `lib/main.dart` |
+| **Exercícios** | Criar, listar, editar, excluir e ver detalhes; lista e detalhe lado a lado em telas largas | `lib/main.dart` |
+| **Análise por IA** | Transcrição da foto, erros por categoria e conceito, evidência e confiança; fila em lote processada pelo servidor | `analyze-attempt`, `process-batch` |
+| **Mapa de erros** | Grafo de conceitos, frequência por tipo de erro, evidências por conceito | `lib/ai/insights_view.dart` |
+| **Material de estudo** | Resumo, cartões e quiz gerados pela IA, com gabarito guardado e corrigido no servidor | `study-material`, `lib/ai/study_material_view.dart` |
+| **Prática direcionada** | 3 a 5 exercícios por pedido, filtrados por tipo de erro; conceitos ranqueados por **frequência × recência** (meia-vida de 14 dias), descontando a recuperação já demonstrada | `generate-practice` |
+| **Catálogo revisado** | 30 exercícios escritos e revisados por pessoas (5 por matéria/assunto/tema), servidos antes da IA quando cobrem a rodada | `catalog_exercises`, `_shared/catalog.ts` |
+| **Caderno de erros** | Registro livre de erros e regras, com filtros que ficam salvos | `lib/caderno_erros.dart`, `lib/local/` |
+| **Offline-first** | Tudo continua funcionando sem rede; o que foi feito offline sobe sozinho ao reconectar | `lib/sync/` |
+| **Vários aparelhos** | Caderno, exercícios e exclusões chegam em tempo real aos outros dispositivos | Supabase Realtime, `lib/sync/caderno_sync.dart` |
+| **Painel administrativo** | Papéis de usuário, métricas de uso, cotas e consumo da IA por modelo | `lib/admin/` |
+| **Interface adaptativa** | Celular, tablet, desktop, dobráveis e telas duplas, com navegação própria para cada largura | `lib/layout/` |
 
 ### Plataformas
 
-<p>
-  <img src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android">
-  <img src="https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Windows">
-  <img src="https://img.shields.io/badge/Web-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Web">
-  <a href="https://mistakemap-tau.vercel.app/"><img src="https://img.shields.io/badge/Vercel-mistakemap--tau-000000?style=flat-square&logo=vercel&logoColor=white" alt="Versão web na Vercel"></a>
-</p>
-
-### Stack principal
-
-<div align="center">
-
-<table>
-  <tr>
-    <td align="center" width="130">
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/flutter/flutter-original.svg" width="46" height="46" alt="Flutter"><br>
-      <strong>Flutter</strong><br><sub>Framework</sub>
-    </td>
-    <td align="center" width="130">
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dart/dart-original.svg" width="46" height="46" alt="Dart"><br>
-      <strong>Dart</strong><br><sub>Linguagem</sub>
-    </td>
-    <td align="center" width="130">
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows11/windows11-original.svg" width="46" height="46" alt="Fluent UI"><br>
-      <strong>Fluent UI</strong><br><sub>Design System</sub>
-    </td>
-    <td align="center" width="130">
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/supabase/supabase-original.svg" width="46" height="46" alt="Supabase"><br>
-      <strong>Supabase</strong><br><sub>Backend</sub>
-    </td>
-    <td align="center" width="130">
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postgresql/postgresql-original.svg" width="46" height="46" alt="PostgreSQL"><br>
-      <strong>PostgreSQL</strong><br><sub>Persistência</sub>
-    </td>
-  </tr>
-</table>
-
-</div>
-
-| Camada | Tecnologia | Responsabilidade |
-|:---|:---|:---|
-| **Frontend** | Flutter + Dart | Captura, edição, revisão e visualização |
-| **Design System** | `fluent_ui` | Linguagem visual e componentes da aplicação |
-| **Aplicação raiz** | `FluentApp` | Configuração global da camada visual |
-| **Tema** | `FluentThemeData` | Cores, brilho, tipografia e comportamento visual |
-| **Iconografia** | `WindowsIcons` (`fluent_ui`) | Iconografia consistente com Fluent Design |
-| **Camada flutuante** | `liquid_glass_widgets` | Barras, botões da barra e avisos (toasts) |
-| **Telas de IA** | Material 3 isolado (`AiMaterialShell`) | Envio, mapa de erros, correção e prática |
-| **Estado** | `StatefulWidget` + `setState` | Estado local por tela, sem framework externo |
-| **Navegação** | `Navigator` + shell adaptativo | Barra de vidro com 7 fatias no celular (< 600 px), trilho compacto (600–840 px) e trilho largo (≥ 840 px); Mapa como aba com pilha própria (ver [`NAVEGACAO.md`](../appmistakemap/NAVEGACAO.md)) |
-| **Banco local** | SQLite (`sqflite`, `sqflite_common_ffi`, `sqflite_common_ffi_web`) + `shared_preferences` | Caderno de erros, cache offline e fila de envio (ver [`BANCO_LOCAL.md`](../appmistakemap/BANCO_LOCAL.md)) |
-| **Sincronização** | Supabase Realtime + `lib/sync/` | Offline-first: Supabase primeiro, SQLite sem rede, fila `fila_sync` ao reconectar |
-| **Autenticação** | Supabase Auth | E-mail e senha, e login com Google (OAuth) |
-| **Backend** | Supabase | Auth, banco, Edge Functions e jobs (`pg_cron` + `pg_net`) |
-| **Banco** | PostgreSQL | Eventos e grafo conceitual via tabelas, com RLS |
-| **Armazenamento de arquivos** | Cloudflare R2 | Fotos de exercícios via URL pré-assinada (10GB grátis, compatível S3, egress zero) |
-| **OCR** | Google Gemini (multimodal) | Transcrição da foto com revisão manual |
-| **IA** | Gemini nas Edge Functions (Anthropic e OpenRouter opcionais) | Sugestão de conceitos, erros, material de estudo e exercícios de prática, com orçamento por reserva e escolha de modelo por avaliação |
-| **Visualização** | `CustomPaint` | Grafo de conceitos e barras de frequência |
-
----
-
-<a id="metadados"></a>
-
-## Informações do projeto
-
-| Campo | Definição |
+| Plataforma | Situação |
 |:---|:---|
-| **Projeto** | MistakeMap |
-| **Documento-base** | Concepção, Arquitetura e Roadmap de Implementação |
-| **Contexto de aplicação** | Estudo individual, matemática, física, computação, engenharias e disciplinas baseadas em resolução de problemas |
-| **Stack principal** | Flutter + Dart + Fluent UI + Supabase/PostgreSQL + Edge Functions + Cloudflare R2 + Gemini + grafo conceitual |
-| **Design System** | Fluent UI / Fluent Design |
-| **Pacote de interface** | `fluent_ui` + `liquid_glass_widgets` |
-| **Plataformas** | Android, Windows e Web |
-| **Versão web** | [mistakemap-tau.vercel.app](https://mistakemap-tau.vercel.app) (publicada a cada push no `main`) |
-| **Versão** | **1.0.0 — Outubro de 2026** |
-| **Status** | MVP funcional |
-| **Repositório** | [`CFSJCODE/MISTAKEMAP`](https://github.com/CFSJCODE/MISTAKEMAP) |
+| 🌐 **Web** | Publicada em [mistakemap-tau.vercel.app](https://mistakemap-tau.vercel.app/) a cada atualização do `main` |
+| 🤖 **Android** | Build de release funcional (APK); assinatura de loja pendente para a Play Store |
+| 🪟 **Windows** | Build desktop funcional |
+| 🍎 **iOS** | Adiado até haver Mac ou conta Apple Developer |
 
 ---
 
-<a id="estado-atual"></a>
+<a id="arquitetura"></a>
 
-## Estado atual da implementação
+## Arquitetura
 
-O núcleo do MVP está implementado e publicado: o estudante cadastra exercícios, envia a foto da tentativa, recebe uma análise de erros com evidências, navega pelo mapa de erros, estuda com material gerado pela IA, pratica com exercícios direcionados e mantém um caderno de erros que funciona sem internet e sincroniza entre aparelhos.
+### Visão geral
 
-| Área | Situação | Onde está |
+```mermaid
+flowchart TB
+    subgraph Cliente["Cliente Flutter · Android, Windows, Web"]
+        UI["Telas Fluent 2 + Liquid Glass"]
+        SYNC["Sincronizador offline-first"]
+        LOCAL[("SQLite local<br/>cache, caderno, fila_sync")]
+        UI --> SYNC --> LOCAL
+    end
+
+    subgraph Supabase["Supabase"]
+        AUTH["Auth · JWT ES256<br/>e-mail/senha e Google"]
+        PG[("PostgreSQL + RLS<br/>pg_cron · pg_net")]
+        RT["Realtime"]
+        EF["Edge Functions · Deno"]
+    end
+
+    R2[("Cloudflare R2<br/>bucket privado")]
+    AI["Google Gemini<br/>(Anthropic e OpenRouter opcionais)"]
+
+    SYNC <-->|"consultas e upserts"| PG
+    RT -->|"mudanças de outros aparelhos"| SYNC
+    UI -->|"login"| AUTH
+    UI -->|"chamadas autenticadas"| EF
+    UI -->|"PUT por URL assinada"| R2
+    EF --> PG
+    EF -->|"leitura da imagem"| R2
+    EF -->|"JSON Schema"| AI
+    PG -->|"pg_cron → process-batch"| EF
+```
+
+**Princípio central:** o Flutter só apresenta e coleta. **OCR, LLM, correção de quiz, ranking e cotas ficam no servidor**, onde podem ser auditados, testados e protegidos. A chave `service_role` nunca entra no app.
+
+### Stack
+
+| Camada | Tecnologia | Papel |
+|:---|:---|:---|
+| Interface | Flutter 3.47 + Dart 3.13, `fluent_ui`, `liquid_glass_widgets` | Um único código para Android, Windows e Web |
+| Estado | `StatefulWidget` + `setState` | Estado local por tela, sem framework extra |
+| Banco local | SQLite (`sqflite`, `sqflite_common_ffi`, `sqflite_common_ffi_web`) + `shared_preferences` | Cache offline, caderno e fila de envio |
+| Autenticação | Supabase Auth | E-mail/senha e Google OAuth; JWT ES256 |
+| Banco | PostgreSQL (Supabase) | 31 migrations versionadas, RLS em todas as tabelas |
+| Tempo real | Supabase Realtime | Propaga mudanças entre aparelhos |
+| Backend | Supabase Edge Functions (Deno 2, TypeScript) | IA, upload, prática, estudo, lote e saúde |
+| Jobs | `pg_cron` + `pg_net` | Processamento em lote sem HTTP síncrono em trigger |
+| Arquivos | Cloudflare R2 | Fotos dos exercícios, compatível com S3, sem custo de saída |
+| IA | Google Gemini (multimodal) | OCR, classificação de erros, material e exercícios |
+| Web | Vercel | Hospedagem da versão web |
+| CI/CD | GitHub Actions | Testes, migrations, funções e deploy web |
+
+### Edge Functions
+
+| Função | Método | O que faz |
 |:---|:---:|:---|
-| **Login e cadastro** (e-mail/senha e Google) | ✅ | `appmistakemap/lib/main.dart`, `lib/auth/` |
-| **Exercícios** (criar, listar, editar, excluir e detalhar) | ✅ | `appmistakemap/lib/main.dart` |
-| **Envio da foto** para a R2 via URL pré-assinada, com SHA-256 | ✅ | `lib/ai/analysis_repository.dart`, função `upload-url` |
-| **Análise por IA** (transcrição, erros por categoria, conceito, evidência e confiança) | ✅ | função `analyze-attempt`, `lib/ai/insights_view.dart` |
-| **Mapa de erros** (grafo de conceitos e frequência por categoria) | ✅ | `lib/ai/insights_view.dart` |
-| **Exercícios de prática** gerados a partir dos erros (3 a 5 por pedido) | ✅ | função `generate-practice` |
-| **Prática por tipo de erro** (7 categorias, conceitos ranqueados por frequência × recência, meia-vida de 14 dias, descontando a recuperação) | ✅ | `generate-practice`, seletor "Tipo de erro para reforçar" |
-| **Catálogo de exercícios revisados** (30 exercícios, 5 por matéria/assunto/tema, gabarito fora do alcance do cliente) | ✅ | `catalog_exercises`, `_shared/catalog.ts` |
-| **Material de estudo** estilo NotebookLM (resumo, cartões e quiz → Praticar) | ✅ | função `study-material`, `lib/ai/study_material_view.dart` |
-| **Caderno de erros** (CRUD local em SQLite, filtros persistidos) | ✅ | `lib/caderno_erros.dart`, `lib/local/` |
-| **Modo offline** (Supabase primeiro, SQLite sem rede, fila local de envio) | ✅ | `lib/sync/` |
-| **Tempo real e sincronização entre aparelhos** (caderno em `error_notes`, exclusões propagadas, barreira `MM410` contra filas antigas) | ✅ | `lib/sync/caderno_sync.dart`, `deleted_records` |
-| **Orçamento e roteamento de provedores de IA** (reserva de custo, troca de modelo só com avaliação) | ✅ | `_shared/claude_budget.ts`, `_shared/model_router.ts` |
-| **Fila em lote** processada pelo `pg_cron` | ✅ | função `process-batch` |
-| **Painel administrativo** (papéis, uso e cotas da IA por modelo) | ✅ | `lib/admin/`, tela Admin |
-| **Layout adaptativo** (celular, tablet, desktop, dobráveis e telas duplas) | ✅ | `lib/layout/` |
-| **Navegação Fluent + Liquid Glass** (barra de 7 fatias: Início · Lista · Mapa · Estudar · Caderno · Sobre · Mais; trilho em janelas médias e largas; Voltar previsível) | ✅ | `lib/layout/navigation_shell.dart`, [`NAVEGACAO.md`](../appmistakemap/NAVEGACAO.md) |
-| **Identidade visual** Obsidian Glass em modo claro com acentos Aurora | ✅ | `lib/theme/`, [`PALETA.md`](../appmistakemap/PALETA.md) |
-| **Fórmula de prioridade** $P = F \times R \times I \times (1 - M)$ | 🟡 | F, R e M já ranqueiam a prática; falta o termo I (importância) e a fila de revisão |
-| **Validação humana** dos erros sugeridos (confirmar, corrigir, rejeitar) | 🔜 | hoje a análise é exibida, ainda sem confirmação por evento |
-| **Relatórios** PDF/CSV | 🔜 | não iniciado |
+| `upload-url` | `POST` | Valida a sessão, registra o SHA-256 calculado no app, reserva cota e assina um `PUT` na R2 |
+| `analyze-attempt` | `POST` | Lê a imagem, confere o SHA-256, chama a IA com saída em JSON Schema, valida e grava a análise em uma única operação (ou devolve o resultado em cache) |
+| `generate-practice` | `POST` | Escolhe os conceitos prioritários e serve o catálogo revisado ou gera exercícios novos, guardando o gabarito fora do alcance do cliente |
+| `study-material` | `POST` | Gera resumo, cartões e quiz da matéria e corrige as respostas do quiz no servidor |
+| `process-batch` | `POST` | Chamado pelo `pg_cron` com segredo próprio; analisa a fila de tentativas pendentes com *lease* e idempotência |
+| `health` | `GET` | Verifica banco e R2 para o monitor de saúde |
 
-A taxonomia de erros usada pela IA tem 7 categorias: `calculo`, `conceito`, `sinal`, `interpretacao`, `procedimento`, `unidade` e `outro`. Cada usuário tem um limite diário de análises e de pedidos de prática, controlado no banco (`ai_daily_usage`).
+Código compartilhado em `supabase/functions/_shared/`: contrato e validação da IA, HTTP/CORS/autenticação, cliente do provedor, catálogo, orçamento de IA (`claude_budget.ts`) e roteador de modelos (`model_router.ts`).
 
-> [!NOTE]
-> O worker Rust em `worker/` foi a primeira implementação do pipeline e está **arquivado**: desde 28/09/2026 o processamento roda nas Supabase Edge Functions. Os detalhes de backend, deploy e pendências estão em [`BACKEND.md`](../BACKEND.md), e as migrações em [`appmistakemap/database/README.md`](../appmistakemap/database/README.md).
-
----
-
-<a id="novidades"></a>
-
-## Novidades recentes
-
-O que entrou no `main` entre outubro e novembro de 2026:
-
-| PR | Entrega |
-|:---:|:---|
-| [#17](https://github.com/CFSJCODE/MistakeMap/pull/17) | Análise da IA gravada como objeto JSON e fallback do Gemini ampliado |
-| [#18](https://github.com/CFSJCODE/MistakeMap/pull/18) | **Caderno de erros offline**: SQLite (`sqflite`/`ffi`/`ffi_web`) com CRUD completo e filtros persistidos ([`BANCO_LOCAL.md`](../appmistakemap/BANCO_LOCAL.md)) |
-| [#20](https://github.com/CFSJCODE/MistakeMap/pull/20) | **Prática por tipo de erro**: `generate-practice` aceita `category` e ranqueia conceitos por frequência × recência, descontando a recuperação registrada em `mastery_events` |
-| [#22](https://github.com/CFSJCODE/MistakeMap/pull/22) | Navegação repensada, Mapa e análise unificados e correções de usabilidade |
-| [#23](https://github.com/CFSJCODE/MistakeMap/pull/23) | **Identidade Obsidian Glass** em modo claro, com acentos Aurora e texto colorido sempre em contraste ≥ 4,5:1 ([`PALETA.md`](../appmistakemap/PALETA.md)) |
-| [#24](https://github.com/CFSJCODE/MistakeMap/pull/24) | **Offline-first**: o app consulta o Supabase primeiro, cai no SQLite sem rede, guarda escritas em `fila_sync` e recebe mudanças por Realtime |
-| [#27](https://github.com/CFSJCODE/MistakeMap/pull/27) | **Material de estudo** estilo NotebookLM na aba Estudar: resumo, cartões e quiz que levam à prática |
-| [#29](https://github.com/CFSJCODE/MistakeMap/pull/29) · [#30](https://github.com/CFSJCODE/MistakeMap/pull/30) | Navegação guiada pelo ciclo de estudo ("O que fazer agora" no Início), app inteiro offline, barra em vidro líquido real e toque uniforme |
-| [#31](https://github.com/CFSJCODE/MistakeMap/pull/31) | **Navegação reestruturada**: Mapa como aba com pilha própria, trilho em janelas médias e Voltar previsível |
-| [#32](https://github.com/CFSJCODE/MistakeMap/pull/32) · [#34](https://github.com/CFSJCODE/MistakeMap/pull/34) · [#35](https://github.com/CFSJCODE/MistakeMap/pull/35) · [#37](https://github.com/CFSJCODE/MistakeMap/pull/37) | **Barra inferior de ponta a ponta com 7 fatias** (Início · Lista · Mapa · Estudar · Caderno · Sobre · Mais) e trilho compacto com todas as opções ([`NAVEGACAO.md`](../appmistakemap/NAVEGACAO.md)) |
-| [#36](https://github.com/CFSJCODE/MistakeMap/pull/36) | Estudo atualizado, controle de provedores de IA (Gemini, Anthropic, OpenRouter) e orçamento por reserva |
-| [#38](https://github.com/CFSJCODE/MistakeMap/pull/38) | **Caderno sincronizado entre aparelhos** (`error_notes`), **exclusões em tempo real** com barreira `MM410` contra filas antigas e **catálogo de 30 exercícios revisados** |
-| [#39](https://github.com/CFSJCODE/MistakeMap/pull/39) | Histórico de migrations alinhado com o banco publicado e `generate-practice` seguindo para a IA quando o catálogo não fecha a rodada |
-
----
-
-<a id="sumario"></a>
-
-## Navegação
-
-<details>
-<summary><strong>Abrir sumário completo</strong></summary>
-
-- [Sobre o projeto](#sobre-o-projeto)
-- [Identificação acadêmica](#identificacao-academica)
-- [Tecnologias](#stack-tecnologica)
-- [Informações do projeto](#metadados)
-- [Estado atual da implementação](#estado-atual)
-- [Novidades recentes](#novidades)
-- [Visão Executiva](#visao-executiva)
-- [Objetivos](#objetivos)
-- [Problema e Cenário de Uso](#problema-e-cenario-de-uso)
-- [Escopo Funcional](#escopo-funcional)
-- [Regras de Domínio](#regras-de-dominio)
-- [Pipeline de Extração e IA](#pipeline-de-extracao-e-ia)
-- [Modelagem de Prioridade](#modelagem-de-prioridade)
-- [Limites e Salvaguardas](#limites-e-salvaguardas)
-- [Arquitetura de Software](#arquitetura-de-software)
-- [Modelo de Dados](#modelo-de-dados)
-- [Relacionamentos](#relacionamentos)
-- [Regras de Integridade](#regras-de-integridade)
-- [Segurança e Privacidade](#seguranca-e-privacidade)
-- [Experiência do Usuário](#experiencia-do-usuario)
-- [Fluent UI](#fluent-ui)
-- [Fluxos Operacionais](#fluxos-operacionais)
-- [Relatórios e Exportações](#relatorios-e-exportacoes)
-- [Arquitetura Flutter](#arquitetura-flutter)
-- [Offline e Sincronização](#offline-e-sincronizacao)
-- [Roadmap](#roadmap)
-- [MVP Recomendado](#mvp-recomendado)
-- [Critérios de Aceitação](#criterios-de-aceitacao)
-- [Testes e Qualidade](#testes-e-qualidade)
-- [Evoluções Futuras](#evolucoes-futuras)
-- [Recomendação de Implementação](#recomendacao-de-implementacao)
-- [Exemplo de Registro](#exemplo-de-registro)
-- [Indicadores de Produto](#indicadores-de-produto)
-- [Execução](#execucao)
-- [Síntese](#sintese)
-
-</details>
-
----
-
-<a id="visao-executiva"></a>
-
-## Visão Executiva
-
-O **MistakeMap** é uma plataforma de aprendizagem orientada a erros que transforma exercícios corrigidos em **evidências estruturadas de aprendizagem**, permitindo identificar recorrências, relacionar falhas a conceitos e acompanhar sinais de recuperação ao longo do tempo.
-
-> [!IMPORTANT]
-> O objetivo do MistakeMap não é apenas registrar **se uma resposta está correta ou incorreta**, mas compreender **quais padrões de erro aparecem, onde aparecem e como evoluem com novas tentativas**.
-
-### Como o sistema funciona
-
-O estudante registra uma atividade juntamente com sua resolução e respectiva correção. A partir desse material, o sistema estrutura os dados, identifica conceitos relacionados e propõe hipóteses de erro que posteriormente devem ser revisadas pelo próprio estudante.
-
-| Entrada | Finalidade |
-|:---|:---|
-| **Exercício** | Identificar a atividade analisada |
-| **Enunciado** | Preservar o contexto e os requisitos do problema |
-| **Solução** | Registrar o raciocínio e os passos executados pelo estudante |
-| **Correção / Gabarito** | Estabelecer uma referência para comparação |
-| **Disciplina** | Contextualizar conceitos, relações e taxonomias |
+### Pipeline de IA
 
 ```mermaid
-flowchart LR
-    A["Exercício"] --> B["Tentativa do estudante"]
-    B --> C["Correção / Gabarito"]
-    C --> D["OCR + Estruturação"]
-    D --> E["Identificação de conceitos"]
-    E --> F["Hipóteses de erro"]
-    F --> G{"Validação do estudante"}
-    G -->|Confirmar| H["Evento de erro"]
-    G -->|Corrigir| I["Evento revisado"]
-    G -->|Rejeitar| J["Hipótese descartada"]
-    H --> K["MistakeMap"]
-    I --> K
-    K --> L["Priorização da revisão"]
+sequenceDiagram
+    participant App as App Flutter
+    participant UP as upload-url
+    participant R2 as Cloudflare R2
+    participant AN as analyze-attempt
+    participant DB as PostgreSQL
+    participant AI as Provedor de IA
+
+    App->>UP: pedido de upload (SHA-256, tamanho)
+    UP->>DB: valida sessão e reserva cota
+    UP-->>App: URL assinada (PUT)
+    App->>R2: envia a foto direto ao bucket
+    App->>AN: analisar tentativa
+    AN->>DB: claim com lease e cota diária
+    AN->>R2: lê a imagem e confere o SHA-256
+    AN->>AI: prompt + JSON Schema
+    AI-->>AN: transcrição, erros, evidências
+    AN->>AN: valida o JSON contra o contrato
+    AN->>DB: grava análise e error_events
+    AN-->>App: diagnóstico
 ```
 
-### Papel do OCR e da Inteligência Artificial
+Salvaguardas do pipeline:
 
-O **OCR** transforma imagens, documentos e resoluções manuscritas em conteúdo editável, enquanto a **Inteligência Artificial** auxilia na interpretação da tentativa e na identificação de conceitos e possíveis padrões de falha.
+- **Saída estruturada e validada.** A resposta do modelo precisa passar pelo contrato em `ai_contract.ts`; o que não valida não é gravado.
+- **Idempotência e concorrência.** `processing_runs` com *lease* evita análise duplicada; uma tentativa já analisada devolve o diagnóstico em cache.
+- **Cotas e orçamento.** Limite diário por usuário (`ai_daily_usage`), reserva de custo antes de chamar provedores pagos (`ai_budget_reservations`) e falha fechada quando a tabela de preços precisa de revisão.
+- **Troca de modelo só com evidência.** O roteador só escolhe outro modelo se houver avaliação com pelo menos 20 amostras na mesma tarefa, qualidade ≥ 0,8 e dados com menos de 30 dias; dentro de 2 pontos de qualidade, vence o mais barato.
+- **Fallback.** Se o modelo principal falha, o pedido segue para o modelo reserva sem expor erro ao aluno.
 
-A IA pode analisar conjuntamente:
+### Priorização da revisão
 
-- enunciado;
-- resolução do estudante;
-- resposta final;
-- correção ou gabarito;
-- conceitos associados à disciplina;
-- histórico de ocorrências semelhantes.
-
-> [!NOTE]
-> As classificações produzidas automaticamente são tratadas como **hipóteses**, e não como conclusões definitivas. A validação humana permanece parte central do processo.
-
-### Exemplos de hipóteses de erro
-
-| Situação observada | Hipótese sugerida | Conceitos relacionados |
-|:---|:---|:---|
-| Negação aplicada incorretamente | **Erro em transformação lógica** | Negação, conjunção, Leis de De Morgan |
-| Conversão de unidades ignorada | **Erro de unidade** | Sistema Internacional, análise dimensional |
-| Condição inicial não aplicada | **Omissão de condição** | EDO, condições iniciais e de contorno |
-| Fórmula correta usada no contexto errado | **Erro de modelagem** | Hipóteses, domínio de validade |
-| Implicação tratada como equivalência | **Erro conceitual de lógica** | Implicação, equivalência |
-| Caso extremo ou limite desconsiderado | **Omissão de caso de borda** | Restrições, domínio, validação |
-
-Outros padrões que podem emergir incluem:
-
-- “erra quando a expressão contém negação”;
-- “perde unidade durante conversões”;
-- “aplica a fórmula correta com condição inicial incorreta”;
-- “confunde implicação com equivalência”;
-- “omite casos de borda ou condições especiais”.
-
-### Da ocorrência isolada ao padrão
-
-Um único erro possui pouco valor analítico quando observado isoladamente. O MistakeMap ganha significado ao relacionar **múltiplos eventos ao longo do tempo**.
-
-```text
-Erro isolado
-    ↓
-Evento contextualizado
-    ↓
-Conceito relacionado
-    ↓
-Recorrência observada
-    ↓
-Padrão confirmado
-    ↓
-Prioridade de revisão
-    ↓
-Nova tentativa
-    ↓
-Evidência de recuperação
-```
-
-O estudante revisa as classificações sugeridas e, após a validação, o sistema agrega as ocorrências considerando quatro dimensões principais:
-
-| Fator | Pergunta respondida | Impacto |
-|:---|:---|:---|
-| **Frequência** | Quantas vezes esse padrão ocorreu? | Recorrências aumentam a relevância |
-| **Recência** | Quão recentemente voltou a ocorrer? | Eventos recentes recebem maior atenção |
-| **Importância** | Qual é o peso do conceito na estrutura da disciplina? | Conceitos fundamentais podem receber maior prioridade |
-| **Recuperação** | Existem evidências recentes de domínio? | Evidências positivas reduzem gradualmente a prioridade |
-
-### Princípio de projeto
-
-> [!NOTE]
-> O erro é um **evento contextual**, não um rótulo permanente sobre o estudante.
-
-O sistema deve preservar a cadeia completa de evidências:
-
-```text
-Exercício
-   ↓
-Tentativa
-   ↓
-Correção
-   ↓
-Hipótese
-   ↓
-Validação
-   ↓
-Evento
-   ↓
-Evolução
-```
-
-Isso significa que:
-
-- classificações automáticas são sempre tratadas como **sugestões**;
-- erros históricos não são apagados quando ocorre recuperação;
-- novas tentativas podem diminuir a prioridade de uma fragilidade;
-- diferentes métodos corretos devem ser aceitos;
-- nenhuma ocorrência isolada deve ser utilizada como diagnóstico;
-- toda prioridade deve possuir justificativa rastreável até suas evidências.
-
-> [!TIP]
-> O MistakeMap procura transformar o histórico de resolução em uma **memória navegável de aprendizagem**, na qual erros antigos deixam de ser apenas falhas registradas e passam a funcionar como pontos de referência para medir evolução.
-
----
-
-<a id="objetivos"></a>
-
-## Objetivos
-
-- [x] Registrar exercícios corrigidos e a solução produzida pelo estudante.
-- [x] Classificar erros por conceito, operação cognitiva e padrão recorrente.
-- [x] Construir mapa de fragilidades com evidências navegáveis.
-- [ ] Priorizar revisão com base em frequência, recência, importância e recuperação.
-- [x] Distinguir erro conceitual, algébrico, aritmético, de unidade, leitura e atenção quando possível.
-- [ ] Acompanhar evolução sem transformar o mapa em diagnóstico psicológico ou nota definitiva.
-
----
-
-<a id="problema-e-cenario-de-uso"></a>
-
-## Problema e Cenário de Uso
-
-Ao estudar, o aluno frequentemente corrige uma questão e segue em frente. O histórico de **por que errou** desaparece.
-
-Depois de dezenas de exercícios, padrões relevantes ficam invisíveis:
-
-- sinais trocados;
-- hipóteses esquecidas;
-- negações mal distribuídas;
-- unidades inconsistentes;
-- condições de contorno omitidas.
-
-Plataformas tradicionais acumulam acertos e notas, mas nem sempre organizam a **anatomia do erro**.
-
-O MistakeMap cria uma memória de falhas e recuperações ligada ao conteúdo específico.
-
-| Erro observado | Classificação candidata | Conceitos relacionados |
-|:---|:---|:---|
-| Negou “p e q” como “não p e não q” | Transformação lógica incorreta | Leis de De Morgan, negação, conjunção |
-| Usou `3,6` sem converter km/h para m/s | Erro de unidade/conversão | Dimensões, velocidade, SI |
-| Esqueceu `x(0)` em solução diferencial | Condição inicial omitida | EDO, solução geral, condição de contorno |
-| Aplicou fórmula correta ao caso errado | Erro de seleção/modelagem | Hipóteses, domínio de validade |
-
-> [!WARNING]
-> Uma mesma resposta errada pode ter **múltiplas causas possíveis**. Sem explicação do estudante, o sistema deve registrar incerteza em vez de afirmar intenção cognitiva.
-
----
-
-<a id="escopo-funcional"></a>
-
-## Escopo Funcional
-
-| Módulo | Funções principais |
-|:---|:---|
-| **Disciplinas** | Matérias, unidades, listas e fontes |
-| **Conceitos** | Taxonomia/grafo de conceitos e pré-requisitos |
-| **Exercícios** | Enunciado, imagem, fonte, dificuldade opcional e conceitos |
-| **Tentativas** | Solução do estudante, resposta final, timestamp e tempo opcional |
-| **Correções** | Gabarito, comentário do professor e marcações |
-| **Erros** | Tipo, conceito, passo afetado, gravidade operacional e validação |
-| **Mapa** | Fragilidades por conceito/tipo, evidências e evolução |
-| **Revisão** | Fila de exercícios/conceitos prioritários e registro de recuperação |
-
----
-
-<a id="regras-de-dominio"></a>
-
-## Regras de Domínio
-
-1. Erro sugerido por IA permanece `pending` até validação ou confirmação contextual.
-2. Um exercício pode envolver vários conceitos.
-3. Um erro pode afetar mais de um conceito.
-4. Erro corrigido em tentativas futuras **não é apagado**.
-5. Sua prioridade diminui pela evidência de recuperação.
-6. A ausência de erro em poucos exercícios não prova domínio absoluto.
-7. O sistema não deve inferir transtorno, deficiência ou diagnóstico de aprendizagem.
-8. Conteúdo de provas/professores pode ter restrições de direitos.
-9. Compartilhamento público não faz parte do MVP.
-
----
-
-<a id="pipeline-de-extracao-e-ia"></a>
-
-## Pipeline de Extração e IA
-
-O pipeline deve preservar a **resolução do estudante**. Classificar apenas a resposta final faria o sistema perder informação crítica.
-
-OCR/visão extrai texto e expressões quando possível.
-
-Um LLM compara:
-
-- tentativa;
-- correção;
-- conceitos da disciplina;
-
-para propor eventos de erro.
-
-Um grafo conceitual conecta tópicos e pré-requisitos.
-
-> [!IMPORTANT]
-> A prioridade de revisão é calculada sobre **eventos validados**, não sobre inferências ocultas.
-
-### Pipeline de processamento
-
-```mermaid
-flowchart LR
-    A["1. Captura<br/>Imagem / PDF / Digitação"] --> B["2. Estrutura<br/>Enunciado + passos + resposta + correção"]
-    B --> C["3. Conceitos<br/>Busca / LLM"]
-    C --> D["4. Erros<br/>Tipo + passo + explicação"]
-    D --> E{"5. Validação"}
-    E -->|Confirmado| F["Evento confiável"]
-    E -->|Corrigido| G["Evento revisado"]
-    E -->|Rejeitado| H["Evento rejeitado"]
-    F --> I["6. Agregação"]
-    G --> I
-    I --> J["MistakeMap"]
-    J --> K["Prioridade de revisão"]
-```
-
-| Etapa | Processamento | Resultado |
-|:---|:---|:---|
-| **1. Captura** | Imagem/PDF do exercício e solução; OCR ou digitação | Tentativa digitalizada |
-| **2. Estrutura** | Separação entre enunciado, passos, resposta e correção | Representação do exercício |
-| **3. Conceitos** | Busca/LLM sugere conceitos presentes | Nós candidatos do grafo |
-| **4. Erros** | Comparação com correção sugere tipo, passo e explicação | Eventos `pending` |
-| **5. Validação** | Aluno/professor confirma, corrige ou rejeita | Eventos confiáveis |
-| **6. Agregação** | Frequência, recência e evidência de recuperação atualizam o mapa | Prioridade de revisão |
-
----
-
-<a id="modelagem-de-prioridade"></a>
-
-## Modelagem de Prioridade
-
-Uma prioridade simples pode ser definida como:
+A prioridade de um conceito segue o modelo:
 
 $$
 P = F \times R \times I \times (1 - M)
 $$
 
-onde:
-
-| Variável | Significado |
-|:---:|---|
-| $P$ | Prioridade de revisão |
-| $F$ | Frequência normalizada do erro |
-| $R$ | Fator de recência |
-| $I$ | Importância do conceito |
-| $M$ | Evidência de domínio/recuperação entre `0` e `1` |
-
-> [!NOTE]
-> O objetivo é **ordenar a revisão**, não produzir uma nota sobre capacidade intelectual.
-
-```text
-Frequência alta
-      ×
-Recência alta
-      ×
-Conceito importante
-      ×
-Baixa recuperação
-      =
-Alta prioridade de revisão
-```
-
----
-
-<a id="limites-e-salvaguardas"></a>
-
-## Limites e Salvaguardas
-
-- Reconhecimento de matemática manuscrita é imperfeito.
-- O sistema deve oferecer edição do OCR.
-- Entrada manual deve permanecer disponível.
-- Comparar soluções exige tolerar métodos alternativos corretos.
-- Um erro aparente pode ser erro de transcrição do OCR.
-- A causa cognitiva real nem sempre é observável.
-- Deve-se utilizar linguagem como **“padrão sugerido”**.
-- Priorização deve ser transparente.
-- Priorização deve ser ajustável.
-- O sistema deve evitar comportamento excessivamente prescritivo.
-
----
-
-<a id="arquitetura-de-software"></a>
-
-## Arquitetura de Software
-
-### Responsabilidades principais
-
-**Flutter + Fluent UI** oferecem:
-
-- captura;
-- revisão;
-- visualização do mapa;
-- navegação;
-- componentes responsivos;
-- feedback visual;
-- identidade de interface consistente.
-
-**Estado e navegação** usam os recursos nativos do Flutter:
-
-- `StatefulWidget` + `setState` para o estado de cada tela;
-- `Navigator` para abrir detalhes, edição, Sobre e as telas de IA;
-- um shell adaptativo (`lib/layout/navigation_shell.dart`) que troca a barra inferior pelo menu lateral em telas largas;
-- um repositório (`AnalysisRepository`) que isola as chamadas ao Supabase nas telas de IA.
-
-> [!NOTE]
-> Riverpod e GoRouter estavam previstos na concepção, mas não foram adotados no MVP. A adoção continua possível quando o número de telas justificar estado compartilhado e deep links.
-
-**Supabase** armazena:
-
-- exercícios;
-- taxonomia;
-- eventos;
-- histórico;
-- análises da IA e uso diário.
-
-As **imagens** ficam na **Cloudflare R2**, e o banco guarda apenas o caminho e o hash de cada arquivo.
-
-OCR/LLM ficam em **backend seguro**: as Supabase Edge Functions chamam o Google Gemini, e a chave da IA nunca chega ao aplicativo.
-
-O grafo pode ser modelado relacionalmente com `concept_edges` no PostgreSQL, sem exigir banco de grafos no MVP.
-
-### Visão arquitetural
-
-```mermaid
-flowchart TB
-    UX["CAMADA DE EXPERIÊNCIA<br/>Flutter + Fluent UI<br/>captura, exercício, revisão, mapa e fila de estudo"]
-    FLUENT["DESIGN SYSTEM<br/>FluentApp + FluentThemeData + NavigationView<br/>InfoBar + ContentDialog + FluentIcons"]
-    STATE["ESTADO E NAVEGAÇÃO<br/>setState + Navigator + shell adaptativo"]
-    DOMAIN["DOMÍNIO<br/>Disciplinas, conceitos, exercícios, tentativas, erros, revisões e domínio"]
-    AI["IA EDUCACIONAL<br/>Edge Functions + Google Gemini<br/>transcrição, erros com evidência e prática"]
-    SB["SUPABASE<br/>Auth + PostgreSQL + RLS + pg_cron"]
-    R2["CLOUDFLARE R2<br/>Armazenamento de fotos (S3-compatível)"]
-    ANALYSIS["ANÁLISE<br/>Agregações por conceito, tipo de erro, recência e recuperação"]
-
-    UX --> FLUENT
-    UX --> STATE
-    STATE --> DOMAIN
-    DOMAIN --> AI
-    DOMAIN --> SB
-    DOMAIN --> R2
-    AI --> SB
-    AI --> R2
-    SB --> ANALYSIS
-    ANALYSIS --> DOMAIN
-```
-
-### Separação lógica
-
-```mermaid
-flowchart LR
-    P["Presentation<br/>Flutter + Fluent UI"]
-    D["Domain<br/>Entidades + Casos de Uso"]
-    R["Repositories<br/>Abstrações"]
-    I["Infrastructure<br/>Supabase + OCR + IA"]
-
-    P --> D
-    D --> R
-    R --> I
-```
-
-> [!NOTE]
-> A camada de domínio não deve depender diretamente de `fluent_ui`, Supabase ou widgets Flutter. A interface é uma implementação da camada de apresentação, e não uma dependência da lógica de negócio.
-
----
-
-<a id="modelo-de-dados"></a>
-
-## Modelo de Dados
-
-A modelagem deve ser **event-oriented**:
-
-- cada erro é uma ocorrência ligada a uma tentativa;
-- o mapa é uma projeção agregada.
-
-Assim, ajustes na fórmula de prioridade podem recalcular o mapa **sem modificar o histórico**.
-
-| Tabela | Campos essenciais | Observações |
-|:---|:---|:---|
-| `subjects` | `id`, `user_id`, `name`, `description` | Disciplina |
-| `concepts` | `id`, `subject_id`, `name`, `description`, `importance` | Nó conceitual |
-| `concept_edges` | `from_concept_id`, `to_concept_id`, `relation` | Pré-requisito/relacionamento |
-| `exercises` | `id`, `subject_id`, `source`, `prompt_text`, `difficulty`, `created_at` | Questão |
-| `exercise_concepts` | `exercise_id`, `concept_id`, `weight` | Relação N:N |
-| `attempts` | `id`, `exercise_id`, `user_id`, `solution_text`, `answer`, `attempted_at` | Tentativa |
-| `corrections` | `id`, `attempt_id`, `reference_text`, `attachment_id`, `reviewed_by` | Gabarito/comentário |
-| `error_types` | `id`, `name`, `category`, `description` | Taxonomia de erro |
-| `error_events` | `id`, `attempt_id`, `error_type_id`, `concept_id`, `evidence_ref`, `confidence`, `status` | Erro observado/sugerido |
-| `mastery_events` | `id`, `concept_id`, `attempt_id`, `outcome`, `created_at` | Evidência de recuperação |
-
----
-
-<a id="relacionamentos"></a>
-
-## Relacionamentos
-
-### Cardinalidades principais
-
-```text
-subjects 1 ---- N concepts
-
-concepts N ---- N concepts
-           via concept_edges
-
-exercises N ---- N concepts
-            via exercise_concepts
-
-exercises 1 ---- N attempts
-
-attempts 1 ---- 0..N corrections
-
-attempts 1 ---- N error_events
-
-concepts 1 ---- N error_events/mastery_events
-```
-
-### Diagrama entidade-relacionamento
-
-```mermaid
-erDiagram
-    SUBJECTS ||--o{ CONCEPTS : contains
-    SUBJECTS ||--o{ EXERCISES : contains
-
-    CONCEPTS ||--o{ CONCEPT_EDGES : source
-    CONCEPTS ||--o{ CONCEPT_EDGES : target
-
-    EXERCISES ||--o{ EXERCISE_CONCEPTS : maps
-    CONCEPTS ||--o{ EXERCISE_CONCEPTS : maps
-
-    EXERCISES ||--o{ ATTEMPTS : receives
-    ATTEMPTS ||--o{ CORRECTIONS : has
-    ATTEMPTS ||--o{ ERROR_EVENTS : generates
-
-    ERROR_TYPES ||--o{ ERROR_EVENTS : classifies
-    CONCEPTS ||--o{ ERROR_EVENTS : relates
-    CONCEPTS ||--o{ MASTERY_EVENTS : recovers
-    ATTEMPTS ||--o{ MASTERY_EVENTS : evidences
-```
-
----
-
-<a id="regras-de-integridade"></a>
-
-## Regras de Integridade
-
-`error_events.status` deve aceitar:
-
-```text
-pending
-confirmed
-rejected
-superseded
-```
-
-Além disso:
-
-- [ ] Um evento confirmado deve apontar para uma tentativa.
-- [ ] Um evento confirmado deve possuir evidência/passo suficientemente identificável.
-- [ ] `concept_edges` não devem criar ciclos quando `relation = prerequisite`, salvo se o modelo permitir explicitamente.
-- [ ] Excluir disciplina exige arquivamento ou cascade controlado.
-- [ ] Exclusões não devem quebrar tentativas.
-- [ ] Resultados de prioridade são derivados.
-- [ ] Resultados de prioridade podem ser recalculados.
-- [ ] Eventos históricos permanecem imutáveis.
-
----
-
-<a id="seguranca-e-privacidade"></a>
-
-## Segurança e Privacidade
-
-Cadernos, provas, notas e padrões de desempenho são **dados pessoais educacionais**.
-
-Mesmo em uso individual, o produto deve impedir exposição entre contas e evitar telemetria desnecessária.
-
-| Mecanismo | Aplicação |
-|:---|:---|
-| **Supabase Auth** | Identidade, sessão, refresh token e provedores OAuth |
-| **Row Level Security** | Políticas `SELECT`, `INSERT`, `UPDATE` e `DELETE` avaliadas no PostgreSQL |
-| **Storage Policies (Cloudflare R2)** | Bucket privado, URLs assinadas temporárias, sem acesso público direto |
-| **Service Role** | Restrita a Edge Functions/servidor confiável |
-| **Secrets** | Variáveis de ambiente fora do Git |
-| **Auditoria** | Alterações críticas com usuário, timestamp e entidade |
-| **Dados educacionais** | Sem leaderboard público ou exposição automática de fragilidades |
-| **IA** | Enviar somente dados necessários e remover identificadores/metadados não essenciais |
-
-> [!CAUTION]
-> A chave `service_role` **nunca deve existir no bundle Flutter**.
-
-### Regra crítica
-
-> [!IMPORTANT]
-> O mapa de erros **pertence ao estudante**.
-
-Compartilhamento com professor/tutor deve ser:
-
-- **explícito**;
-- **granular**;
-- **revogável**.
-
-Nenhuma fragilidade pode ser publicada automaticamente.
-
----
-
-<a id="experiencia-do-usuario"></a>
-
-## Experiência do Usuário
-
-### Telas principais
-
-| Tela | Elementos principais |
-|:---|:---|
-| **Dashboard** | Fila de revisão, conceitos em atenção e evolução recente |
-| **Nova questão** | Foto/importação, disciplina e origem |
-| **Tentativa** | Solução digitalizada/editável e resposta |
-| **Revisão de erro** | Correção, passo afetado, conceitos e sugestões de IA |
-| **MistakeMap** | Grafo/heatmap conceitual com filtros por período e tipo |
-| **Conceito** | Erros recorrentes, exercícios, recuperações e pré-requisitos |
-| **Tipos de erro** | Distribuição por unidade, sinal, lógica, modelagem, leitura etc. |
-| **Sessão de revisão** | Lista priorizada e registro de novo desempenho |
-
-### Diretrizes de interface
-
-- Fluent UI como linguagem visual principal.
-- Visual moderno, formal e informacional.
-- Evitar aparência de template genérico.
-- Evitar reprodução de padrões visuais característicos do Material Design.
-- Responsividade real por breakpoints.
-- Desktop com alta densidade de informação.
-- Mobile orientado à tarefa.
-- Hierarquia visual clara.
-- Ações críticas exibem estado e consequência.
-- Possibilidade de revisão antes da confirmação.
-- Contraste adequado.
-- Labels textuais.
-- Áreas de toque adequadas.
-- Navegação por teclado no desktop.
-- Estados vazios indicam o próximo passo.
-- Evitar linguagem punitiva.
-- Preferir **“há recorrência recente em”**.
-- Sempre permitir abrir a evidência.
-- O mapa deve mostrar melhora e recuperação.
-- Animações devem comunicar mudanças de estado ou navegação.
-- Transparência deve possuir função visual e não ser aplicada indiscriminadamente.
-- A interface deve continuar legível mesmo sem efeitos translúcidos.
-
----
-
-<a id="fluent-ui"></a>
-
-## Fluent UI
-
-O **MistakeMap adota Fluent UI como Design System oficial da aplicação**.
-
-O objetivo é construir uma interface:
-
-- consistente;
-- adaptativa;
-- informacional;
-- acessível;
-- adequada ao desktop;
-- funcional em dispositivos móveis;
-- compatível visualmente com ambientes modernos do Windows;
-- preservando a portabilidade fornecida pelo Flutter.
-
-### Componentes principais
-
-| Necessidade | Componente Fluent UI |
-|:---|:---|
-| **Aplicação raiz** | `FluentApp` |
-| **Tema** | `FluentThemeData` |
-| **Navegação principal** | `NavigationView` |
-| **Menu lateral** | `NavigationPane` |
-| **Barra de comandos** | `CommandBar` |
-| **Mensagens contextuais** | `InfoBar` |
-| **Diálogos** | `ContentDialog` |
-| **Menus contextuais** | `Flyout` |
-| **Iconografia** | `FluentIcons` |
-| **Ação primária** | `FilledButton` |
-| **Ação secundária** | `Button` |
-| **Entrada textual** | `TextBox` |
-| **Seleção** | `ComboBox` |
-| **Busca e sugestão** | `AutoSuggestBox` |
-| **Progresso indeterminado** | `ProgressRing` |
-| **Progresso determinado** | `ProgressBar` |
-| **Superfícies contextuais** | `Acrylic`, quando justificável |
-
-### Hierarquia visual
-
-```text
-FluentApp
-│
-├── FluentThemeData
-│
-└── NavigationView
-    │
-    ├── NavigationPane
-    │
-    └── Conteúdo
-        │
-        ├── CommandBar
-        ├── Painéis
-        ├── MistakeMap
-        ├── InfoBar
-        ├── Flyout
-        └── ContentDialog
-```
-
-### Princípios visuais
-
-> [!IMPORTANT]
-> A interface deve comunicar **estrutura, profundidade, contexto e estado**, não apenas decorar o conteúdo.
-
-#### Hierarquia
-
-A aplicação deve distinguir claramente:
-
-1. conteúdo primário;
-2. conteúdo secundário;
-3. metadados;
-4. ações;
-5. alertas;
-6. superfícies temporárias.
-
-#### Profundidade
-
-A profundidade visual pode representar:
-
-1. fundo da aplicação;
-2. superfície principal;
-3. painéis;
-4. menus contextuais;
-5. overlays;
-6. diálogos.
-
-#### Acrylic
-
-O efeito `Acrylic` pode ser utilizado em:
-
-- menus;
-- painéis temporários;
-- superfícies de navegação;
-- elementos flutuantes;
-- diálogos ou contextos específicos.
-
-> [!WARNING]
-> Acrylic não deve ser tratado como simples efeito decorativo aplicado indiscriminadamente a todos os componentes.
-
-#### Movimento
-
-Animações podem indicar:
-
-- navegação;
-- alteração de contexto;
-- expansão;
-- atualização do grafo;
-- confirmação de ações;
-- mudança de prioridade;
-- entrada e saída de superfícies.
-
-#### Tipografia
-
-A tipografia deve priorizar:
-
-- legibilidade;
-- hierarquia;
-- contraste;
-- densidade adequada;
-- leitura rápida em dashboards;
-- diferenciação entre títulos, corpo, metadados e indicadores.
-
-### Responsividade
-
-```mermaid
-flowchart LR
-    A["Espaço disponível"] --> B{"Breakpoint"}
-
-    B -->|"Compacto"| C["Interface mobile<br/>Navegação compacta<br/>Uma tarefa principal"]
-
-    B -->|"Intermediário"| D["NavigationPane compacta<br/>Painéis adaptativos"]
-
-    B -->|"Expandido"| E["NavigationView completa<br/>Layout master-detail<br/>Alta densidade"]
-```
-
-### Desktop
-
-No Windows e em telas grandes:
-
-- `NavigationView` pode permanecer expandida;
-- informações secundárias podem permanecer visíveis;
-- filtros podem coexistir com o grafo;
-- painéis master-detail podem ser utilizados;
-- atalhos de teclado devem ser suportados;
-- hover pode oferecer informações complementares;
-- redimensionamento de janela deve reorganizar o layout dinamicamente.
-
-### Mobile
-
-No Android e em telas compactas:
-
-- uma tarefa principal deve possuir prioridade visual;
-- painéis simultâneos devem ser reduzidos;
-- ações principais devem permanecer facilmente acessíveis;
-- nenhuma função crítica pode depender de hover;
-- áreas de toque devem permanecer adequadas;
-- a navegação deve adaptar-se ao espaço disponível.
-
-### Fluent UI versus Material Design
-
-> [!WARNING]
-> **O MistakeMap não deve misturar deliberadamente Fluent UI e Material Design como duas linguagens visuais concorrentes.**
-
-Devem ser evitados como padrões visuais principais:
-
-- `MaterialApp`;
-- `Scaffold`;
-- `AppBar`;
-- `FloatingActionButton`;
-- `NavigationRail`;
-- `NavigationDrawer` Material;
-- `SnackBar` quando `InfoBar` atender ao caso;
-- iconografia Material quando houver equivalente apropriado em `FluentIcons`.
-
-A estrutura preferencial é:
-
-```dart
-FluentApp(
-  // ...
-)
-```
-
-em vez de:
-
-```dart
-MaterialApp(
-  // ...
-)
-```
-
-> [!NOTE]
-> Isso não remove Flutter da arquitetura. Flutter continua responsável pela composição, layout e renderização. **Fluent UI define o Design System e os componentes utilizados na camada visual.**
-
-> [!WARNING]
-> **Exceção documentada:** as telas de IA usam `MaterialApp`, `Scaffold` e `AppBar` dentro da rota isolada `AiMaterialShell`. O tema dessa rota é construído a partir dos mesmos tokens da marca (`lib/theme/design_tokens.dart`, `lib/ai/material_control_styles.dart`), para que botões, cores, raios e movimento fiquem iguais aos das telas Fluent.
-
----
-
-<a id="fluxos-operacionais"></a>
-
-## Fluxos Operacionais
-
-### 1. Registrar exercício corrigido
-
-```mermaid
-sequenceDiagram
-    actor Aluno
-    participant APP as MistakeMap
-    participant OCR
-    participant IA
-    participant DB as Supabase
-
-    Aluno->>APP: Fotografa enunciado, resolução e correção
-    APP->>OCR: Solicita reconhecimento
-    OCR-->>APP: Retorna texto editável
-    Aluno->>APP: Corrige erros relevantes
-    APP->>IA: Solicita conceitos e eventos candidatos
-    IA-->>APP: Retorna hipóteses
-    Aluno->>APP: Revisa hipóteses
-    APP->>DB: Persiste eventos confirmados
-    DB-->>APP: Atualiza MistakeMap
-```
-
-1. Aluno fotografa enunciado, resolução e correção.
-2. OCR cria texto editável.
-3. Aluno corrige erros relevantes de reconhecimento.
-4. Sistema sugere conceitos e eventos de erro.
-5. Aluno revisa cada hipótese.
-6. Aluno pode adicionar a própria explicação.
-7. Eventos confirmados atualizam o mapa.
-
-### 2. Planejar revisão
-
-1. Motor calcula prioridade dos conceitos com base em eventos confirmados.
-2. Aluno abre conceito prioritário.
-3. Revisa evidências anteriores.
-4. Resolve novo exercício relacionado.
-5. Resultado gera `mastery_event` ou novo `error_event`.
-6. O mapa muda gradualmente conforme evidência recente.
-
-### 3. Reclassificar um erro
-
-1. Aluno percebe que o problema não era cálculo, mas unidade.
-2. Edita o evento confirmado criando revisão/superseding.
-3. Agregações são recalculadas.
-4. Histórico preserva a classificação anterior.
-
----
-
-<a id="relatorios-e-exportacoes"></a>
-
-## Relatórios e Exportações
-
-Exportações devem favorecer **metacognição**.
-
-| Saída / integração | Conteúdo ou finalidade |
-|:---|:---|
-| **PDF — Mapa de revisão** | Conceitos prioritários, erros recorrentes, evidências e exercícios sugeridos pelo próprio acervo |
-| **PDF — Evolução por disciplina** | Eventos por período, recuperações e tópicos ainda recorrentes |
-| **XLSX/CSV — Eventos** | Tentativas, tipos de erro, conceitos e timestamps |
-| **JSON — Grafo conceitual** | Nós, relações e métricas derivadas |
-| **Compartilhamento tutor** | Relatório seletivo de conceitos e exercícios, somente com consentimento |
-
----
-
-<a id="arquitetura-flutter"></a>
-
-## Arquitetura Flutter
-
-### Estrutura atual
-
-O MVP concentra as telas Fluent em `main.dart` e separa em pastas os módulos mais novos:
-
-```text
-appmistakemap/lib/
-├── main.dart                    # Bootstrap, Auth, telas Fluent (início, lista, mapa, novo, detalhe, edição, admin, sobre)
-├── caderno_erros.dart           # Tela do Caderno de erros (CRUD e filtros)
-│
-├── about/                       # Botão de perfil do LinkedIn e abertura de links externos
-├── admin/                       # Painel de métricas, cotas por modelo e política de atualização
-├── ai/                          # Fluxo de IA: shell, repositório, envio, mapa, correção, material de estudo e prática
-├── assets/                      # Foto de perfil embutida
-├── auth/                        # Login com Google e verificação da configuração OAuth
-├── layout/                      # Classes de largura, dobráveis e shell de navegação adaptativo
-├── local/                       # Banco SQLite (Android, Windows e Web), DAO do caderno e conta offline
-├── sync/                        # Sincronizador offline-first, fila, Realtime e sincronização do caderno
-└── theme/                       # Tokens de design, paleta, estilos de controles e movimento
-```
-
-### Estrutura alvo
-
-A base de código deve evoluir para arquitetura **feature-first**, com separação clara entre apresentação, domínio e dados, à medida que as telas de `main.dart` forem extraídas.
-
-```text
-lib/
-├── app/
-│   ├── router/
-│   │   ├── app_router.dart
-│   │   └── routes.dart
-│   │
-│   ├── theme/
-│   │   ├── fluent_theme.dart
-│   │   ├── fluent_colors.dart
-│   │   ├── fluent_typography.dart
-│   │   └── fluent_breakpoints.dart
-│   │
-│   └── bootstrap/
-│       └── app_bootstrap.dart
-│
-├── core/
-│   ├── errors/
-│   ├── utils/
-│   ├── services/
-│   │
-│   └── widgets/
-│       ├── fluent/
-│       ├── responsive/
-│       └── common/
-│
-├── features/
-│   ├── auth/
-│   ├── subjects/
-│   ├── concepts/
-│   ├── exercises/
-│   ├── capture/
-│   ├── attempts/
-│   ├── corrections/
-│   ├── errors/
-│   ├── mistake_map/
-│   ├── review/
-│   ├── reports/
-│   └── settings/
-│
-└── main.dart
-```
-
-### Organização interna recomendada por feature
-
-```text
-features/
-└── mistake_map/
-    ├── data/
-    │   ├── datasources/
-    │   ├── models/
-    │   └── repositories/
-    │
-    ├── domain/
-    │   ├── entities/
-    │   ├── repositories/
-    │   └── usecases/
-    │
-    └── presentation/
-        ├── controllers/
-        ├── providers/
-        ├── pages/
-        └── widgets/
-```
-
-### Componentes arquiteturais
-
-| Item | Recomendação |
-|:---|:---|
-| **Framework** | Flutter |
-| **Linguagem** | Dart |
-| **Design System** | Fluent UI |
-| **Biblioteca visual** | `fluent_ui` |
-| **Aplicação raiz** | `FluentApp` |
-| **Tema** | `FluentThemeData` |
-| **Iconografia** | `WindowsIcons` |
-| **Gerenciamento de estado** | `setState` hoje; Riverpod quando houver estado compartilhado |
-| **Injeção de dependências** | Repositórios passados por construtor (`AnalysisRepository`) |
-| **Navegação** | `Navigator` + `AppNavigationShell` |
-| **Deep links** | Não implementado; GoRouter é a opção prevista |
-| **Backend** | Supabase |
-| **Banco** | PostgreSQL |
-| **Alternativa de estado válida** | Bloc, desde que o projeto adote um único padrão principal |
-
-### Estrutura conceitual da aplicação
-
-```text
-MistakeMapApp
-│
-└── FluentApp
-    │
-    ├── FluentThemeData
-    │
-    └── Router
-        │
-        └── MistakeMapShell
-            │
-            └── NavigationView
-                │
-                ├── NavigationPane
-                │   ├── Dashboard
-                │   ├── Disciplinas
-                │   ├── Exercícios
-                │   ├── MistakeMap
-                │   ├── Revisão
-                │   ├── Relatórios
-                │   └── Configurações
-                │
-                └── Conteúdo da rota
-```
-
-### Exemplo conceitual da aplicação raiz
-
-```dart
-import 'package:fluent_ui/fluent_ui.dart';
-
-class MistakeMapApp extends StatelessWidget {
-  const MistakeMapApp({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FluentApp(
-      title: 'MistakeMap',
-      debugShowCheckedModeBanner: false,
-      theme: FluentThemeData(
-        brightness: Brightness.light,
-      ),
-      darkTheme: FluentThemeData(
-        brightness: Brightness.dark,
-      ),
-      home: const MistakeMapShell(),
-    );
-  }
-}
-```
-
-> [!NOTE]
-> O exemplo demonstra somente a decisão arquitetural referente ao Design System. A aplicação definitiva deve integrar roteamento, Riverpod, internacionalização, configurações globais e persistência.
-
----
-
-<a id="offline-e-sincronizacao"></a>
-
-## Offline e Sincronização
-
-Fotografar e anotar exercício deve funcionar durante aula ou estudo **sem internet**.
-
-> **A IA pode esperar.** O usuário não deve perder a resolução original nem alterações manuais.
-
-### Como funciona hoje
-
-O app é **offline-first** (PR #24, ampliado no PR #38). O código fica em `appmistakemap/lib/sync/` e o esquema local em [`BANCO_LOCAL.md`](../appmistakemap/BANCO_LOCAL.md).
+| Termo | Significado | Situação |
+|:---:|:---|:---:|
+| $F$ | Frequência normalizada do erro | ✅ |
+| $R$ | Recência, com meia-vida de 14 dias sobre `attempted_at` | ✅ |
+| $I$ | Importância do conceito | 🔜 |
+| $M$ | Evidência de recuperação entre 0 e 1 (`mastery_events`; três acertos tiram o foco do conceito) | ✅ |
+
+Hoje $F$, $R$ e $M$ já ordenam a prática direcionada. O objetivo é **ordenar a revisão**, nunca dar uma nota à capacidade do estudante.
+
+### Offline-first e sincronização
 
 ```mermaid
 flowchart LR
     UI["Telas"] --> S["Sincronizador"]
-    S -->|"com rede"| SB["Supabase<br/>Postgres + RLS"]
-    S -->|"sem rede"| DB["SQLite local"]
+    S -->|"com rede"| SB["Supabase"]
+    S -->|"sem rede"| DB["SQLite"]
     DB --> Q["fila_sync"]
     Q -->|"ao reconectar"| SB
     SB -->|"Realtime"| S
 ```
 
-- **Leitura:** consulta o Supabase primeiro e usa o SQLite como cache quando não há rede.
-- **Escrita offline:** vai para a `fila_sync` com UUIDs gerados no aparelho e sobe ao reconectar (upsert idempotente).
-- **Tempo real:** `subjects`, `attempts`, `attempt_analyses`, `error_notes` e `deleted_records` chegam aos outros aparelhos pelo Supabase Realtime.
-- **Caderno de erros:** espelhado em `error_notes`, com última escrita vencendo por `updated_at` e exclusão sempre vencendo (tombstone `deleted_at`).
-- **Exclusões:** ficam registradas em `deleted_records`; o trigger `block_deleted_reinsert` (SQLSTATE `MM410`) impede que uma fila antiga recrie o que já foi apagado, e o outro aparelho mostra o aviso "excluído em outro aparelho".
+- **Leitura:** o app consulta o Supabase primeiro e cai no SQLite quando não há rede.
+- **Escrita offline:** vai para a `fila_sync` com UUIDs gerados no aparelho; o envio é um *upsert* idempotente, então repetir não duplica.
+- **Tempo real:** `subjects`, `attempts`, `attempt_analyses`, `error_notes` e `deleted_records` chegam aos outros aparelhos pelo Realtime.
+- **Caderno:** espelhado em `error_notes`; vence a última escrita por `updated_at`, e a exclusão vence sempre (tombstone `deleted_at`).
+- **Exclusões:** registradas em `deleted_records`. O trigger `block_deleted_reinsert` responde com SQLSTATE `MM410` se uma fila antiga tentar recriar algo apagado, e o outro aparelho mostra "excluído em outro aparelho".
 
-### Situação dos recursos
+Detalhes do esquema local e das versões do banco em [`BANCO_LOCAL.md`](../appmistakemap/BANCO_LOCAL.md).
 
-- [x] Rascunhos locais de exercícios e tentativas.
-- [x] Fila local de envio com reenvio ao reconectar.
-- [x] Caderno de erros local e sincronizado.
-- [x] Exclusões propagadas entre aparelhos.
-- [ ] Cache do grafo.
-- [ ] Insights mostrando itens que ainda estão na fila.
-- [ ] Revisão explícita para conflitos em eventos confirmados.
+### Modelo de dados
+
+| Grupo | Tabelas principais |
+|:---|:---|
+| Estudo | `subjects`, `exercises`, `attempts`, `attempt_assets`, `corrections` |
+| Conhecimento | `concepts`, `concept_edges`, `exercise_concepts`, `error_types`, `learning_subjects` |
+| Diagnóstico | `attempt_analyses`, `error_events`, `ocr_artifacts`, `processing_runs`, `mastery_events` |
+| Prática e estudo | `practice_sets`, `practice_answer_keys`, `catalog_exercises`, `catalog_answer_keys`, `study_materials`, `study_quiz_rounds`, `study_quiz_keys` |
+| Caderno e sync | `error_notes`, `notebook_entries`, `deleted_records` |
+| Operação | `profiles`, `ai_daily_usage`, `ai_budget_reservations`, `ai_api_events`, `rate_limits`, `audit_log`, `r2_quota_usage` |
+
+As migrations ficam em [`appmistakemap/database/supabase/migrations/`](../appmistakemap/database/supabase/migrations/) e são **imutáveis**: toda correção vira uma migration nova, aplicada automaticamente no merge do `main`.
+
+### Segurança e privacidade
+
+| Mecanismo | Como é aplicado |
+|:---|:---|
+| **Row Level Security** | Todas as tabelas com RLS; cada aluno só enxerga as próprias linhas. Diagnósticos são somente leitura para o dono e escritos pelo servidor |
+| **Gabaritos protegidos** | `practice_answer_keys`, `catalog_answer_keys` e `study_quiz_keys` não têm acesso do cliente; a correção acontece no servidor |
+| **Segredos** | `service_role` e chaves de IA/R2 só existem nas Edge Functions, configuradas como *secrets*; nada disso fica no Git |
+| **Arquivos** | Bucket R2 privado, upload por URL assinada de curta duração, integridade por SHA-256 |
+| **Jobs** | `process-batch` exige um segredo próprio; nada de HTTP síncrono dentro de trigger |
+| **Auditoria** | `audit_log` *append-only* para mutações sensíveis |
+| **Dados educacionais** | Sem ranking público e sem exposição automática de fragilidades. O mapa pertence ao estudante; compartilhar deve ser explícito, granular e revogável |
+
+Decisões de backend e o histórico da migração do worker Rust para as Edge Functions estão em [`BACKEND.md`](../BACKEND.md).
+
+---
+
+<a id="design"></a>
+
+## Design e experiência
+
+- **Identidade Obsidian Glass em modo claro.** Fundo claro com brilhos suaves e acentos vivos com função: Aqua (Início e ações principais), Azure (Lista), Violeta (Mapa e IA), Âmbar (Caderno), Mint (acerto) e Coral (erro). Texto colorido usa variantes "Ink" com contraste **≥ 4,5:1**. Paleta em [`PALETA.md`](../appmistakemap/PALETA.md).
+- **Fluent 2 + Liquid Glass.** Componentes Fluent para a estrutura e vidro líquido nas barras e avisos, sempre legível mesmo sem translucidez.
+- **Toque uniforme.** Todos os botões respondem com a mesma animação (escala 0,97 em 120 ms).
+- **Navegação por largura de tela** ([`NAVEGACAO.md`](../appmistakemap/NAVEGACAO.md)):
+
+| Largura | Navegação |
+|:---|:---|
+| < 600 px (celular) | Barra de vidro de ponta a ponta com 7 fatias: **Início · Lista · Mapa · Estudar · Caderno · Sobre · Mais** |
+| 600 – 840 px (tablet, dobrável) | Trilho compacto com ícone e rótulo, e botão Analisar no topo |
+| ≥ 840 px (desktop, web) | Trilho largo com seções, Estudar logo abaixo do Mapa e Analisar em destaque |
+
+O Mapa é uma aba com pilha própria (a barra não some ao navegar dentro dele) e o Voltar é previsível em todas as plataformas.
+
+---
+
+<a id="qualidade"></a>
+
+## Qualidade e engenharia
+
+| Prática | Como é garantida |
+|:---|:---|
+| **Testes do app** | 25 arquivos de teste Flutter (widgets, navegação, layout, banco local, sincronização com SQLite em memória, contratos) |
+| **Testes do backend** | 6 suítes `deno test` (contrato da IA, catálogo, orçamento, roteador de modelos, estudo, upload) |
+| **Análise estática** | `flutter analyze` sem avisos e `dart format` obrigatórios; `deno check` nas funções |
+| **Migrations** | Imutáveis, versionadas e aplicadas pelo CI; o histórico do repositório é conferido com o do banco publicado |
+| **Revisão** | PRs pequenos e focados, com revisão automática e checks obrigatórios no `main` |
+
+| Workflow | Quando roda | O que faz |
+|:---|:---|:---|
+| [`ci.yml`](workflows/ci.yml) | Push e PR no `main` | `deno check`/`deno test`, `flutter analyze`, `dart format` e `flutter test` |
+| [`supabase-deploy.yml`](workflows/supabase-deploy.yml) | Push no `main` que altera migrations | Aplica as migrations no Supabase |
+| [`supabase-functions-deploy.yml`](workflows/supabase-functions-deploy.yml) | Push no `main` que altera `supabase/` | Publica as Edge Functions |
+| [`web-deploy-vercel.yml`](workflows/web-deploy-vercel.yml) | Push no `main` que altera o app | Gera o build web e publica na Vercel |
+| [`sync-repository-metadata.yml`](workflows/sync-repository-metadata.yml) | Mudanças em `LICENSE` ou `CITATION.cff` | Garante que as cópias da raiz batem com as de `.github/` |
+
+---
+
+<a id="comecar"></a>
+
+## Começar
+
+### Experimentar sem instalar
+
+Abra **[mistakemap-tau.vercel.app](https://mistakemap-tau.vercel.app/)**, crie uma conta (ou entre com Google) e siga os passos de "O que fazer agora".
+
+### Rodar localmente
+
+Pré-requisitos: Flutter estável (validado com **3.47.2 / Dart 3.13**), o SDK da plataforma de destino (Android SDK, Visual Studio para Windows ou Chrome) e, só para as Edge Functions, **Deno 2**.
+
+```bash
+git clone https://github.com/CFSJCODE/MistakeMap.git
+cd MistakeMap/appmistakemap
+flutter pub get
+flutter run -d chrome        # ou: -d android / -d windows
+```
+
+O app já aponta para o projeto Supabase publicado; **nenhuma chave privada é necessária** para rodar o cliente.
+
+> [!TIP]
+> No Windows, clone em um caminho **sem acentos** (por exemplo, `D:\MistakeMap`). Acentos no caminho quebram o `flutter analyze` e o build AOT.
+
+### Validar como o CI
+
+```bash
+# em appmistakemap/
+flutter analyze
+dart format --set-exit-if-changed lib/
+flutter test --reporter compact
+
+# em supabase/functions/
+deno check --frozen */index.ts
+deno test --frozen --allow-env
+```
 
 > [!NOTE]
-> OCR/LLM e recalculações globais continuam no backend e rodam depois da sincronização: **a IA pode esperar**.
+> Na Web, `web/sqlite3.wasm` precisa casar com a versão do pacote `sqlite3` registrada no `pubspec.lock`. Evite adicionar `path_provider`: ele puxa `jni` e quebra o build Windows sem JDK.
+
+---
+
+<a id="estrutura"></a>
+
+## Estrutura do repositório
+
+```text
+MistakeMap/
+├── appmistakemap/               # App Flutter (Android, Windows, Web)
+│   ├── lib/
+│   │   ├── main.dart            # Bootstrap, Auth e telas principais
+│   │   ├── caderno_erros.dart   # Caderno de erros
+│   │   ├── about/  admin/  auth/  assets/
+│   │   ├── ai/                  # Envio, correção, mapa, material de estudo e prática
+│   │   ├── layout/              # Larguras, dobráveis e shell de navegação
+│   │   ├── local/               # SQLite (io e web), DAO do caderno, conta offline
+│   │   ├── sync/                # Sincronizador, fila, Realtime, sync do caderno
+│   │   └── theme/               # Tokens de design, paleta e movimento
+│   ├── test/                    # Testes Flutter
+│   ├── database/supabase/migrations/   # Migrations canônicas do Supabase
+│   └── BANCO_LOCAL.md · NAVEGACAO.md · PALETA.md · GOOGLE_AUTH.md
+├── supabase/
+│   ├── functions/               # Edge Functions (Deno) + _shared + tests
+│   └── config.toml
+├── worker/                      # Worker Rust original (arquivado)
+├── .github/                     # README, CI/CD, licença, citação e políticas
+├── AGENTS.md · CLAUDE.md · GEMINI.md   # Regras e decisões para agentes de código
+└── BACKEND.md                   # Decisões de arquitetura do backend
+```
 
 ---
 
@@ -1426,512 +420,80 @@ flowchart LR
 
 ## Roadmap
 
-| Fase | Entregas | Critério de conclusão | Situação |
-|:---|:---|:---|:---:|
-| **Fase 0 — Fundação** | Flutter, Fluent UI, Supabase, Auth e Storage | Aplicação base Fluent, login e dados privados | ✅ |
-| **Fase 1 — Disciplinas** | Conceitos, relações e exercícios | Grafo manual navegável | 🟡 disciplinas e exercícios prontos; conceitos criados pela IA |
-| **Fase 2 — Tentativas** | Soluções, correções e anexos | Histórico de estudo completo | ✅ |
-| **Fase 3 — Erros** | Taxonomia e eventos manuais | Mapa funciona sem IA | 🟡 taxonomia pronta; eventos vêm da IA |
-| **Fase 4 — IA** | OCR, conceitos e erros sugeridos | Sugestões revisáveis com evidência | 🟡 sugestões com evidência; falta a revisão por evento |
-| **Fase 5 — Prioridade** | Agregação, recência e `mastery_events` | Fila de revisão explicável | 🟡 prática já usa frequência × recência e `mastery_events`; falta a fila |
-| **Fase 6 — Relatórios** | PDF/CSV e compartilhamento seletivo | Portabilidade garantida | 🔜 |
-| **Fase 7 — Hardening** | RLS, acessibilidade, testes e avaliação educacional | Release estável | 🟡 RLS, CI, testes, modo offline e sincronização ativos |
+| Fase | Entregas | Situação |
+|:---|:---|:---:|
+| **0 · Fundação** | Flutter, Fluent UI, Supabase, Auth | ✅ |
+| **1 · Matérias e exercícios** | Cadastro de matérias e exercícios; catálogo de matérias por etapa de ensino no banco | ✅ |
+| **2 · Tentativas** | Fotos, correções e histórico | ✅ |
+| **3 · Erros** | Taxonomia de 7 categorias e eventos de erro | ✅ |
+| **4 · IA** | OCR, erros com evidência, material de estudo e prática | ✅ |
+| **5 · Offline e multi-aparelho** | SQLite, fila de envio, Realtime, caderno sincronizado | ✅ |
+| **6 · Prioridade** | Fila de revisão explicável com $P = F \times R \times I \times (1 - M)$ | 🟡 F, R e M prontos; falta I e a fila |
+| **7 · Validação humana** | Confirmar, corrigir ou rejeitar cada erro sugerido | 🔜 |
+| **8 · Relatórios** | PDF/CSV e compartilhamento seletivo com professor ou tutor | 🔜 |
+| **9 · Lojas** | Play Store (assinatura de release) e iOS | 🔜 |
 
-### Visão do roadmap
-
-```mermaid
-flowchart LR
-    F0["Fase 0<br/>Fundação<br/>Flutter + Fluent UI"] --> F1["Fase 1<br/>Disciplinas"]
-    F1 --> F2["Fase 2<br/>Tentativas"]
-    F2 --> F3["Fase 3<br/>Erros"]
-    F3 --> F4["Fase 4<br/>IA"]
-    F4 --> F5["Fase 5<br/>Prioridade"]
-    F5 --> F6["Fase 6<br/>Relatórios"]
-    F6 --> F7["Fase 7<br/>Hardening"]
-```
+Próximos passos conhecidos: tela própria para navegar no catálogo e mais temas; mostrar nos insights o que ainda está na fila de envio; manter o foco da prática ao recarregar; mover o segredo do `pg_cron` para o Vault; remover da R2 as fotos de tentativas excluídas.
 
 ---
 
-<a id="mvp-recomendado"></a>
+<a id="historico"></a>
 
-## MVP Recomendado
+## Histórico recente
 
-O MVP deve permitir que o estudante **registre e classifique erros manualmente**.
-
-> [!TIP]
-> A IA entra como **acelerador**, não como dependência estrutural do valor inicial do produto.
-
-- [x] Estrutura Flutter com `FluentApp`.
-- [x] Design System configurado com `FluentThemeData`.
-- [x] Navegação Fluent responsiva.
-- [ ] Disciplinas, conceitos e relações. *(disciplinas prontas; conceitos vêm da IA; falta editar as relações)*
-- [x] Exercícios/tentativas com imagens.
-- [x] Taxonomia inicial de erros.
-- [ ] Classificação manual + sugestão de IA. *(a sugestão de IA está pronta; falta a classificação manual)*
-- [x] MistakeMap agregado.
-- [ ] Fila de revisão por prioridade.
-- [ ] PDF/CSV de histórico.
-
----
-
-<a id="criterios-de-aceitacao"></a>
-
-## Critérios de Aceitação
-
-| ID | Critério verificável |
-|:---:|---|
-| **AC-01** | Nenhum erro sugerido pela IA torna-se confirmado sem revisão configurada do usuário |
-| **AC-02** | Todo evento de erro confirmado aponta para uma tentativa |
-| **AC-03** | Usuário pode abrir a evidência associada a um nó prioritário |
-| **AC-04** | Novo desempenho positivo pode reduzir prioridade sem apagar erros antigos |
-| **AC-05** | OCR editado pelo usuário é preservado e não sobrescrito silenciosamente |
-| **AC-06** | Conceitos de outro usuário não aparecem na conta atual |
-| **AC-07** | A fórmula de prioridade é explicável em termos de fatores exibíveis |
-| **AC-08** | Compartilhamento de relatório não inclui exercícios não selecionados |
-| **AC-09** | O aplicativo não gera diagnósticos de aprendizagem |
-| **AC-10** | A chave `service_role` não existe no bundle Flutter |
-| **AC-11** | Fluent UI é utilizado como Design System principal |
-| **AC-12** | A aplicação utiliza `FluentApp` como estrutura visual raiz ou arquitetura Fluent equivalente |
-| **AC-13** | Navegação principal permanece funcional em layouts compactos, intermediários e expandidos |
-| **AC-14** | Recursos essenciais não dependem exclusivamente de hover |
-| **AC-15** | Feedbacks críticos possuem indicação textual e não dependem apenas de cor |
+| PR | Entrega |
+|:---:|:---|
+| [#17](https://github.com/CFSJCODE/MistakeMap/pull/17) | Análise da IA gravada como objeto JSON e fallback do Gemini ampliado |
+| [#18](https://github.com/CFSJCODE/MistakeMap/pull/18) | Caderno de erros offline em SQLite, com CRUD e filtros persistidos |
+| [#20](https://github.com/CFSJCODE/MistakeMap/pull/20) | Prática por tipo de erro e ranking por frequência × recência com desconto de recuperação |
+| [#22](https://github.com/CFSJCODE/MistakeMap/pull/22) · [#23](https://github.com/CFSJCODE/MistakeMap/pull/23) | Navegação repensada e identidade Obsidian Glass em modo claro |
+| [#24](https://github.com/CFSJCODE/MistakeMap/pull/24) | Offline-first: Supabase primeiro, SQLite sem rede, fila de envio e Realtime |
+| [#27](https://github.com/CFSJCODE/MistakeMap/pull/27) | Material de estudo estilo NotebookLM na aba Estudar |
+| [#29](https://github.com/CFSJCODE/MistakeMap/pull/29) · [#30](https://github.com/CFSJCODE/MistakeMap/pull/30) | Ciclo de estudo guiado no Início, app inteiro offline e barra em vidro líquido |
+| [#31](https://github.com/CFSJCODE/MistakeMap/pull/31) | Mapa como aba com pilha própria, trilho em janelas médias e Voltar previsível |
+| [#32](https://github.com/CFSJCODE/MistakeMap/pull/32) · [#34](https://github.com/CFSJCODE/MistakeMap/pull/34) · [#35](https://github.com/CFSJCODE/MistakeMap/pull/35) · [#37](https://github.com/CFSJCODE/MistakeMap/pull/37) | Barra inferior de 7 fatias e trilho compacto completo |
+| [#36](https://github.com/CFSJCODE/MistakeMap/pull/36) | Estudo atualizado, múltiplos provedores de IA e orçamento por reserva |
+| [#38](https://github.com/CFSJCODE/MistakeMap/pull/38) | Caderno entre aparelhos, exclusões em tempo real com barreira `MM410` e catálogo de 30 exercícios revisados |
+| [#39](https://github.com/CFSJCODE/MistakeMap/pull/39) | Histórico de migrations alinhado ao banco publicado e prática que segue para a IA quando o catálogo não basta |
 
 ---
 
-<a id="testes-e-qualidade"></a>
+<a id="equipe"></a>
 
-## Testes e Qualidade
+## Equipe e contexto acadêmico
 
-<details open>
-<summary><strong>Testes unitários</strong></summary>
+O MistakeMap nasceu na disciplina **Projeto Integrado I: Desenvolvimento Móvel** do curso de **Engenharia de Computação da PUC Minas**.
 
-- Regras de domínio.
-- Validações.
-- Funções de pontuação/cálculo.
-- Cálculo de prioridade.
-- Decaimento temporal.
-
-</details>
-
-<details>
-<summary><strong>Testes de widget</strong></summary>
-
-- Componentes Fluent UI.
-- `NavigationView`.
-- `NavigationPane`.
-- Formulários.
-- Navegação.
-- Filtros.
-- Estados vazios.
-- `InfoBar`.
-- `ContentDialog`.
-- Mensagens de erro.
-- Responsividade.
-
-</details>
-
-<details>
-<summary><strong>Testes de integração</strong></summary>
-
-- Autenticação.
-- Banco.
-- Storage.
-- Operações transacionais no Supabase.
-- Navegação entre funcionalidades.
-- Persistência após retomada de sessão.
-
-</details>
-
-<details>
-<summary><strong>Testes de segurança</strong></summary>
-
-- RLS com usuários autorizados.
-- RLS com usuários não autorizados.
-- Isolamento entre contas.
-
-</details>
-
-<details>
-<summary><strong>Testes de acessibilidade</strong></summary>
-
-- Navegação por teclado.
-- Indicadores de foco.
-- Contraste.
-- Escalonamento de texto.
-- Labels semânticos.
-- Uso sem dependência exclusiva de cor.
-- Uso sem dependência exclusiva de hover.
-
-</details>
-
-<details>
-<summary><strong>Testes responsivos</strong></summary>
-
-- Layout compacto.
-- Layout intermediário.
-- Layout expandido.
-- Redimensionamento de janela no Windows.
-- Alteração de orientação no Android.
-- Diferentes densidades de tela.
-- Overflow de conteúdo.
-- Navegação adaptativa.
-
-</details>
-
-<details>
-<summary><strong>Concorrência e resiliência</strong></summary>
-
-- Testes de concorrência nas operações que alteram estado ou histórico.
-- Recuperação de falhas de rede.
-- Repetição idempotente de comandos.
-- Sincronização de dados locais.
-- Tratamento explícito de conflitos.
-
-</details>
-
-<details>
-<summary><strong>Observabilidade</strong></summary>
-
-- Monitoramento sem registrar tokens.
-- Não registrar documentos privados.
-- Não registrar dados pessoais desnecessários.
-- Separar telemetria técnica de conteúdo educacional.
-
-</details>
-
-<details>
-<summary><strong>Avaliação da IA</strong></summary>
-
-- Testes com soluções alternativas corretas.
-- Avaliação humana de amostra de eventos.
-- Medição da precisão de conceitos sugeridos.
-- Medição da precisão de tipos sugeridos.
-
-</details>
-
----
-
-<a id="evolucoes-futuras"></a>
-
-## Evoluções Futuras
-
-| Evolução | Valor agregado |
+| | |
 |:---|:---|
-| **Integração com Anki/flashcards** | Gerar revisão a partir de padrões confirmados |
-| **Professor/tutor** | Fluxo opcional de validação colaborativa |
-| **Geração de exercícios** | Criar variações direcionadas ao padrão de erro com critérios de segurança acadêmica |
-| **LaTeX/Math OCR** | Aprimorar captura de expressões matemáticas |
-| **RAG das notas** | Conectar erros aos trechos de teoria do próprio material do aluno |
-| **Análise longitudinal** | Comparar semestres e identificar padrões recuperados ou reincidentes |
-| **Fluent UI adaptativo** | Refinar comportamento específico para desktop, tablet e mobile |
-| **Temas Fluent** | Suporte aprimorado a temas claro, escuro e cores de destaque |
-| **Atalhos de teclado** | Aumentar produtividade em Windows e Web |
-
-<details>
-<summary><strong>Integração com Anki/flashcards</strong></summary>
-
-Gerar revisão a partir de padrões confirmados.
-
-</details>
-
-<details>
-<summary><strong>Professor/tutor</strong></summary>
-
-Fluxo opcional de validação colaborativa.
-
-</details>
-
-<details>
-<summary><strong>Geração de exercícios</strong></summary>
-
-Criar variações direcionadas ao padrão de erro com critérios de segurança acadêmica.
-
-</details>
-
-<details>
-<summary><strong>LaTeX/Math OCR</strong></summary>
-
-Aprimorar captura de expressões matemáticas.
-
-</details>
-
-<details>
-<summary><strong>RAG das notas</strong></summary>
-
-Conectar erros aos trechos de teoria do próprio material do aluno.
-
-</details>
-
-<details>
-<summary><strong>Análise longitudinal</strong></summary>
-
-Comparar semestres e identificar padrões recuperados ou reincidentes.
-
-</details>
-
-<details>
-<summary><strong>Fluent UI adaptativo</strong></summary>
-
-Criar uma camada responsiva capaz de adaptar automaticamente:
-
-- densidade;
-- navegação;
-- quantidade de painéis;
-- espaçamentos;
-- comportamento de comandos;
-- visualização do grafo;
-
-de acordo com o espaço disponível.
-
-</details>
+| **Autores** | **Cláudio Francisco Dos Santos Júnior** · **Lucas Emanuel Simão Silva** |
+| **Orientação** | **Ilo Amy Saldanha Rivero** |
+| **Instituição** | Pontifícia Universidade Católica de Minas Gerais (PUC Minas) |
+| **Versão** | 1.0.0 · novembro de 2026 |
 
 ---
 
-<a id="recomendacao-de-implementacao"></a>
+<a id="licenca"></a>
 
-## Recomendação de Implementação
+## Licença, uso e citação
 
-> [!IMPORTANT]
-> **Desenvolver a taxonomia e o modelo de eventos antes da IA.**
+O código é distribuído sob a **[PolyForm Noncommercial License 1.0.0](LICENSE)**: uso pessoal, educacional e de pesquisa é permitido; **uso comercial** (SaaS, white-label, incorporação em produto pago) exige uma licença comercial separada, concedida pelos autores. Interessados em licenciar o MistakeMap para uma escola, curso ou plataforma podem abrir uma [issue](https://github.com/CFSJCODE/MistakeMap/issues) ou falar diretamente com os autores.
 
-Um sistema que sabe registrar:
-
-- onde o erro ocorreu;
-- qual conceito estava envolvido;
-- por que o aluno acredita que errou;
-
-já produz valor.
-
-A inteligência automática deve **reduzir o trabalho de classificação**, não substituir o ato metacognitivo de revisar a própria solução.
-
-Do ponto de vista visual, o **Design System Fluent deve ser estruturado antes da implementação extensiva das telas**, evitando que cada funcionalidade estabeleça padrões independentes de:
-
-- cores;
-- tipografia;
-- espaçamento;
-- navegação;
-- iconografia;
-- diálogos;
-- estados;
-- feedback;
-- responsividade.
-
-### Ordem recomendada
-
-```mermaid
-flowchart LR
-    A["1. Domínio"] --> B["2. Modelo de eventos"]
-    B --> C["3. Design System Fluent"]
-    C --> D["4. Componentes compartilhados"]
-    D --> E["5. Features"]
-    E --> F["6. IA"]
-    F --> G["7. Otimização"]
-```
+- [Política de uso e atribuição](USAGE_POLICY.md)
+- [Marcas](TRADEMARKS.md) · [Governança](GOVERNANCE.md) · [Avisos](NOTICE)
+- [Como contribuir](CONTRIBUTING.md)
+- Para citar em trabalhos acadêmicos, use o [`CITATION.cff`](CITATION.cff) (botão **Cite this repository** do GitHub).
 
 ---
 
-<a id="exemplo-de-registro"></a>
+<div align="center">
 
-## Exemplo de Registro
+**O erro não é o fim da resolução. É um sinal.**
 
-```yaml
-disciplina: "Lógica Proposicional"
-exercicio: "EX-00472"
-tentativa: "25/08/2026 20:14"
+[Experimentar o MistakeMap](https://mistakemap-tau.vercel.app/) · [Ver o código](https://github.com/CFSJCODE/MistakeMap) · [Decisões de backend](../BACKEND.md)
 
-erro_confirmado:
-  descricao: "Negação incorreta de conjunção"
-  tipo: "Transformação lógica"
-
-conceitos:
-  - Negação
-  - Conjunção
-  - Leis de De Morgan
-
-evidencia:
-  referencia: "Passo 3 da resolução"
-
-recorrencia:
-  eventos: 3
-  janela: "últimos 21 dias"
-
-prioridade:
-  nivel: "Alta"
-  justificativa_visivel: true
-```
-
----
-
-<a id="indicadores-de-produto"></a>
-
-## Indicadores de Produto
-
-| Indicador | Interpretação |
-|:---|:---|
-| **Recorrência por conceito** | Frequência de eventos confirmados em janela definida |
-| **Taxa de recuperação** | Conceitos com `mastery_events` após erros anteriores |
-| **Precisão da sugestão** | Percentual de eventos IA aceitos sem alteração |
-| **Tempo até revisão** | Intervalo entre erro e nova prática relacionada |
-| **Diversidade de erro** | Distribuição entre tipos para evitar foco excessivo em uma única métrica |
-
----
-
-<a id="execucao"></a>
-
-## Execução
-
-> [!NOTE]
-> O aplicativo fica em `appmistakemap/`. O cliente já aponta para o projeto Supabase publicado; nenhuma chave privada é necessária para executá-lo. O backend (Edge Functions, migrações e segredos) é descrito em [`BACKEND.md`](../BACKEND.md).
-
-### Pré-requisitos
-
-- [ ] Flutter SDK estável (validado com Flutter 3.47 / Dart 3.13)
-- [ ] Ambiente compatível com a plataforma de destino (Android SDK, Visual Studio para Windows ou Chrome)
-- [ ] Deno 2, apenas para testar as Edge Functions
-
-> [!TIP]
-> No Windows, clone o repositório em um caminho **sem acentos** (por exemplo, `D:\MistakeMap`). Caminhos com acentos fazem `flutter analyze` e o build AOT falharem.
-
-### 1. Clonar o repositório
-
-```bash
-git clone https://github.com/CFSJCODE/MISTAKEMAP.git
-cd MISTAKEMAP/appmistakemap
-```
-
-### 2. Instalar dependências
-
-```bash
-flutter pub get
-```
-
-### 3. Verificar o ambiente
-
-```bash
-flutter doctor
-```
-
-### 4. Executar
-
-```bash
-flutter run -d android    # ou: -d windows / -d chrome
-```
-
-### 5. Validar como o CI
-
-```bash
-flutter analyze
-dart format --set-exit-if-changed lib/
-flutter test --reporter compact
-```
-
-As Edge Functions têm seus próprios testes:
-
-```bash
-cd ../supabase/functions
-deno check --frozen */index.ts
-deno test --frozen --allow-env
-```
-
-### Dependências do aplicativo
-
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-
-  fluent_ui:
-  liquid_glass_widgets:
-  liquid_glass_renderer:
-  supabase_flutter:
-  image_picker:
-  http:
-  crypto:
-  sqflite:
-  sqflite_common_ffi:
-  sqflite_common_ffi_web:
-  shared_preferences:
-  path:
-```
-
-> [!TIP]
-> Na Web, o arquivo `web/sqlite3.wasm` precisa casar com a versão do pacote `sqlite3` registrada no `pubspec.lock`.
-
-> [!WARNING]
-> As versões das dependências ficam no `pubspec.yaml` e são validadas pelo CI. O README não fixa versões para não divergir do arquivo real.
-
-### Integração contínua
-
-| Workflow | Quando roda | O que faz |
-|:---|:---|:---|
-| `ci.yml` | Push e pull request no `main` | `deno check`/`deno test` das funções, `flutter analyze`, `dart format` e `flutter test` |
-| `supabase-functions-deploy.yml` | Push no `main` que altera `supabase/` | Publica as Edge Functions |
-| `supabase-deploy.yml` | Push no `main` que altera migrações | Publica as migrações em `appmistakemap/database/` |
-| `web-deploy-vercel.yml` | Push no `main` que altera `appmistakemap/` | Gera `flutter build web` e publica na Vercel: [mistakemap-tau.vercel.app](https://mistakemap-tau.vercel.app) |
-| `sync-repository-metadata.yml` | Pull request e push que alteram `LICENSE` ou `CITATION.cff` | Confere se as cópias da raiz são iguais às versões canônicas em `.github/` (atualize as duas no mesmo PR) |
-
----
-
-<a id="sintese"></a>
-
-## Síntese
-
-> **MistakeMap trata o erro como dado de aprendizagem:** não um ponto final vermelho, mas um sinal que, quando conectado a outros sinais, revela onde a próxima revisão pode produzir maior retorno.
-
-A arquitetura combina:
-
-```text
-Flutter
-   +
-Dart
-   +
-Fluent UI
-   +
-Liquid Glass
-   +
-Supabase
-   +
-PostgreSQL
-   +
-Edge Functions
-   +
-Cloudflare R2
-   +
-Google Gemini (OCR / LLM)
-   +
-Grafo Conceitual
-```
-
-para construir uma aplicação educacional na qual a interface não apenas apresenta resultados, mas ajuda o estudante a **navegar pela própria trajetória de aprendizagem**.
-
----
+<sub>Flutter · Dart · Fluent 2 · Liquid Glass · Supabase · PostgreSQL · Realtime · SQLite · Edge Functions · Cloudflare R2 · Gemini · Vercel</sub>
 
 <p align="right"><a href="#readme-top">↑ Voltar ao topo</a></p>
 
-<h3 align="center">MistakeMap</h3>
-
-<p align="center"><strong>O erro não é o fim da resolução. É um sinal.</strong></p>
-
-<p align="center">
-  Projeto Integrado I: Desenvolvimento Móvel · Engenharia de Computação · PUC Minas<br>
-  Cláudio Francisco Dos Santos Júnior · Lucas Emanuel Simão Silva<br>
-  Orientação: Ilo Amy Saldanha Rivero
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter">
-  <img src="https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart">
-  <img src="https://img.shields.io/badge/Fluent_UI-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Fluent UI">
-  <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
-  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite">
-  <img src="https://img.shields.io/badge/Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white" alt="Cloudflare R2">
-  <img src="https://img.shields.io/badge/Google_Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white" alt="Google Gemini">
-  <img src="https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white" alt="Vercel">
-</p>
-
-<p align="center">
-  <sub>Flutter · Dart · Fluent UI · Liquid Glass · Supabase · PostgreSQL · SQLite · Realtime · Edge Functions · Cloudflare R2 · Gemini · Vercel</sub>
-</p>
-
-<p align="center"><sub>Versão 1.0.0 · Outubro de 2026</sub></p>
+</div>
