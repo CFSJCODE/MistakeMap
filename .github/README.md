@@ -22,6 +22,8 @@ O **MistakeMap** lê a sua resolução, aponta **onde** e **por que** você erro
 ![Supabase](https://img.shields.io/badge/Supabase-Auth%20%C2%B7%20Postgres%20%C2%B7%20Realtime-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
 ![Deno](https://img.shields.io/badge/Edge%20Functions-Deno%202-000000?style=flat-square&logo=deno&logoColor=white)
 ![Gemini](https://img.shields.io/badge/IA-Google%20Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)
+![Claude](https://img.shields.io/badge/IA-Claude%20Sonnet%205.5-D97757?style=flat-square&logo=anthropic&logoColor=white)
+![OpenRouter](https://img.shields.io/badge/IA-OpenRouter-6566F1?style=flat-square&logo=openrouter&logoColor=white)
 ![Cloudflare R2](https://img.shields.io/badge/Arquivos-Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white)
 ![SQLite](https://img.shields.io/badge/Offline-SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
 ![Plataformas](https://img.shields.io/badge/Plataformas-Android%20%C2%B7%20Windows%20%C2%B7%20Web-3DDC84?style=flat-square)
@@ -69,7 +71,8 @@ O MistakeMap trata cada erro como um **dado de aprendizagem**:
 | 📶 **Offline de verdade** | Exercícios, tentativas e o caderno funcionam sem rede e sincronizam sozinhos quando a conexão volta. |
 | 🔁 **Recuperação conta** | Acertar de novo um conceito reduz o peso dele no plano de estudo. O mapa mostra melhora, não só fragilidade. |
 | 🔒 **Privado por padrão** | Os dados educacionais pertencem ao estudante. Isolamento por conta no próprio banco (RLS) e gabaritos que o cliente nunca enxerga. |
-| 💸 **Custo de operação próximo de zero** | Toda a infraestrutura roda em camadas gratuitas (Supabase, Cloudflare R2, Gemini, Vercel), com cotas por usuário e orçamento de IA controlado no banco. |
+| 🤖 **Várias IAs, uma só interface** | Gemini por padrão, Claude Sonnet 5.5 e OpenRouter como alternativas, com cadeia de reserva automática: se um modelo cai, o próximo assume. |
+| 💸 **Custo de operação próximo de zero** | A infraestrutura roda em camadas gratuitas (Supabase, Cloudflare R2, Gemini, Vercel); o Claude, único modelo pago no padrão, só entra com reserva de custo e teto mensal controlados no banco. |
 
 ---
 
@@ -159,7 +162,7 @@ flowchart TB
     end
 
     R2[("Cloudflare R2<br/>bucket privado")]
-    AI["Google Gemini<br/>(Anthropic e OpenRouter opcionais)"]
+    AI["Provedores de IA<br/>Gemini · Claude · OpenRouter"]
 
     SYNC <-->|"consultas e upserts"| PG
     RT -->|"mudanças de outros aparelhos"| SYNC
@@ -187,7 +190,7 @@ flowchart TB
 | Backend | Supabase Edge Functions (Deno 2, TypeScript) | IA, upload, prática, estudo, lote e saúde |
 | Jobs | `pg_cron` + `pg_net` | Processamento em lote sem HTTP síncrono em trigger |
 | Arquivos | Cloudflare R2 | Fotos dos exercícios, compatível com S3, sem custo de saída |
-| IA | Google Gemini (multimodal) | OCR, classificação de erros, material e exercícios |
+| IA | Google Gemini (padrão), Anthropic Claude Sonnet 5.5, OpenRouter | OCR, classificação de erros, material e exercícios, com cadeia de reserva entre modelos ([detalhes](#provedores-ia)) |
 | Web | Vercel | Hospedagem da versão web |
 | CI/CD | GitHub Actions | Testes, migrations, funções e deploy web |
 
@@ -235,7 +238,73 @@ Salvaguardas do pipeline:
 - **Idempotência e concorrência.** `processing_runs` com *lease* evita análise duplicada; uma tentativa já analisada devolve o diagnóstico em cache.
 - **Cotas e orçamento.** Limite diário por usuário (`ai_daily_usage`), reserva de custo antes de chamar provedores pagos (`ai_budget_reservations`) e falha fechada quando a tabela de preços precisa de revisão.
 - **Troca de modelo só com evidência.** O roteador só escolhe outro modelo se houver avaliação com pelo menos 20 amostras na mesma tarefa, qualidade ≥ 0,8 e dados com menos de 30 dias; dentro de 2 pontos de qualidade, vence o mais barato.
-- **Fallback.** Se o modelo principal falha, o pedido segue para o modelo reserva sem expor erro ao aluno.
+- **Fallback em cadeia.** Se um modelo falha, o pedido passa ao próximo da cadeia (veja abaixo) sem expor o erro ao aluno.
+- **Recusas tratadas.** Bloqueios de segurança do provedor viram uma mensagem clara ao aluno (HTTP 422); resposta truncada ou fora do contrato nunca é gravada.
+
+<a id="provedores-ia"></a>
+
+### Provedores e modelos de IA
+
+Todas as chamadas passam por um único ponto, `structuredResponse()` em [`_shared/gemini.ts`](../supabase/functions/_shared/gemini.ts), usado pela análise, pelo material de estudo e pela prática. A escolha do modelo acontece só no servidor, que grava o modelo usado em `attempt_analyses.model` e `practice_sets.model`.
+
+| Provedor | Modelo | Papel | Saída estruturada | Ativação |
+|:---|:---|:---|:---|:---|
+| **Google Gemini** | `gemini-flash-latest` | **Principal** (padrão) | `responseFormat` com JSON Schema, *thinking* `LOW` | `GEMINI_API_KEY`, `GEMINI_MODEL` |
+| **Google Gemini** | `gemini-3.6-flash` | 1ª reserva | idem | `GEMINI_FALLBACK_MODEL` |
+| **Google Gemini** | `gemini-3.5-flash-lite` | 2ª reserva, roda em capacidade separada e costuma responder quando os Flash estão sobrecarregados | idem | `GEMINI_LITE_MODEL` (`off` desliga) |
+| **Anthropic** | `claude-sonnet-5-5` | Alternativa paga e **última reserva** quando todo o Gemini falha | `output_config` com JSON Schema, imagens em base64 | Rota direta: `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` + `ANTHROPIC_MODEL=claude-sonnet-5-5` (obrigatório; o controle de custo só aceita esse modelo). Última reserva: `AI_CLAUDE_FALLBACK_ENABLED=true` + `ANTHROPIC_API_KEY` (o modelo é definido internamente) |
+| **OpenRouter** | configurável (`openrouter/free` ou modelos `:free` no roteador automático) | Alternativa, inclusive modelos gratuitos de terceiros | `response_format` `json_schema` estrito, `require_parameters` | `AI_PROVIDER=openrouter` + `OPENROUTER_API_KEY` + `OPENROUTER_MODEL` (obrigatório) |
+| **OpenAI** | `gpt-4.1-mini` (Responses API) | Integração preparada e validada localmente, **ainda não ativada** | Structured Outputs | pendente de chave e publicação ([`_reversa_forward/openai-integration`](../_reversa_forward/openai-integration/README.md)) |
+
+**Rotas por tarefa.** Cada tipo de chamada tem uma rota própria que pode apontar para outro provedor: `ANALYSIS` (texto), `VISION` (com imagem), `STUDY` (material de estudo) e `PRACTICE` (exercícios), configuradas por `AI_<ROTA>_PROVIDER` e `AI_<ROTA>_MODEL`. Sem configuração, todas usam `AI_PROVIDER` (padrão `gemini`).
+
+**Ordem de decisão e fallback:**
+
+```mermaid
+flowchart TD
+    REQ["Pedido ao servidor"] --> CAT{"Prática coberta pelo<br/>catálogo revisado?"}
+    CAT -->|"sim"| OUT["Resposta validada"]
+    CAT -->|"não ou outra tarefa"| EV{"Há evidência de avaliação<br/>(AI_ROUTING_EVIDENCE)?"}
+    EV -->|"sim"| AUTO["Modelo escolhido pelo roteador<br/>Gemini · Claude · OpenRouter grátis"]
+    AUTO -->|"ok"| OUT
+    AUTO -->|"falha ou sem orçamento"| ROTA
+    EV -->|"não"| ROTA["Rota configurada<br/>AI_ROTA_PROVIDER ou AI_PROVIDER"]
+    ROTA -->|"Gemini"| G1["gemini-flash-latest"]
+    G1 -->|"404, 429, 5xx ou rede"| G2["gemini-3.6-flash"]
+    G2 -->|"falha"| G3["gemini-3.5-flash-lite"]
+    G1 -->|"ok"| OUT
+    G2 -->|"ok"| OUT
+    G3 -->|"ok"| OUT
+    ROTA -->|"Claude ou OpenRouter"| OP["Provedor configurado"]
+    OP -->|"ok"| OUT
+    G3 -->|"falha"| CL{"AI_CLAUDE_FALLBACK_ENABLED?"}
+    OP -->|"falha"| CL
+    CL -->|"sim"| SON["claude-sonnet-5-5<br/>com reserva de orçamento"]
+    SON -->|"ok"| OUT
+    CL -->|"não"| ERR["Erro amigável ao aluno<br/>tentativa continua salva"]
+    SON -->|"falha"| ERR
+```
+
+1. **Catálogo primeiro.** Na prática, se o catálogo revisado cobre a rodada, nenhuma IA é chamada.
+2. **Roteador automático.** Com evidência de avaliação, o roteador escolhe entre o Gemini principal, o Claude Sonnet 5.5 e modelos gratuitos do OpenRouter, desde que a chave do provedor esteja configurada e o custo seja de no máximo US$ 1 por pedido. Se o escolhido falhar, a chamada volta para a rota configurada.
+3. **Cadeia do Gemini.** Até três tentativas, cada uma em um modelo diferente (principal → `gemini-3.6-flash` → `gemini-3.5-flash-lite`), com espera exponencial (0,5 s, 1 s) e um prazo total de 110 s para caber no limite de 150 s das Edge Functions.
+4. **Última reserva: Claude.** Com `AI_CLAUDE_FALLBACK_ENABLED=true`, falhas de indisponibilidade, limite de taxa ou saída inválida/incompleta são repetidas no `claude-sonnet-5-5`.
+5. **Sem resposta válida,** o aluno recebe uma mensagem amigável e a tentativa continua salva para uma nova análise.
+
+**Controle de custo do Claude** (`_shared/claude_budget.ts` + migration `ai_budget_reservations`):
+
+- conta os tokens de entrada antes de chamar (`count_tokens`) e recusa pedidos acima de 100 mil tokens de entrada ou 16 mil de saída;
+- reserva US$ 1 por pedido e acerta o valor real depois da resposta;
+- teto de **US$ 100 em qualquer janela móvel de 31 dias**, verificado no banco com trava (`reserve_claude_budget`);
+- **falha fechada**: se a contagem não puder ser feita ou se a tabela de preços passar da validade (01/12/2026), a chamada paga não acontece.
+
+> [!WARNING]
+> Esse controle de custo vale **só para o Claude**. O roteador automático só considera modelos gratuitos do OpenRouter, mas um modelo pago configurado explicitamente em `OPENROUTER_MODEL` ou `AI_<ROTA>_MODEL` não passa pela reserva de US$ 1 nem pelo teto de US$ 100. Limite os gastos desses modelos na própria conta do OpenRouter.
+
+**Observabilidade.** Retentativas e erros dos provedores aparecem nos logs (`ai_provider_retry`, `ai_provider_error`) só com código e status, nunca com conteúdo do aluno. O painel administrativo mostra as cotas do plano gratuito do Gemini por modelo (RPM, TPM e RPD); a telemetria detalhada por provedor está preparada em [`_reversa_forward/admin-monitoring`](../_reversa_forward/admin-monitoring/README.md).
+
+> [!NOTE]
+> Na camada gratuita do Gemini, o Google pode usar prompts e imagens para melhorar seus produtos. Fotos com nome ou matrícula devem ser recortadas antes do envio, ou deve-se usar uma camada paga.
 
 ### Priorização da revisão
 
@@ -492,7 +561,7 @@ O código é distribuído sob a **[PolyForm Noncommercial License 1.0.0](LICENSE
 
 [Experimentar o MistakeMap](https://mistakemap-tau.vercel.app/) · [Ver o código](https://github.com/CFSJCODE/MistakeMap) · [Decisões de backend](../BACKEND.md)
 
-<sub>Flutter · Dart · Fluent 2 · Liquid Glass · Supabase · PostgreSQL · Realtime · SQLite · Edge Functions · Cloudflare R2 · Gemini · Vercel</sub>
+<sub>Flutter · Dart · Fluent 2 · Liquid Glass · Supabase · PostgreSQL · Realtime · SQLite · Edge Functions · Cloudflare R2 · Gemini · Claude · OpenRouter · Vercel</sub>
 
 <p align="right"><a href="#readme-top">↑ Voltar ao topo</a></p>
 

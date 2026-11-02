@@ -12,7 +12,7 @@ MistakeMap mapeia os padrões de erro do estudante.
 | Cliente (Android, Windows, Web) | `appmistakemap/` | Flutter + Dart |
 | Caderno de erros (offline + sincronizado) | `appmistakemap/lib/local/`, `lib/sync/caderno_sync.dart` | SQLite (`sqflite`, `ffi`, `ffi_web`) + `shared_preferences`, espelhado em `error_notes` — ver [BANCO_LOCAL.md](appmistakemap/BANCO_LOCAL.md) |
 | Banco, Auth, RLS | `appmistakemap/database/supabase/migrations/` | Supabase (Postgres) |
-| IA e uploads | `supabase/functions/` | Edge Functions (Deno) + Google Gemini + Cloudflare R2 |
+| IA e uploads | `supabase/functions/` | Edge Functions (Deno) + Google Gemini (padrão), Claude Sonnet 5.5 e OpenRouter + Cloudflare R2 |
 | Worker OCR/LLM | `worker/` | Rust — **arquivado**, não evoluir |
 
 ## Regras não negociáveis
@@ -67,6 +67,16 @@ Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
 - Atualização sem reinstalar: patches de código Dart pelo Shorebird (Android e Windows) e aviso
   de release nativo novo via GitHub Releases (`lib/atualizacao/`). `versao_app.dart` acompanha o
   `version:` do pubspec. Fluxo e configuração em [ATUALIZACOES.md](appmistakemap/ATUALIZACOES.md).
+- Provedores de IA (PR #36): toda chamada passa por `structuredResponse()` em
+  `_shared/gemini.ts`. Ordem: catálogo (só prática) → roteador por evidência
+  (`AI_ROUTING_EVIDENCE`) → rota configurada (`AI_<ANALYSIS|VISION|STUDY|PRACTICE>_PROVIDER`
+  ou `AI_PROVIDER`, padrão `gemini`) → cadeia Gemini `gemini-flash-latest` →
+  `gemini-3.6-flash` → `gemini-3.5-flash-lite` → `claude-sonnet-5-5` se
+  `AI_CLAUDE_FALLBACK_ENABLED=true`. Claude é o único modelo pago: reserva US$ 1 por
+  pedido, teto de US$ 100 por 31 dias (`reserve_claude_budget`), falha fechada. OpenRouter só
+  entra no roteador com modelos gratuitos; modelo pago configurado à mão nele não tem orçamento no banco. Integração OpenAI (`gpt-4.1-mini`) está preparada
+  em `_reversa_forward/openai-integration/`, não ativada. Documentado no README (seção
+  "Provedores e modelos de IA").
 - Prática (PR #20): `generate-practice` aceita `category` e ranqueia conceitos por
   frequência × recência (meia-vida 14 d), descontando recuperação via `mastery_events`.
 
