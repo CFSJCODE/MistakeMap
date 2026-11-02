@@ -478,6 +478,7 @@ export async function generatePractice(
   const targetKeys = new Set(targetConcepts.map((c) => c.toLowerCase()));
   // Exercícios revisados do catálogo vêm antes da IA: sem custo, com gabarito
   // conferido. Só entram os que o aluno ainda não recebeu.
+  // Banco sem a migration do catálogo (42P01): segue direto para a IA.
   const catalogo =
     await sql`SELECT c.id,c.theme,c.position,c.difficulty,c.prompt_text,
       k.correct_answer,k.explanation
@@ -491,7 +492,11 @@ export async function generatePractice(
       AND (${category}::text IS NULL OR c.error_category=${category})
       AND NOT EXISTS (SELECT 1 FROM public.exercises e
         JOIN public.subjects s ON s.id=e.subject_id
-        WHERE s.user_id=${user} AND e.catalog_exercise_id=c.id)`;
+        WHERE s.user_id=${user} AND e.catalog_exercise_id=c.id)`
+      .catch((erro: { code?: string }) => {
+        if (erro?.code === "42P01" || erro?.code === "42703") return [];
+        throw erro;
+      });
   const revisados = pickCatalog(
     catalogo.map((r) => ({ ...r, position: Number(r.position) }) as CatalogRow),
     targetConcepts,
