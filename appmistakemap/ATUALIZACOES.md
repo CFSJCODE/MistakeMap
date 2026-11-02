@@ -61,7 +61,8 @@ Precisa ser feito pelo Cláudio, na máquina dele (`D:\MistakeMap`):
    ```
    Faça commit do `shorebird.yaml` e do `pubspec.yaml`. O `app_id` não é
    segredo.
-3. **Token de CI**: `shorebird login:ci` imprime um token. Salve como secret
+3. **Token de CI**: crie uma API key em console.shorebird.dev
+   (`shorebird login:ci` foi substituído). Salve como secret
    **`SHOREBIRD_TOKEN`** em *GitHub → Settings → Secrets and variables →
    Actions*. Não grave o token em arquivo nenhum do repo.
 4. **Chave de assinatura Android** (todo APK distribuído precisa da mesma

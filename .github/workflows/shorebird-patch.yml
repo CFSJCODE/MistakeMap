@@ -76,7 +76,7 @@ jobs:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
         run: |
           falta=0
-          [ -n "$SHOREBIRD_TOKEN" ] || { echo "::error::Falta o secret SHOREBIRD_TOKEN (gere com 'shorebird login:ci')."; falta=1; }
+          [ -n "$SHOREBIRD_TOKEN" ] || { echo "::error::Falta o secret SHOREBIRD_TOKEN (crie uma API key em console.shorebird.dev)."; falta=1; }
           [ -f appmistakemap/shorebird.yaml ] || { echo "::error::Falta appmistakemap/shorebird.yaml (rode 'shorebird init' em appmistakemap e faça commit)."; falta=1; }
           exit "$falta"
 
