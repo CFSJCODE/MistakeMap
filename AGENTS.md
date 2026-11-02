@@ -93,9 +93,30 @@ Mergeados recentes: #27 (material de estudo), #29/#30 (barra de vidro líquido),
 **Pendências conhecidas**
 - Fórmula de prioridade P = F × R × I × (1 − M): falta o termo I (importância).
 - Fila de revisão; validação dos `error_events` pelo aluno; `focus_concept` some ao recarregar a prática.
-- Decidir se o Caderno de erros sincroniza (exigiria tabela `error_notes` + RLS).
+- Sincronizar o Caderno de erros entre dispositivos: a tabela remota
+  `notebook_entries` já existe, mas o cliente ainda usa somente SQLite. O
+  usuário decidiu que o caderno deve sincronizar, com fila offline, resolução
+  de conflitos e preservação de alterações não confirmadas.
 - Insights não mostra itens ainda na fila de sync; sync não testado em aparelho real.
 - Avisos de validação do Caderno só somem ao salvar de novo.
+
+### Catálogo, comunidade e sincronização (2026-11-01)
+
+- O MistakeMap deve abranger educação básica, estudo independente e, no ensino
+  superior inicialmente, Engenharia de Computação, com situações de tecnologia
+  adequadas ao nível e sem trocar o objetivo curricular.
+- A migration `20261101233126_learning_platform.sql` foi aplicada ao projeto:
+  cria o catálogo compartilhado e as publicações. A leitura é para usuários
+  autenticados; criar, editar e excluir publicações é restrito a administradores.
+  As políticas foram verificadas em transação revertida para os dois papéis.
+- O catálogo ainda não contém os cinco exercícios revisados por matéria/tema;
+  a integração desses exercícios à tela e sua revisão continuam pendentes.
+- A limpeza anterior do banco e do R2 não garante, por si só, que uma fila
+  antiga offline não restaure dados. Falta uma barreira de sincronização
+  versionada, validada entre dispositivos, que preserve alterações posteriores.
+- Exclusões de outro dispositivo ainda não têm atualização em tempo real.
+  O cache e o caderno locais não devem ser apagados antes de confirmação no
+  servidor e reconciliação segura das alterações.
 
 ## Reversa
 
