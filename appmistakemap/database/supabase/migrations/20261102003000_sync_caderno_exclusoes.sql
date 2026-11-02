@@ -117,7 +117,9 @@ begin
     -- Exclusão em cascata da matéria: a linha dela já saiu.
     dono := coalesce(dono, auth.uid());
   end if;
-  if dono is not null then
+  -- Conta sendo apagada (cascata de auth.users): não há a quem avisar, e o
+  -- registro violaria a chave estrangeira e desfaria a exclusão da conta.
+  if dono is not null and exists (select 1 from auth.users u where u.id = dono) then
     insert into public.deleted_records (table_name, record_id, user_id)
     values (tg_table_name, old.id, dono)
     on conflict do nothing;

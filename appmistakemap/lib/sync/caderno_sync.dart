@@ -75,7 +75,16 @@ class SincronizacaoCaderno {
         [usuarioId, ultimoId],
       );
       if (linhas.isEmpty) return;
+      final primeiroId = linhas.first['id'] as int;
       ultimoId = linhas.last['id'] as int;
+      // A partir daqui o registro pode existir no servidor mesmo que a
+      // resposta se perca: excluir passa a deixar tombstone, senão a próxima
+      // leitura traria a cópia do servidor de volta.
+      await db.rawUpdate(
+        'UPDATE registros_erro SET no_servidor = 1 '
+        'WHERE usuario_id = ? AND pendente = 1 AND id BETWEEN ? AND ?',
+        [usuarioId, primeiroId, ultimoId],
+      );
       await remoto.enviarNotas([
         for (final l in linhas) paraServidor(l, usuarioId),
       ]);

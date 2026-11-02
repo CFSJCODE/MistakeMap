@@ -752,16 +752,31 @@ void main() {
       expect(remoto.notas.values.single['deleted_at'], isNotNull);
     });
 
-    test('registro que nunca subiu é apagado sem tombstone', () async {
+    test('registro que nunca tentou subir é apagado sem tombstone', () async {
       final a = await aparelho('a');
-      remoto.falha = _semRede;
       final id = await a.dao.inserir(nota('Rascunho', DateTime(2026, 11, 2)));
-      await a.sync.sincronizar();
       expect(await a.dao.excluir(_usuario, id), 1);
       expect(await (await a.banco.banco).query('registros_erro'), isEmpty);
-      remoto.falha = null;
       await a.sync.sincronizar();
       expect(remoto.notas, isEmpty);
+    });
+
+    test('envio sem confirmação deixa tombstone ao excluir', () async {
+      // O upload pode ter chegado ao servidor mesmo com a resposta perdida;
+      // sem tombstone, a próxima leitura traria a cópia de lá de volta.
+      final a = await aparelho('a');
+      remoto.falha = _semRede;
+      final id = await a.dao.inserir(nota('Incerto', DateTime(2026, 11, 2)));
+      await a.sync.sincronizar();
+      expect(await a.dao.excluir(_usuario, id), 1);
+      expect(await a.dao.listar(_usuario), isEmpty);
+      final linha = (await (await a.banco.banco).query('registros_erro'))
+          .single;
+      expect(linha['excluido_em'], isNotNull);
+      remoto.falha = null;
+      await a.sync.sincronizar();
+      expect(remoto.notas.values.single['deleted_at'], isNotNull);
+      expect(await (await a.banco.banco).query('registros_erro'), isEmpty);
     });
 
     test('Realtime de exclusão do caderno dispara a sincronização', () async {
@@ -780,9 +795,45 @@ void main() {
       expect(await a.dao.listar(_usuario), isEmpty);
       expect(a.sync.notificacao.value, contains('outro aparelho'));
     });
+
+    test('evento seguinte no debounce não cancela a rodada pedida', () async {
+      final a = await aparelho('a');
+      await a.dao.inserir(nota('Viva', DateTime(2026, 11, 2, 9)));
+      await a.sync.sincronizar();
+      final uid = remoto.notas.keys.single;
+      remoto.gravarNota({
+        ...remoto.notas[uid]!,
+        'updated_at': '2026-11-02T12:00:00.000Z',
+        'deleted_at': '2026-11-02T12:00:00.000Z',
+      });
+      remoto.ouvinte!(EventoRemoto('error_notes', remoto.notas[uid]!));
+      // Uma tentativa nova chega antes do fim da espera: só recarregaria as
+      // telas, mas a nota excluída ainda precisa de uma rodada.
+      remoto.ouvinte!(const EventoRemoto('attempts', {'id': 't-1'}));
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      expect(await a.dao.listar(_usuario), isEmpty);
+    });
   });
 
   group('barreira contra fila antiga', () {
+    test('exclusão na fila fica quando só a tentativa foi apagada', () async {
+      await iniciar();
+      remoto.falha = _semRede;
+      await sync.excluirExercicio(
+        usuarioId: _usuario,
+        exercicioId: 'ex-meio',
+        materiaId: 'sub-1',
+        tentativaId: 'tent-meio',
+      );
+      // Uma exclusão anterior caiu no meio: a tentativa saiu, o exercício não.
+      remoto.excluirNoServidor('attempts', 'tent-meio');
+      remoto.falha = null;
+      remoto.chamadas.clear();
+      await sync.sincronizar();
+      expect(remoto.chamadas, contains('excluir:ex-meio'));
+      expect(await sync.fila(_usuario), isEmpty);
+    });
+
     test('exclusão de outro aparelho tira da fila o que a recriaria', () async {
       await iniciar();
       remoto.falha = _semRede;

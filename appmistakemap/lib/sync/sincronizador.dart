@@ -93,6 +93,9 @@ class Sincronizador {
   /// não faz sentido notificar o próprio aluno.
   final _excluidosAqui = <String>{};
   int _exclusoesRemotas = 0;
+
+  /// Algum evento da janela do debounce pediu uma rodada completa.
+  bool _rodadaPedida = false;
   String? _ultimoErroCaderno;
 
   RemotoSync? _remoto;
@@ -135,6 +138,7 @@ class Sincronizador {
     _sonda = _debounce = null;
     _excluidosAqui.clear();
     _exclusoesRemotas = 0;
+    _rodadaPedida = false;
 
     _ciclo?.dispose();
     _ciclo = null;
@@ -477,10 +481,16 @@ class Sincronizador {
   }
 
   /// Remove da fila as operações sobre exercícios ou tentativas em [ids].
+  /// Uma exclusão na fila só sai quando o próprio exercício já foi apagado:
+  /// a tentativa apagada pode ser só a primeira metade de uma exclusão que
+  /// caiu no meio.
   Future<int> _descartarExcluidos(String usuario, Set<String> ids) async {
     var descartadas = 0;
     for (final op in await fila(usuario)) {
-      if (ids.contains(op.exercicioId) || ids.contains(op.tentativaId)) {
+      final apagada = op.operacao == OperacaoFila.excluirExercicio
+          ? ids.contains(op.exercicioId)
+          : ids.contains(op.exercicioId) || ids.contains(op.tentativaId);
+      if (apagada) {
         await _armazem.remover(op.id!);
         descartadas++;
       }
@@ -666,7 +676,6 @@ class Sincronizador {
   }
 
   void _alteracaoRemota(EventoRemoto evento) {
-    var rodada = false;
     switch (evento.tabela) {
       case 'deleted_records':
         final id = evento.registro['record_id'] as String?;
@@ -675,14 +684,16 @@ class Sincronizador {
             !_excluidosAqui.remove(id)) {
           _exclusoesRemotas++;
         }
-        rodada = true;
+        _rodadaPedida = true;
       case 'error_notes':
-        rodada = true;
+        _rodadaPedida = true;
     }
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 600), () async {
       final exclusoes = _exclusoesRemotas;
+      final rodada = _rodadaPedida;
       _exclusoesRemotas = 0;
+      _rodadaPedida = false;
       if (exclusoes > 0) {
         notificacao.value = exclusoes == 1
             ? 'Um exercício foi excluído em outro aparelho.'
