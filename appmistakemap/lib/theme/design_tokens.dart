@@ -1,3 +1,5 @@
+import 'dart:ui' show ColorFilter, ImageFilter;
+
 import 'package:flutter/painting.dart';
 
 /// Obsidian Glass (modo claro): identidade visual compartilhada pelos fluxos
@@ -110,6 +112,44 @@ abstract final class MistakeMapDesign {
     colors: [Color(0xF2FFFFFF), Color(0x40FFFFFF), Color(0x2411212D)],
     stops: [0, .45, 1],
   );
+
+  /// Reflexo a 145° (Fluent + Liquid Glass): a luz entra pelo canto superior
+  /// esquerdo e some a 30% da superfície.
+  static const glint = LinearGradient(
+    begin: Alignment(-.57, -1),
+    end: Alignment(.57, 1),
+    colors: [Color(0xA6FFFFFF), Color(0x00FFFFFF)],
+    stops: [0, .3],
+  );
+
+  /// Sombra interna da base: a aresta inferior do vidro escurece um tom.
+  static const innerShade = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0x0011212D), Color(0x1411212D)],
+  );
+
+  /// Saturação do que passa por trás do vidro, como no `saturate()` do CSS.
+  static const glassSaturation = 1.3;
+
+  /// Desfoque com saturação: o fundo atrás do vidro fica mais vivo, não
+  /// acinzentado (o acrílico do Fluent e o vidro da Apple fazem o mesmo).
+  static ImageFilter glassFilter(double sigma) => ImageFilter.compose(
+    outer: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+    inner: ColorFilter.matrix(_saturation(glassSaturation)),
+  );
+
+  // Matriz de saturação com os pesos de luminância do Rec. 709.
+  static List<double> _saturation(double s) {
+    const r = .2126, g = .7152, b = .0722;
+    final i = 1 - s;
+    return [
+      r * i + s, g * i, b * i, 0, 0, //
+      r * i, g * i + s, b * i, 0, 0, //
+      r * i, g * i, b * i + s, 0, 0, //
+      0, 0, 0, 1, 0, //
+    ];
+  }
 
   static const acrylicBlur = 20.0;
   static const liquidBlur = 28.0;

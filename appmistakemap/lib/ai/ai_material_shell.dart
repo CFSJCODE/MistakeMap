@@ -146,6 +146,24 @@ class AiMaterialShell extends StatefulWidget {
 
     return ThemeData(
       useMaterial3: true,
+      // Mesma barra de rolagem do resto do app: colada na borda direita,
+      // sempre visível, mais grossa sob o ponteiro.
+      scrollbarTheme: ScrollbarThemeData(
+        thumbVisibility: const WidgetStatePropertyAll(true),
+        thickness: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.hovered) ? 10 : 6,
+        ),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.dragged) ||
+                  states.contains(WidgetState.hovered)
+              ? MistakeMapDesign.steel
+              : const Color(0x8C4A5C6A),
+        ),
+        radius: const Radius.circular(100),
+        crossAxisMargin: 1,
+        mainAxisMargin: 4,
+      ),
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
       colorScheme: const ColorScheme.light(

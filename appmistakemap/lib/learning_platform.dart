@@ -101,160 +101,161 @@ class _TelaAprenderState extends State<TelaAprender> {
                     subject['grade'] == _grade),
           );
           final posts = snapshot.data![1];
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: ListView(
-                padding: _paddingCorpo(context),
-                children: [
-                  Text(
-                    'Sua jornada de aprendizado',
-                    style: context.tipo.subtitle?.copyWith(color: titleBlue),
+          // A lista ocupa a largura toda (barra de rolagem colada na borda
+          // da janela); o recuo lateral centraliza a coluna de 720 px.
+          return LayoutBuilder(
+            builder: (context, box) => ListView(
+              padding:
+                  _paddingCorpo(context) +
+                  EdgeInsets.symmetric(
+                    horizontal: ((box.maxWidth - 720) / 2).clamp(
+                      0.0,
+                      double.infinity,
+                    ),
                   ),
+              children: [
+                Text(
+                  'Sua jornada de aprendizado',
+                  style: context.tipo.subtitle?.copyWith(color: titleBlue),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Explore a educação básica, a graduação e o estudo independente com uma perspectiva de tecnologia.',
+                ),
+                const SizedBox(height: 16),
+                ComboBox<String>(
+                  value: _stage,
+                  isExpanded: true,
+                  items: const [
+                    ComboBoxItem(
+                      value: 'fundamental',
+                      child: Text('Ensino Fundamental'),
+                    ),
+                    ComboBoxItem(value: 'medio', child: Text('Ensino Médio')),
+                    ComboBoxItem(
+                      value: 'superior',
+                      child: Text('Engenharia de Computação'),
+                    ),
+                    ComboBoxItem(
+                      value: 'autodidata',
+                      child: Text('Estudo independente'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _stage = value;
+                        _grade = value == 'fundamental' ? 7 : 1;
+                      });
+                    }
+                  },
+                ),
+                if (_stage == 'fundamental' || _stage == 'medio') ...[
                   const SizedBox(height: 8),
-                  const Text(
-                    'Explore a educação básica, a graduação e o estudo independente com uma perspectiva de tecnologia.',
-                  ),
-                  const SizedBox(height: 16),
-                  ComboBox<String>(
-                    value: _stage,
+                  ComboBox<int>(
+                    value: _grade,
                     isExpanded: true,
-                    items: const [
-                      ComboBoxItem(
-                        value: 'fundamental',
-                        child: Text('Ensino Fundamental'),
-                      ),
-                      ComboBoxItem(value: 'medio', child: Text('Ensino Médio')),
-                      ComboBoxItem(
-                        value: 'superior',
-                        child: Text('Engenharia de Computação'),
-                      ),
-                      ComboBoxItem(
-                        value: 'autodidata',
-                        child: Text('Estudo independente'),
-                      ),
+                    items: [
+                      for (final grade
+                          in _stage == 'fundamental' ? [7, 8, 9] : [1, 2, 3])
+                        ComboBoxItem(value: grade, child: Text('$gradeº ano')),
                     ],
                     onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _stage = value;
-                          _grade = value == 'fundamental' ? 7 : 1;
-                        });
-                      }
+                      if (value != null) setState(() => _grade = value);
                     },
                   ),
-                  if (_stage == 'fundamental' || _stage == 'medio') ...[
-                    const SizedBox(height: 8),
-                    ComboBox<int>(
-                      value: _grade,
-                      isExpanded: true,
-                      items: [
-                        for (final grade
-                            in _stage == 'fundamental' ? [7, 8, 9] : [1, 2, 3])
-                          ComboBoxItem(
-                            value: grade,
-                            child: Text('$gradeº ano'),
-                          ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) setState(() => _grade = value);
-                      },
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  if (subjects.isEmpty)
-                    const Text('Nenhuma matéria disponível nesta etapa.'),
-                  const Text(
-                    'Os exercícios para estas matérias estão em preparação.',
-                  ),
-                  const SizedBox(height: 8),
-                  for (final subject in subjects)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _PainelVidro(
-                        child: Text(
-                          subject['grade'] == null
-                              ? '${subject['name']}'
-                              : '${subject['grade']}º ano · ${subject['name']}',
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Conhecimentos e projetos',
-                    style: context.tipo.subtitle?.copyWith(color: titleBlue),
-                  ),
-                  const SizedBox(height: 8),
-                  if (widget.isAdmin) ...[
-                    Button(
-                      onPressed: () => _editPost(),
-                      child: const Text('Nova publicação'),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  if (posts.isEmpty)
-                    const Text('Ainda não há publicações disponíveis.'),
-                  for (final post in posts)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _PainelVidro(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              post['title'] as String,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(post['body'] as String),
-                            if ((post['link_url'] as String?)?.isNotEmpty ??
-                                false) ...[
-                              const SizedBox(height: 8),
-                              Button(
-                                onPressed: () async {
-                                  final uri = Uri.tryParse(
-                                    post['link_url'] as String,
-                                  );
-                                  if (uri == null ||
-                                      uri.scheme != 'https' ||
-                                      uri.host.isEmpty ||
-                                      !await openLearningLink(uri)) {
-                                    if (context.mounted) {
-                                      _avisar(
-                                        context,
-                                        'Não foi possível abrir o link.',
-                                        erro: true,
-                                      );
-                                    }
-                                  }
-                                },
-                                child: const Text('Abrir link'),
-                              ),
-                            ],
-                            if (widget.isAdmin) ...[
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                children: [
-                                  Button(
-                                    onPressed: () => _editPost(post),
-                                    child: const Text('Editar'),
-                                  ),
-                                  Button(
-                                    onPressed: () => _deletePost(post),
-                                    child: const Text('Excluir'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
                 ],
-              ),
+                const SizedBox(height: 16),
+                if (subjects.isEmpty)
+                  const Text('Nenhuma matéria disponível nesta etapa.'),
+                const Text(
+                  'Os exercícios para estas matérias estão em preparação.',
+                ),
+                const SizedBox(height: 8),
+                for (final subject in subjects)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _PainelVidro(
+                      child: Text(
+                        subject['grade'] == null
+                            ? '${subject['name']}'
+                            : '${subject['grade']}º ano · ${subject['name']}',
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 24),
+                Text(
+                  'Conhecimentos e projetos',
+                  style: context.tipo.subtitle?.copyWith(color: titleBlue),
+                ),
+                const SizedBox(height: 8),
+                if (widget.isAdmin) ...[
+                  Button(
+                    onPressed: () => _editPost(),
+                    child: const Text('Nova publicação'),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (posts.isEmpty)
+                  const Text('Ainda não há publicações disponíveis.'),
+                for (final post in posts)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _PainelVidro(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            post['title'] as String,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(post['body'] as String),
+                          if ((post['link_url'] as String?)?.isNotEmpty ??
+                              false) ...[
+                            const SizedBox(height: 8),
+                            Button(
+                              onPressed: () async {
+                                final uri = Uri.tryParse(
+                                  post['link_url'] as String,
+                                );
+                                if (uri == null ||
+                                    uri.scheme != 'https' ||
+                                    uri.host.isEmpty ||
+                                    !await openLearningLink(uri)) {
+                                  if (context.mounted) {
+                                    _avisar(
+                                      context,
+                                      'Não foi possível abrir o link.',
+                                      erro: true,
+                                    );
+                                  }
+                                }
+                              },
+                              child: const Text('Abrir link'),
+                            ),
+                          ],
+                          if (widget.isAdmin) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                Button(
+                                  onPressed: () => _editPost(post),
+                                  child: const Text('Editar'),
+                                ),
+                                Button(
+                                  onPressed: () => _deletePost(post),
+                                  child: const Text('Excluir'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           );
         },

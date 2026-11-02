@@ -426,10 +426,19 @@ void main() {
     final progress = tester.getTopLeft(find.text('Evolução'));
     expect(exercises.dy, closeTo(review.dy, 1));
     expect(review.dy, closeTo(progress.dy, 1));
-    expect(
-      tester.getSize(find.byType(SingleChildScrollView)).width,
-      lessThanOrEqualTo(1120),
-    );
+    // A rolagem ocupa a janela toda (barra de rolagem na borda direita);
+    // a coluna de leitura continua em 1120 px com o recuo de 24 px.
+    expect(tester.getSize(find.byType(SingleChildScrollView)).width, 1440);
+    final column = find
+        .ancestor(
+          of: find.text('Tentativas'),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is ConstrainedBox && widget.constraints.maxWidth == 1072,
+          ),
+        )
+        .first;
+    expect(tester.getSize(column).width, lessThanOrEqualTo(1120));
     final cards = find
         .ancestor(of: find.text('Tentativas'), matching: find.byType(Container))
         .first;
