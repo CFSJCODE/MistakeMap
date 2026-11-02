@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
-import 'package:appmistakemap/ai/insights_view.dart' show ErrorMapView;
+import 'package:appmistakemap/ai/insights_view.dart'
+    show ConceptGraph, ErrorMapView;
 import 'package:appmistakemap/layout/navigation_shell.dart';
 import 'package:appmistakemap/main.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -523,6 +524,51 @@ void main() {
         }
       },
     );
+  }
+
+  // Resoluções físicas Samsung divididas por densidade simulada 2.0; a
+  // densidade real pode variar conforme o dispositivo e as configurações.
+  for (final profile in [
+    ('Tab S9 11', const Size(800, 1280)),
+    ('Tab S9 / S10 Ultra', const Size(924, 1480)),
+  ]) {
+    for (final landscape in [false, true]) {
+      final size = landscape
+          ? Size(profile.$2.height, profile.$2.width)
+          : profile.$2;
+      testWidgets(
+        '${profile.$1} ${landscape ? 'paisagem' : 'retrato'}: grafo no Mapa',
+        (tester) async {
+          final repository = FakeRepository()
+            ..attempts = [
+              sample(),
+              sample(id: 'a2'),
+              sample(id: 'a3', concept: 'Equações'),
+            ];
+          await _render(
+            tester,
+            TelaNavegacao(user: _user, analysisRepository: repository),
+            size: size,
+          );
+          await tester.tap(find.byKey(const ValueKey('navigation-2')));
+          await _settle(tester);
+          expect(find.text('Grafo de erros'), findsOneWidget);
+          await tester.ensureVisible(find.byType(ConceptGraph));
+          await _settle(tester);
+          expect(
+            find.byKey(const ValueKey('graph-marker-concept:math:frações')),
+            findsOneWidget,
+          );
+          expect(find.byTooltip('Reajustar grafo'), findsOneWidget);
+          await tester.tap(
+            find.byKey(const ValueKey('graph-node-concept:math:frações')),
+          );
+          await _settle(tester);
+          expect(find.text('Frações · 2 tentativa(s)'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
   }
 
   testWidgets('Adicionar em 320px e fonte 2x mantém ações acessíveis', (

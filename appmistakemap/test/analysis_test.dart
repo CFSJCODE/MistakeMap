@@ -404,6 +404,107 @@ void main() {
     expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
   });
 
+  testWidgets('grafo dimensiona nós pela frequência e abre evidências', (
+    tester,
+  ) async {
+    final insights = ErrorInsights.fromAttempts([
+      sample(),
+      sample(id: 'a2'),
+      sample(id: 'a3', concept: 'Equações'),
+    ]);
+    GraphNode? selected;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 600,
+              child: ConceptGraph(
+                insights: insights,
+                onNode: (node) => selected = node,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final bigger = tester
+        .getSize(
+          find.byKey(const ValueKey('graph-marker-concept:math:frações')),
+        )
+        .width;
+    final smaller = tester
+        .getSize(
+          find.byKey(const ValueKey('graph-marker-concept:math:equações')),
+        )
+        .width;
+    expect(bigger, greaterThan(smaller));
+    await tester.tap(
+      find.byKey(const ValueKey('graph-node-concept:math:frações')),
+    );
+    expect(selected?.attemptIds, {'a1', 'a2'});
+    expect(find.byTooltip('Reajustar grafo'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('grafo grande é enquadrado antes de ampliar', (tester) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final insights = ErrorInsights.fromAttempts([
+      for (var i = 0; i < 30; i++) sample(id: 'a$i', concept: 'Conceito $i'),
+    ]);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ConceptGraph(insights: insights, onNode: (_) {}),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final viewer = tester.widget<InteractiveViewer>(
+      find.byType(InteractiveViewer),
+    );
+    expect(viewer.transformationController!.value.storage[0], lessThan(.25));
+    expect(
+      viewer.transformationController!.value.getMaxScaleOnAxis(),
+      lessThan(.25),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('grafo respeita texto ampliado em tela estreita', (tester) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final insights = ErrorInsights.fromAttempts([
+      sample(),
+      sample(id: 'a2', concept: 'Interpretação de equações'),
+    ]);
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ConceptGraph(insights: insights, onNode: (_) {}),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Reajustar grafo'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('map charts cloud connections and evidence fit narrow screen', (
     tester,
   ) async {
@@ -418,10 +519,14 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Tipos de erro'), findsOneWidget);
+    expect(find.text('Grafo de erros'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    // A chamada para estudar fica no topo; os gráficos vêm logo abaixo.
+    // A chamada para estudar fica no topo; o grafo é a visualização inicial.
     expect(find.byKey(const Key('map-study-callout')), findsOneWidget);
+    await tester.ensureVisible(find.text('Gráficos'));
+    await tester.tap(find.text('Gráficos'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tipos de erro'), findsOneWidget);
     await tester.ensureVisible(find.text('Nuvem'));
     await tester.tap(find.text('Nuvem'));
     await tester.pumpAndSettle();
