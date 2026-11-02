@@ -67,6 +67,8 @@ Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
 - Atualização sem reinstalar: patches de código Dart pelo Shorebird (Android e Windows) e aviso
   de release nativo novo via GitHub Releases (`lib/atualizacao/`). `versao_app.dart` acompanha o
   `version:` do pubspec. Fluxo e configuração em [ATUALIZACOES.md](appmistakemap/ATUALIZACOES.md).
+  O secret `SHOREBIRD_TOKEN` é uma API key do Shorebird que **expira em 1 ano**: a atual vence
+  ~2027-11-02; renove até ~2027-10-19 (passo a passo na seção 3 da configuração do ATUALIZACOES.md).
 - Provedores de IA (PR #36): toda chamada passa por `structuredResponse()` em
   `_shared/gemini.ts`. Ordem: catálogo (só prática) → roteador por evidência
   (`AI_ROUTING_EVIDENCE`) → rota configurada (`AI_<ANALYSIS|VISION|STUDY|PRACTICE>_PROVIDER`
