@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'dart:ui' show ImageFilter;
 import 'dart:async';
 
 import 'package:flutter/foundation.dart'
@@ -17,6 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/design_tokens.dart';
 import 'theme/control_styles.dart';
 import 'theme/glass_surface.dart';
+import 'theme/rolagem.dart';
 import 'theme/motion.dart';
 import 'layout/adaptativo.dart';
 import 'layout/navigation_shell.dart';
@@ -269,7 +269,15 @@ class _PaginaVidro extends StatelessWidget {
           actions: [const _IndicadorConexao(), ...acoes],
         ),
       ),
-      body: corpo,
+      // A rolagem da página passa por baixo da barra superior: o trilho da
+      // barra de rolagem começa abaixo dela, colado na borda da janela.
+      body: ScrollConfiguration(
+        behavior: RolagemVidro(
+          topo:
+              MediaQuery.paddingOf(context).top + _alturaBarraSuperior(context),
+        ),
+        child: corpo,
+      ),
     );
   }
 }
@@ -288,22 +296,28 @@ class _BarraVidro extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final solida = MediaQuery.highContrastOf(context);
-    final barra = DecoratedBox(
-      decoration: BoxDecoration(
-        color: solida ? MistakeMapDesign.white : null,
-        gradient: solida
-            ? null
-            : const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xE0FFFFFF), Color(0xC7FFFFFF)],
-              ),
-        // Borda especular embaixo: a aresta do vidro pega a luz.
-        border: const Border(
-          bottom: BorderSide(color: MistakeMapDesign.hairline),
+    final solida = PreferenciaVidro.solido(context);
+    if (solida) {
+      return DecoratedBox(
+        decoration: const BoxDecoration(
+          color: MistakeMapDesign.white,
+          border: Border(bottom: BorderSide(color: MistakeMapDesign.steel)),
         ),
-        boxShadow: const [
+        child: child,
+      );
+    }
+    // Vidro de cima para baixo: preenchimento fosco, reflexo a 145°, aresta
+    // inferior que pega a luz (linha clara sobre a linha escura) e sombra
+    // projetada no conteúdo que passa por baixo.
+    final barra = DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xD1FFFFFF), Color(0xADFFFFFF)],
+        ),
+        border: Border(bottom: BorderSide(color: MistakeMapDesign.hairline)),
+        boxShadow: [
           BoxShadow(
             color: Color(0x1411212D),
             blurRadius: 16,
@@ -311,15 +325,23 @@ class _BarraVidro extends StatelessWidget implements PreferredSizeWidget {
           ),
         ],
       ),
-      child: child,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(gradient: MistakeMapDesign.glint),
+        child: DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: const BoxDecoration(
+            border: Border(
+              top: BorderSide(color: Color(0xCCFFFFFF)),
+              bottom: BorderSide(color: Color(0xB3FFFFFF)),
+            ),
+          ),
+          child: child,
+        ),
+      ),
     );
-    if (solida) return barra;
     return ClipRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: MistakeMapDesign.liquidBlur,
-          sigmaY: MistakeMapDesign.liquidBlur,
-        ),
+        filter: MistakeMapDesign.glassFilter(MistakeMapDesign.liquidBlur),
         child: barra,
       ),
     );
@@ -930,6 +952,8 @@ class MistakeMapApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.light,
       theme: temaFluent,
+      // Barra de rolagem colada na borda direita, sempre visível na web.
+      scrollBehavior: const RolagemVidro(),
       // O app é só claro; sem isso, os textos Cupertino dos overlays de vidro
       // (toasts) seguem o modo escuro do sistema e somem sobre o vidro claro.
       builder: (context, child) {
@@ -944,7 +968,7 @@ class MistakeMapApp extends StatelessWidget {
               : temaFluent,
           child: MediaQuery(
             data: media.copyWith(platformBrightness: Brightness.light),
-            child: child!,
+            child: PreferenciaVidro(child: child!),
           ),
         );
       },
@@ -2152,12 +2176,14 @@ class _TelaInicialState extends State<TelaInicial> {
       titulo: 'Início',
       corpo: _carregando
           ? const Center(child: ProgressRing())
-          : Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1120),
-                child: SingleChildScrollView(
-                  padding: _paddingCorpo(context, horizontal: 24, topo: 8),
+          // A rolagem ocupa a largura toda (barra colada na borda da janela);
+          // só a coluna de conteúdo fica limitada a 1120 px, recuo incluso.
+          : SingleChildScrollView(
+              padding: _paddingCorpo(context, horizontal: 24, topo: 8),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1120 - 2 * 24),
                   // Ordem de leitura = ordem de uso: quem é, o que fazer
                   // agora (o ciclo de estudo em passos) e só depois os números.
                   child: Column(
@@ -4880,39 +4906,44 @@ class _TelaAdminState extends State<TelaAdmin> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: IndexedStack(
-                index: _secao,
-                children: [
-                  ListView(
-                    children: [
-                      AdminMetricsPanel(
-                        client: _db,
-                        active: widget.active && _secao == 0,
-                      ),
-                    ],
-                  ),
-                  ListView.builder(
-                    itemCount: (_carregando || _erro != null)
-                        ? 1
-                        : _perfis.length + 1,
-                    itemBuilder: (ctx, i) {
-                      if (_carregando) {
-                        return const Center(child: ProgressRing());
-                      }
-                      if (_erro != null) {
-                        return Text(
-                          _erro!,
-                          style: context.tipo.body?.copyWith(
-                            color: Cores.vermelho,
-                          ),
-                        );
-                      }
-                      return i == 0
-                          ? _cabecalho(ctx)
-                          : _itemPerfil(ctx, _perfis[i - 1]);
-                    },
-                  ),
-                ],
+              // As listas começam abaixo da barra superior (o recuo já está
+              // no Padding acima): o trilho da barra de rolagem também.
+              child: ScrollConfiguration(
+                behavior: const RolagemVidro(),
+                child: IndexedStack(
+                  index: _secao,
+                  children: [
+                    ListView(
+                      children: [
+                        AdminMetricsPanel(
+                          client: _db,
+                          active: widget.active && _secao == 0,
+                        ),
+                      ],
+                    ),
+                    ListView.builder(
+                      itemCount: (_carregando || _erro != null)
+                          ? 1
+                          : _perfis.length + 1,
+                      itemBuilder: (ctx, i) {
+                        if (_carregando) {
+                          return const Center(child: ProgressRing());
+                        }
+                        if (_erro != null) {
+                          return Text(
+                            _erro!,
+                            style: context.tipo.body?.copyWith(
+                              color: Cores.vermelho,
+                            ),
+                          );
+                        }
+                        return i == 0
+                            ? _cabecalho(ctx)
+                            : _itemPerfil(ctx, _perfis[i - 1]);
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

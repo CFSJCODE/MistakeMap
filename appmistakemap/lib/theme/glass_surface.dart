@@ -1,8 +1,40 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/widgets.dart';
 
 import 'design_tokens.dart';
+import 'preferencias_vidro.dart';
+
+/// Pedido de menos transparência que o MediaQuery não traz (no navegador,
+/// `prefers-reduced-transparency` e `prefers-contrast: more`). Fica na raiz
+/// do app; com ele ou com o alto contraste, todo vidro vira superfície sólida.
+class PreferenciaVidro extends StatelessWidget {
+  const PreferenciaVidro({super.key, required this.child});
+
+  final Widget child;
+
+  /// Superfícies devem ficar sólidas: sem transparência, tom ou desfoque.
+  static bool solido(BuildContext context) =>
+      MediaQuery.highContrastOf(context) ||
+      (context.dependOnInheritedWidgetOfExactType<_VidroReduzido>()?.reduzido ??
+          false);
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+    valueListenable: vidroReduzidoNoSistema,
+    builder: (context, reduzido, child) =>
+        _VidroReduzido(reduzido: reduzido, child: child!),
+    child: child,
+  );
+}
+
+class _VidroReduzido extends InheritedWidget {
+  const _VidroReduzido({required this.reduzido, required super.child});
+
+  final bool reduzido;
+
+  @override
+  bool updateShouldNotify(_VidroReduzido oldWidget) =>
+      reduzido != oldWidget.reduzido;
+}
 
 /// Camada do Aurora Glass que uma superfície ocupa.
 enum GlassTier {
@@ -43,9 +75,9 @@ class GlassSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shape = BorderRadius.circular(radius);
-    // Alto contraste ligado no aparelho: superfície sólida, sem transparência,
-    // tom ou desfoque, e borda visível.
-    if (MediaQuery.highContrastOf(context)) {
+    // Alto contraste ou menos transparência pedidos pelo sistema: superfície
+    // sólida, sem transparência, tom ou desfoque, e borda visível.
+    if (PreferenciaVidro.solido(context)) {
       return DecoratedBox(
         decoration: BoxDecoration(
           color: MistakeMapDesign.white,
@@ -57,27 +89,30 @@ class GlassSurface extends StatelessWidget {
     }
     final liquid = tier == GlassTier.liquid;
     final tone = accent;
+    Widget content = Padding(padding: padding, child: child);
+    if (tone != null) {
+      content = DecoratedBox(
+        decoration: BoxDecoration(gradient: MistakeMapDesign.tint(tone)),
+        child: content,
+      );
+    }
+    // Camadas do vidro, de baixo para cima: preenchimento fosco, reflexo a
+    // 145° e o tom da seção. Cada gradiente vai numa camada própria, porque
+    // um gradiente anula a cor da mesma BoxDecoration.
     Widget body = DecoratedBox(
       decoration: BoxDecoration(
         gradient: liquid ? MistakeMapDesign.liquid : MistakeMapDesign.acrylic,
-        borderRadius: shape,
       ),
-      child: tone == null
-          ? Padding(padding: padding, child: child)
-          : DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: MistakeMapDesign.tint(tone),
-                borderRadius: shape,
-              ),
-              child: Padding(padding: padding, child: child),
-            ),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(gradient: MistakeMapDesign.glint),
+        child: content,
+      ),
     );
     if (blur) {
-      final sigma = liquid
-          ? MistakeMapDesign.liquidBlur
-          : MistakeMapDesign.acrylicBlur;
       body = BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+        filter: MistakeMapDesign.glassFilter(
+          liquid ? MistakeMapDesign.liquidBlur : MistakeMapDesign.acrylicBlur,
+        ),
         child: body,
       );
     }
@@ -91,16 +126,18 @@ class GlassSurface extends StatelessWidget {
             : null,
       ),
       child: CustomPaint(
-        foregroundPainter: _RimPainter(radius: radius, liquid: liquid),
+        foregroundPainter: GlassRimPainter(radius: radius, liquid: liquid),
         child: ClipRRect(borderRadius: shape, child: body),
       ),
     );
   }
 }
 
-/// Borda especular de 1 px; no vidro líquido ganha um reflexo interno no topo.
-class _RimPainter extends CustomPainter {
-  const _RimPainter({required this.radius, required this.liquid});
+/// Aresta do vidro pintada por cima do conteúdo: borda especular de 1 px,
+/// reflexo interno no topo (a sombra interna clara do CSS `inset 0 1px 0`)
+/// e uma sombra interna suave na base, que dá espessura à placa.
+class GlassRimPainter extends CustomPainter {
+  const GlassRimPainter({required this.radius, this.liquid = false});
 
   final double radius;
   final bool liquid;
@@ -112,6 +149,16 @@ class _RimPainter extends CustomPainter {
       rect.deflate(.5),
       Radius.circular(radius),
     );
+    // Sombra interna da base, só na faixa da borda: não escurece o texto.
+    final shade = Rect.fromLTWH(0, size.height - 10, size.width, 10);
+    canvas
+      ..save()
+      ..clipRRect(outline)
+      ..drawRect(
+        shade,
+        Paint()..shader = MistakeMapDesign.innerShade.createShader(shade),
+      )
+      ..restore();
     canvas.drawRRect(
       outline,
       Paint()
@@ -119,24 +166,27 @@ class _RimPainter extends CustomPainter {
         ..strokeWidth = 1
         ..shader = MistakeMapDesign.rim.createShader(rect),
     );
-    if (!liquid) return;
-    // A luz refratada desce do topo, como na borda grossa de um vidro.
+    // A luz refratada desce do topo, como na borda grossa de um vidro; no
+    // vidro líquido a aresta é mais grossa e o brilho, mais forte.
     canvas.drawRRect(
       outline.deflate(1),
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..shader = const LinearGradient(
+        ..strokeWidth = liquid ? 1.5 : 1
+        ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0x99FFFFFF), Color(0x00FFFFFF)],
-          stops: [0, .35],
+          colors: [
+            liquid ? const Color(0x99FFFFFF) : const Color(0x80FFFFFF),
+            const Color(0x00FFFFFF),
+          ],
+          stops: const [0, .35],
         ).createShader(rect),
     );
   }
 
   @override
-  bool shouldRepaint(_RimPainter oldDelegate) =>
+  bool shouldRepaint(GlassRimPainter oldDelegate) =>
       radius != oldDelegate.radius || liquid != oldDelegate.liquid;
 }
 

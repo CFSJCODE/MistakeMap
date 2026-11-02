@@ -7,8 +7,6 @@ import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
 import 'adaptativo.dart';
 
-// Acrílico Fluent no trilho lateral: topo mais opaco, base mais translúcida.
-const _railGradient = MistakeMapDesign.acrylic;
 const _hoverFill = Color(0x0F11212D);
 
 /// Navigation owns its space: no content is painted underneath its buttons.
@@ -479,37 +477,45 @@ class AppNavigationShell extends StatelessWidget {
     ),
   );
 
-  /// Painel acrílico dos trilhos: topo mais opaco, base mais translúcida.
+  /// Painel de vidro dos trilhos, flutuando sobre o fundo Aurora com folga
+  /// nas bordas (como a barra lateral do Fluent 2 e do Liquid Glass): vidro
+  /// líquido desfocado e saturado, aresta especular, reflexo a 145° e sombra
+  /// interna na base. Com alto contraste ou menos transparência, sólido.
   Widget _railPanel(
     BuildContext context, {
     required double width,
     required Widget child,
-  }) => Container(
+  }) {
     // Em paisagem o recorte da câmera fica à esquerda: o trilho passa por
-    // baixo dele e mantém a largura útil (senão os rótulos quebram no
-    // meio da palavra).
-    width: width + MediaQuery.paddingOf(context).left,
-    decoration: const BoxDecoration(
-      gradient: _railGradient,
-      border: Border(
-        // Borda especular: a luz pega a aresta do painel acrílico.
-        right: BorderSide(color: Color(0xE6FFFFFF)),
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Color(0x1F11212D),
-          blurRadius: 28,
-          offset: Offset(6, 0),
+    // baixo dele e mantém a largura útil (senão os rótulos quebram no meio
+    // da palavra).
+    final left = MediaQuery.paddingOf(context).left;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(_railGap + left, _railGap, 0, _railGap),
+      child: SizedBox(
+        width: width,
+        child: GlassSurface(
+          tier: GlassTier.liquid,
+          radius: _railRadius,
+          blur: true,
+          child: Semantics(
+            container: true,
+            explicitChildNodes: true,
+            label: 'Navegação principal',
+            child: MediaQuery.removePadding(
+              context: context,
+              removeLeft: true,
+              child: SafeArea(right: false, child: child),
+            ),
+          ),
         ),
-      ],
-    ),
-    child: Semantics(
-      container: true,
-      explicitChildNodes: true,
-      label: 'Navegação principal',
-      child: SafeArea(right: false, child: child),
-    ),
-  );
+      ),
+    );
+  }
+
+  /// Folga entre o trilho flutuante e as bordas da janela.
+  static const _railGap = 12.0;
+  static const _railRadius = 24.0;
 
   /// Ação principal no trilho largo: botão cheio no acento, acima dos
   /// destinos, para não ser confundido com uma aba selecionada.
@@ -824,7 +830,7 @@ class AppNavigationShell extends StatelessWidget {
     // (vidro fosco sem Flutter GPU); GlassGlowLayer pinta o brilho que segue
     // o dedo, enviado pelo GlassGlow de dentro. Com alto contraste,
     // superfície sólida.
-    final glass = MediaQuery.highContrastOf(context)
+    final glass = PreferenciaVidro.solido(context)
         ? GlassSurface(tier: GlassTier.liquid, radius: 0, child: content)
         : GlassGlowLayer(
             child: LiquidGlass.withOwnLayer(
@@ -928,7 +934,7 @@ class AppNavigationShell extends StatelessWidget {
         ),
       ),
     );
-    if (MediaQuery.highContrastOf(context)) {
+    if (PreferenciaVidro.solido(context)) {
       return GlassSurface(
         tier: GlassTier.liquid,
         radius: size / 2,
