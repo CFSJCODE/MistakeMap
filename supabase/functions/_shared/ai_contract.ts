@@ -275,7 +275,7 @@ export function uuid(value: unknown): string {
   return value;
 }
 export function practiceCount(value: unknown): number {
-  const n = value ?? 3;
+  const n = value ?? 5;
   if (!Number.isInteger(n) || Number(n) < 3 || Number(n) > 5) {
     throw new PublicError(
       400,

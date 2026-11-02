@@ -233,7 +233,7 @@ Deno.test("practice requires three to five distinct complete exercises", () => {
     PublicError,
   );
   for (const count of [2, 6, 3.5, "3", null]) {
-    if (count === null) assert.equal(practiceCount(count), 3);
+    if (count === null) assert.equal(practiceCount(count), 5);
     else assert.throws(() => practiceCount(count), PublicError);
   }
 });
