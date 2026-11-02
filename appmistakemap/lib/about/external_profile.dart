@@ -10,3 +10,9 @@ Future<bool> openClaudioLinkedInProfile() => launchUrl(
   mode: LaunchMode.externalApplication,
   webOnlyWindowName: '_blank',
 );
+
+Future<bool> openLearningLink(Uri uri) => launchUrl(
+  uri,
+  mode: LaunchMode.externalApplication,
+  webOnlyWindowName: '_blank',
+);
