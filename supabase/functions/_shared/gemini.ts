@@ -222,7 +222,7 @@ async function otherProviderResponse(
             "Authorization": `Bearer ${config.key}`,
           },
         body: JSON.stringify(request),
-        signal: AbortSignal.timeout(80000),
+        signal: AbortSignal.timeout(65000),
       },
     );
   } catch {
@@ -431,7 +431,8 @@ async function structuredResponseImpl(
   const models = modelChain(config);
   // Edge Functions têm 150 s de wall clock; preserve margem para auth,
   // leitura das imagens no R2 e gravação no banco em todas as tentativas.
-  const deadline = Date.now() + 110000;
+  // Deixa tempo para contagem, reserva e fallback Claude antes do prazo do cliente.
+  const deadline = Date.now() + 50000;
   let response: Response | undefined;
   for (let attempt = 0; attempt < models.length; attempt++) {
     const remaining = deadline - Date.now();
