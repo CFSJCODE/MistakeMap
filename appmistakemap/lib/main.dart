@@ -24,7 +24,9 @@ import 'auth/google_sign_in.dart';
 import 'ai/ai_material_shell.dart';
 import 'ai/analysis_repository.dart';
 import 'ai/insights_view.dart' show ErrorMapController, ErrorMapRequest;
-import 'ai/analysis_models.dart' show AttemptStatusGroup, attemptStatusGroup;
+import 'ai/analysis_models.dart'
+    show AttemptStatusGroup, PracticeExercise, attemptStatusGroup;
+import 'ai/exercise_submission_view.dart' show ExerciseSubmissionView;
 import 'admin/metrics_panel.dart';
 import 'atualizacao/atualizacao_codigo.dart' show EstadoPatch;
 import 'atualizacao/servico_atualizacao.dart';
@@ -3788,6 +3790,9 @@ class Exercicio {
   // guard_analyzed_exercise recusa mudar enunciado e matéria depois da
   // primeira tentativa, então a edição só vale antes de qualquer envio.
   bool get podeEditar => attemptId == null;
+
+  // Sem tentativa e já no servidor: pode ser respondido aqui mesmo.
+  bool get podeResponder => attemptId == null && status == 'sem_tentativa';
 }
 
 /// Tentativa mais recente do usuário entre as embutidas em `exercises`.
@@ -3843,11 +3848,40 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   Exercicio? _selecionado;
   bool _carregando = true;
   bool _falhaAoCarregar = false;
+  bool _adicionandoExemplos = false;
 
   @override
   void initState() {
     super.initState();
     carregarExercicios();
+  }
+
+  /// Conta vazia: o servidor copia exercícios revisados do catálogo
+  /// (seed_example_exercises) e a lista é recarregada.
+  Future<void> _adicionarExemplos() async {
+    setState(() => _adicionandoExemplos = true);
+    try {
+      final criados = await _db.rpc('seed_example_exercises');
+      if (!mounted) return;
+      _avisar(
+        context,
+        criados is int && criados > 0
+            ? '$criados exercícios de exemplo adicionados.'
+            : 'Sua conta já tem exercícios.',
+      );
+      await carregarExercicios();
+    } catch (e) {
+      if (!mounted) return;
+      _avisar(
+        context,
+        ehFalhaDeRede(e)
+            ? 'Sem conexão. Tente de novo quando estiver online.'
+            : 'Não foi possível adicionar os exemplos.',
+        erro: true,
+      );
+    } finally {
+      if (mounted) setState(() => _adicionandoExemplos = false);
+    }
   }
 
   Future<void> carregarExercicios() async {
@@ -4024,7 +4058,12 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         ),
       );
     }
-    if (_exercicios.isEmpty) return const _MapaVazio();
+    if (_exercicios.isEmpty) {
+      return ListaVazia(
+        onAdicionarExemplos: _adicionarExemplos,
+        adicionando: _adicionandoExemplos,
+      );
+    }
     return _ListaAtualizavel(
       onRefresh: carregarExercicios,
       children: [
@@ -4047,8 +4086,17 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   }
 }
 
-class _MapaVazio extends StatelessWidget {
-  const _MapaVazio();
+/// Estado vazio da lista. Com [onAdicionarExemplos], oferece começar com
+/// exercícios revisados do catálogo.
+class ListaVazia extends StatelessWidget {
+  final Future<void> Function()? onAdicionarExemplos;
+  final bool adicionando;
+
+  const ListaVazia({
+    super.key,
+    this.onAdicionarExemplos,
+    this.adicionando = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -4079,6 +4127,27 @@ class _MapaVazio extends StatelessWidget {
               textAlign: TextAlign.center,
               style: context.tipo.body?.copyWith(color: contentBlue),
             ),
+            if (onAdicionarExemplos != null) ...[
+              const SizedBox(height: 24),
+              MistakeMapFilledButton(
+                key: const Key('lista-vazia-exemplos'),
+                style: _estiloBotao(fonte: 14),
+                onPressed: adicionando ? null : onAdicionarExemplos,
+                child: adicionando
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: ProgressRing(strokeWidth: 2),
+                      )
+                    : const Text('Começar com exemplos'),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Um exercício revisado de cada tema do catálogo.',
+                textAlign: TextAlign.center,
+                style: context.tipo.caption?.copyWith(color: contentBlue),
+              ),
+            ],
           ],
         ),
       ),
@@ -4420,6 +4489,30 @@ class TelaDetalheExercicio extends StatelessWidget {
     if (context.mounted && onFechar == null) Navigator.pop(context);
   }
 
+  /// Exercício ainda sem tentativa (ex.: exemplo do catálogo): abre o
+  /// formulário de resposta preso a este exercício, sem criar outro.
+  Future<void> _responder(BuildContext context) async {
+    await Navigator.of(context).push<String>(
+      MistakeMapPageRoute<String>(
+        context: context,
+        builder: (_) => ExerciseSubmissionView(
+          userId: user.id,
+          repository: SupabaseAnalysisRepository(_db),
+          practice: PracticeExercise(
+            id: exercicio.id,
+            subjectId: exercicio.subjectId,
+            subjectName: exercicio.subjectName,
+            prompt: exercicio.promptText,
+            difficulty: '',
+            focusConcept: '',
+          ),
+        ),
+      ),
+    );
+    onAtualizar();
+    if (context.mounted && onFechar == null) Navigator.pop(context);
+  }
+
   // A correção da IA mora no fluxo Material; sem este atalho o status
   // "Revisar" da lista não levava a lugar nenhum.
   Future<void> _verCorrecao(BuildContext context) async {
@@ -4534,6 +4627,32 @@ class TelaDetalheExercicio extends StatelessWidget {
                           textAlign: TextAlign.center,
                         ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (exercicio.podeResponder) ...[
+              SizedBox(
+                width: double.infinity,
+                child: MistakeMapFilledButton(
+                  key: const Key('detalhe-responder'),
+                  style: _estiloBotao(
+                    fundo: kAcento,
+                    texto: MistakeMapDesign.abyss,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 24,
+                    ),
+                  ),
+                  onPressed: () => _responder(context),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(WindowsIcons.send, size: 18),
+                      SizedBox(width: 8),
+                      Text('Responder exercício'),
                     ],
                   ),
                 ),
