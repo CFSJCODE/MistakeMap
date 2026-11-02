@@ -43,6 +43,7 @@ class Disciplina {
 class RegistroErro {
   const RegistroErro({
     this.id,
+    this.uid,
     required this.usuarioId,
     required this.disciplina,
     required this.titulo,
@@ -54,6 +55,10 @@ class RegistroErro {
   });
 
   final int? id;
+
+  /// Id do registro no servidor (`error_notes.id`), igual em todos os
+  /// aparelhos. Nulo antes da primeira gravação: o DAO gera um.
+  final String? uid;
   final String usuarioId;
   final String disciplina;
   final String titulo;
@@ -65,6 +70,7 @@ class RegistroErro {
 
   factory RegistroErro.fromMap(Map<String, Object?> mapa) => RegistroErro(
     id: mapa['id'] as int?,
+    uid: mapa['uid'] as String?,
     usuarioId: mapa['usuario_id'] as String,
     disciplina: mapa['disciplina'] as String? ?? '',
     titulo: mapa['titulo'] as String,
@@ -79,6 +85,7 @@ class RegistroErro {
   /// Colunas de registros_erro; disciplina_id é resolvido pelo DAO.
   Map<String, Object?> toMap({required int disciplinaId}) => {
     if (id != null) 'id': id,
+    if (uid != null) 'uid': uid,
     'usuario_id': usuarioId,
     'disciplina_id': disciplinaId,
     'titulo': titulo,
@@ -100,6 +107,7 @@ class RegistroErro {
     DateTime? atualizadoEm,
   }) => RegistroErro(
     id: id ?? this.id,
+    uid: uid,
     usuarioId: usuarioId,
     disciplina: disciplina ?? this.disciplina,
     titulo: titulo ?? this.titulo,

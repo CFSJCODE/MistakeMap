@@ -1137,6 +1137,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     super.initState();
     _sincronizador.alteracoes.addListener(_recarregarAbas);
     _sincronizador.aviso.addListener(_mostrarAviso);
+    _sincronizador.notificacao.addListener(_mostrarNotificacao);
     _mapaControle.studyOpen.addListener(_atualizarEstudo);
   }
 
@@ -1148,6 +1149,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   void dispose() {
     _sincronizador.alteracoes.removeListener(_recarregarAbas);
     _sincronizador.aviso.removeListener(_mostrarAviso);
+    _sincronizador.notificacao.removeListener(_mostrarNotificacao);
     _mapaControle.studyOpen.removeListener(_atualizarEstudo);
     _sincronizador.parar();
     super.dispose();
@@ -1158,6 +1160,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   void _recarregarAbas() {
     _inicioKey.currentState?.carregarEstatisticas();
     _listaKey.currentState?.carregarExercicios();
+    _cadernoKey.currentState?._carregar();
     _mapaControle.refresh();
   }
 
@@ -1166,6 +1169,14 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     if (mensagem == null || !mounted) return;
     _sincronizador.aviso.value = null;
     _avisar(context, mensagem, erro: true);
+  }
+
+  // Exclusão feita em outro aparelho, por exemplo: informa, não é erro.
+  void _mostrarNotificacao() {
+    final mensagem = _sincronizador.notificacao.value;
+    if (mensagem == null || !mounted) return;
+    _sincronizador.notificacao.value = null;
+    _avisar(context, mensagem);
   }
 
   /// Atalhos para dentro do Mapa (analisar, estudar): troca para a aba e
@@ -2598,6 +2609,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
       // Desfaz o registro parcial; a exclusão em cascata leva tentativa e
       // anexo junto com o exercício.
       if (exerciseId != null) {
+        Sincronizador.instancia.marcarExcluidoAqui(exerciseId);
         try {
           await _db.from('exercises').delete().eq('id', exerciseId);
         } catch (_) {

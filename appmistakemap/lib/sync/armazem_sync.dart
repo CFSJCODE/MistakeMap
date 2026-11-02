@@ -166,4 +166,29 @@ class ArmazemSync {
     final db = await _banco.banco;
     await db.delete('fila_sync', where: 'id = ?', whereArgs: [id]);
   }
+
+  /// Valor guardado em `estado_sync` (cursores da leitura incremental).
+  Future<String?> lerEstado(String usuarioId, String chave) async {
+    final db = await _banco.banco;
+    final linhas = await db.query(
+      'estado_sync',
+      columns: ['valor'],
+      where: 'usuario_id = ? AND chave = ?',
+      whereArgs: [usuarioId, chave],
+    );
+    return linhas.isEmpty ? null : linhas.first['valor'] as String;
+  }
+
+  Future<void> gravarEstado(
+    String usuarioId,
+    String chave,
+    String valor,
+  ) async {
+    final db = await _banco.banco;
+    await db.rawInsert(
+      'INSERT OR REPLACE INTO estado_sync (usuario_id, chave, valor) '
+      'VALUES (?, ?, ?)',
+      [usuarioId, chave, valor],
+    );
+  }
 }

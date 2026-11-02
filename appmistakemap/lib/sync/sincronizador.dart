@@ -9,6 +9,7 @@ import '../ai/analysis_repository.dart'
 import '../local/banco_local.dart';
 import '../local/fabrica_banco.dart' show executandoTestes;
 import 'armazem_sync.dart';
+import 'caderno_sync.dart';
 import 'conexao.dart';
 import 'remoto_sync.dart';
 
@@ -30,13 +31,24 @@ enum ResultadoEscrita {
 ///   qualquer consulta que volte a funcionar).
 /// * O Supabase Realtime avisa quando a IA muda uma tentativa, e as telas
 ///   recarregam ouvindo [alteracoes].
+/// * O Caderno de erros sincroniza com `error_notes` a cada rodada
+///   ([SincronizacaoCaderno]).
+/// * Exclusões feitas em outro aparelho chegam pelo Realtime (tombstone em
+///   `error_notes`, linha nova em `deleted_records`) e viram [notificacao].
 ///
 /// Conflitos: o servidor manda no status e na análise. Uma alteração que o
 /// servidor recusa (exercício já analisado, por exemplo) sai da fila e vira
 /// [aviso]; nada é sobrescrito no Supabase com dados velhos do aparelho.
+///
+/// Barreira contra ressurreição: antes de enviar a fila, o aparelho lê as
+/// exclusões registradas no servidor desde a última vez e descarta as
+/// operações que recriariam ou editariam o que já foi apagado. Se uma passar
+/// mesmo assim, o servidor recusa com o código [codigoExcluido] e ela sai da
+/// fila do mesmo jeito.
 class Sincronizador {
   Sincronizador({BancoLocal? banco, bool? habilitado})
     : _armazem = ArmazemSync(banco ?? BancoLocal.instancia),
+      _caderno = SincronizacaoCaderno(banco ?? BancoLocal.instancia),
       habilitado = habilitado ?? !executandoTestes();
 
   /// Instância do app. Dentro do `flutter test` nasce desabilitada: as
@@ -45,6 +57,17 @@ class Sincronizador {
 
   final bool habilitado;
   final ArmazemSync _armazem;
+  final SincronizacaoCaderno _caderno;
+
+  /// SQLSTATE do servidor para "registro excluído em outro aparelho"
+  /// (block_deleted_reinsert).
+  static const codigoExcluido = 'MM410';
+
+  /// Cursor de `deleted_records` em `estado_sync`.
+  static const chaveExclusoes = 'exclusoes_cursor';
+
+  /// Primeira leitura de exclusões: até onde olhar para trás.
+  static const janelaExclusoes = Duration(days: 60);
 
   /// Tempo máximo de uma consulta antes de cair no cache.
   static const limiteConsulta = Duration(seconds: 12);
@@ -61,6 +84,16 @@ class Sincronizador {
 
   /// Última mensagem de conflito ou recusa, para a tela mostrar uma vez.
   final aviso = ValueNotifier<String?>(null);
+
+  /// Mensagem informativa (não é erro), como exclusões feitas em outro
+  /// aparelho. A tela mostra uma vez e limpa.
+  final notificacao = ValueNotifier<String?>(null);
+
+  /// Exercícios apagados por este aparelho: o Realtime avisa de volta e
+  /// não faz sentido notificar o próprio aluno.
+  final _excluidosAqui = <String>{};
+  int _exclusoesRemotas = 0;
+  String? _ultimoErroCaderno;
 
   RemotoSync? _remoto;
   String? _usuarioId;
@@ -100,6 +133,9 @@ class Sincronizador {
     _sonda?.cancel();
     _debounce?.cancel();
     _sonda = _debounce = null;
+    _excluidosAqui.clear();
+    _exclusoesRemotas = 0;
+
     _ciclo?.dispose();
     _ciclo = null;
     final cancelar = _cancelarRealtime;
@@ -227,6 +263,11 @@ class Sincronizador {
     _ficarOffline();
   }
 
+  /// Avisa que este aparelho vai apagar [exercicioId] por conta própria
+  /// (fora de [excluirExercicio]), para o Realtime não notificar o aluno.
+  void marcarExcluidoAqui(String exercicioId) =>
+      _excluidosAqui.add(exercicioId);
+
   Future<ResultadoEscrita> excluirExercicio({
     required String usuarioId,
     required String exercicioId,
@@ -263,6 +304,7 @@ class Sincronizador {
         }
       }
     }
+    _excluidosAqui.add(exercicioId);
     final dados = <String, Object?>{
       'exercise_id': exercicioId,
       'subject_id': materiaId,
@@ -370,12 +412,115 @@ class Sincronizador {
 
   // ─── Envio da fila ────────────────────────────────────────────────────────
 
-  /// Envia a fila em ordem. Chamadas simultâneas aguardam o mesmo envio.
+  /// Uma rodada completa: aplica as exclusões do servidor, envia a fila e
+  /// sincroniza o caderno. Chamadas simultâneas aguardam a mesma rodada.
   Future<void> sincronizar() {
     if (!habilitado || _remoto == null || _usuarioId == null || semSessao) {
       return Future.value();
     }
-    return _enviando ??= _enviarFila().whenComplete(() => _enviando = null);
+    return _enviando ??= _rodada().whenComplete(() => _enviando = null);
+  }
+
+  /// Para uma alteração local que acabou de ser gravada (caderno): se uma
+  /// rodada já está em curso, ela pode ter lido o banco antes da alteração,
+  /// então espera e roda mais uma.
+  Future<void> sincronizarAlteracao() async {
+    final atual = _enviando;
+    if (atual != null) await atual;
+    await sincronizar();
+  }
+
+  Future<void> _rodada() async {
+    final remoto = _remoto!;
+    // parar() no meio da rodada (logout) encerra as etapas seguintes.
+    bool ativo() => identical(_remoto, remoto);
+    await _aplicarExclusoesRemotas();
+    if (!ativo()) return;
+    await _enviarFila();
+    if (!ativo()) return;
+    await _sincronizarCaderno();
+  }
+
+  // ─── Exclusões feitas em outro aparelho ───────────────────────────────────
+
+  /// Lê `deleted_records` desde o último cursor e tira da fila o que
+  /// mexeria nesses exercícios e tentativas.
+  Future<void> _aplicarExclusoesRemotas() async {
+    final remoto = _remoto!;
+    final usuario = _usuarioId!;
+    try {
+      final salvo = await _armazem.lerEstado(usuario, chaveExclusoes);
+      final desde = salvo == null
+          ? DateTime.now().toUtc().subtract(janelaExclusoes)
+          : DateTime.parse(salvo).subtract(SincronizacaoCaderno.margem);
+      final exclusoes = await remoto
+          .exclusoesDesde(usuario, desde)
+          .timeout(limiteConsulta);
+      if (exclusoes.isEmpty) return;
+      final ids = {for (final e in exclusoes) e['record_id'] as String};
+      final descartadas = await _descartarExcluidos(usuario, ids);
+      if (descartadas > 0) {
+        aviso.value = _textoDescartadas(descartadas);
+        alteracoes.value++;
+      }
+      await _armazem.gravarEstado(
+        usuario,
+        chaveExclusoes,
+        DateTime.parse(exclusoes.last['deleted_at'] as String)
+            .toUtc()
+            .toIso8601String(),
+      );
+    } catch (erro) {
+      if (ehFalhaDeRede(erro)) _ficarOffline();
+      // Sem a lista de exclusões a fila segue: o servidor também barra.
+    }
+  }
+
+  /// Remove da fila as operações sobre exercícios ou tentativas em [ids].
+  Future<int> _descartarExcluidos(String usuario, Set<String> ids) async {
+    var descartadas = 0;
+    for (final op in await fila(usuario)) {
+      if (ids.contains(op.exercicioId) || ids.contains(op.tentativaId)) {
+        await _armazem.remover(op.id!);
+        descartadas++;
+      }
+    }
+    if (descartadas > 0) await _contarPendentes();
+    return descartadas;
+  }
+
+  static String _textoDescartadas(int n) => n == 1
+      ? 'Uma alteração feita sem internet foi descartada: o exercício já '
+            'tinha sido excluído em outro aparelho.'
+      : '$n alterações feitas sem internet foram descartadas: os exercícios '
+            'já tinham sido excluídos em outro aparelho.';
+
+  // ─── Caderno de erros ─────────────────────────────────────────────────────
+
+  Future<void> _sincronizarCaderno() async {
+    final remoto = _remoto!;
+    final usuario = _usuarioId!;
+    try {
+      final resultado = await _caderno.sincronizar(usuario, remoto);
+      _ultimoErroCaderno = null;
+      if (resultado.excluidosRemotamente > 0) {
+        final n = resultado.excluidosRemotamente;
+        notificacao.value = n == 1
+            ? 'Um registro do caderno foi excluído em outro aparelho.'
+            : '$n registros do caderno foram excluídos em outro aparelho.';
+      }
+      if (resultado.mudou) alteracoes.value++;
+    } catch (erro) {
+      if (ehFalhaDeRede(erro)) {
+        _ficarOffline();
+        return;
+      }
+      final motivo = erro is PostgrestException ? erro.message : '$erro';
+      // A mesma falha a cada rodada não vira um aviso por rodada.
+      if (motivo == _ultimoErroCaderno) return;
+      _ultimoErroCaderno = motivo;
+      aviso.value = 'O caderno não sincronizou: $motivo';
+    }
   }
 
   Future<void> _enviarFila() async {
@@ -434,6 +579,7 @@ class Sincronizador {
           novoEnunciado: d['prompt'] as String,
         );
       case OperacaoFila.excluirExercicio:
+        _excluidosAqui.add(d['exercise_id'] as String);
         await remoto.excluirExercicio(
           usuario,
           exercicioId: d['exercise_id'] as String,
@@ -457,6 +603,13 @@ class Sincronizador {
   }
 
   Future<void> _recusada(OperacaoFila op, Object erro) async {
+    if (erro is PostgrestException && erro.code == codigoExcluido) {
+      // Barreira do servidor: o exercício foi excluído em outro aparelho e
+      // esta operação o recriaria. Sai da fila sem virar erro pendente.
+      await _armazem.remover(op.id!);
+      aviso.value = _textoDescartadas(1);
+      return;
+    }
     final analisado =
         erro is PostgrestException &&
         erro.code == '42501' &&
@@ -512,9 +665,32 @@ class Sincronizador {
     });
   }
 
-  void _alteracaoRemota() {
+  void _alteracaoRemota(EventoRemoto evento) {
+    var rodada = false;
+    switch (evento.tabela) {
+      case 'deleted_records':
+        final id = evento.registro['record_id'] as String?;
+        if (evento.registro['table_name'] == 'exercises' &&
+            id != null &&
+            !_excluidosAqui.remove(id)) {
+          _exclusoesRemotas++;
+        }
+        rodada = true;
+      case 'error_notes':
+        rodada = true;
+    }
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 600), () {
+    _debounce = Timer(const Duration(milliseconds: 600), () async {
+      final exclusoes = _exclusoesRemotas;
+      _exclusoesRemotas = 0;
+      if (exclusoes > 0) {
+        notificacao.value = exclusoes == 1
+            ? 'Um exercício foi excluído em outro aparelho.'
+            : '$exclusoes exercícios foram excluídos em outro aparelho.';
+      }
+      // Exclusão ou nota nova: a rodada tira da fila o que foi apagado e
+      // traz o caderno; o resto só recarrega as telas.
+      if (rodada) await sincronizar();
       alteracoes.value++;
       notifyAnalysisChanged();
     });

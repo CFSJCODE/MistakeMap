@@ -1,8 +1,9 @@
 part of 'main.dart';
 
-// ─── Caderno de erros (SQLite local) ──────────────────────────────────────────
-// CRUD offline sobre o banco do aparelho (lib/local, BANCO_LOCAL.md). A
-// preferência "Ocultar revisados" fica no shared_preferences.
+// ─── Caderno de erros (SQLite local + Supabase) ───────────────────────────────
+// CRUD sobre o banco do aparelho (lib/local, BANCO_LOCAL.md), que funciona sem
+// internet e sincroniza com a tabela error_notes (lib/sync/caderno_sync.dart).
+// A preferência "Ocultar revisados" fica no shared_preferences.
 
 String _dataCurta(DateTime dt) =>
     '${dt.day.toString().padLeft(2, '0')}/'
@@ -70,6 +71,10 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
     }
   }
 
+  /// Leva a alteração para os outros aparelhos sem esperar a próxima rodada.
+  void _sincronizar() =>
+      unawaited(Sincronizador.instancia.sincronizarAlteracao());
+
   Future<void> _alternarFiltro() async {
     setState(() => _ocultarRevisados = !_ocultarRevisados);
     try {
@@ -88,12 +93,16 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
             TelaRegistroErro(user: widget.user, dao: _dao, registro: registro),
       ),
     );
-    if (salvou == true) await _carregar();
+    if (salvou == true) {
+      _sincronizar();
+      await _carregar();
+    }
   }
 
   Future<void> _marcarRevisado(RegistroErro r) async {
     try {
       await _dao.marcarRevisado(widget.user.id, r.id!, !r.revisado);
+      _sincronizar();
       if (!mounted) return;
       _avisar(
         context,
@@ -119,6 +128,7 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
     if (!ok || !mounted) return;
     try {
       await _dao.excluir(widget.user.id, r.id!);
+      _sincronizar();
       if (!mounted) return;
       _avisar(context, 'Registro excluído.');
       await _carregar();
@@ -161,9 +171,9 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Text(
         _ocultarRevisados
-            ? 'Mostrando só os erros pendentes. Salvos neste aparelho.'
-            : 'Seus erros anotados ficam salvos neste aparelho, mesmo sem '
-                  'internet.',
+            ? 'Mostrando só os erros pendentes. Sincronizados com sua conta.'
+            : 'Seus erros anotados ficam neste aparelho, mesmo sem internet, '
+                  'e sincronizam com sua conta.',
         textAlign: TextAlign.center,
         style: context.tipo.body?.copyWith(color: contentBlue),
       ),
