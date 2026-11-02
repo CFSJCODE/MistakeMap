@@ -64,6 +64,9 @@ Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
 - `web/sqlite3.wasm` deve casar com a versão do pacote `sqlite3` no `pubspec.lock`.
 - O workflow `supabase-deploy` aplica migrations no merge do main; Edge Functions
   alteradas podem exigir `supabase functions deploy <nome>`.
+- Atualização sem reinstalar: patches de código Dart pelo Shorebird (Android e Windows) e aviso
+  de release nativo novo via GitHub Releases (`lib/atualizacao/`). `versao_app.dart` acompanha o
+  `version:` do pubspec. Fluxo e configuração em [ATUALIZACOES.md](appmistakemap/ATUALIZACOES.md).
 - Prática (PR #20): `generate-practice` aceita `category` e ranqueia conceitos por
   frequência × recência (meia-vida 14 d), descontando recuperação via `mastery_events`.
 
