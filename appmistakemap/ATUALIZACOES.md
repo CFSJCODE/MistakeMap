@@ -65,6 +65,18 @@ Precisa ser feito pelo Cláudio, na máquina dele (`D:\MistakeMap`):
    (`shorebird login:ci` foi substituído). Salve como secret
    **`SHOREBIRD_TOKEN`** em *GitHub → Settings → Secrets and variables →
    Actions*. Não grave o token em arquivo nenhum do repo.
+
+   > **A API key expira em 1 ano.** A atual foi criada em 2026-11-02 e vence
+   > por volta de **2026-11-02 + 1 ano = 2027-11-02**. Depois disso os
+   > workflows de release e patch falham na autenticação (os apps instalados
+   > continuam funcionando; só param de chegar patches novos).
+   > **Renovação** (faça cerca de 2 semanas antes, ~2027-10-19):
+   > 1. Em console.shorebird.dev → API keys, crie uma chave nova.
+   > 2. No PowerShell: `gh secret set SHOREBIRD_TOKEN --repo CFSJCODE/MistakeMap`
+   >    e cole a chave nova (nunca no chat nem em arquivo).
+   > 3. Rode o workflow *Patch de código (Shorebird)* à mão no track
+   >    `staging` para confirmar que autentica.
+   > 4. Apague a chave antiga no console e atualize a data acima.
 4. **Chave de assinatura Android** (todo APK distribuído precisa da mesma
    chave, senão o Android recusa instalar por cima):
    ```powershell
