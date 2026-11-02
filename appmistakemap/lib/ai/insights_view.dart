@@ -741,18 +741,26 @@ class _ConceptGraphState extends State<ConceptGraph> {
       ..scaleByDouble(scale, scale, scale, 1);
   }
 
-  // O layout de força custa O(n²) por passo: só recalcula quando o mapa ou
-  // a altura do rótulo (texto ampliado) mudam.
-  ErrorInsights? _layoutInsights;
-  double? _layoutNodeHeight;
+  // O layout de força custa O(n²) por passo e o Mapa recria ErrorInsights a
+  // cada build: o cache usa uma assinatura dos nós e arestas, não a
+  // identidade do objeto, e só recalcula quando o grafo ou a altura do
+  // rótulo (texto ampliado) mudam.
+  String? _layoutKey;
   ForceLayout? _layout;
 
   ForceLayout _layoutFor(ErrorInsights insights, double nodeHeight) {
-    if (_layout == null ||
-        !identical(_layoutInsights, insights) ||
-        _layoutNodeHeight != nodeHeight) {
-      _layoutInsights = insights;
-      _layoutNodeHeight = nodeHeight;
+    final key = StringBuffer('$nodeHeight');
+    for (final node in insights.nodes) {
+      key.write('\u0001${node.id}\u0002${node.kind}\u0002${node.label}');
+    }
+    for (final edge in insights.edges) {
+      key.write(
+        '\u0003${edge.from}\u0002${edge.to}\u0002${edge.attemptIds.length}',
+      );
+    }
+    final signature = key.toString();
+    if (_layout == null || _layoutKey != signature) {
+      _layoutKey = signature;
       _layout = computeForceLayout(
         insights.nodes,
         insights.edges,

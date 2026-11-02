@@ -29,6 +29,7 @@ ForceLayout computeForceLayout(
   Size nodeBox = const Size(120, 96),
   double minCanvas = 440,
   int iterations = 300,
+  int pairBudget = 3000000,
 }) {
   if (nodes.isEmpty) return ForceLayout(const {}, minCanvas);
 
@@ -80,10 +81,13 @@ ForceLayout computeForceLayout(
         ),
   ];
 
+  // Cada passo custa n² pares: limita o total para mapas muito grandes não
+  // travarem o quadro (1.000 nós ainda saem em ~10 passos).
+  final steps = math.max(10, math.min(iterations, pairBudget ~/ (n * n)));
   var temperature = seedRadius / 2;
-  final cooling = temperature / (iterations + 1);
+  final cooling = temperature / (steps + 1);
   final disp = List<Offset>.filled(n, Offset.zero);
-  for (var step = 0; step < iterations; step++) {
+  for (var step = 0; step < steps; step++) {
     for (var i = 0; i < n; i++) {
       disp[i] = Offset.zero;
     }
@@ -120,7 +124,11 @@ ForceLayout computeForceLayout(
     temperature -= cooling;
   }
 
-  _resolveOverlaps(pos, nodeBox);
+  _resolveOverlaps(
+    pos,
+    nodeBox,
+    math.max(5, math.min(200, pairBudget ~/ (n * n))),
+  );
 
   var minX = double.infinity, minY = double.infinity;
   var maxX = -double.infinity, maxY = -double.infinity;
@@ -146,10 +154,10 @@ ForceLayout computeForceLayout(
 
 /// Afasta pares cujas caixas de rótulo ainda se cruzam, pelo eixo de menor
 /// sobreposição, até não sobrar cruzamento (ou acabar o limite de passadas).
-void _resolveOverlaps(List<Offset> pos, Size box) {
+void _resolveOverlaps(List<Offset> pos, Size box, int maxPasses) {
   final w = box.width + 8;
   final h = box.height + 8;
-  for (var pass = 0; pass < 200; pass++) {
+  for (var pass = 0; pass < maxPasses; pass++) {
     var moved = false;
     for (var i = 0; i < pos.length; i++) {
       for (var j = i + 1; j < pos.length; j++) {
