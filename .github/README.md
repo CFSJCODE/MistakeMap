@@ -72,7 +72,7 @@ O MistakeMap trata cada erro como um **dado de aprendizagem**:
 | 🔁 **Recuperação conta** | Acertar de novo um conceito reduz o peso dele no plano de estudo. O mapa mostra melhora, não só fragilidade. |
 | 🔒 **Privado por padrão** | Os dados educacionais pertencem ao estudante. Isolamento por conta no próprio banco (RLS) e gabaritos que o cliente nunca enxerga. |
 | 🤖 **Várias IAs, uma só interface** | Gemini por padrão, Claude Sonnet 5.5 e OpenRouter como alternativas, com cadeia de reserva automática: se um modelo cai, o próximo assume. |
-| 💸 **Custo de operação próximo de zero** | A infraestrutura roda em camadas gratuitas (Supabase, Cloudflare R2, Gemini, Vercel); o único modelo pago (Claude) só entra com reserva de custo e teto mensal controlados no banco. |
+| 💸 **Custo de operação próximo de zero** | A infraestrutura roda em camadas gratuitas (Supabase, Cloudflare R2, Gemini, Vercel); o Claude, único modelo pago no padrão, só entra com reserva de custo e teto mensal controlados no banco. |
 
 ---
 
@@ -297,6 +297,9 @@ flowchart TD
 - reserva US$ 1 por pedido e acerta o valor real depois da resposta;
 - teto de **US$ 100 em qualquer janela móvel de 31 dias**, verificado no banco com trava (`reserve_claude_budget`);
 - **falha fechada**: se a contagem não puder ser feita ou se a tabela de preços passar da validade (01/12/2026), a chamada paga não acontece.
+
+> [!WARNING]
+> Esse controle de custo vale **só para o Claude**. O roteador automático só considera modelos gratuitos do OpenRouter, mas um modelo pago configurado explicitamente em `OPENROUTER_MODEL` ou `AI_<ROTA>_MODEL` não passa pela reserva de US$ 1 nem pelo teto de US$ 100. Limite os gastos desses modelos na própria conta do OpenRouter.
 
 **Observabilidade.** Retentativas e erros dos provedores aparecem nos logs (`ai_provider_retry`, `ai_provider_error`) só com código e status, nunca com conteúdo do aluno. O painel administrativo mostra as cotas do plano gratuito do Gemini por modelo (RPM, TPM e RPD); a telemetria detalhada por provedor está preparada em [`_reversa_forward/admin-monitoring`](../_reversa_forward/admin-monitoring/README.md).
 

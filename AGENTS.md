@@ -74,7 +74,7 @@ Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
   `gemini-3.6-flash` → `gemini-3.5-flash-lite` → `claude-sonnet-5-5` se
   `AI_CLAUDE_FALLBACK_ENABLED=true`. Claude é o único modelo pago: reserva US$ 1 por
   pedido, teto de US$ 100 por 31 dias (`reserve_claude_budget`), falha fechada. OpenRouter só
-  entra no roteador com modelos gratuitos. Integração OpenAI (`gpt-4.1-mini`) está preparada
+  entra no roteador com modelos gratuitos; modelo pago configurado à mão nele não tem orçamento no banco. Integração OpenAI (`gpt-4.1-mini`) está preparada
   em `_reversa_forward/openai-integration/`, não ativada. Documentado no README (seção
   "Provedores e modelos de IA").
 - Prática (PR #20): `generate-practice` aceita `category` e ranqueia conceitos por
