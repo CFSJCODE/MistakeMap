@@ -32,8 +32,8 @@ enum ResultadoEscrita {
 ///   recarregam ouvindo [alteracoes].
 ///
 /// Conflitos: o servidor manda no status e na análise. Uma alteração que o
-/// servidor recusa (exercício já analisado, por exemplo) sai da fila e vira
-/// [aviso]; nada é sobrescrito no Supabase com dados velhos do aparelho.
+/// servidor recusa fica guardada na fila para revisão e gera [aviso]; nada é
+/// sobrescrito no Supabase com dados velhos do aparelho.
 class Sincronizador {
   Sincronizador({BancoLocal? banco, bool? habilitado})
     : _armazem = ArmazemSync(banco ?? BancoLocal.instancia),
@@ -91,7 +91,17 @@ class Sincronizador {
     } catch (_) {
       // Sem Realtime o app continua: a sonda e as recargas cobrem.
     }
-    _ciclo = AppLifecycleListener(onResume: () => unawaited(sincronizar()));
+    _ciclo = AppLifecycleListener(
+      onResume: () {
+        unawaited(
+          sincronizar().then((_) {
+            // Releia o servidor mesmo com fila vazia: outro dispositivo pode
+            // ter alterado ou excluído dados enquanto este estava em segundo plano.
+            if (_usuarioId == usuarioId) alteracoes.value++;
+          }),
+        );
+      },
+    );
     unawaited(_contarPendentes());
     unawaited(sincronizar());
   }
@@ -462,11 +472,15 @@ class Sincronizador {
         erro.code == '42501' &&
         erro.message.contains('create a new exercise');
     if (op.operacao == OperacaoFila.editarExercicio && analisado) {
-      // O servidor já tem uma versão analisada: ela vence a edição offline.
-      await _armazem.remover(op.id!);
+      // Preserva o texto offline para revisão em vez de descartá-lo.
+      await _armazem.registrarFalha(
+        op.id!,
+        'O exercício já foi enviado para análise em outro dispositivo.',
+        definitiva: true,
+      );
       aviso.value =
-          'A edição feita sem internet foi descartada: o exercício já tinha '
-          'sido enviado para análise.';
+          'A edição feita sem internet foi preservada para revisão: o exercício '
+          'já tinha sido enviado para análise.';
       return;
     }
     final motivo = erro is AnalysisFailure
