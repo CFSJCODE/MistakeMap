@@ -539,7 +539,9 @@ void main() {
   // densidade real pode variar conforme o dispositivo e as configurações.
   for (final profile in [
     ('Tab S9 11', const Size(800, 1280)),
+    ('Tab S9+ / S10+', const Size(876, 1400)),
     ('Tab S9 / S10 Ultra', const Size(924, 1480)),
+    ('Tab S10 FE', const Size(720, 1152)),
   ]) {
     for (final landscape in [false, true]) {
       final size = landscape
@@ -578,6 +580,29 @@ void main() {
         },
       );
     }
+  }
+
+  for (final size in [const Size(800, 1280), const Size(1280, 800)]) {
+    testWidgets(
+      'Tablet ${size.width.toInt()}x${size.height.toInt()} com texto 1,5x',
+      (tester) async {
+        final repository = FakeRepository()
+          ..attempts = [sample(), sample(id: 'a2', concept: 'Equações')];
+        await _render(
+          tester,
+          TelaNavegacao(user: _user, analysisRepository: repository),
+          size: size,
+          scale: 1.5,
+        );
+        await tester.tap(find.byKey(const ValueKey('navigation-2')));
+        await _settle(tester);
+        expect(find.text('Grafo de erros'), findsOneWidget);
+        await tester.ensureVisible(find.byType(ConceptGraph));
+        await _settle(tester);
+        expect(find.byTooltip('Reajustar grafo'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   testWidgets('Adicionar em 320px e fonte 2x mantém ações acessíveis', (
