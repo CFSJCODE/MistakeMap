@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><g transform="translate(512 512) scale(0.74) translate(-512 -512)">
+  
+    <defs>
+      <linearGradient id="aresta" x1="300" y1="0" x2="724" y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#36D6C3"/>
+        <stop offset=".5" stop-color="#4C9DFF"/>
+        <stop offset="1" stop-color="#9B7BFF"/>
+      </linearGradient>
+      <filter id="brilho" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="22"/>
+      </filter>
+    </defs>
+  <polyline points="304,704 336,330 512,566 688,330 720,704" fill="none" stroke="url(#aresta)" stroke-width="88" stroke-linecap="round" stroke-linejoin="round" opacity=".35" filter="url(#brilho)"/>
+  <polyline points="304,704 336,330 512,566 688,330 720,704" fill="none" stroke="url(#aresta)" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="304" cy="704" r="68" fill="#36D6C3"/>
+  <circle cx="304" cy="704" r="20.4" fill="#FFFFFF" fill-opacity="0.85"/>
+  <circle cx="336" cy="330" r="68" fill="#4C9DFF"/>
+  <circle cx="336" cy="330" r="20.4" fill="#FFFFFF" fill-opacity="0.85"/>
+  <circle cx="512" cy="566" r="108" fill="none" stroke="#FF6F7D" stroke-width="16" stroke-opacity=".55"/>
+  <circle cx="512" cy="566" r="68" fill="#FF6F7D"/>
+  <circle cx="512" cy="566" r="24.5" fill="#06141B" fill-opacity="0.9"/>
+  <circle cx="688" cy="330" r="68" fill="#9B7BFF"/>
+  <circle cx="688" cy="330" r="20.4" fill="#FFFFFF" fill-opacity="0.85"/>
+  <circle cx="720" cy="704" r="68" fill="#4FD98B"/>
+  <circle cx="720" cy="704" r="20.4" fill="#FFFFFF" fill-opacity="0.85"/>
+  </g>
+</svg>

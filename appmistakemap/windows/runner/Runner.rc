@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "appmistakemap" "\0"
+            VALUE "CompanyName", "MistakeMap" "\0"
+            VALUE "FileDescription", "MistakeMap" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "appmistakemap" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
+            VALUE "InternalName", "MistakeMap" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 MistakeMap. Todos os direitos reservados." "\0"
             VALUE "OriginalFilename", "appmistakemap.exe" "\0"
-            VALUE "ProductName", "appmistakemap" "\0"
+            VALUE "ProductName", "MistakeMap" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
