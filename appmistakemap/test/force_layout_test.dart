@@ -59,6 +59,14 @@ void main() {
     expect(linked, lessThan(unlinked));
   });
 
+  test('mapa muito grande fica dentro do orçamento de passos', () {
+    final watch = Stopwatch()..start();
+    final layout = computeForceLayout(nodes(1000), edges(1000), nodeBox: box);
+    watch.stop();
+    expect(layout.points, hasLength(1004));
+    expect(watch.elapsed, lessThan(const Duration(seconds: 5)));
+  });
+
   test('grafo vazio devolve quadro mínimo', () {
     final layout = computeForceLayout(const [], const []);
     expect(layout.points, isEmpty);
