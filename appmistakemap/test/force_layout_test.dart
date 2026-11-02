@@ -33,23 +33,32 @@ void main() {
     }
   });
 
-  test('nenhum rótulo se sobrepõe e todos cabem no quadro', () {
-    final layout = computeForceLayout(nodes(20), edges(20), nodeBox: box);
-    final points = layout.points.values.toList();
-    for (var i = 0; i < points.length; i++) {
-      final p = points[i];
-      expect(p.dx - box.width / 2, greaterThanOrEqualTo(0));
-      expect(p.dy - box.height / 2, greaterThanOrEqualTo(0));
-      expect(p.dx + box.width / 2, lessThanOrEqualTo(layout.canvasSize));
-      expect(p.dy + box.height / 2, lessThanOrEqualTo(layout.canvasSize));
-      for (var j = i + 1; j < points.length; j++) {
-        final overlap =
-            (p.dx - points[j].dx).abs() < box.width &&
-            (p.dy - points[j].dy).abs() < box.height;
-        expect(overlap, isFalse, reason: 'nós $i e $j se cruzam');
-      }
-    }
-  });
+  for (final size in [20, 200, 1000]) {
+    test(
+      '$size conceitos: nenhum rótulo se sobrepõe e todos cabem no quadro',
+      () {
+        final layout = computeForceLayout(
+          nodes(size),
+          edges(size),
+          nodeBox: box,
+        );
+        final points = layout.points.values.toList();
+        for (var i = 0; i < points.length; i++) {
+          final p = points[i];
+          expect(p.dx - box.width / 2, greaterThanOrEqualTo(0));
+          expect(p.dy - box.height / 2, greaterThanOrEqualTo(0));
+          expect(p.dx + box.width / 2, lessThanOrEqualTo(layout.canvasSize));
+          expect(p.dy + box.height / 2, lessThanOrEqualTo(layout.canvasSize));
+          for (var j = i + 1; j < points.length; j++) {
+            final overlap =
+                (p.dx - points[j].dx).abs() < box.width &&
+                (p.dy - points[j].dy).abs() < box.height;
+            expect(overlap, isFalse, reason: 'nós $i e $j se cruzam');
+          }
+        }
+      },
+    );
+  }
 
   test('vizinhos ficam mais perto que nós sem ligação', () {
     final layout = computeForceLayout(nodes(6), edges(6), nodeBox: box);
