@@ -43,6 +43,17 @@ void main() {
     },
   );
 
+  test('LinkedIn do Lucas abre o perfil dele em destino externo', () async {
+    final launcher = _ProfileLauncher();
+    UrlLauncherPlatform.instance = launcher;
+
+    expect(await openLucasLinkedInProfile(), isTrue);
+    final (url, options) = launcher.requests.single;
+    expect(url, 'https://www.linkedin.com/in/devlucassilva/');
+    expect(options.mode, PreferredLaunchMode.externalApplication);
+    expect(options.webOnlyWindowName, '_blank');
+  });
+
   test(
     'Falha ao abrir o perfil permanece disponível para aviso ao usuário',
     () async {
