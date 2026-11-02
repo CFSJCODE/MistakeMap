@@ -40,3 +40,10 @@ gap       = "🔴 GAP"
 
 [harness]
 config_file = "harness.yaml"
+
+[specs]
+layout = "feature-folder"
+granularity = "module"
+custom_folders = []
+scout_suggestion = "module"
+decided_at = "2026-10-31T19:11:20Z"
