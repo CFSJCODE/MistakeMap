@@ -1,0 +1,77 @@
+{
+  "generated_at": "2026-10-31T19:10:00Z",
+  "project_root": "D:\\MistakeMap",
+  "languages": [
+    { "name": "Dart", "extensions": [".dart"], "file_count": 61 },
+    { "name": "TypeScript", "extensions": [".ts"], "file_count": 15 },
+    { "name": "Rust", "extensions": [".rs"], "file_count": 11 },
+    { "name": "SQL", "extensions": [".sql"], "file_count": 22 }
+  ],
+  "primary_language": "Dart",
+  "frameworks": [
+    { "name": "Flutter", "version": "3.47.2 (CI)", "source": ".github/workflows/ci.yml" },
+    { "name": "Dart SDK", "version": "^3.13.2", "source": "appmistakemap/pubspec.yaml" },
+    { "name": "Supabase Edge Functions", "version": "Deno 2.9.x (CI)", "source": ".github/workflows/ci.yml" },
+    { "name": "Axum", "version": "0.8.9 (worker arquivado)", "source": "worker/Cargo.toml" }
+  ],
+  "package_manager": "Flutter/Dart pub; Deno; Cargo (worker arquivado)",
+  "entry_points": [
+    { "path": "appmistakemap/lib/main.dart", "type": "app_entry" },
+    { "path": "supabase/functions/analyze-attempt/index.ts", "type": "edge_function" },
+    { "path": "supabase/functions/generate-practice/index.ts", "type": "edge_function" },
+    { "path": "supabase/functions/process-batch/index.ts", "type": "edge_function" },
+    { "path": "supabase/functions/upload-url/index.ts", "type": "edge_function" },
+    { "path": "supabase/functions/health/index.ts", "type": "health_endpoint" },
+    { "path": "worker/src/main.rs", "type": "archived_worker_entry" }
+  ],
+  "config_files": [
+    "appmistakemap/pubspec.yaml",
+    "supabase/functions/deno.json",
+    "supabase/functions/deno.lock",
+    "supabase/config.toml",
+    "appmistakemap/database/supabase/config.toml",
+    "worker/Cargo.toml",
+    "worker/Cargo.lock"
+  ],
+  "ci_cd": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/supabase-deploy.yml",
+    ".github/workflows/supabase-functions-deploy.yml",
+    ".github/workflows/web-deploy-vercel.yml"
+  ],
+  "database_hints": [
+    { "path": "appmistakemap/database/supabase/migrations/", "type": "postgres_migrations_dir (22 SQL files)" },
+    { "path": "appmistakemap/lib/local/banco_local.dart", "type": "sqlite_database" },
+    { "path": "appmistakemap/lib/sync/armazem_sync.dart", "type": "local_sync_cache_and_queue" }
+  ],
+  "test_framework": "Flutter test; Deno test; Cargo test",
+  "test_file_count": 25,
+  "modules": [
+    "Flutter app, authentication and navigation",
+    "Exercise analysis, error map and practice",
+    "Local notebook and offline synchronization",
+    "Admin metrics and design/layout",
+    "Supabase Edge Functions and shared AI service",
+    "Supabase PostgreSQL migrations",
+    "Archived Rust worker",
+    "CI/CD and web deployment"
+  ],
+  "total_files": 120,
+  "organization_suggestion": {
+    "granularity": "module",
+    "rationale": "O código está separado em módulos de cliente, sincronização, IA, administração e backend, sem roteador central de endpoints como eixo da documentação.",
+    "signals": [
+      {
+        "type": "top_level_domain_folders",
+        "evidence": [
+          "appmistakemap/lib/ai/",
+          "appmistakemap/lib/local/",
+          "appmistakemap/lib/sync/",
+          "appmistakemap/lib/admin/",
+          "supabase/functions/"
+        ]
+      }
+    ],
+    "features": []
+  }
+}

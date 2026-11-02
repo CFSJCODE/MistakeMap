@@ -1,0 +1,590 @@
+{
+  "generated_at": "2026-10-31T19:14:00Z",
+  "modules": [
+    {
+      "name": "auth-navigation",
+      "path": "appmistakemap/lib/auth, appmistakemap/lib/layout, appmistakemap/lib/main.dart",
+      "purpose": "Autenticação do estudante, carregamento do perfil e navegação responsiva entre as áreas do aplicativo.",
+      "primary_files": [
+        "appmistakemap/lib/main.dart",
+        "appmistakemap/lib/auth/google_sign_in.dart",
+        "appmistakemap/lib/layout/navigation_shell.dart",
+        "appmistakemap/lib/layout/adaptativo.dart"
+      ],
+      "functions": [
+        {"name": "AuthGate.build", "file": "appmistakemap/lib/main.dart", "params": ["BuildContext context"], "returns": "Widget", "confidence": "confirmed"},
+        {"name": "_carregarPerfil", "file": "appmistakemap/lib/main.dart", "params": ["User supaUser"], "returns": "Future<AppUser>", "confidence": "confirmed"},
+        {"name": "_entrarComEmailSenha", "file": "appmistakemap/lib/main.dart", "params": [], "returns": "Future<void>", "confidence": "confirmed"},
+        {"name": "GoogleSignInService.signIn", "file": "appmistakemap/lib/auth/google_sign_in.dart", "params": ["bool isWeb", "Uri currentUri"], "returns": "Future<void>", "confidence": "confirmed"},
+        {"name": "googleOAuthRedirect", "file": "appmistakemap/lib/auth/google_sign_in.dart", "params": ["bool isWeb", "Uri currentUri"], "returns": "String", "confidence": "confirmed"},
+        {"name": "_selecionar", "file": "appmistakemap/lib/main.dart", "params": ["int i"], "returns": "void", "confidence": "confirmed"}
+      ],
+      "entities": [
+        {
+          "name": "AppUser",
+          "fields": [
+            {"name": "id", "type": "String", "required": true},
+            {"name": "email", "type": "String", "required": true},
+            {"name": "role", "type": "String", "required": true}
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {"description": "A navegação administrativa é habilitada somente quando o papel do perfil é admin.", "location": "appmistakemap/lib/main.dart:802", "confidence": "confirmed"},
+        {"description": "Uma falha de refresh não deve descartar uma sessão ainda presente no cliente Supabase.", "location": "appmistakemap/lib/main.dart:872", "confidence": "confirmed"},
+        {"description": "O OAuth Google é disponibilizado no Web e Android; o callback web preserva a origem e o caminho, sem query/fragment.", "location": "appmistakemap/lib/main.dart:1477", "confidence": "confirmed"}
+      ],
+      "dependencies": ["supabase_flutter", "fluent_ui", "http"],
+      "algorithms": [
+        "Resolução responsiva do layout por largura disponível e escala de texto.",
+        "Fallback seguro do papel do perfil para user quando a consulta falha."
+      ],
+      "complexity": "medium"
+    },
+    {
+      "name": "exercise-analysis-map-practice",
+      "path": "appmistakemap/lib/ai",
+      "purpose": "Registrar exercícios e tentativas, solicitar análise de IA, consolidar fragilidades conceituais em gráficos/grafo e gerar exercícios de prática.",
+      "primary_files": [
+        "appmistakemap/lib/ai/analysis_models.dart",
+        "appmistakemap/lib/ai/analysis_repository.dart",
+        "appmistakemap/lib/ai/exercise_submission_view.dart",
+        "appmistakemap/lib/ai/insights_view.dart",
+        "appmistakemap/lib/ai/ai_material_shell.dart"
+      ],
+      "functions": [
+        {"name": "SupabaseAnalysisRepository.loadAttempts", "file": "appmistakemap/lib/ai/analysis_repository.dart", "params": ["String userId"], "returns": "Future<List<AttemptRecord>>", "confidence": "confirmed"},
+        {"name": "SupabaseAnalysisRepository.createAttempt", "file": "appmistakemap/lib/ai/analysis_repository.dart", "params": ["userId", "subject", "prompt", "answer", "difficulty", "hasImage", "practice?"], "returns": "Future<String>", "confidence": "confirmed"},
+        {"name": "SupabaseAnalysisRepository.uploadImage", "file": "appmistakemap/lib/ai/analysis_repository.dart", "params": ["String attemptId", "String filename", "Uint8List bytes"], "returns": "Future<void>", "confidence": "confirmed"},
+        {"name": "SupabaseAnalysisRepository.analyze", "file": "appmistakemap/lib/ai/analysis_repository.dart", "params": ["String attemptId"], "returns": "Future<void>", "confidence": "confirmed"},
+        {"name": "SupabaseAnalysisRepository.generatePractice", "file": "appmistakemap/lib/ai/analysis_repository.dart", "params": ["String subjectId", "String subjectName", "int count", "String? category"], "returns": "Future<List<PracticeExercise>>", "confidence": "confirmed"},
+        {"name": "ErrorInsights.fromAttempts", "file": "appmistakemap/lib/ai/analysis_models.dart", "params": ["Iterable<AttemptRecord> input"], "returns": "ErrorInsights", "confidence": "confirmed"}
+      ],
+      "entities": [
+        {
+          "name": "AttemptRecord",
+          "fields": [
+            {"name": "id", "type": "String", "required": true},
+            {"name": "exerciseId", "type": "String", "required": true},
+            {"name": "subjectId", "type": "String", "required": true},
+            {"name": "prompt", "type": "String", "required": true},
+            {"name": "answer", "type": "String", "required": true},
+            {"name": "status", "type": "String", "required": true},
+            {"name": "attemptedAt", "type": "DateTime", "required": true},
+            {"name": "analysis", "type": "AttemptAnalysis?", "required": false}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "AttemptAnalysis",
+          "fields": [
+            {"name": "isCorrect", "type": "bool?", "required": true},
+            {"name": "correctAnswer", "type": "String", "required": true},
+            {"name": "explanation", "type": "String", "required": true},
+            {"name": "errors", "type": "List<IdentifiedError>", "required": true},
+            {"name": "concepts", "type": "List<String>", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "IdentifiedError",
+          "fields": [
+            {"name": "category", "type": "String", "required": true},
+            {"name": "concept", "type": "String", "required": true},
+            {"name": "evidence", "type": "String", "required": true},
+            {"name": "confidence", "type": "double", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "PracticeExercise",
+          "fields": [
+            {"name": "id", "type": "String", "required": true},
+            {"name": "subjectId", "type": "String", "required": true},
+            {"name": "prompt", "type": "String", "required": true},
+            {"name": "difficulty", "type": "String", "required": true},
+            {"name": "focusConcept", "type": "String", "required": true}
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {"description": "Uma análise finalizada só é considerada correta quando is_correct é booleano; null permanece inconclusivo.", "location": "appmistakemap/lib/ai/analysis_models.dart:68", "confidence": "confirmed"},
+        {"description": "Contagens do mapa usam tentativas distintas, normalizam conceito por matéria e as arestas representam coocorrência, não pré-requisitos.", "location": "appmistakemap/lib/ai/analysis_models.dart:247", "confidence": "confirmed"},
+        {"description": "Uploads aceitam JPEG, PNG ou WebP, validam assinatura binária e limitam imagem a 8 MB.", "location": "appmistakemap/lib/ai/analysis_repository.dart:301", "confidence": "confirmed"},
+        {"description": "A prática admite de 3 a 5 exercícios filtrados por matéria e tipo de erro; a chave de resposta não é exposta ao cliente.", "location": "appmistakemap/lib/ai/analysis_repository.dart:440", "confidence": "confirmed"}
+      ],
+      "dependencies": ["supabase_flutter", "http", "image_picker", "crypto", "SQLite sync queue"],
+      "algorithms": [
+        "A análise concorrente da mesma tentativa compartilha uma única chamada em voo.",
+        "O mapa agrupa erros por categoria, matéria e conceito e agrega contagens por tentativa distinta.",
+        "A criação de prática reanalisa até cinco tentativas legadas sem análise antes da chamada de geração."
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "local-notebook-offline-sync",
+      "path": "appmistakemap/lib/local, appmistakemap/lib/sync, appmistakemap/lib/caderno_erros.dart",
+      "purpose": "Manter caderno de erros CRUD no SQLite e oferecer cache, fila idempotente, sincronização e atualização em tempo real dos dados Supabase.",
+      "primary_files": [
+        "appmistakemap/lib/local/banco_local.dart",
+        "appmistakemap/lib/local/registro_erro.dart",
+        "appmistakemap/lib/local/registro_erro_dao.dart",
+        "appmistakemap/lib/caderno_erros.dart",
+        "appmistakemap/lib/sync/sincronizador.dart",
+        "appmistakemap/lib/sync/armazem_sync.dart",
+        "appmistakemap/lib/sync/remoto_supabase.dart",
+        "appmistakemap/lib/sync/sobreposicao.dart"
+      ],
+      "functions": [
+        {"name": "BancoLocal._abrir", "file": "appmistakemap/lib/local/banco_local.dart", "params": [], "returns": "Future<Database>", "confidence": "confirmed"},
+        {"name": "RegistroErroDao.inserir", "file": "appmistakemap/lib/local/registro_erro_dao.dart", "params": ["RegistroErro registro"], "returns": "Future<int>", "confidence": "confirmed"},
+        {"name": "RegistroErroDao.listar", "file": "appmistakemap/lib/local/registro_erro_dao.dart", "params": ["String usuarioId", "bool ocultarRevisados"], "returns": "Future<List<RegistroErro>>", "confidence": "confirmed"},
+        {"name": "RegistroErroDao.atualizar", "file": "appmistakemap/lib/local/registro_erro_dao.dart", "params": ["RegistroErro registro"], "returns": "Future<int>", "confidence": "confirmed"},
+        {"name": "RegistroErroDao.excluir", "file": "appmistakemap/lib/local/registro_erro_dao.dart", "params": ["String usuarioId", "int id"], "returns": "Future<int>", "confidence": "confirmed"},
+        {"name": "Sincronizador.consultar", "file": "appmistakemap/lib/sync/sincronizador.dart", "params": ["usuarioId", "chave", "remoto"], "returns": "Future<Object?>", "confidence": "confirmed"},
+        {"name": "Sincronizador.sincronizar", "file": "appmistakemap/lib/sync/sincronizador.dart", "params": [], "returns": "Future<void>", "confidence": "confirmed"},
+        {"name": "sobreporExercicios", "file": "appmistakemap/lib/sync/sobreposicao.dart", "params": ["materias", "exercicios", "fila", "usuarioId"], "returns": "({List<Map<String,dynamic>> materias, List<Map<String,dynamic>> exercicios})", "confidence": "confirmed"}
+      ],
+      "entities": [
+        {
+          "name": "RegistroErro",
+          "fields": [
+            {"name": "usuarioId", "type": "String", "required": true},
+            {"name": "disciplina", "type": "String", "required": true},
+            {"name": "titulo", "type": "String", "required": true},
+            {"name": "descricao", "type": "String", "required": true},
+            {"name": "tipo", "type": "TipoErro", "required": true},
+            {"name": "revisado", "type": "bool", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "OperacaoFila",
+          "fields": [
+            {"name": "usuarioId", "type": "String", "required": true},
+            {"name": "operacao", "type": "String", "required": true},
+            {"name": "dados", "type": "Map<String,Object?>", "required": true},
+            {"name": "imagem", "type": "Uint8List?", "required": false},
+            {"name": "situacao", "type": "String", "required": true},
+            {"name": "tentativas", "type": "int", "required": true}
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {"description": "As consultas e operações SQLite filtram por usuario_id para separar dados locais entre contas.", "location": "appmistakemap/lib/local/registro_erro_dao.dart:32", "confidence": "confirmed"},
+        {"description": "A versão 2 do banco adiciona cache e fila; upgrades preservam o schema anterior e foreign keys são ligadas por conexão.", "location": "appmistakemap/lib/local/banco_local.dart:10", "confidence": "confirmed"},
+        {"description": "Só falhas de rede usam cache e fila; erros de RLS/validação são expostos como falha, não classificados como offline.", "location": "appmistakemap/lib/sync/conexao.dart:8", "confidence": "confirmed"},
+        {"description": "Reenvios usam UUID estável e upsert para evitar duplicação; recusas do servidor ficam visíveis e não são repetidas automaticamente.", "location": "appmistakemap/lib/sync/sincronizador.dart:369", "confidence": "confirmed"}
+      ],
+      "dependencies": ["sqflite", "sqflite_common_ffi", "sqflite_common_ffi_web", "shared_preferences", "Supabase Realtime"],
+      "algorithms": [
+        "Cache por usuário e chave da consulta, usado após timeout/rede indisponível.",
+        "Fila ordenada e serializada com UUIDs gerados no aparelho, envio progressivo e retry com sondagem exponencial de 5 segundos a 1 minuto.",
+        "Sobreposição local aplica criações/edições/exclusões da fila aos dados remotos para exibição imediata."
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "admin-metrics-layout",
+      "path": "appmistakemap/lib/admin, appmistakemap/lib/about, appmistakemap/lib/theme",
+      "purpose": "Exibir monitoramento administrativo global ou limitado por RLS, cotas de IA/armazenamento, identidade Sobre e componentes visuais responsivos.",
+      "primary_files": [
+        "appmistakemap/lib/admin/metrics_panel.dart",
+        "appmistakemap/lib/admin/metrics_policy.dart",
+        "appmistakemap/lib/admin/model_quota_card.dart",
+        "appmistakemap/lib/about/linkedin_profile_button.dart",
+        "appmistakemap/lib/theme/design_tokens.dart",
+        "appmistakemap/lib/theme/control_styles.dart",
+        "appmistakemap/lib/theme/motion.dart",
+        "appmistakemap/lib/main.dart"
+      ],
+      "functions": [
+        {"name": "_AdminMetricsPanelState._sync", "file": "appmistakemap/lib/admin/metrics_panel.dart", "params": [], "returns": "void", "confidence": "confirmed"},
+        {"name": "_AdminMetricsPanelState._refresh", "file": "appmistakemap/lib/admin/metrics_panel.dart", "params": [], "returns": "Future<void>", "confidence": "confirmed"},
+        {"name": "MetricsPolicy.live", "file": "appmistakemap/lib/admin/metrics_policy.dart", "params": ["NetworkKind network"], "returns": "bool", "confidence": "confirmed"},
+        {"name": "MetricsPolicy.due", "file": "appmistakemap/lib/admin/metrics_policy.dart", "params": ["NetworkKind network", "DateTime? last", "DateTime now"], "returns": "bool", "confidence": "confirmed"},
+        {"name": "MistakeMapDesign.hoverInk", "file": "appmistakemap/lib/theme/design_tokens.dart", "params": ["Color fill", "Color restingInk", "Color? restingFill"], "returns": "Color", "confidence": "confirmed"},
+        {"name": "TelaSobre.build", "file": "appmistakemap/lib/main.dart", "params": ["BuildContext context"], "returns": "Widget", "confidence": "confirmed"}
+      ],
+      "entities": [
+        {
+          "name": "Admin metrics snapshot",
+          "fields": [
+            {"name": "profiles", "type": "int?", "required": false},
+            {"name": "exercises", "type": "int?", "required": false},
+            {"name": "attempts", "type": "int?", "required": false},
+            {"name": "processing", "type": "int?", "required": false},
+            {"name": "analysis_requests_today", "type": "int?", "required": false},
+            {"name": "practice_requests_today", "type": "int?", "required": false},
+            {"name": "storage and API quota fields", "type": "num?", "required": false}
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {"description": "Snapshot global vem de RPC administrativa; indisponibilidade usa contagens que o servidor permite via RLS e nunca anuncia escopo global.", "location": "appmistakemap/lib/admin/metrics_panel.dart:124", "confidence": "confirmed"},
+        {"description": "Wi-Fi permite Realtime e consultas frequentes; rede móvel/desconhecida limita polling a uma hora e offline pausa as leituras.", "location": "appmistakemap/lib/admin/metrics_policy.dart:1", "confidence": "confirmed"},
+        {"description": "Cotas desconhecidas/parciais aparecem como indisponíveis, sem inventar saldo restante.", "location": "appmistakemap/lib/admin/model_quota_card.dart:7", "confidence": "confirmed"},
+        {"description": "A aba Administração é condicional ao papel admin; TelaSobre apresenta missão, visão, valores, equipe e stack.", "location": "appmistakemap/lib/main.dart:4201", "confidence": "confirmed"}
+      ],
+      "dependencies": ["supabase_flutter", "fluent_ui", "Dart JS interop on Web", "url_launcher"],
+      "algorithms": [
+        "Polling administrativo condicionado à conectividade, ciclo de vida, aba ativa e intervalo.",
+        "Debounce de broadcast Realtime para evitar leituras excessivas.",
+        "Layout e tipografia responsivos com suporte a movimento reduzido e contraste de tinta sobre cor de hover."
+      ],
+      "complexity": "medium"
+    },
+    {
+      "name": "supabase-edge-functions",
+      "path": "supabase/functions",
+      "purpose": "Autenticar operações de análise e prática, integrar Gemini e Cloudflare R2, persistir resultados e monitorar a saúde dos serviços.",
+      "primary_files": [
+        "supabase/functions/analyze-attempt/handler.ts",
+        "supabase/functions/generate-practice/handler.ts",
+        "supabase/functions/process-batch/handler.ts",
+        "supabase/functions/upload-url/handler.ts",
+        "supabase/functions/upload-url/index.ts",
+        "supabase/functions/health/index.ts",
+        "supabase/functions/_shared/ai_service.ts",
+        "supabase/functions/_shared/ai_contract.ts",
+        "supabase/functions/_shared/ai_http.ts",
+        "supabase/functions/_shared/gemini.ts",
+        "supabase/functions/tests/ai_contract_test.ts",
+        "supabase/functions/tests/upload_url_test.ts"
+      ],
+      "functions": [
+        {"name": "analyzeAttempt", "file": "supabase/functions/_shared/ai_service.ts", "params": ["Database sql", "string id", "string user"], "returns": "Promise<analysis result>", "confidence": "confirmed"},
+        {"name": "generatePractice", "file": "supabase/functions/_shared/ai_service.ts", "params": ["Database sql", "string user", "string subjectId", "number count", "Category? category"], "returns": "Promise<practice set>", "confidence": "confirmed"},
+        {"name": "rankConcepts", "file": "supabase/functions/_shared/ai_contract.ts", "params": ["ErrorOccurrence[] occurrences", "Recovery[] recoveries", "Date now", "Category? category"], "returns": "ConceptPriority[]", "confidence": "confirmed"},
+        {"name": "validateAnalysis", "file": "supabase/functions/_shared/ai_contract.ts", "params": ["unknown value"], "returns": "Analysis", "confidence": "confirmed"},
+        {"name": "validatePractice", "file": "supabase/functions/_shared/ai_contract.ts", "params": ["unknown value", "number count", "string[] targetConcepts"], "returns": "Practice[]", "confidence": "confirmed"},
+        {"name": "structuredResponse", "file": "supabase/functions/_shared/gemini.ts", "params": ["schema, instructions, text and optional images"], "returns": "Promise<unknown>", "confidence": "confirmed"}
+      ],
+      "entities": [
+        {
+          "name": "Analysis",
+          "fields": [
+            {"name": "is_correct", "type": "boolean | null", "required": true},
+            {"name": "correct_answer", "type": "string", "required": true},
+            {"name": "explanation", "type": "string", "required": true},
+            {"name": "transcribed_prompt", "type": "string", "required": true},
+            {"name": "transcribed_answer", "type": "string", "required": true},
+            {"name": "errors", "type": "array of category, concept, evidence and confidence", "required": true},
+            {"name": "concepts", "type": "string[]", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "Practice",
+          "fields": [
+            {"name": "prompt_text", "type": "string", "required": true},
+            {"name": "difficulty", "type": "facil | media | dificil", "required": true},
+            {"name": "focus_concept", "type": "string", "required": true},
+            {"name": "correct_answer", "type": "string", "required": true},
+            {"name": "explanation", "type": "string", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ConceptPriority",
+          "fields": [
+            {"name": "concept", "type": "string", "required": true},
+            {"name": "score", "type": "number", "required": true},
+            {"name": "frequency", "type": "number", "required": true},
+            {"name": "mastery", "type": "number in [0,1]", "required": true},
+            {"name": "categories", "type": "Category[]", "required": true}
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {"description": "Toda análise/prática de usuário autentica via Supabase Auth e escopa consultas ao proprietário dos dados.", "location": "supabase/functions/_shared/ai_http.ts:129", "confidence": "confirmed"},
+        {"description": "A análise usa schema JSON validado; erros só são aceitos para respostas incorretas e precisam apontar para conceitos declarados.", "location": "supabase/functions/_shared/ai_contract.ts:144", "confidence": "confirmed"},
+        {"description": "A prioridade de revisão soma erros com meia-vida de recência de 14 dias e desconta até três acertos posteriores ao erro mais recente.", "location": "supabase/functions/_shared/ai_contract.ts:313", "confidence": "confirmed"},
+        {"description": "A prática referencia até 50 análises de erros anteriores e salva os IDs das tentativas de origem; os enunciados originais não são enviados ao gerador.", "location": "supabase/functions/_shared/ai_service.ts:417", "confidence": "confirmed"},
+        {"description": "Sem padrões de erro, a geração usa apenas o nome da matéria; portanto esse caminho não se baseia em exercícios existentes.", "location": "supabase/functions/_shared/ai_service.ts:510", "confidence": "confirmed"},
+        {"description": "A resposta correta da prática é armazenada em tabela de gabaritos e não é retornada pelo endpoint de geração.", "location": "supabase/functions/_shared/ai_service.ts:543", "confidence": "confirmed"}
+      ],
+      "dependencies": ["Deno", "postgresjs", "aws4fetch", "Supabase Auth/PostgreSQL", "Google Gemini API", "Cloudflare R2"],
+      "algorithms": [
+        "Reivindicação de análise com lock, lease, retry e limite diário para evitar chamadas concorrentes ou exceder a cota.",
+        "Fallback ordenado entre modelos Gemini e validação estrita do JSON retornado.",
+        "Ranking de conceito por frequência com decaimento exponencial temporal e recuperação por acertos subsequentes.",
+        "Validação de imagens por assinatura binária, escopo de caminho e SHA-256 antes de enviar ao modelo."
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "postgres-migrations",
+      "path": "appmistakemap/database/supabase/migrations",
+      "purpose": "Persistir o domínio acadêmico e eventos de análise, proteger dados por RLS, preservar integridade do pipeline e manter cotas e rotinas operacionais.",
+      "primary_files": [
+        "appmistakemap/database/supabase/migrations/20260901163259_create_initial_schema.sql",
+        "appmistakemap/database/supabase/migrations/20260901173121_create_profiles.sql",
+        "appmistakemap/database/supabase/migrations/20260901174740_add_rate_limiting.sql",
+        "appmistakemap/database/supabase/migrations/20260910023647_create_ingestion_pipeline_tables.sql",
+        "appmistakemap/database/supabase/migrations/20260929052429_openai_error_analysis.sql",
+        "appmistakemap/database/supabase/migrations/20260928194109_add_role_admin_system.sql",
+        "appmistakemap/database/supabase/migrations/20260929112200_fix_profiles_rls_recursion.sql",
+        "appmistakemap/database/supabase/migrations/20261027013000_enable_realtime_sync.sql",
+        "appmistakemap/database/README.md"
+      ],
+      "functions": [
+        {"name": "public.check_rate_limit", "file": "appmistakemap/database/supabase/migrations/20260901174740_add_rate_limiting.sql", "params": ["p_key text", "p_limit integer", "p_window_seconds integer"], "returns": "boolean", "confidence": "confirmed"},
+        {"name": "public.enforce_rate_limit", "file": "appmistakemap/database/supabase/migrations/20260901174740_add_rate_limiting.sql", "params": [], "returns": "trigger", "confidence": "confirmed"},
+        {"name": "public.handle_new_user", "file": "appmistakemap/database/supabase/migrations/20260928194109_add_role_admin_system.sql", "params": [], "returns": "trigger", "confidence": "confirmed"},
+        {"name": "public.is_admin", "file": "appmistakemap/database/supabase/migrations/20260929112200_fix_profiles_rls_recursion.sql", "params": [], "returns": "boolean", "confidence": "confirmed"},
+        {"name": "public.guard_attempt_ai_state", "file": "appmistakemap/database/supabase/migrations/20260929052429_openai_error_analysis.sql", "params": [], "returns": "trigger", "confidence": "confirmed"},
+        {"name": "public.guard_analyzed_exercise", "file": "appmistakemap/database/supabase/migrations/20260929052429_openai_error_analysis.sql", "params": [], "returns": "trigger", "confidence": "confirmed"},
+        {"name": "public.storage_usage_bytes", "file": "appmistakemap/database/supabase/migrations/20260901185730_create_storage_usage_function.sql", "params": [], "returns": "bigint", "confidence": "confirmed"},
+        {"name": "public.request_r2_storage_usage / public.process_r2_storage_usage", "file": "appmistakemap/database/supabase/migrations/20260901200215_fix_r2_alert_async_pattern.sql", "params": ["p_bucket_name text"], "returns": "void", "confidence": "confirmed"}
+      ],
+      "entities": [
+        {
+          "name": "subjects",
+          "fields": [
+            {"name": "id", "type": "uuid primary key", "required": true},
+            {"name": "user_id", "type": "uuid references auth.users", "required": true},
+            {"name": "name", "type": "text", "required": true},
+            {"name": "description", "type": "text", "required": false},
+            {"name": "created_at", "type": "timestamptz default now()", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "concepts / concept_edges",
+          "fields": [
+            {"name": "concepts.id, subject_id, name, description, importance, created_at", "type": "uuid, uuid FK, text, text?, numeric default 1, timestamptz", "required": true},
+            {"name": "concept_edges.from_concept_id, to_concept_id, relation", "type": "uuid FK, uuid FK, text; unique by pair and relation", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "exercises / exercise_concepts",
+          "fields": [
+            {"name": "exercises.id, subject_id, source, prompt_text, difficulty, created_at", "type": "uuid, uuid FK, text?, text, text?, timestamptz", "required": true},
+            {"name": "exercise_concepts.exercise_id, concept_id, weight", "type": "uuid FK, uuid FK, numeric default 1; composite primary key", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "attempts",
+          "fields": [
+            {"name": "id", "type": "uuid primary key", "required": true},
+            {"name": "exercise_id", "type": "uuid references exercises", "required": true},
+            {"name": "user_id", "type": "uuid references auth.users", "required": true},
+            {"name": "solution_text / answer", "type": "text?", "required": false},
+            {"name": "attempted_at", "type": "timestamptz default now()", "required": true},
+            {"name": "status", "type": "text default uploading with pipeline state constraint", "required": true},
+            {"name": "version", "type": "integer default 1", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "attempt_analyses / corrections",
+          "fields": [
+            {"name": "attempt_analyses.attempt_id", "type": "uuid primary key and FK", "required": true},
+            {"name": "user_id / subject_id", "type": "uuid FKs", "required": true},
+            {"name": "analysis", "type": "jsonb object", "required": true},
+            {"name": "model / pipeline_version", "type": "text", "required": true},
+            {"name": "corrections.reference_text", "type": "text?", "required": false},
+            {"name": "corrections.reviewed_by", "type": "uuid FK?", "required": false}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "error_types / error_events / mastery_events",
+          "fields": [
+            {"name": "error_types", "type": "id uuid, name unique, category, description, severity?, ontology_version?, concept_id FK?", "required": true},
+            {"name": "error_events", "type": "attempt FK, error_type FK?, concept FK?, evidence_ref?, confidence?, status pending/confirmed/rejected/superseded, created_at", "required": true},
+            {"name": "mastery_events", "type": "concept FK, attempt FK, outcome, created_at", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "practice_sets / practice_answer_keys",
+          "fields": [
+            {"name": "practice_sets", "type": "user FK, subject FK, source_attempt_ids uuid[], exercise_count 3..5, model, created_at", "required": true},
+            {"name": "practice_answer_keys", "type": "exercise FK, set FK, correct_answer, explanation, focus_concept", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "attempt_assets / processing_runs / ocr_artifacts / audit_log",
+          "fields": [
+            {"name": "attempt_assets", "type": "attempt FK, object_path, sha256, nonce?, wrapped_dek?, key_version?, created_at", "required": true},
+            {"name": "processing_runs", "type": "attempt FK, pipeline_version, status, retry_count, trace_id?, lease_until?, error_code?, timestamps", "required": true},
+            {"name": "ocr_artifacts", "type": "attempt FK, engine, version?, latex?, confidence?, created_at", "required": true},
+            {"name": "audit_log", "type": "actor?, action, entity, trace_id?, payload_hash?, created_at", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "profiles",
+          "fields": [
+            {"name": "id", "type": "uuid primary key references auth.users", "required": true},
+            {"name": "institution_name / course / higher_education_type", "type": "text?", "required": false},
+            {"name": "education_level", "type": "text with allowed-value constraint", "required": true},
+            {"name": "role", "type": "text default user; user/admin", "required": true},
+            {"name": "created_at", "type": "timestamptz default now()", "required": true}
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {"description": "Linhas de domínio são escopadas por RLS até o proprietário da matéria ou tentativa; relações de grafo e exercício verificam ambos os lados.", "location": "appmistakemap/database/supabase/migrations/20260929052429_openai_error_analysis.sql:106", "confidence": "confirmed"},
+        {"description": "O cliente lê análises/erros, mas não grava resultados de IA; gabaritos de prática não recebem grant/policy para authenticated.", "location": "appmistakemap/database/supabase/migrations/20260929052429_openai_error_analysis.sql:64", "confidence": "confirmed"},
+        {"description": "A análise do cliente não pode forjar estado/versão do pipeline e exercícios usados não podem ter o enunciado alterado.", "location": "appmistakemap/database/supabase/migrations/20260929052429_openai_error_analysis.sql:140", "confidence": "confirmed"},
+        {"description": "A revisão humana está prevista no estado de error_events, mas não existe fluxo de escrita/decisão concedido ao cliente.", "location": "appmistakemap/database/supabase/migrations/20260929052429_openai_error_analysis.sql:184", "confidence": "confirmed"},
+        {"description": "Rate limit padrão de 300 inserções por minuto por usuário é imposto por triggers; contadores não têm acesso direto de cliente.", "location": "appmistakemap/database/supabase/migrations/20260901174740_add_rate_limiting.sql:52", "confidence": "confirmed"},
+        {"description": "Migrações são imutáveis e o histórico local reconcilia versões já aplicadas; seed e restauração em banco vazio não foram validados.", "location": "appmistakemap/database/README.md", "confidence": "confirmed"}
+      ],
+      "dependencies": ["PostgreSQL", "Supabase Auth", "Row Level Security", "pgcrypto", "pg_cron", "pg_net", "Supabase Vault", "Supabase Storage", "Supabase Realtime"],
+      "algorithms": [
+        "Propriedade por cadeia de FKs e políticas RLS; políticas de relacionamento verificam os dois registros relacionados.",
+        "Janela fixa de rate limit por chave/usuário com limpeza de janelas antigas.",
+        "Gates por trigger protegem transições de estado de análise e imutabilidade de exercícios já utilizados.",
+        "Rotinas de monitoramento recuperam uso R2 em dois passos assíncronos e enviam alerta ao ultrapassar o limiar."
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "archived-rust-worker",
+      "path": "worker/src",
+      "purpose": "Implementação histórica em Rust de endpoints de saúde, URL de upload e processamento em lote; substituída pelo pipeline de Supabase Edge Functions.",
+      "primary_files": [
+        "worker/src/main.rs",
+        "worker/src/config.rs",
+        "worker/src/db.rs",
+        "worker/src/attempts.rs",
+        "worker/src/pipeline.rs",
+        "worker/src/quota.rs",
+        "worker/src/storage.rs",
+        "worker/src/routes/health.rs",
+        "worker/src/routes/upload_url.rs",
+        "worker/src/routes/process_batch.rs",
+        "worker/Cargo.toml",
+        "worker/fly.toml",
+        "worker/Dockerfile",
+        "BACKEND.md"
+      ],
+      "functions": [
+        {"name": "main", "file": "worker/src/main.rs", "params": [], "returns": "Result<(), Box<dyn Error>>", "confidence": "confirmed"},
+        {"name": "fetch_jwks", "file": "worker/src/main.rs", "params": ["supabase_url: &str"], "returns": "Result<DecodingKey, Box<dyn Error>>", "confidence": "confirmed"},
+        {"name": "run_batch", "file": "worker/src/pipeline.rs", "params": ["PgPool", "S3 Client", "Config"], "returns": "Result<BatchSummary, sqlx::Error>", "confidence": "confirmed"},
+        {"name": "fetch_pending", "file": "worker/src/attempts.rs", "params": ["PgPool", "limit: i64"], "returns": "Result<Vec<AttemptRow>, sqlx::Error>", "confidence": "confirmed"},
+        {"name": "upload_url", "file": "worker/src/routes/upload_url.rs", "params": ["AppState", "HeaderMap", "UploadRequest"], "returns": "Result<Json<UploadResponse>, StatusCode>", "confidence": "confirmed"},
+        {"name": "process_batch", "file": "worker/src/routes/process_batch.rs", "params": ["AppState", "HeaderMap"], "returns": "Result<Json<BatchSummary>, StatusCode>", "confidence": "confirmed"},
+        {"name": "download_asset", "file": "worker/src/storage.rs", "params": ["S3 Client", "bucket", "object_path"], "returns": "Result<Bytes, StorageError>", "confidence": "confirmed"}
+      ],
+      "entities": [
+        {
+          "name": "Config",
+          "fields": [
+            {"name": "database_url", "type": "String", "required": true},
+            {"name": "R2 account/endpoint/bucket/credentials", "type": "String fields from environment", "required": true},
+            {"name": "supabase_url / cron_secret", "type": "String", "required": true},
+            {"name": "port", "type": "u16 default 8080", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "AttemptRow / AssetRow",
+          "fields": [
+            {"name": "AttemptRow.id", "type": "Uuid", "required": true},
+            {"name": "AttemptRow.status", "type": "String", "required": true},
+            {"name": "AttemptRow.version", "type": "i32", "required": true},
+            {"name": "AssetRow.id", "type": "Uuid", "required": true},
+            {"name": "AssetRow.object_path", "type": "String", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "BatchSummary / QuotaError",
+          "fields": [
+            {"name": "BatchSummary.encontradas / concluidas / falhas", "type": "usize", "required": true},
+            {"name": "QuotaError", "type": "ClassAExceeded | ClassBExceeded | StorageExceeded | Db", "required": true},
+            {"name": "UsageSnapshot", "type": "period and current/ceiling counters for R2", "required": true}
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {"description": "O worker é código de referência arquivado; as Edge Functions são o backend ativo desde 2026-09-28.", "location": "BACKEND.md:354", "confidence": "confirmed"},
+        {"description": "Cada lote Rust busca até cinco tentativas pending com FOR UPDATE SKIP LOCKED e atualiza status com controle otimista por version.", "location": "worker/src/pipeline.rs:13", "confidence": "confirmed"},
+        {"description": "A implementação atual do pipeline Rust baixa assets, mas OCR e LLM ainda são TODOs; em seguida marca a tentativa completed.", "location": "worker/src/pipeline.rs:109", "confidence": "confirmed"},
+        {"description": "Falhas ficam retryable_failed, porém a consulta de lote seleciona somente pending.", "location": "worker/src/attempts.rs:31", "confidence": "confirmed"},
+        {"description": "O endpoint legado aceita PDF, divergindo do contrato de upload e RLS ativos que só aceitam JPEG, PNG e WebP.", "location": "worker/src/routes/upload_url.rs:155", "confidence": "confirmed"}
+      ],
+      "dependencies": ["Rust 2024", "Tokio", "Axum", "SQLx/PostgreSQL", "aws-sdk-s3", "jsonwebtoken", "reqwest", "Cloudflare R2", "Supabase JWKS"],
+      "algorithms": [
+        "Busca de tentativas com UPDATE atômico, FOR UPDATE SKIP LOCKED e versionamento otimista.",
+        "Validação ES256 do JWT e comparação sem saída antecipada do segredo de cron.",
+        "Reserva e contabilização de cotas R2 Class A/B com teto de 95%."
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "ci-cd-web-deployment",
+      "path": ".github/workflows, supabase/config.toml, appmistakemap/database/supabase/config.toml",
+      "purpose": "Validar Flutter, Edge Functions e o worker nos pull requests, publicar funções e migrations no Supabase e distribuir a versão Web pela Vercel.",
+      "primary_files": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/supabase-functions-deploy.yml",
+        ".github/workflows/supabase-deploy.yml",
+        ".github/workflows/web-deploy-vercel.yml",
+        ".github/workflows/sync-repository-metadata.yml",
+        "supabase/config.toml",
+        "appmistakemap/database/supabase/config.toml",
+        "appmistakemap/database/README.md"
+      ],
+      "functions": [
+        {"name": "CI edge-functions job", "file": ".github/workflows/ci.yml", "params": ["pull_request | push main | workflow_dispatch"], "returns": "deno check and deno test status", "confidence": "confirmed"},
+        {"name": "CI flutter job", "file": ".github/workflows/ci.yml", "params": ["Flutter package"], "returns": "analyze, format and test status", "confidence": "confirmed"},
+        {"name": "CI worker job", "file": ".github/workflows/ci.yml", "params": ["Rust package"], "returns": "cargo check, clippy and test status", "confidence": "confirmed"},
+        {"name": "Deploy Supabase migrations", "file": ".github/workflows/supabase-deploy.yml", "params": ["changed migration files and deployment secrets"], "returns": "dry-run then db push status", "confidence": "confirmed"},
+        {"name": "Deploy Flutter Web", "file": ".github/workflows/web-deploy-vercel.yml", "params": ["client changes and Vercel configuration"], "returns": "production deployment URL", "confidence": "confirmed"}
+      ],
+      "entities": [
+        {
+          "name": "CI acceptance jobs",
+          "fields": [
+            {"name": "Deno", "type": "2.9.x; check all function entrypoints and run tests", "required": true},
+            {"name": "Flutter", "type": "3.47.2; analyze, format and test", "required": true},
+            {"name": "Rust", "type": "1.98.1; cargo check, clippy -D warnings and test", "required": true},
+            {"name": "triggers", "type": "pull_request, push main, workflow_dispatch", "required": true}
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "Deployment configuration",
+          "fields": [
+            {"name": "Supabase Functions", "type": "deploy from main after Deno gate; runtime secrets stored in Supabase", "required": true},
+            {"name": "Supabase migrations", "type": "content diff, link, dry-run, push with skip-vault", "required": true},
+            {"name": "Vercel Web", "type": "Flutter release build and production deploy; VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID", "required": true},
+            {"name": "Mobile/Windows packages", "type": "no workflow found", "required": false}
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {"description": "Pull requests recebem os três checks obrigatórios; push no main ignora alterações somente em Markdown.", "location": ".github/workflows/ci.yml:11", "confidence": "confirmed"},
+        {"description": "Edge Functions só são publicadas depois da verificação e dos testes Deno.", "location": ".github/workflows/supabase-functions-deploy.yml:46", "confidence": "confirmed"},
+        {"description": "Migrations são publicadas após detectar mudança de conteúdo e executar dry-run; o workflow não sincroniza Vault.", "location": ".github/workflows/supabase-deploy.yml:67", "confidence": "confirmed"},
+        {"description": "O deploy Web publica build/web em produção quando o cliente Flutter muda; não há workflow equivalente encontrado para Android ou Windows.", "location": ".github/workflows/web-deploy-vercel.yml:60", "confidence": "confirmed"},
+        {"description": "O CI mantém o worker Rust arquivado como job obrigatório de check, Clippy e testes.", "location": ".github/workflows/ci.yml:81", "confidence": "confirmed"}
+      ],
+      "dependencies": ["GitHub Actions", "Deno", "Flutter", "Rust", "Supabase CLI", "Vercel CLI", "GitHub Actions secrets and variables"],
+      "algorithms": [
+        "Gates paralelos por stack para bloquear merge quando análise, formatação ou testes falham.",
+        "Deploy de migrations condicionado a comparação do conteúdo entre commits e preview antes da aplicação.",
+        "Concorrência serializada para deploys do banco e funções; deploy Web cancela build anterior."
+      ],
+      "complexity": "medium"
+    }
+  ]
+}

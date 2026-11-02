@@ -288,7 +288,7 @@ class SupabaseStudyMaterialRepository implements StudyMaterialRepository {
     try {
       final response = await client.functions
           .invoke(_function, body: body)
-          .timeout(const Duration(seconds: 120));
+          .timeout(const Duration(seconds: 140));
       if (response.status >= 400) {
         throw AnalysisFailure(
           studyFailureMessage(response.status, response.data),
@@ -302,7 +302,8 @@ class SupabaseStudyMaterialRepository implements StudyMaterialRepository {
       );
     } on TimeoutException {
       throw const AnalysisFailure(
-        'A IA está demorando para montar o material. Tente novamente em instantes.',
+        'A resposta demorou mais que o esperado. Se você estava gerando material, '
+        'aguarde e atualize a tela antes de tentar novamente.',
         network: true,
       );
     }

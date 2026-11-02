@@ -2,14 +2,123 @@
   "version": "1.0",
   "project": "MistakeMap",
   "status": "ready",
-  "phase": null,
-  "last_agent": null,
-  "last_updated": "2026-09-21",
+  "phase": "revisao",
+  "last_agent": "reviewer",
+  "last_updated": "2026-10-31",
+  "completed": [
+    "reconhecimento",
+    "escavacao",
+    "interpretacao",
+    "geracao"
+  ],
+  "pending": [
+    "revisao"
+  ],
+  "doc_level": "essencial",
   "discovery_complete": false,
   "active_feature": null,
   "paused_features": [],
   "active_ideation": null,
-  "checkpoints": [],
+  "checkpoints": {
+    "scout": {
+      "completed_at": "2026-10-31T19:11:00Z",
+      "files": [
+        "_reversa_sdd/inventory.md",
+        "_reversa_sdd/dependencies.md",
+        ".reversa/context/surface.json"
+      ]
+    },
+    "archaeologist": {
+      "modules_analyzed": [
+        "auth-navigation",
+        "exercise-analysis-map-practice",
+        "local-notebook-offline-sync",
+        "admin-metrics-layout",
+        "supabase-edge-functions",
+        "postgres-migrations",
+        "archived-rust-worker",
+        "ci-cd-web-deployment"
+      ],
+      "modules_pending": [],
+      "files": [
+        "_reversa_sdd/code-analysis.md",
+        ".reversa/context/modules.json"
+      ]
+    },
+    "detective": {
+      "completed_at": "2026-10-31T19:45:00Z",
+      "files": [
+        "_reversa_sdd/domain.md",
+        "_reversa_sdd/state-machines.md",
+        "_reversa_sdd/permissions.md"
+      ]
+    },
+    "architect": {
+      "completed_at": "2026-10-31T19:45:10Z",
+      "files": [
+        "_reversa_sdd/architecture.md",
+        "_reversa_sdd/c4-context.md"
+      ]
+    },
+    "writer": {
+      "completed_at": "2026-10-31T19:53:53Z",
+      "units": [
+        "aplicativo-flutter-autenticacao-navegacao",
+        "analise-exercicios-mapa-pratica",
+        "caderno-local-sincronizacao-offline",
+        "administracao-metricas-layout",
+        "edge-functions-supabase-servico-ia",
+        "migracoes-postgresql-supabase",
+        "worker-rust-arquivado",
+        "ci-cd-deploy-web"
+      ],
+      "files": [
+        "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/requirements.md",
+        "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/design.md",
+        "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/tasks.md",
+        "_reversa_sdd/analise-exercicios-mapa-pratica/requirements.md",
+        "_reversa_sdd/analise-exercicios-mapa-pratica/design.md",
+        "_reversa_sdd/analise-exercicios-mapa-pratica/tasks.md",
+        "_reversa_sdd/analise-exercicios-mapa-pratica/questions.md",
+        "_reversa_sdd/caderno-local-sincronizacao-offline/requirements.md",
+        "_reversa_sdd/caderno-local-sincronizacao-offline/design.md",
+        "_reversa_sdd/caderno-local-sincronizacao-offline/tasks.md",
+        "_reversa_sdd/caderno-local-sincronizacao-offline/questions.md",
+        "_reversa_sdd/administracao-metricas-layout/requirements.md",
+        "_reversa_sdd/administracao-metricas-layout/design.md",
+        "_reversa_sdd/administracao-metricas-layout/tasks.md",
+        "_reversa_sdd/edge-functions-supabase-servico-ia/requirements.md",
+        "_reversa_sdd/edge-functions-supabase-servico-ia/design.md",
+        "_reversa_sdd/edge-functions-supabase-servico-ia/tasks.md",
+        "_reversa_sdd/edge-functions-supabase-servico-ia/questions.md",
+        "_reversa_sdd/migracoes-postgresql-supabase/requirements.md",
+        "_reversa_sdd/migracoes-postgresql-supabase/design.md",
+        "_reversa_sdd/migracoes-postgresql-supabase/tasks.md",
+        "_reversa_sdd/migracoes-postgresql-supabase/questions.md",
+        "_reversa_sdd/worker-rust-arquivado/requirements.md",
+        "_reversa_sdd/worker-rust-arquivado/design.md",
+        "_reversa_sdd/worker-rust-arquivado/tasks.md",
+        "_reversa_sdd/ci-cd-deploy-web/requirements.md",
+        "_reversa_sdd/ci-cd-deploy-web/design.md",
+        "_reversa_sdd/ci-cd-deploy-web/tasks.md",
+        "_reversa_sdd/ci-cd-deploy-web/questions.md"
+      ]
+    },
+    "reviewer": {
+      "completed_at": "2026-10-31T19:58:03Z",
+      "units_reviewed": 8,
+      "cross_review": false,
+      "confidence_reclassifications": 0,
+      "questions_generated": 4,
+      "questions_answered": 0,
+      "confidence_percent": 86.4,
+      "files": [
+        "_reversa_sdd/questions.md",
+        "_reversa_sdd/confidence-report.md"
+      ],
+      "status": "awaiting_answers"
+    }
+  },
   "engines": [
     "claude-code",
     "codex",
@@ -258,5 +367,40 @@
     ".reversa\\config.user.toml",
     ".reversa\\version",
     ".reversa\\_config\\manifest.yaml"
-  ]
+  ],
+  "redator_progress": {
+    "total_files": 29,
+    "completed_files": [
+      "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/requirements.md",
+      "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/design.md",
+      "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/tasks.md",
+      "_reversa_sdd/analise-exercicios-mapa-pratica/requirements.md",
+      "_reversa_sdd/analise-exercicios-mapa-pratica/design.md",
+      "_reversa_sdd/analise-exercicios-mapa-pratica/tasks.md",
+      "_reversa_sdd/analise-exercicios-mapa-pratica/questions.md",
+      "_reversa_sdd/caderno-local-sincronizacao-offline/requirements.md",
+      "_reversa_sdd/caderno-local-sincronizacao-offline/design.md",
+      "_reversa_sdd/caderno-local-sincronizacao-offline/tasks.md",
+      "_reversa_sdd/caderno-local-sincronizacao-offline/questions.md",
+      "_reversa_sdd/administracao-metricas-layout/requirements.md",
+      "_reversa_sdd/administracao-metricas-layout/design.md",
+      "_reversa_sdd/administracao-metricas-layout/tasks.md",
+      "_reversa_sdd/edge-functions-supabase-servico-ia/requirements.md",
+      "_reversa_sdd/edge-functions-supabase-servico-ia/design.md",
+      "_reversa_sdd/edge-functions-supabase-servico-ia/tasks.md",
+      "_reversa_sdd/edge-functions-supabase-servico-ia/questions.md",
+      "_reversa_sdd/migracoes-postgresql-supabase/requirements.md",
+      "_reversa_sdd/migracoes-postgresql-supabase/design.md",
+      "_reversa_sdd/migracoes-postgresql-supabase/tasks.md",
+      "_reversa_sdd/migracoes-postgresql-supabase/questions.md",
+      "_reversa_sdd/worker-rust-arquivado/requirements.md",
+      "_reversa_sdd/worker-rust-arquivado/design.md",
+      "_reversa_sdd/worker-rust-arquivado/tasks.md",
+      "_reversa_sdd/ci-cd-deploy-web/requirements.md",
+      "_reversa_sdd/ci-cd-deploy-web/design.md",
+      "_reversa_sdd/ci-cd-deploy-web/tasks.md",
+      "_reversa_sdd/ci-cd-deploy-web/questions.md"
+    ],
+    "last_completed": "_reversa_sdd/ci-cd-deploy-web/questions.md"
+  }
 }
