@@ -1,0 +1,149 @@
+name: Patch de código (Shorebird)
+
+# Publica um patch do código Dart para os apps já instalados (Android e
+# Windows). Os aparelhos baixam o patch em segundo plano e passam a usá-lo na
+# próxima vez que o app abrir, sem reinstalar.
+#
+# Roda sozinho em push no main que altera o código Dart, depois que a
+# variável de repositório SHOREBIRD_AUTO_PATCH for 'true' (configure só depois
+# do primeiro release nativo). Também pode ser disparado à mão.
+#
+# O patch vai para o release com a versão atual do pubspec.yaml. Se a versão
+# subiu e ainda não tem release, o patch falha de propósito: rode antes o
+# workflow "Release nativo (Shorebird)". Mudanças nativas também fazem o
+# Shorebird recusar o patch. Passo a passo em appmistakemap/ATUALIZACOES.md.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "appmistakemap/lib/**"
+      - "appmistakemap/pubspec.yaml"
+      - "appmistakemap/pubspec.lock"
+  workflow_dispatch:
+    inputs:
+      plataformas:
+        description: Plataformas do patch
+        type: choice
+        default: android+windows
+        options:
+          - android+windows
+          - android
+          - windows
+      track:
+        description: Track do patch (stable chega a todos; use staging para testar)
+        type: choice
+        default: stable
+        options:
+          - stable
+          - staging
+          - beta
+
+permissions:
+  contents: read
+
+# Um patch por vez, na ordem dos pushes.
+concurrency:
+  group: shorebird-patch
+  cancel-in-progress: false
+
+jobs:
+  preparar:
+    name: Conferir versão e configuração
+    if: github.event_name == 'workflow_dispatch' || vars.SHOREBIRD_AUTO_PATCH == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      versao: ${{ steps.versao.outputs.versao }}
+      plataformas: ${{ steps.versao.outputs.plataformas }}
+      track: ${{ steps.versao.outputs.track }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Ler a versão do pubspec
+        id: versao
+        env:
+          PLATAFORMAS: ${{ inputs.plataformas || 'android+windows' }}
+          TRACK: ${{ inputs.track || 'stable' }}
+        run: |
+          versao=$(grep -E '^version:' appmistakemap/pubspec.yaml | awk '{print $2}')
+          echo "versao=$versao" >> "$GITHUB_OUTPUT"
+          echo "plataformas=$PLATAFORMAS" >> "$GITHUB_OUTPUT"
+          echo "track=$TRACK" >> "$GITHUB_OUTPUT"
+          echo "Patch para o release $versao ($PLATAFORMAS, track $TRACK)"
+
+      - name: Conferir secret e shorebird.yaml
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        run: |
+          falta=0
+          [ -n "$SHOREBIRD_TOKEN" ] || { echo "::error::Falta o secret SHOREBIRD_TOKEN (gere com 'shorebird login:ci')."; falta=1; }
+          [ -f appmistakemap/shorebird.yaml ] || { echo "::error::Falta appmistakemap/shorebird.yaml (rode 'shorebird init' em appmistakemap e faça commit)."; falta=1; }
+          exit "$falta"
+
+  android:
+    name: Patch Android
+    needs: preparar
+    if: contains(needs.preparar.outputs.plataformas, 'android')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: appmistakemap
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Gravar a chave de assinatura
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          [ -n "$ANDROID_KEYSTORE_BASE64" ] || { echo "Sem chave de release: o build do patch usa a de debug."; exit 0; }
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/release.jks"
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+          } > android/key.properties
+
+      - name: shorebird patch android
+        uses: shorebirdtech/shorebird-patch@v1
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        with:
+          platform: android
+          release-version: ${{ needs.preparar.outputs.versao }}
+          track: ${{ needs.preparar.outputs.track }}
+          working-directory: appmistakemap
+
+  windows:
+    name: Patch Windows
+    needs: preparar
+    if: contains(needs.preparar.outputs.plataformas, 'windows')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: shorebird patch windows
+        uses: shorebirdtech/shorebird-patch@v1
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        with:
+          platform: windows
+          release-version: ${{ needs.preparar.outputs.versao }}
+          track: ${{ needs.preparar.outputs.track }}
+          working-directory: appmistakemap

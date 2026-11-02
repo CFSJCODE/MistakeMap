@@ -378,8 +378,10 @@ void main() {
           size: Size(scenario.$1, 800),
           scale: scenario.$2,
         );
-        await tester.ensureVisible(find.text('LLM'));
-        expect(find.text('LLM').hitTestable(), findsOneWidget);
+        // Último conteúdo da página: o cartão de versão do app.
+        final ultimo = find.text('Procurar atualizações');
+        await tester.ensureVisible(ultimo);
+        expect(ultimo.hitTestable(), findsOneWidget);
         expect(
           find.text('PUC Minas · Projeto Integrado I · 2026'),
           findsNothing,
