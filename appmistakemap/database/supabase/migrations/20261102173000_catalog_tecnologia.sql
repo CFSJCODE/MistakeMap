@@ -1,7 +1,8 @@
 -- Catálogo com temática de tecnologia.
 --
--- Regra do projeto: todo exercício traz uma situação de tecnologia
--- (computação, robótica, eletrônica, projetos digitais) sem mudar a matéria,
+-- Regra do projeto: todo exercício traz uma situação de tecnologia (robótica,
+-- eletrônica, elétrica, hardware, software, programação, redes...) em que o
+-- dispositivo ou sistema gera os dados do problema, sem mudar a matéria,
 -- o conceito, a resposta, a dificuldade nem o tipo de erro treinado. Esta
 -- migration revisa as 30 questões de 20261102003100_catalog_exercises.sql
 -- pelo mesmo upsert (matéria, assunto, tema, posição).
@@ -46,7 +47,7 @@ declare
   3,
   "media",
   "procedimento",
-  "Dois robôs andam na mesma pista reta. O robô A parte 2 s depois do cronômetro a 3 m/s, então sua posição é 3(x - 2) metros; o robô B parte junto com o cronômetro, 5 m à frente, a 2 m/s, com posição 2x + 5. Em que instante x os dois se encontram? Resolva 3(x - 2) = 2x + 5.",
+  "Dois downloads correm na mesma rede. O download A começa 2 s depois do cronômetro e baixa 3 MB/s, então já baixou 3(x - 2) MB; o download B começa junto com o cronômetro, com 5 MB já em cache, e baixa 2 MB/s, somando 2x + 5 MB. Em que instante x os dois terão baixado a mesma quantidade? Resolva 3(x - 2) = 2x + 5.",
   "x = 11 s",
   "Distribuindo: 3x - 6 = 2x + 5. Então 3x - 2x = 5 + 6, logo x = 11 s."
  ],
@@ -57,9 +58,9 @@ declare
   4,
   "media",
   "procedimento",
-  "Em uma missão, um robô explorador usou metade da sua autonomia x (em minutos) para chegar ao alvo e um terço dela para voltar, gastando 10 minutos no total. Qual é a autonomia total? Resolva x/2 + x/3 = 10.",
-  "x = 12 min",
-  "Com denominador comum 6: (3x + 2x)/6 = 10, logo 5x = 60 e x = 12 minutos."
+  "Um script em Python processou metade dos x arquivos de uma pasta na primeira execução e um terço deles na segunda, somando 10 arquivos. Quantos arquivos havia na pasta? Resolva x/2 + x/3 = 10.",
+  "x = 12",
+  "Com denominador comum 6: (3x + 2x)/6 = 10, logo 5x = 60 e x = 12 arquivos."
  ],
  [
   "Matemática",
@@ -90,9 +91,9 @@ declare
   2,
   "media",
   "conceito",
-  "Depois de uma atualização de firmware, o alcance de um robô de entregas passou de 80 km para 92 km com a mesma bateria. Qual foi o aumento percentual do alcance?",
+  "Depois de uma otimização no código, um servidor passou a atender 92 requisições por segundo em vez de 80. Qual foi o aumento percentual de desempenho?",
   "15%",
-  "O aumento foi de 12 km sobre o alcance antigo: 12 ÷ 80 = 0,15 = 15%. A base é o valor inicial."
+  "O aumento foi de 12 requisições por segundo sobre o valor antigo: 12 ÷ 80 = 0,15 = 15%. A base é o valor inicial."
  ],
  [
   "Matemática",
@@ -112,9 +113,9 @@ declare
   4,
   "media",
   "conceito",
-  "A velocidade máxima de um robô cai 10% quando ele leva um sensor extra e, subindo uma rampa, cai mais 20% em relação à velocidade que restou. As duas quedas equivalem a qual redução única?",
+  "O desempenho de um processador cai 10% por superaquecimento e, depois, mais 20% do que restou ao entrar no modo de economia de energia. As duas quedas equivalem a qual redução única?",
   "28%",
-  "Os fatores se multiplicam: 0,90 × 0,80 = 0,72. Sobra 72% da velocidade, ou seja, redução de 28%, e não de 30%."
+  "Os fatores se multiplicam: 0,90 × 0,80 = 0,72. Sobra 72% do desempenho, ou seja, redução de 28%, e não de 30%."
  ],
  [
   "Matemática",
@@ -123,7 +124,7 @@ declare
   5,
   "dificil",
   "conceito",
-  "Durante um voo, a carga da bateria de um drone caiu 20%. Em quanto por cento a carga precisa subir, a partir desse valor, para voltar ao nível inicial?",
+  "Durante uma oscilação na rede elétrica, a tensão que chega a uma bancada de testes caiu 20%. Em quanto por cento a tensão precisa subir, a partir desse valor, para voltar ao nível inicial?",
   "25%",
   "Depois da queda sobra 0,8 do inicial. Para voltar a 1: 1 ÷ 0,8 = 1,25, ou seja, alta de 25% sobre o valor já reduzido."
  ],
@@ -156,7 +157,7 @@ declare
   3,
   "media",
   "interpretacao",
-  "Os motores de um robô de 5 kg o empurram com 40 N sobre um piso que exerce atrito de 15 N. Qual é a aceleração do robô?",
+  "O motor de passo de uma máquina CNC empurra a mesa de 5 kg com 40 N, e o atrito das guias vale 15 N. Qual é a aceleração da mesa?",
   "5 m/s²",
   "A resultante desconta o atrito: 40 - 15 = 25 N. Então a = 25 ÷ 5 = 5 m/s²."
  ],
@@ -266,7 +267,7 @@ declare
   3,
   "media",
   "conceito",
-  "O robô de laboratório cruza Aa × Aa, com dominância completa, e um sensor de cor conta as flores dos descendentes. Qual proporção fenotípica o sensor deve encontrar?",
+  "Um programa em Python simula 10.000 cruzamentos Aa × Aa, com dominância completa, e conta os fenótipos. Qual proporção fenotípica o programa deve obter?",
   "3 dominantes : 1 recessivo",
   "Genótipos 1 AA : 2 Aa : 1 aa. AA e Aa têm o mesmo fenótipo dominante, logo 3 : 1."
  ],
@@ -288,9 +289,9 @@ declare
   5,
   "dificil",
   "procedimento",
-  "O robô de laboratório vai produzir dois descendentes do cruzamento Aa × Aa para um experimento. Qual é a probabilidade de os dois serem aa?",
+  "Um aplicativo de bioinformática calcula riscos para um casal Aa × Aa que planeja ter dois filhos. Qual probabilidade de os dois serem aa o aplicativo deve informar?",
   "1/16",
-  "Cada descendente tem 1/4 de chance de ser aa e os cruzamentos são independentes: 1/4 × 1/4 = 1/16."
+  "Cada filho tem 1/4 de chance de ser aa e os nascimentos são independentes: 1/4 × 1/4 = 1/16."
  ],
  [
   "Português",
@@ -332,7 +333,7 @@ declare
   4,
   "media",
   "conceito",
-  "Em \"O robô foi tão bem calibrado que completou a pista em 12 segundos\", como se classifica a oração \"que completou a pista em 12 segundos\"?",
+  "Em \"O código foi tão bem otimizado que o aplicativo abriu em um segundo\", como se classifica a oração \"que o aplicativo abriu em um segundo\"?",
   "Oração subordinada adverbial consecutiva",
   "\"Tão... que\" liga a causa intensa à sua consequência: oração consecutiva."
  ],
@@ -343,8 +344,8 @@ declare
   5,
   "dificil",
   "procedimento",
-  "Reescreva \"Apesar de estar com a bateria fraca, o drone voltou à base\" usando a conjunção \"embora\", sem mudar o sentido.",
-  "Embora estivesse com a bateria fraca, o drone voltou à base.",
+  "Reescreva \"Apesar de estar com pouca memória RAM, o computador compilou o projeto\" usando a conjunção \"embora\", sem mudar o sentido.",
+  "Embora estivesse com pouca memória RAM, o computador compilou o projeto.",
   "\"Embora\" pede o verbo no subjuntivo (estivesse) e mantém a relação de concessão da frase original."
  ]
 ]
