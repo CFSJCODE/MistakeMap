@@ -10,13 +10,6 @@ O **MistakeMap** lê a sua resolução, aponta **onde** e **por que** você erro
 
 [![Abrir a versão web](https://img.shields.io/badge/Experimente%20agora-mistakemap--tau.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://mistakemap-tau.vercel.app/)
 
-[![CI](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/ci.yml)
-[![Migrations Supabase](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-deploy.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-deploy.yml)
-[![Edge Functions](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-functions-deploy.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/supabase-functions-deploy.yml)
-[![Deploy web (Vercel)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/web-deploy-vercel.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/web-deploy-vercel.yml)
-[![Metadados](https://github.com/CFSJCODE/MistakeMap/actions/workflows/sync-repository-metadata.yml/badge.svg?branch=main)](https://github.com/CFSJCODE/MistakeMap/actions/workflows/sync-repository-metadata.yml)
-[![Site](https://img.shields.io/website?url=https%3A%2F%2Fmistakemap-tau.vercel.app&style=flat-square&label=site&logo=vercel&logoColor=white&up_message=no%20ar&down_message=fora%20do%20ar)](https://mistakemap-tau.vercel.app/)
-
 ![Flutter](https://img.shields.io/badge/Flutter-3.47.2-02569B?style=flat-square&logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-3.13-0175C2?style=flat-square&logo=dart&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Auth%20%C2%B7%20Postgres%20%C2%B7%20Realtime-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
@@ -26,6 +19,8 @@ O **MistakeMap** lê a sua resolução, aponta **onde** e **por que** você erro
 ![OpenRouter](https://img.shields.io/badge/IA-OpenRouter-6566F1?style=flat-square&logo=openrouter&logoColor=white)
 ![Cloudflare R2](https://img.shields.io/badge/Arquivos-Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white)
 ![SQLite](https://img.shields.io/badge/Offline-SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
+![Shorebird](https://img.shields.io/badge/Atualiza%C3%A7%C3%B5es-Shorebird-2F6FE4?style=flat-square)
+![Vercel](https://img.shields.io/badge/Web-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
 ![Plataformas](https://img.shields.io/badge/Plataformas-Android%20%C2%B7%20Windows%20%C2%B7%20Web-3DDC84?style=flat-square)
 
 ![Status](https://img.shields.io/badge/Status-MVP%20funcional-F59E0B?style=flat-square)
@@ -33,7 +28,7 @@ O **MistakeMap** lê a sua resolução, aponta **onde** e **por que** você erro
 [![Licença](https://img.shields.io/badge/Licença-PolyForm%20Noncommercial%201.0.0-6B7280?style=flat-square)](LICENSE)
 ![PUC Minas](https://img.shields.io/badge/Projeto%20Acadêmico-PUC%20Minas-003B71?style=flat-square)
 
-[Por que o MistakeMap](#por-que) · [Como funciona](#como-funciona) · [Funcionalidades](#funcionalidades) · [Arquitetura](#arquitetura) · [Começar](#comecar) · [Roadmap](#roadmap)
+[Por que o MistakeMap](#por-que) · [Como funciona](#como-funciona) · [Funcionalidades](#funcionalidades) · [Arquitetura](#arquitetura) · [Atualizações](#atualizacoes) · [Começar](#comecar) · [Roadmap](#roadmap)
 
 </div>
 
@@ -58,7 +53,7 @@ O MistakeMap trata cada erro como um **dado de aprendizagem**:
 
 ### Para quem
 
-- **Estudantes** do ensino fundamental (7º ao 9º ano), do ensino médio, do ensino superior e **autodidatas**: o catálogo de matérias do banco já cobre essas quatro etapas.
+- **Estudantes** do ensino fundamental (7º ao 9º ano), do ensino médio, do ensino superior e **autodidatas**: a tela Aprender já organiza as matérias dessas quatro etapas.
 - **Cursos de exatas e engenharias**, onde o erro de procedimento (sinal, unidade, condição de contorno) custa caro e se repete.
 - **Professores, tutores e instituições** (próxima fase): visão agregada dos padrões de erro de uma turma, sempre com compartilhamento explícito e revogável pelo aluno.
 
@@ -71,6 +66,7 @@ O MistakeMap trata cada erro como um **dado de aprendizagem**:
 | 📶 **Offline de verdade** | Exercícios, tentativas e o caderno funcionam sem rede e sincronizam sozinhos quando a conexão volta. |
 | 🔁 **Recuperação conta** | Acertar de novo um conceito reduz o peso dele no plano de estudo. O mapa mostra melhora, não só fragilidade. |
 | 🔒 **Privado por padrão** | Os dados educacionais pertencem ao estudante. Isolamento por conta no próprio banco (RLS) e gabaritos que o cliente nunca enxerga. |
+| 🔄 **Sempre atualizado** | No Android e no Windows, correções chegam sozinhas em segundo plano e valem na próxima abertura, sem reinstalar. Na web, cada publicação já é a versão nova. |
 | 🤖 **Várias IAs, uma só interface** | Gemini por padrão, Claude Sonnet 5.5 e OpenRouter como alternativas, com cadeia de reserva automática: se um modelo cai, o próximo assume. |
 | 💸 **Custo de operação próximo de zero** | A infraestrutura roda em camadas gratuitas (Supabase, Cloudflare R2, Gemini, Vercel); o Claude, único modelo pago no padrão, só entra com reserva de custo e teto mensal controlados no banco. |
 
@@ -122,9 +118,11 @@ A IA classifica cada ocorrência em uma de **7 categorias**, a mesma usada para 
 | **Material de estudo** | Resumo, cartões e quiz gerados pela IA, com gabarito guardado e corrigido no servidor | `study-material`, `lib/ai/study_material_view.dart` |
 | **Prática direcionada** | 3 a 5 exercícios por pedido, filtrados por tipo de erro; conceitos ranqueados por **frequência × recência** (meia-vida de 14 dias), descontando a recuperação já demonstrada | `generate-practice` |
 | **Catálogo revisado** | 30 exercícios escritos e revisados por pessoas (5 por matéria/assunto/tema), servidos antes da IA quando cobrem a rodada | `catalog_exercises`, `_shared/catalog.ts` |
+| **Aprender** | Catálogo de matérias por etapa (Ensino Fundamental 7º–9º ano, Ensino Médio 1º–3º ano, Engenharia de Computação e estudo independente) e publicações curadas de eletrônica, informática, robótica, projetos e dicas, com link para o material; administradores publicam e editam pela própria tela | `lib/learning_platform.dart`, `learning_subjects`, `knowledge_posts` |
 | **Caderno de erros** | Registro livre de erros e regras, com filtros que ficam salvos | `lib/caderno_erros.dart`, `lib/local/` |
-| **Offline-first** | Tudo continua funcionando sem rede; o que foi feito offline sobe sozinho ao reconectar | `lib/sync/` |
+| **Offline-first** | Tudo continua funcionando sem rede; o que foi feito offline sobe sozinho ao reconectar, e uma edição recusada pelo servidor fica guardada na fila em vez de se perder | `lib/sync/` |
 | **Vários aparelhos** | Caderno, exercícios e exclusões chegam em tempo real aos outros dispositivos | Supabase Realtime, `lib/sync/caderno_sync.dart` |
+| **Atualização sem reinstalar** | Patches de código pelo Shorebird baixados em segundo plano; versões nativas novas oferecidas em *Sobre o App* a partir do GitHub Releases | `lib/atualizacao/`, [`ATUALIZACOES.md`](../appmistakemap/ATUALIZACOES.md) |
 | **Painel administrativo** | Papéis de usuário, métricas de uso, cotas e consumo da IA por modelo | `lib/admin/` |
 | **Interface adaptativa** | Celular, tablet, desktop, dobráveis e telas duplas, com navegação própria para cada largura | `lib/layout/` |
 
@@ -132,9 +130,9 @@ A IA classifica cada ocorrência em uma de **7 categorias**, a mesma usada para 
 
 | Plataforma | Situação |
 |:---|:---|
-| 🌐 **Web** | Publicada em [mistakemap-tau.vercel.app](https://mistakemap-tau.vercel.app/) a cada atualização do `main` |
-| 🤖 **Android** | Build de release funcional (APK); assinatura de loja pendente para a Play Store |
-| 🪟 **Windows** | Build desktop funcional |
+| 🌐 **Web** | Publicada em [mistakemap-tau.vercel.app](https://mistakemap-tau.vercel.app/): a própria Vercel compila o Flutter a cada atualização do `main` |
+| 🤖 **Android** | APK distribuído pelo GitHub Releases, com patches de código pelo Shorebird; assinatura de loja pendente para a Play Store |
+| 🪟 **Windows** | Pacote ZIP distribuído pelo GitHub Releases, com patches de código pelo Shorebird |
 | 🍎 **iOS** | Adiado até haver Mac ou conta Apple Developer |
 
 ---
@@ -191,8 +189,9 @@ flowchart TB
 | Jobs | `pg_cron` + `pg_net` | Processamento em lote sem HTTP síncrono em trigger |
 | Arquivos | Cloudflare R2 | Fotos dos exercícios, compatível com S3, sem custo de saída |
 | IA | Google Gemini (padrão), Anthropic Claude Sonnet 5.5, OpenRouter | OCR, classificação de erros, material e exercícios, com cadeia de reserva entre modelos ([detalhes](#provedores-ia)) |
-| Web | Vercel | Hospedagem da versão web |
-| CI/CD | GitHub Actions | Testes, migrations, funções e deploy web |
+| Web | Vercel | Build do Flutter na própria Vercel (`vercel.json` + `scripts/vercel-build.sh`) e hospedagem com rota SPA |
+| Atualizações | Shorebird (`shorebird_code_push`) + GitHub Releases | Patches de código Dart sem reinstalar; releases nativos com APK e ZIP |
+| CI/CD | GitHub Actions | Testes, migrations, funções, releases e patches |
 
 ### Edge Functions
 
@@ -239,6 +238,7 @@ Salvaguardas do pipeline:
 - **Cotas e orçamento.** Limite diário por usuário (`ai_daily_usage`), reserva de custo antes de chamar provedores pagos (`ai_budget_reservations`) e falha fechada quando a tabela de preços precisa de revisão.
 - **Troca de modelo só com evidência.** O roteador só escolhe outro modelo se houver avaliação com pelo menos 20 amostras na mesma tarefa, qualidade ≥ 0,8 e dados com menos de 30 dias; dentro de 2 pontos de qualidade, vence o mais barato.
 - **Fallback em cadeia.** Se um modelo falha, o pedido passa ao próximo da cadeia (veja abaixo) sem expor o erro ao aluno.
+- **Contexto educacional.** Prática e material de estudo contextualizam as questões em tecnologia (computação, robótica, eletrônica, projetos digitais) quando isso ajuda a entender, sem mudar a matéria nem a dificuldade; matérias de domínio claro (como IoT) recebem tópicos de orientação próprios.
 - **Recusas tratadas.** Bloqueios de segurança do provedor viram uma mensagem clara ao aluno (HTTP 422); resposta truncada ou fora do contrato nunca é gravada.
 
 <a id="provedores-ia"></a>
@@ -348,7 +348,7 @@ Detalhes do esquema local e das versões do banco em [`BANCO_LOCAL.md`](../appmi
 | Grupo | Tabelas principais |
 |:---|:---|
 | Estudo | `subjects`, `exercises`, `attempts`, `attempt_assets`, `corrections` |
-| Conhecimento | `concepts`, `concept_edges`, `exercise_concepts`, `error_types`, `learning_subjects` |
+| Conhecimento | `concepts`, `concept_edges`, `exercise_concepts`, `error_types`, `learning_subjects`, `knowledge_posts` |
 | Diagnóstico | `attempt_analyses`, `error_events`, `ocr_artifacts`, `processing_runs`, `mastery_events` |
 | Prática e estudo | `practice_sets`, `practice_answer_keys`, `catalog_exercises`, `catalog_answer_keys`, `study_materials`, `study_quiz_rounds`, `study_quiz_keys` |
 | Caderno e sync | `error_notes`, `notebook_entries`, `deleted_records` |
@@ -365,10 +365,25 @@ As migrations ficam em [`appmistakemap/database/supabase/migrations/`](../appmis
 | **Segredos** | `service_role` e chaves de IA/R2 só existem nas Edge Functions, configuradas como *secrets*; nada disso fica no Git |
 | **Arquivos** | Bucket R2 privado, upload por URL assinada de curta duração, integridade por SHA-256 |
 | **Jobs** | `process-batch` exige um segredo próprio; nada de HTTP síncrono dentro de trigger |
+| **Publicações** | `knowledge_posts`: todos os alunos leem, só administradores criam, editam e excluem (RLS com `is_admin()`) |
 | **Auditoria** | `audit_log` *append-only* para mutações sensíveis |
 | **Dados educacionais** | Sem ranking público e sem exposição automática de fragilidades. O mapa pertence ao estudante; compartilhar deve ser explícito, granular e revogável |
 
 Decisões de backend e o histórico da migração do worker Rust para as Edge Functions estão em [`BACKEND.md`](../BACKEND.md).
+
+---
+
+<a id="atualizacoes"></a>
+
+## Atualizações e distribuição
+
+| Via | O que muda | Como chega |
+|:---|:---|:---|
+| **Web (Vercel)** | Tudo | A integração Git da Vercel roda `scripts/vercel-build.sh` (Flutter 3.47.2, `flutter build web --release`) a cada push no `main`; quem abrir o site já recebe a versão nova |
+| **Patch de código (Shorebird)** | Código Dart: telas, regras de interface, textos, correções | O app consulta ao abrir, ao voltar, ao ir para segundo plano e de hora em hora; baixa em segundo plano e aplica no próximo início |
+| **Release nativo (GitHub Releases)** | Plugins, código nativo, versão do Flutter, ícone | O app compara a tag `v<versão>+<build>` com o instalado e oferece o APK ou ZIP em *Sobre o App*; os dados ficam |
+
+O código em execução nunca é trocado no meio do uso. Builds de desenvolvimento (`flutter run`) não recebem patches. Configuração, assinatura Android e renovação anual da chave do Shorebird em [`ATUALIZACOES.md`](../appmistakemap/ATUALIZACOES.md).
 
 ---
 
@@ -397,8 +412,8 @@ O Mapa é uma aba com pilha própria (a barra não some ao navegar dentro dele) 
 
 | Prática | Como é garantida |
 |:---|:---|
-| **Testes do app** | 25 arquivos de teste Flutter (widgets, navegação, layout, banco local, sincronização com SQLite em memória, contratos) |
-| **Testes do backend** | 6 suítes `deno test` (contrato da IA, catálogo, orçamento, roteador de modelos, estudo, upload) |
+| **Testes do app** | 26 arquivos de teste Flutter (widgets, navegação, layout, banco local, sincronização com SQLite em memória, atualizações, contratos) |
+| **Testes do backend** | 7 suítes `deno test` (contrato da IA, catálogo, orçamento, roteador de modelos, estudo, tópicos de aprendizado, upload) |
 | **Análise estática** | `flutter analyze` sem avisos e `dart format` obrigatórios; `deno check` nas funções |
 | **Migrations** | Imutáveis, versionadas e aplicadas pelo CI; o histórico do repositório é conferido com o do banco publicado |
 | **Revisão** | PRs pequenos e focados, com revisão automática e checks obrigatórios no `main` |
@@ -408,7 +423,9 @@ O Mapa é uma aba com pilha própria (a barra não some ao navegar dentro dele) 
 | [`ci.yml`](workflows/ci.yml) | Push e PR no `main` | `deno check`/`deno test`, `flutter analyze`, `dart format` e `flutter test` |
 | [`supabase-deploy.yml`](workflows/supabase-deploy.yml) | Push no `main` que altera migrations | Aplica as migrations no Supabase |
 | [`supabase-functions-deploy.yml`](workflows/supabase-functions-deploy.yml) | Push no `main` que altera `supabase/` | Publica as Edge Functions |
-| [`web-deploy-vercel.yml`](workflows/web-deploy-vercel.yml) | Push no `main` que altera o app | Gera o build web e publica na Vercel |
+| [`shorebird-release.yml`](workflows/shorebird-release.yml) | Manual | Gera o release nativo (APK Android e ZIP Windows) e publica no GitHub Releases |
+| [`shorebird-patch.yml`](workflows/shorebird-patch.yml) | Manual, ou push no `main` que altera `lib/` quando `SHOREBIRD_AUTO_PATCH=true` | Publica um patch de código Dart pelo Shorebird |
+| [`web-deploy-vercel.yml`](workflows/web-deploy-vercel.yml) | Manual (reserva) | Deploy web pela CLI; o caminho normal é a integração Git da Vercel |
 | [`sync-repository-metadata.yml`](workflows/sync-repository-metadata.yml) | Mudanças em `LICENSE` ou `CITATION.cff` | Garante que as cópias da raiz batem com as de `.github/` |
 
 ---
@@ -465,7 +482,9 @@ MistakeMap/
 │   ├── lib/
 │   │   ├── main.dart            # Bootstrap, Auth e telas principais
 │   │   ├── caderno_erros.dart   # Caderno de erros
+│   │   ├── learning_platform.dart   # Tela Aprender (catálogo e publicações)
 │   │   ├── about/  admin/  auth/  assets/
+│   │   ├── atualizacao/         # Shorebird e aviso de release nativo
 │   │   ├── ai/                  # Envio, correção, mapa, material de estudo e prática
 │   │   ├── layout/              # Larguras, dobráveis e shell de navegação
 │   │   ├── local/               # SQLite (io e web), DAO do caderno, conta offline
@@ -473,10 +492,13 @@ MistakeMap/
 │   │   └── theme/               # Tokens de design, paleta e movimento
 │   ├── test/                    # Testes Flutter
 │   ├── database/supabase/migrations/   # Migrations canônicas do Supabase
-│   └── BANCO_LOCAL.md · NAVEGACAO.md · PALETA.md · GOOGLE_AUTH.md
+│   ├── shorebird.yaml           # app_id do Shorebird (não é segredo)
+│   └── ATUALIZACOES.md · BANCO_LOCAL.md · NAVEGACAO.md · PALETA.md · GOOGLE_AUTH.md
 ├── supabase/
 │   ├── functions/               # Edge Functions (Deno) + _shared + tests
 │   └── config.toml
+├── scripts/vercel-build.sh      # Build web usado pela Vercel
+├── vercel.json                  # Build, rota SPA e cabeçalhos da versão web
 ├── worker/                      # Worker Rust original (arquivado)
 ├── .github/                     # README, CI/CD, licença, citação e políticas
 ├── AGENTS.md · CLAUDE.md · GEMINI.md   # Regras e decisões para agentes de código
@@ -492,15 +514,16 @@ MistakeMap/
 | Fase | Entregas | Situação |
 |:---|:---|:---:|
 | **0 · Fundação** | Flutter, Fluent UI, Supabase, Auth | ✅ |
-| **1 · Matérias e exercícios** | Cadastro de matérias e exercícios; catálogo de matérias por etapa de ensino no banco | ✅ |
+| **1 · Matérias e exercícios** | Cadastro de matérias e exercícios; catálogo de matérias por etapa de ensino na tela Aprender | ✅ |
 | **2 · Tentativas** | Fotos, correções e histórico | ✅ |
 | **3 · Erros** | Taxonomia de 7 categorias e eventos de erro | ✅ |
 | **4 · IA** | OCR, erros com evidência, material de estudo e prática | ✅ |
 | **5 · Offline e multi-aparelho** | SQLite, fila de envio, Realtime, caderno sincronizado | ✅ |
+| **5b · Distribuição** | Web na Vercel, releases no GitHub e patches pelo Shorebird | ✅ |
 | **6 · Prioridade** | Fila de revisão explicável com $P = F \times R \times I \times (1 - M)$ | 🟡 F, R e M prontos; falta I e a fila |
 | **7 · Validação humana** | Confirmar, corrigir ou rejeitar cada erro sugerido | 🔜 |
 | **8 · Relatórios** | PDF/CSV e compartilhamento seletivo com professor ou tutor | 🔜 |
-| **9 · Lojas** | Play Store (assinatura de release) e iOS | 🔜 |
+| **9 · Lojas** | Play Store (chave de assinatura própria) e iOS | 🔜 |
 
 Próximos passos conhecidos: tela própria para navegar no catálogo e mais temas; mostrar nos insights o que ainda está na fila de envio; manter o foco da prática ao recarregar; mover o segredo do `pg_cron` para o Vault; remover da R2 as fotos de tentativas excluídas.
 
@@ -524,6 +547,10 @@ Próximos passos conhecidos: tela própria para navegar no catálogo e mais tema
 | [#36](https://github.com/CFSJCODE/MistakeMap/pull/36) | Estudo atualizado, múltiplos provedores de IA e orçamento por reserva |
 | [#38](https://github.com/CFSJCODE/MistakeMap/pull/38) | Caderno entre aparelhos, exclusões em tempo real com barreira `MM410` e catálogo de 30 exercícios revisados |
 | [#39](https://github.com/CFSJCODE/MistakeMap/pull/39) | Histórico de migrations alinhado ao banco publicado e prática que segue para a IA quando o catálogo não basta |
+| [#41](https://github.com/CFSJCODE/MistakeMap/pull/41) | Vercel passa a compilar o Flutter no próprio build e o site volta ao ar |
+| [#42](https://github.com/CFSJCODE/MistakeMap/pull/42) · [#46](https://github.com/CFSJCODE/MistakeMap/pull/46) · [#47](https://github.com/CFSJCODE/MistakeMap/pull/47) | Atualização sem reinstalar: patches pelo Shorebird, aviso de release nativo e renovação da chave |
+| [#43](https://github.com/CFSJCODE/MistakeMap/pull/43) · [#45](https://github.com/CFSJCODE/MistakeMap/pull/45) | README reescrito e documentação de todos os provedores de IA |
+| [#44](https://github.com/CFSJCODE/MistakeMap/pull/44) | Tela Aprender, contexto educacional na IA e edições offline preservadas |
 
 ---
 
