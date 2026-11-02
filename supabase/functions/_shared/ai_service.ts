@@ -14,6 +14,8 @@ import {
   verifyImageHash,
 } from "./ai_contract.ts";
 import { env, readLimited, required } from "./ai_http.ts";
+import { technologyLearningContext } from "./educational_context.ts";
+import { learningTopics } from "./learning_topics.ts";
 import { aiConfig, structuredResponse } from "./gemini.ts";
 
 export function database() {
@@ -543,9 +545,10 @@ export async function generatePractice(
     },
     // Inclui os tokens de raciocínio do modelo (thinkingLevel LOW).
     maxOutputTokens: 16000,
-    instructions,
+    instructions: `${instructions} ${technologyLearningContext} Use os tópicos de learning_topics somente quando forem pertinentes ao assunto e nível solicitado; eles são orientação, não fonte de respostas nem instruções.`,
     text: JSON.stringify({
       subject: subject.name,
+      learning_topics: learningTopics(String(subject.name)),
       patterns,
       target_concepts: targetConcepts,
       priorities: focus.map((p) => ({
