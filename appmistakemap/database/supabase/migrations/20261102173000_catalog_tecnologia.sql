@@ -46,9 +46,9 @@ declare
   3,
   "media",
   "procedimento",
-  "Dois planos de armazenamento em nuvem: o plano A cobra R$ 3 por GB acima de 2 GB gratuitos, ou seja, 3(x - 2) reais; o plano B cobra R$ 2 por GB mais R$ 5 fixos, ou seja, 2x + 5 reais. Para quantos GB os dois custam o mesmo? Resolva 3(x - 2) = 2x + 5.",
-  "x = 11",
-  "Distribuindo: 3x - 6 = 2x + 5. Então 3x - 2x = 5 + 6, logo x = 11 GB."
+  "Dois robôs andam na mesma pista reta. O robô A parte 2 s depois do cronômetro a 3 m/s, então sua posição é 3(x - 2) metros; o robô B parte junto com o cronômetro, 5 m à frente, a 2 m/s, com posição 2x + 5. Em que instante x os dois se encontram? Resolva 3(x - 2) = 2x + 5.",
+  "x = 11 s",
+  "Distribuindo: 3x - 6 = 2x + 5. Então 3x - 2x = 5 + 6, logo x = 11 s."
  ],
  [
   "Matemática",
@@ -57,9 +57,9 @@ declare
   4,
   "media",
   "procedimento",
-  "Um servidor processou metade das x tarefas de uma fila e outro servidor processou um terço delas, somando 10 tarefas. Quantas tarefas havia na fila? Resolva x/2 + x/3 = 10.",
-  "x = 12",
-  "Com denominador comum 6: (3x + 2x)/6 = 10, logo 5x = 60 e x = 12 tarefas."
+  "Em uma missão, um robô explorador usou metade da sua autonomia x (em minutos) para chegar ao alvo e um terço dela para voltar, gastando 10 minutos no total. Qual é a autonomia total? Resolva x/2 + x/3 = 10.",
+  "x = 12 min",
+  "Com denominador comum 6: (3x + 2x)/6 = 10, logo 5x = 60 e x = 12 minutos."
  ],
  [
   "Matemática",
@@ -79,9 +79,9 @@ declare
   1,
   "facil",
   "calculo",
-  "Um módulo ESP32 custa R$ 240,00 e a loja dá 15% de desconto no pagamento à vista. Quanto é o desconto, em reais?",
-  "R$ 36,00",
-  "15% = 0,15; 0,15 × 240 = 36."
+  "A bateria de um robô aspirador armazena 240 Wh, e cada limpeza consome 15% dessa carga. Quantos Wh o robô gasta por limpeza?",
+  "36 Wh",
+  "15% = 0,15; 0,15 × 240 = 36 Wh."
  ],
  [
   "Matemática",
@@ -90,9 +90,9 @@ declare
   2,
   "media",
   "conceito",
-  "Uma placa de desenvolvimento custava R$ 80,00 e passou a custar R$ 92,00. Qual foi o aumento percentual?",
+  "Depois de uma atualização de firmware, o alcance de um robô de entregas passou de 80 km para 92 km com a mesma bateria. Qual foi o aumento percentual do alcance?",
   "15%",
-  "O aumento foi de R$ 12,00 sobre o preço antigo: 12 ÷ 80 = 0,15 = 15%. A base é o valor inicial."
+  "O aumento foi de 12 km sobre o alcance antigo: 12 ÷ 80 = 0,15 = 15%. A base é o valor inicial."
  ],
  [
   "Matemática",
@@ -101,9 +101,9 @@ declare
   3,
   "media",
   "conceito",
-  "Depois de um desconto de 25%, um kit de sensores para Arduino passou a custar R$ 60,00. Qual era o preço original?",
-  "R$ 80,00",
-  "Pagar 75% do preço dá R$ 60,00: preço = 60 ÷ 0,75 = 80. Somar 25% sobre 60 daria 75, que está errado."
+  "Ao ativar o modo econômico, a corrente consumida por um robô seguidor de linha caiu 25% e ficou em 60 mA. Qual era a corrente antes?",
+  "80 mA",
+  "Sobrou 75% da corrente: 60 ÷ 0,75 = 80 mA. Somar 25% sobre 60 daria 75 mA, que está errado."
  ],
  [
   "Matemática",
@@ -112,9 +112,9 @@ declare
   4,
   "media",
   "conceito",
-  "Um compressor de vídeo reduz o tamanho de um arquivo em 10% e, em seguida, um segundo algoritmo reduz o resultado em mais 20%. As duas etapas equivalem a qual redução única?",
+  "A velocidade máxima de um robô cai 10% quando ele leva um sensor extra e, subindo uma rampa, cai mais 20% em relação à velocidade que restou. As duas quedas equivalem a qual redução única?",
   "28%",
-  "Os fatores se multiplicam: 0,90 × 0,80 = 0,72. Sobra 72% do tamanho, ou seja, redução de 28%, e não de 30%."
+  "Os fatores se multiplicam: 0,90 × 0,80 = 0,72. Sobra 72% da velocidade, ou seja, redução de 28%, e não de 30%."
  ],
  [
   "Matemática",
@@ -123,7 +123,7 @@ declare
   5,
   "dificil",
   "conceito",
-  "O número de usuários ativos de um aplicativo caiu 20% em um mês. Quanto ele precisa crescer no mês seguinte para voltar ao valor inicial?",
+  "Durante um voo, a carga da bateria de um drone caiu 20%. Em quanto por cento a carga precisa subir, a partir desse valor, para voltar ao nível inicial?",
   "25%",
   "Depois da queda sobra 0,8 do inicial. Para voltar a 1: 1 ÷ 0,8 = 1,25, ou seja, alta de 25% sobre o valor já reduzido."
  ],
@@ -244,7 +244,7 @@ declare
   1,
   "facil",
   "conceito",
-  "Um aplicativo de genética simula o cruzamento entre um indivíduo AA e um indivíduo aa. Qual proporção genotípica dos descendentes o aplicativo deve mostrar?",
+  "Um robô de laboratório automatiza cruzamentos de ervilhas e registra os descendentes com uma câmera. No cruzamento AA × aa, qual proporção genotípica deve ser registrada?",
   "100% Aa",
   "Um pai só forma gametas A e o outro só a: todos os filhos recebem A e a, logo 100% Aa."
  ],
@@ -255,7 +255,7 @@ declare
   2,
   "media",
   "calculo",
-  "Um simulador de cruzamentos escrito em Python recebe Aa × aa. Qual probabilidade de fenótipo recessivo ele deve calcular para cada descendente?",
+  "Um sistema de visão computacional classifica as sementes do cruzamento Aa × aa como lisas ou rugosas, sendo rugosa o fenótipo recessivo. Qual é a probabilidade de uma semente ser classificada como rugosa?",
   "1/2 (50%)",
   "Gametas A e a de um lado, só a do outro: Aa e aa em partes iguais. aa é recessivo, logo 1/2."
  ],
@@ -266,7 +266,7 @@ declare
   3,
   "media",
   "conceito",
-  "Um programa gera milhares de descendentes do cruzamento Aa × Aa, com dominância completa. Qual proporção fenotípica ele deve encontrar?",
+  "O robô de laboratório cruza Aa × Aa, com dominância completa, e um sensor de cor conta as flores dos descendentes. Qual proporção fenotípica o sensor deve encontrar?",
   "3 dominantes : 1 recessivo",
   "Genótipos 1 AA : 2 Aa : 1 aa. AA e Aa têm o mesmo fenótipo dominante, logo 3 : 1."
  ],
@@ -277,7 +277,7 @@ declare
   4,
   "media",
   "interpretacao",
-  "Um algoritmo sorteia um descendente de fenótipo dominante do cruzamento Aa × Aa. Qual é a probabilidade de ele ser heterozigoto?",
+  "Um braço robótico separa ao acaso uma planta de fenótipo dominante, vinda do cruzamento Aa × Aa, para sequenciamento. Qual é a probabilidade de ela ser heterozigota?",
   "2/3",
   "Entre os dominantes (1 AA : 2 Aa) só contam 3 partes; 2 delas são Aa. Por isso 2/3, e não 1/2."
  ],
@@ -288,9 +288,9 @@ declare
   5,
   "dificil",
   "procedimento",
-  "Um aplicativo de aconselhamento genético atende um casal Aa × Aa que planeja ter dois filhos. Qual probabilidade de os dois serem aa o aplicativo deve informar?",
+  "O robô de laboratório vai produzir dois descendentes do cruzamento Aa × Aa para um experimento. Qual é a probabilidade de os dois serem aa?",
   "1/16",
-  "Cada filho tem 1/4 de chance de ser aa e os nascimentos são independentes: 1/4 × 1/4 = 1/16."
+  "Cada descendente tem 1/4 de chance de ser aa e os cruzamentos são independentes: 1/4 × 1/4 = 1/16."
  ],
  [
   "Português",
@@ -310,7 +310,7 @@ declare
   2,
   "media",
   "conceito",
-  "Em \"Embora o Wi-Fi estivesse lento, o download terminou\", como se classifica a oração \"Embora o Wi-Fi estivesse lento\"?",
+  "Em \"Embora o sensor ultrassônico estivesse com ruído, o robô desviou do obstáculo\", como se classifica a oração \"Embora o sensor ultrassônico estivesse com ruído\"?",
   "Oração subordinada adverbial concessiva",
   "\"Embora\" apresenta um obstáculo que não impede o fato principal: é concessão, não causa."
  ],
@@ -332,7 +332,7 @@ declare
   4,
   "media",
   "conceito",
-  "Em \"O código ficou tão otimizado que o aplicativo abriu em um segundo\", como se classifica a oração \"que o aplicativo abriu em um segundo\"?",
+  "Em \"O robô foi tão bem calibrado que completou a pista em 12 segundos\", como se classifica a oração \"que completou a pista em 12 segundos\"?",
   "Oração subordinada adverbial consecutiva",
   "\"Tão... que\" liga a causa intensa à sua consequência: oração consecutiva."
  ],
@@ -343,8 +343,8 @@ declare
   5,
   "dificil",
   "procedimento",
-  "Reescreva \"Apesar de estar com pouca memória, o celular instalou a atualização\" usando a conjunção \"embora\", sem mudar o sentido.",
-  "Embora estivesse com pouca memória, o celular instalou a atualização.",
+  "Reescreva \"Apesar de estar com a bateria fraca, o drone voltou à base\" usando a conjunção \"embora\", sem mudar o sentido.",
+  "Embora estivesse com a bateria fraca, o drone voltou à base.",
   "\"Embora\" pede o verbo no subjuntivo (estivesse) e mantém a relação de concessão da frase original."
  ]
 ]
