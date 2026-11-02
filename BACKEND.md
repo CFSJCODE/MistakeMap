@@ -346,7 +346,7 @@ GEMINI_FALLBACK_MODEL           # opcional; padrão gemini-3.6-flash (usado apó
 GEMINI_LITE_MODEL               # opcional; padrão gemini-3.5-flash-lite (2ª reserva; off desliga)
 AI_PROVIDER                     # opcional; gemini (padrão), anthropic ou openrouter
 AI_<ROTA>_PROVIDER / _MODEL     # opcional; rota por tarefa: ANALYSIS, VISION, STUDY, PRACTICE
-AI_ROUTING_EVIDENCE             # opcional; JSON com avaliações para o roteador automático
+AI_ROUTING_EVIDENCE             # opcional; JSON com avaliações; escolhe o melhor modelo por tarefa
 AI_CLAUDE_FALLBACK_ENABLED      # opcional; true usa claude-sonnet-5-5 como última reserva
 ANTHROPIC_API_KEY / ANTHROPIC_MODEL / ANTHROPIC_WORKSPACE_ID  # opcionais; Claude (pago, com orçamento)
 OPENROUTER_API_KEY / OPENROUTER_MODEL                         # opcionais; OpenRouter
