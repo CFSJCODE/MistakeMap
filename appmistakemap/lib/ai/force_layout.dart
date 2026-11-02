@@ -124,11 +124,7 @@ ForceLayout computeForceLayout(
     temperature -= cooling;
   }
 
-  _resolveOverlaps(
-    pos,
-    nodeBox,
-    math.max(5, math.min(200, pairBudget ~/ (n * n))),
-  );
+  _resolveOverlaps(pos, nodeBox);
 
   var minX = double.infinity, minY = double.infinity;
   var maxX = -double.infinity, maxY = -double.infinity;
@@ -153,31 +149,79 @@ ForceLayout computeForceLayout(
 }
 
 /// Afasta pares cujas caixas de rótulo ainda se cruzam, pelo eixo de menor
-/// sobreposição, até não sobrar cruzamento (ou acabar o limite de passadas).
-void _resolveOverlaps(List<Offset> pos, Size box, int maxPasses) {
+/// sobreposição. Cada passada usa uma grade espacial (só compara vizinhos de
+/// célula), então custa ~O(n) mesmo em mapas grandes. Se ainda sobrar
+/// cruzamento depois das passadas, encaixa os nós numa grade de células
+/// livres perto de onde estão: isso garante zero sobreposição.
+void _resolveOverlaps(List<Offset> pos, Size box) {
   final w = box.width + 8;
   final h = box.height + 8;
-  for (var pass = 0; pass < maxPasses; pass++) {
-    var moved = false;
-    for (var i = 0; i < pos.length; i++) {
-      for (var j = i + 1; j < pos.length; j++) {
-        final dx = pos[j].dx - pos[i].dx;
-        final dy = pos[j].dy - pos[i].dy;
-        final ox = w - dx.abs();
-        final oy = h - dy.abs();
-        if (ox <= 0 || oy <= 0) continue;
-        moved = true;
-        if (ox < oy) {
-          final s = (dx >= 0 ? 1 : -1) * ox / 2;
-          pos[i] = pos[i].translate(-s, 0);
-          pos[j] = pos[j].translate(s, 0);
-        } else {
-          final s = (dy >= 0 ? 1 : -1) * oy / 2;
-          pos[i] = pos[i].translate(0, -s);
-          pos[j] = pos[j].translate(0, s);
+  for (var pass = 0; pass < 200; pass++) {
+    if (!_separationPass(pos, w, h)) return;
+  }
+  _snapToFreeCells(pos, w, h);
+}
+
+bool _separationPass(List<Offset> pos, double w, double h) {
+  final grid = <(int, int), List<int>>{};
+  for (var i = 0; i < pos.length; i++) {
+    final cell = ((pos[i].dx / w).floor(), (pos[i].dy / h).floor());
+    (grid[cell] ??= []).add(i);
+  }
+  var moved = false;
+  for (var i = 0; i < pos.length; i++) {
+    final cx = (pos[i].dx / w).floor();
+    final cy = (pos[i].dy / h).floor();
+    for (var gx = cx - 1; gx <= cx + 1; gx++) {
+      for (var gy = cy - 1; gy <= cy + 1; gy++) {
+        for (final j in grid[(gx, gy)] ?? const <int>[]) {
+          if (j <= i) continue;
+          final dx = pos[j].dx - pos[i].dx;
+          final dy = pos[j].dy - pos[i].dy;
+          final ox = w - dx.abs();
+          final oy = h - dy.abs();
+          if (ox <= 0 || oy <= 0) continue;
+          moved = true;
+          if (ox < oy) {
+            final s = (dx >= 0 ? 1 : -1) * ox / 2;
+            pos[i] = pos[i].translate(-s, 0);
+            pos[j] = pos[j].translate(s, 0);
+          } else {
+            final s = (dy >= 0 ? 1 : -1) * oy / 2;
+            pos[i] = pos[i].translate(0, -s);
+            pos[j] = pos[j].translate(0, s);
+          }
         }
       }
     }
-    if (!moved) return;
+  }
+  return moved;
+}
+
+void _snapToFreeCells(List<Offset> pos, double w, double h) {
+  final taken = <(int, int)>{};
+  for (var i = 0; i < pos.length; i++) {
+    final cx = (pos[i].dx / w).round();
+    final cy = (pos[i].dy / h).round();
+    for (var r = 0; ; r++) {
+      (int, int)? best;
+      var bestDist = double.infinity;
+      for (var gx = cx - r; gx <= cx + r; gx++) {
+        for (var gy = cy - r; gy <= cy + r; gy++) {
+          if (math.max((gx - cx).abs(), (gy - cy).abs()) != r) continue;
+          if (taken.contains((gx, gy))) continue;
+          final d = (Offset(gx * w, gy * h) - pos[i]).distanceSquared;
+          if (d < bestDist) {
+            bestDist = d;
+            best = (gx, gy);
+          }
+        }
+      }
+      if (best != null) {
+        taken.add(best);
+        pos[i] = Offset(best.$1 * w, best.$2 * h);
+        break;
+      }
+    }
   }
 }
