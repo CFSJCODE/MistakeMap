@@ -125,6 +125,8 @@ jobs:
           release-version: ${{ needs.preparar.outputs.versao }}
           track: ${{ needs.preparar.outputs.track }}
           working-directory: appmistakemap
+          # Igual ao release: todos os ícones, para o patch não mudar a fonte.
+          args: -- --no-tree-shake-icons
 
   windows:
     name: Patch Windows
@@ -147,3 +149,5 @@ jobs:
           release-version: ${{ needs.preparar.outputs.versao }}
           track: ${{ needs.preparar.outputs.track }}
           working-directory: appmistakemap
+          # Igual ao release: todos os ícones, para o patch não mudar a fonte.
+          args: -- --no-tree-shake-icons
