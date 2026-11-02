@@ -469,10 +469,12 @@ void main() {
     final viewer = tester.widget<InteractiveViewer>(
       find.byType(InteractiveViewer),
     );
-    expect(viewer.transformationController!.value.storage[0], lessThan(.25));
+    // O layout de força é mais compacto que os anéis, mas 32 nós ainda
+    // não cabem em 320px na escala 1: o grafo entra reduzido.
+    expect(viewer.transformationController!.value.storage[0], lessThan(.5));
     expect(
       viewer.transformationController!.value.getMaxScaleOnAxis(),
-      lessThan(.25),
+      lessThan(.5),
     );
     expect(tester.takeException(), isNull);
   });
@@ -638,7 +640,7 @@ void main() {
     await tester.tap(find.text('Gerar exercícios'));
     await tester.pumpAndSettle();
     expect(repository.practiceCategory, 'sinal');
-    expect(repository.practiceCount, 3);
+    expect(repository.practiceCount, 5);
     await tester.tap(find.byKey(const Key('practice-category-all')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Gerar exercícios'));

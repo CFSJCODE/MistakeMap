@@ -10,6 +10,7 @@ import 'analysis_models.dart';
 import 'analysis_repository.dart';
 import 'material_control_styles.dart';
 import 'exercise_submission_view.dart';
+import 'force_layout.dart';
 import 'study_material.dart';
 import 'study_material_view.dart';
 
@@ -740,6 +741,27 @@ class _ConceptGraphState extends State<ConceptGraph> {
       ..scaleByDouble(scale, scale, scale, 1);
   }
 
+  // O layout de força custa O(n²) por passo: só recalcula quando o mapa ou
+  // a altura do rótulo (texto ampliado) mudam.
+  ErrorInsights? _layoutInsights;
+  double? _layoutNodeHeight;
+  ForceLayout? _layout;
+
+  ForceLayout _layoutFor(ErrorInsights insights, double nodeHeight) {
+    if (_layout == null ||
+        !identical(_layoutInsights, insights) ||
+        _layoutNodeHeight != nodeHeight) {
+      _layoutInsights = insights;
+      _layoutNodeHeight = nodeHeight;
+      _layout = computeForceLayout(
+        insights.nodes,
+        insights.edges,
+        nodeBox: Size(120, nodeHeight),
+      );
+    }
+    return _layout!;
+  }
+
   @override
   void dispose() {
     _transform.dispose();
@@ -749,28 +771,6 @@ class _ConceptGraphState extends State<ConceptGraph> {
   @override
   Widget build(BuildContext context) {
     final insights = widget.insights;
-    final groups = ['Matéria', 'Conceito', 'Tipo de erro']
-        .map(
-          (kind) =>
-              insights.nodes.where((n) => n.kind == kind).toList()
-                ..sort((a, b) => a.label.compareTo(b.label)),
-        )
-        .toList();
-    final largestGroup = groups.fold<int>(0, (v, e) => math.max(v, e.length));
-    final canvasSize = math.max(440.0, largestGroup * 64.0 + 180);
-    final points = <String, Offset>{};
-    for (var ring = 0; ring < groups.length; ring++) {
-      final nodes = groups[ring];
-      final radius = canvasSize * [.16, .29, .41][ring];
-      for (var i = 0; i < nodes.length; i++) {
-        final angle =
-            -math.pi / 2 + 2 * math.pi * (i + ring * .18) / nodes.length;
-        points[nodes[i].id] = Offset(
-          canvasSize / 2 + radius * math.cos(angle),
-          canvasSize / 2 + radius * math.sin(angle),
-        );
-      }
-    }
     final maxCount = insights.nodes.fold<int>(
       1,
       (m, n) => math.max(m, n.attemptIds.length),
@@ -780,6 +780,9 @@ class _ConceptGraphState extends State<ConceptGraph> {
         final viewport = Size(constraints.maxWidth, 420);
         final labelScale = MediaQuery.textScalerOf(context).scale(12) / 12;
         final nodeHeight = 56.0 + 32.0 * math.max(1.0, labelScale);
+        final layout = _layoutFor(insights, nodeHeight);
+        final points = layout.points;
+        final canvasSize = layout.canvasSize;
         if (_viewport != viewport || _canvasSize != canvasSize) {
           _viewport = viewport;
           _canvasSize = canvasSize;
@@ -1309,7 +1312,7 @@ class PracticeView extends StatefulWidget {
 class _PracticeViewState extends State<PracticeView> {
   String? _subject;
   String? _category;
-  int _count = 3;
+  int _count = 5;
   bool _busy = false;
   String? _error;
   List<PracticeExercise> _exercises = [];
