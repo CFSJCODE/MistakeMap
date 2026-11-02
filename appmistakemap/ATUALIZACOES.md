@@ -137,7 +137,12 @@ consulta.
 
 ## Limites
 
+- Release e patch são gerados com `--no-tree-shake-icons`: a fonte de ícones
+  do Material vai inteira no app. Sem isso, um patch que usa um ícone novo
+  muda o `MaterialIcons-Regular.otf` e o Shorebird recusa (asset não vai em
+  patch). Builds locais com `shorebird` precisam do mesmo flag:
+  `shorebird patch android -- --no-tree-shake-icons`.
 - iOS fica fora por enquanto (sem Mac); o Shorebird suporta quando houver.
-- Assets novos (imagens, fontes) vão no patch; mudanças nativas não.
+- Assets novos ou alterados (imagens, fontes) e mudanças nativas não vão por patch: pedem release novo.
 - O plano gratuito do Shorebird tem limite mensal de instalações com patch;
   confira o plano atual em shorebird.dev/pricing.

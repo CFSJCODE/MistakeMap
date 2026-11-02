@@ -118,7 +118,9 @@ jobs:
           platform: android
           flutter-version: ${{ env.FLUTTER_VERSION }}
           working-directory: appmistakemap
-          args: --artifact apk
+          # Todos os ícones no binário: patch com ícone novo do Material não
+          # muda o MaterialIcons-Regular.otf e o Shorebird não recusa.
+          args: --artifact apk -- --no-tree-shake-icons
 
       - name: Renomear o APK
         run: |
@@ -156,6 +158,7 @@ jobs:
           platform: windows
           flutter-version: ${{ env.FLUTTER_VERSION }}
           working-directory: appmistakemap
+          args: -- --no-tree-shake-icons
 
       - name: Compactar a pasta do app
         shell: pwsh
@@ -193,7 +196,13 @@ jobs:
           NOME: ${{ needs.preparar.outputs.nome }}
         run: |
           ls -la dist
-          gh release create "$TAG" dist/* \
-            --target "$GITHUB_SHA" \
-            --title "MistakeMap $NOME" \
-            --generate-notes
+          # Reexecução (ex.: só o job que falhou): o release já existe, então
+          # só anexa ou substitui os arquivos.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* \
+              --target "$GITHUB_SHA" \
+              --title "MistakeMap $NOME" \
+              --generate-notes
+          fi
