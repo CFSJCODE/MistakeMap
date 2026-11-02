@@ -10,7 +10,7 @@ MistakeMap mapeia os padrões de erro do estudante.
 | Camada | Onde | Tecnologia |
 |---|---|---|
 | Cliente (Android, Windows, Web) | `appmistakemap/` | Flutter + Dart |
-| Caderno de erros offline | `appmistakemap/lib/local/` | SQLite (`sqflite`, `ffi`, `ffi_web`) + `shared_preferences` — ver [BANCO_LOCAL.md](appmistakemap/BANCO_LOCAL.md) |
+| Caderno de erros (offline + sincronizado) | `appmistakemap/lib/local/`, `lib/sync/caderno_sync.dart` | SQLite (`sqflite`, `ffi`, `ffi_web`) + `shared_preferences`, espelhado em `error_notes` — ver [BANCO_LOCAL.md](appmistakemap/BANCO_LOCAL.md) |
 | Banco, Auth, RLS | `appmistakemap/database/supabase/migrations/` | Supabase (Postgres) |
 | IA e uploads | `supabase/functions/` | Edge Functions (Deno) + Google Gemini + Cloudflare R2 |
 | Worker OCR/LLM | `worker/` | Rust — **arquivado**, não evoluir |
@@ -51,12 +51,22 @@ Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
 - Offline-first (PR #24): o app consulta o Supabase primeiro e cai no SQLite sem rede;
   escritas offline vão para `fila_sync` e sobem ao reconectar; Realtime em
   `subjects`, `attempts` e `attempt_analyses`. Código em `appmistakemap/lib/sync/`.
-- Caderno de erros (PR #18) é local (SQLite); ainda **não** sincroniza com o Supabase.
+- Caderno de erros (PR #18) é local (SQLite) e, desde o BancoLocal v3, sincroniza com
+  `error_notes` (tombstone `deleted_at`, last-writer-wins por `updated_at`, exclusão vence sempre).
+- Exclusões de exercícios/tentativas ficam em `deleted_records` (trigger); o Realtime avisa os
+  outros aparelhos e o trigger `block_deleted_reinsert` (SQLSTATE `MM410`) impede que uma fila
+  antiga recrie o que foi apagado. Detalhes na seção 5 do BANCO_LOCAL.md.
+- Catálogo de exercícios revisados (`catalog_exercises` + `catalog_answer_keys`, gabarito sem
+  acesso do cliente): 5 por matéria/assunto/tema. O `generate-practice` serve o catálogo antes
+  da IA quando ele fecha a rodada (`_shared/catalog.ts`).
 - No `flutter test` o `Sincronizador` nasce desabilitado; `test/sincronizacao_test.dart` liga com SQLite em memória.
 - Evite `path_provider` (puxa `jni` e quebra o build Windows sem JDK).
 - `web/sqlite3.wasm` deve casar com a versão do pacote `sqlite3` no `pubspec.lock`.
 - O workflow `supabase-deploy` aplica migrations no merge do main; Edge Functions
   alteradas podem exigir `supabase functions deploy <nome>`.
+- Atualização sem reinstalar: patches de código Dart pelo Shorebird (Android e Windows) e aviso
+  de release nativo novo via GitHub Releases (`lib/atualizacao/`). `versao_app.dart` acompanha o
+  `version:` do pubspec. Fluxo e configuração em [ATUALIZACOES.md](appmistakemap/ATUALIZACOES.md).
 - Prática (PR #20): `generate-practice` aceita `category` e ranqueia conceitos por
   frequência × recência (meia-vida 14 d), descontando recuperação via `mastery_events`.
 
@@ -93,10 +103,7 @@ Mergeados recentes: #27 (material de estudo), #29/#30 (barra de vidro líquido),
 **Pendências conhecidas**
 - Fórmula de prioridade P = F × R × I × (1 − M): falta o termo I (importância).
 - Fila de revisão; validação dos `error_events` pelo aluno; `focus_concept` some ao recarregar a prática.
-- Sincronizar o Caderno de erros entre dispositivos: a tabela remota
-  `notebook_entries` já existe, mas o cliente ainda usa somente SQLite. O
-  usuário decidiu que o caderno deve sincronizar, com fila offline, resolução
-  de conflitos e preservação de alterações não confirmadas.
+- Catálogo ainda sem tela própria de navegação (aparece pela prática); ampliar temas.
 - Insights não mostra itens ainda na fila de sync; sync não testado em aparelho real.
 - Avisos de validação do Caderno só somem ao salvar de novo.
 
@@ -109,14 +116,6 @@ Mergeados recentes: #27 (material de estudo), #29/#30 (barra de vidro líquido),
   cria o catálogo compartilhado e as publicações. A leitura é para usuários
   autenticados; criar, editar e excluir publicações é restrito a administradores.
   As políticas foram verificadas em transação revertida para os dois papéis.
-- O catálogo ainda não contém os cinco exercícios revisados por matéria/tema;
-  a integração desses exercícios à tela e sua revisão continuam pendentes.
-- A limpeza anterior do banco e do R2 não garante, por si só, que uma fila
-  antiga offline não restaure dados. Falta uma barreira de sincronização
-  versionada, validada entre dispositivos, que preserve alterações posteriores.
-- Exclusões de outro dispositivo ainda não têm atualização em tempo real.
-  O cache e o caderno locais não devem ser apagados antes de confirmação no
-  servidor e reconciliação segura das alterações.
 
 ## Reversa
 

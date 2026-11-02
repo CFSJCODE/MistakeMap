@@ -1,8 +1,9 @@
 part of 'main.dart';
 
-// ─── Caderno de erros (SQLite local) ──────────────────────────────────────────
-// CRUD offline sobre o banco do aparelho (lib/local, BANCO_LOCAL.md). A
-// preferência "Ocultar revisados" fica no shared_preferences.
+// ─── Caderno de erros (SQLite local + Supabase) ───────────────────────────────
+// CRUD sobre o banco do aparelho (lib/local, BANCO_LOCAL.md), que funciona sem
+// internet e sincroniza com a tabela error_notes (lib/sync/caderno_sync.dart).
+// A preferência "Ocultar revisados" fica no shared_preferences.
 
 String _dataCurta(DateTime dt) =>
     '${dt.day.toString().padLeft(2, '0')}/'
@@ -70,6 +71,10 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
     }
   }
 
+  /// Leva a alteração para os outros aparelhos sem esperar a próxima rodada.
+  void _sincronizar() =>
+      unawaited(Sincronizador.instancia.sincronizarAlteracao());
+
   Future<void> _alternarFiltro() async {
     setState(() => _ocultarRevisados = !_ocultarRevisados);
     try {
@@ -88,12 +93,16 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
             TelaRegistroErro(user: widget.user, dao: _dao, registro: registro),
       ),
     );
-    if (salvou == true) await _carregar();
+    if (salvou == true) {
+      _sincronizar();
+      await _carregar();
+    }
   }
 
   Future<void> _marcarRevisado(RegistroErro r) async {
     try {
       await _dao.marcarRevisado(widget.user.id, r.id!, !r.revisado);
+      _sincronizar();
       if (!mounted) return;
       _avisar(
         context,
@@ -119,6 +128,7 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
     if (!ok || !mounted) return;
     try {
       await _dao.excluir(widget.user.id, r.id!);
+      _sincronizar();
       if (!mounted) return;
       _avisar(context, 'Registro excluído.');
       await _carregar();
@@ -161,9 +171,9 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Text(
         _ocultarRevisados
-            ? 'Mostrando só os erros pendentes. Salvos neste aparelho.'
-            : 'Seus erros anotados ficam salvos neste aparelho, mesmo sem '
-                  'internet.',
+            ? 'Mostrando só os erros pendentes. Sincronizados com sua conta.'
+            : 'Seus erros anotados ficam neste aparelho, mesmo sem internet, '
+                  'e sincronizam com sua conta.',
         textAlign: TextAlign.center,
         style: context.tipo.body?.copyWith(color: contentBlue),
       ),
@@ -457,8 +467,12 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
     }
   }
 
-  String? _obrigatorio(String? v, String mensagem) =>
-      v == null || v.trim().isEmpty ? mensagem : null;
+  /// Obrigatório e dentro do limite de `error_notes` no servidor.
+  String? _obrigatorio(String? v, String mensagem, int maximo) {
+    if (v == null || v.trim().isEmpty) return mensagem;
+    if (v.trim().runes.length > maximo) return 'Use até $maximo caracteres';
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -493,15 +507,22 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
                           rotulo: 'Disciplina',
                           dica: 'Ex.: Matemática',
                           controller: _disciplinaCtrl,
-                          validator: (v) =>
-                              _obrigatorio(v, 'Informe a disciplina'),
+                          validator: (v) => _obrigatorio(
+                            v,
+                            'Informe a disciplina',
+                            SincronizacaoCaderno.limiteDisciplina,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         _AdicionarCampoTexto(
                           rotulo: 'Título',
                           dica: 'Ex.: Sinal na fórmula de Bhaskara',
                           controller: _tituloCtrl,
-                          validator: (v) => _obrigatorio(v, 'Informe o título'),
+                          validator: (v) => _obrigatorio(
+                            v,
+                            'Informe o título',
+                            SincronizacaoCaderno.limiteTitulo,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         _AdicionarCampoTexto(
@@ -510,7 +531,11 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
                           controller: _descricaoCtrl,
                           minLines: 4,
                           maxLines: 8,
-                          validator: (v) => _obrigatorio(v, 'Descreva o erro'),
+                          validator: (v) => _obrigatorio(
+                            v,
+                            'Descreva o erro',
+                            SincronizacaoCaderno.limiteDescricao,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         InfoLabel(

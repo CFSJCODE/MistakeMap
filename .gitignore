@@ -70,3 +70,7 @@ desktop.ini
 
 # Cópia local de build (worktree antigo, sem código-fonte)
 MistakeMap_release/
+
+# SDK do Flutter baixado pelo build da Vercel
+/.vercel-flutter/
+.vercel

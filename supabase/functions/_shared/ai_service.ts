@@ -16,6 +16,7 @@ import {
 import { env, readLimited, required } from "./ai_http.ts";
 import { technologyLearningContext } from "./educational_context.ts";
 import { learningTopics } from "./learning_topics.ts";
+import { type CatalogRow, pickCatalog } from "./catalog.ts";
 import { aiConfig, structuredResponse } from "./gemini.ts";
 
 export function database() {
@@ -423,7 +424,6 @@ export async function generatePractice(
   count: number,
   category: Category | null = null,
 ) {
-  aiConfig();
   const [subject] =
     await sql`SELECT name FROM public.subjects WHERE id=${subjectId} AND user_id=${user}`;
   if (!subject) {
@@ -478,6 +478,44 @@ export async function generatePractice(
   const focus = priorities.slice(0, count);
   const targetConcepts = focus.map((p) => p.concept);
   const targetKeys = new Set(targetConcepts.map((c) => c.toLowerCase()));
+  // Exercícios revisados do catálogo vêm antes da IA: sem custo, com gabarito
+  // conferido. Só entram os que o aluno ainda não recebeu.
+  // Banco sem a migration do catálogo (42P01): segue direto para a IA.
+  const catalogo =
+    await sql`SELECT c.id,c.theme,c.position,c.difficulty,c.prompt_text,
+      k.correct_answer,k.explanation
+    FROM public.catalog_exercises c
+    JOIN public.catalog_answer_keys k ON k.catalog_exercise_id=c.id
+    WHERE ${
+      targetConcepts.length
+        ? sql`lower(c.theme) IN ${sql([...targetKeys])}`
+        : sql`lower(c.subject)=lower(${subject.name})`
+    }
+      AND (${category}::text IS NULL OR c.error_category=${category})
+      AND NOT EXISTS (SELECT 1 FROM public.exercises e
+        JOIN public.subjects s ON s.id=e.subject_id
+        WHERE s.user_id=${user} AND e.catalog_exercise_id=c.id)`
+      .catch((erro: { code?: string }) => {
+        if (erro?.code === "42P01" || erro?.code === "42703") return [];
+        throw erro;
+      });
+  const revisados = pickCatalog(
+    catalogo.map((r) => ({ ...r, position: Number(r.position) }) as CatalogRow),
+    targetConcepts,
+    count,
+  );
+  if (revisados) {
+    return await saveCatalogPractice(
+      sql,
+      user,
+      subjectId,
+      category,
+      targetConcepts,
+      source.map((row) => row.attempt_id as string),
+      revisados,
+    );
+  }
+  aiConfig();
   const used = source
     .map((row) => ({
       attempt_id: row.attempt_id as string,
@@ -585,6 +623,51 @@ export async function generatePractice(
         prompt_text: e.prompt_text,
         difficulty: e.difficulty,
         focus_concept: e.focus_concept,
+      });
+    }
+    return {
+      practice_set_id: set.id,
+      focus_category: category,
+      target_concepts: targetConcepts,
+      exercises,
+    };
+  });
+}
+
+/** Grava uma rodada de prática feita só com exercícios do catálogo. */
+async function saveCatalogPractice(
+  sql: Database,
+  user: string,
+  subjectId: string,
+  category: Category | null,
+  targetConcepts: string[],
+  sourceIds: string[],
+  picks: NonNullable<ReturnType<typeof pickCatalog>>,
+) {
+  return await sql.begin(async (tx) => {
+    const [set] =
+      await tx`INSERT INTO public.practice_sets(user_id,subject_id,source_attempt_ids,exercise_count,model)
+      VALUES(${user},${subjectId},${
+        sourceIds.length ? sourceIds : sql`ARRAY[]::uuid[]`
+      },${picks.length},'catalog-reviewed') RETURNING id`;
+    const exercises: {
+      id: string;
+      prompt_text: string;
+      difficulty: string;
+      focus_concept: string;
+    }[] = [];
+    for (const p of picks) {
+      const [exercise] =
+        await tx`INSERT INTO public.exercises(subject_id,source,prompt_text,difficulty,catalog_exercise_id)
+        VALUES(${subjectId},'catalog',${p.prompt_text},${p.difficulty},${p.id}) RETURNING id`;
+      // O gabarito revisado vira a referência da correção (analyzeAttempt).
+      await tx`INSERT INTO public.practice_answer_keys(exercise_id,practice_set_id,correct_answer,explanation,focus_concept)
+        VALUES(${exercise.id},${set.id},${p.correct_answer},${p.explanation},${p.focus_concept})`;
+      exercises.push({
+        id: exercise.id,
+        prompt_text: p.prompt_text,
+        difficulty: p.difficulty,
+        focus_concept: p.focus_concept,
       });
     }
     return {

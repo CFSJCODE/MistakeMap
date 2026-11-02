@@ -26,6 +26,10 @@ import 'ai/analysis_repository.dart';
 import 'ai/insights_view.dart' show ErrorMapController, ErrorMapRequest;
 import 'ai/analysis_models.dart' show AttemptStatusGroup, attemptStatusGroup;
 import 'admin/metrics_panel.dart';
+import 'atualizacao/atualizacao_codigo.dart' show EstadoPatch;
+import 'atualizacao/servico_atualizacao.dart';
+import 'atualizacao/versao_app.dart';
+import 'atualizacao/versao_nativa.dart';
 import 'assets/profile_photo.dart';
 import 'about/external_profile.dart';
 import 'about/linkedin_profile_button.dart';
@@ -34,6 +38,7 @@ import 'local/preferencias_caderno.dart';
 import 'local/registro_erro.dart';
 import 'local/registro_erro_dao.dart';
 import 'sync/armazem_sync.dart' show OperacaoFila;
+import 'sync/caderno_sync.dart' show SincronizacaoCaderno;
 import 'sync/conexao.dart' show ehFalhaDeRede;
 import 'sync/remoto_supabase.dart';
 import 'sync/sincronizador.dart';
@@ -911,6 +916,8 @@ void main() async {
       child: const MistakeMapApp(),
     ),
   );
+  // Patches de código e aviso de versão nativa nova (Android e Windows).
+  atualizacoes.iniciar();
 }
 
 class MistakeMapApp extends StatelessWidget {
@@ -1138,7 +1145,15 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     super.initState();
     _sincronizador.alteracoes.addListener(_recarregarAbas);
     _sincronizador.aviso.addListener(_mostrarAviso);
+    _sincronizador.notificacao.addListener(_mostrarNotificacao);
     _mapaControle.studyOpen.addListener(_atualizarEstudo);
+    atualizacoes.codigo.estado.addListener(_avisarPatchPronto);
+    atualizacoes.nativa.novaVersao.addListener(_avisarVersaoNativa);
+    // A consulta pode ter terminado antes do login.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _avisarPatchPronto();
+      _avisarVersaoNativa();
+    });
   }
 
   void _atualizarEstudo() {
@@ -1149,7 +1164,10 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   void dispose() {
     _sincronizador.alteracoes.removeListener(_recarregarAbas);
     _sincronizador.aviso.removeListener(_mostrarAviso);
+    _sincronizador.notificacao.removeListener(_mostrarNotificacao);
     _mapaControle.studyOpen.removeListener(_atualizarEstudo);
+    atualizacoes.codigo.estado.removeListener(_avisarPatchPronto);
+    atualizacoes.nativa.novaVersao.removeListener(_avisarVersaoNativa);
     _sincronizador.parar();
     super.dispose();
   }
@@ -1159,6 +1177,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   void _recarregarAbas() {
     _inicioKey.currentState?.carregarEstatisticas();
     _listaKey.currentState?.carregarExercicios();
+    _cadernoKey.currentState?._carregar();
     _mapaControle.refresh();
   }
 
@@ -1167,6 +1186,43 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     if (mensagem == null || !mounted) return;
     _sincronizador.aviso.value = null;
     _avisar(context, mensagem, erro: true);
+  }
+
+  // Exclusão feita em outro aparelho, por exemplo: informa, não é erro.
+  void _mostrarNotificacao() {
+    final mensagem = _sincronizador.notificacao.value;
+    if (mensagem == null || !mounted) return;
+    _sincronizador.notificacao.value = null;
+    _avisar(context, mensagem);
+  }
+
+  // Um aviso por sessão para cada novidade; o detalhe fica em Sobre o App.
+  bool _patchAvisado = false;
+  int? _versaoNativaAvisada;
+
+  void _avisarPatchPronto() {
+    if (!mounted || _patchAvisado) return;
+    if (atualizacoes.codigo.estado.value != EstadoPatch.prontoParaReiniciar) {
+      return;
+    }
+    _patchAvisado = true;
+    _avisar(
+      context,
+      'Atualização baixada. Ela vale a partir da próxima vez que você abrir '
+      'o app.',
+    );
+  }
+
+  void _avisarVersaoNativa() {
+    final versao = atualizacoes.nativa.novaVersao.value;
+    if (!mounted || versao == null || _versaoNativaAvisada == versao.build) {
+      return;
+    }
+    _versaoNativaAvisada = versao.build;
+    _avisar(
+      context,
+      'Versão ${versao.versao} disponível para instalar. Baixe em Sobre o App.',
+    );
   }
 
   /// Atalhos para dentro do Mapa (analisar, estudar): troca para a aba e
@@ -2642,6 +2698,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
       // Desfaz o registro parcial; a exclusão em cascata leva tentativa e
       // anexo junto com o exercício.
       if (exerciseId != null) {
+        Sincronizador.instancia.marcarExcluidoAqui(exerciseId);
         try {
           await _db.from('exercises').delete().eq('id', exerciseId);
         } catch (_) {
@@ -5117,6 +5174,10 @@ class TelaSobre extends StatelessWidget {
                     _Pilula(texto: 'LLM', cor: contentBlue),
                   ],
                 ),
+                const SizedBox(height: 32),
+                const _SobreSecaoTitulo(titulo: 'Versão do App'),
+                const SizedBox(height: 12),
+                const _CartaoVersao(),
               ],
             ),
           ),
@@ -5218,6 +5279,148 @@ class _SobreSecaoTitulo extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Versão instalada, situação do patch de código e link do release nativo
+/// novo, quando houver.
+class _CartaoVersao extends StatelessWidget {
+  const _CartaoVersao();
+
+  @override
+  Widget build(BuildContext context) {
+    final codigo = atualizacoes.codigo;
+    final nativa = atualizacoes.nativa;
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        codigo.estado,
+        codigo.patchAtual,
+        nativa.novaVersao,
+      ]),
+      builder: (context, _) {
+        final patch = codigo.patchAtual.value;
+        final nova = nativa.novaVersao.value;
+        return _CartaoFluent(
+          acento: MistakeMapDesign.azure,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const GlassIconTile(
+                    icon: WindowsIcons.sync,
+                    ink: MistakeMapDesign.azureInk,
+                    accent: MistakeMapDesign.azure,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          patch == null
+                              ? 'Versão $versaoApp (build $buildApp)'
+                              : 'Versão $versaoApp (build $buildApp) · '
+                                    'patch $patch',
+                          style: context.tipo.bodyStrong?.copyWith(
+                            color: MistakeMapDesign.azureInk,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _situacao(codigo.estado.value),
+                          style: context.tipo.body?.copyWith(
+                            color: MistakeMapDesign.steel,
+                            height: 1.5,
+                          ),
+                        ),
+                        if (nova != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'A versão ${nova.versao} traz mudanças que não '
+                            'chegam por atualização automática. Baixe e '
+                            'instale por cima da atual; seus dados continuam.',
+                            style: context.tipo.body?.copyWith(
+                              color: MistakeMapDesign.steel,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (ServicoAtualizacao.suportado) ...[
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (nova != null)
+                      MistakeMapFilledButton(
+                        style: _estiloBotao(fonte: 14),
+                        onPressed: () => _baixar(context, nova),
+                        child: Text('Baixar versão ${nova.versao}'),
+                      ),
+                    MistakeMapButton(
+                      style: _estiloBotao(fonte: 14),
+                      onPressed: codigo.estado.value == EstadoPatch.verificando
+                          ? null
+                          : () {
+                              unawaited(codigo.verificar(forcar: true));
+                              unawaited(
+                                nativa.verificar(
+                                  defaultTargetPlatform,
+                                  forcar: true,
+                                ),
+                              );
+                            },
+                      child: const Text('Procurar atualizações'),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static String _situacao(EstadoPatch estado) {
+    if (kIsWeb) {
+      return 'Na web, cada acesso já abre a versão mais recente.';
+    }
+    return switch (estado) {
+      EstadoPatch.indisponivel =>
+        'As atualizações automáticas funcionam nas versões instaladas pelo '
+            'release oficial (APK ou instalador do Windows).',
+      EstadoPatch.verificando => 'Procurando atualizações…',
+      EstadoPatch.emDia => 'O app está em dia.',
+      EstadoPatch.baixando => 'Baixando atualização em segundo plano…',
+      EstadoPatch.prontoParaReiniciar =>
+        'Atualização baixada. Ela vale a partir da próxima vez que você '
+            'abrir o app.',
+      EstadoPatch.falhou =>
+        'Não foi possível procurar atualizações agora. Tentaremos de novo '
+            'automaticamente.',
+    };
+  }
+
+  Future<void> _baixar(BuildContext context, VersaoPublicada versao) async {
+    try {
+      if (await abrirVersaoPublicada(versao)) return;
+    } on Exception {
+      // A falha do navegador é apresentada no mesmo canal dos avisos do app.
+    }
+    if (!context.mounted) return;
+    _avisar(
+      context,
+      'Não foi possível abrir o download. Tente novamente.',
+      erro: true,
     );
   }
 }

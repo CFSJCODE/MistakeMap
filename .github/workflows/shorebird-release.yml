@@ -1,0 +1,199 @@
+name: Release nativo (Shorebird)
+
+# Gera um release NATIVO do app (APK do Android e ZIP do Windows) com o motor
+# do Shorebird embutido, registra o release no Shorebird e publica os arquivos
+# em GitHub Releases. O app instalado consulta esse release para avisar que
+# há versão nova (lib/atualizacao/versao_nativa.dart).
+#
+# Use quando a mudança NÃO pode ir por patch: plugin novo, AndroidManifest,
+# código nativo, versão do Flutter ou primeira instalação. Antes, suba o
+# `version:` do pubspec.yaml e os valores de lib/atualizacao/versao_app.dart.
+# Passo a passo em appmistakemap/ATUALIZACOES.md.
+on:
+  workflow_dispatch:
+    inputs:
+      plataformas:
+        description: Plataformas do release
+        type: choice
+        default: android+windows
+        options:
+          - android+windows
+          - android
+          - windows
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shorebird-release
+  cancel-in-progress: false
+
+env:
+  # Mesma versão do ci.yml. Confira se o Shorebird já tem esta versão com
+  # `shorebird flutter versions list`; o patch reusa a versão do release.
+  FLUTTER_VERSION: 3.47.2
+
+jobs:
+  preparar:
+    name: Conferir versão e configuração
+    runs-on: ubuntu-latest
+    outputs:
+      versao: ${{ steps.versao.outputs.versao }}
+      nome: ${{ steps.versao.outputs.nome }}
+      tag: ${{ steps.versao.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Ler a versão do pubspec
+        id: versao
+        run: |
+          versao=$(grep -E '^version:' appmistakemap/pubspec.yaml | awk '{print $2}')
+          nome=${versao%%+*}
+          echo "versao=$versao" >> "$GITHUB_OUTPUT"
+          echo "nome=$nome" >> "$GITHUB_OUTPUT"
+          echo "tag=v$versao" >> "$GITHUB_OUTPUT"
+          echo "Release $versao (tag v$versao)"
+
+      - name: Conferir secrets, shorebird.yaml e tag
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.versao.outputs.tag }}
+        run: |
+          falta=0
+          [ -n "$SHOREBIRD_TOKEN" ] || { echo "::error::Falta o secret SHOREBIRD_TOKEN (gere com 'shorebird login:ci')."; falta=1; }
+          [ -f appmistakemap/shorebird.yaml ] || { echo "::error::Falta appmistakemap/shorebird.yaml (rode 'shorebird init' em appmistakemap e faça commit)."; falta=1; }
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::O release $TAG já existe. Suba o version: do pubspec.yaml (e versao_app.dart) antes."
+            falta=1
+          fi
+          exit "$falta"
+
+  android:
+    name: Android (APK)
+    needs: preparar
+    if: contains(inputs.plataformas, 'android')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: appmistakemap
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      # Sem a mesma chave em todo release, o Android recusa instalar o APK
+      # novo por cima do antigo.
+      - name: Gravar a chave de assinatura
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "::error::Faltam os secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS e ANDROID_KEY_PASSWORD (veja ATUALIZACOES.md)."
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/release.jks"
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+          } > android/key.properties
+
+      - name: shorebird release android
+        uses: shorebirdtech/shorebird-release@v1
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        with:
+          platform: android
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          working-directory: appmistakemap
+          args: --artifact apk
+
+      - name: Renomear o APK
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "dist/MistakeMap-${{ needs.preparar.outputs.nome }}-android.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: appmistakemap/dist/*.apk
+          if-no-files-found: error
+
+  windows:
+    name: Windows (ZIP)
+    needs: preparar
+    if: contains(inputs.plataformas, 'windows')
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: appmistakemap
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: shorebird release windows
+        uses: shorebirdtech/shorebird-release@v1
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        with:
+          platform: windows
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          working-directory: appmistakemap
+
+      - name: Compactar a pasta do app
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path build/windows/x64/runner/Release/* `
+            -DestinationPath "dist/MistakeMap-${{ needs.preparar.outputs.nome }}-windows.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: appmistakemap/dist/*.zip
+          if-no-files-found: error
+
+  publicar:
+    name: Publicar no GitHub Releases
+    needs: [preparar, android, windows]
+    # Publica com o que deu certo, se ao menos uma plataforma foi gerada.
+    if: >-
+      always() && needs.preparar.result == 'success' &&
+      (needs.android.result == 'success' || needs.windows.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Criar o release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.preparar.outputs.tag }}
+          NOME: ${{ needs.preparar.outputs.nome }}
+        run: |
+          ls -la dist
+          gh release create "$TAG" dist/* \
+            --target "$GITHUB_SHA" \
+            --title "MistakeMap $NOME" \
+            --generate-notes

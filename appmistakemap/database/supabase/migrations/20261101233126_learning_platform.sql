@@ -77,3 +77,4 @@ create policy knowledge_delete on public.knowledge_posts for delete to authentic
 revoke all on public.knowledge_posts from anon, authenticated;
 grant select, insert, update, delete on public.knowledge_posts to authenticated;
 grant all on public.knowledge_posts to service_role;
+

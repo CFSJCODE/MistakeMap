@@ -184,29 +184,75 @@ class RemotoSupabase implements RemotoSync {
   }
 
   @override
-  void Function() ouvirAlteracoes(String usuarioId, void Function() aoMudar) {
-    // Só INSERT e UPDATE: o Realtime não aplica RLS a eventos de DELETE, e as
-    // exclusões partem do próprio aluno, que já recarrega a tela.
+  Future<void> enviarNotas(List<Map<String, Object?>> notas) async {
+    if (notas.isEmpty) return;
+    await client.from('error_notes').upsert(notas, onConflict: 'id');
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> buscarNotas(
+    String usuarioId, {
+    List<String>? ids,
+    DateTime? desde,
+    int limite = 200,
+  }) async {
+    var consulta = client.from('error_notes').select().eq('user_id', usuarioId);
+    if (ids != null) consulta = consulta.inFilter('id', ids);
+    if (desde != null) {
+      consulta = consulta.gt('synced_at', desde.toUtc().toIso8601String());
+    }
+    return await consulta.order('synced_at').limit(limite);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> exclusoesDesde(
+    String usuarioId,
+    DateTime desde,
+  ) async => await client
+      .from('deleted_records')
+      .select('table_name, record_id, deleted_at')
+      .eq('user_id', usuarioId)
+      .gt('deleted_at', desde.toUtc().toIso8601String())
+      .order('deleted_at')
+      .limit(1000);
+
+  @override
+  void Function() ouvirAlteracoes(
+    String usuarioId,
+    void Function(EventoRemoto evento) aoMudar,
+  ) {
+    // Só INSERT e UPDATE: o Realtime não aplica RLS a eventos de DELETE. Por
+    // isso as exclusões chegam como linha nova: o tombstone de error_notes
+    // (UPDATE com deleted_at) e o registro em deleted_records (INSERT).
     final filtro = PostgresChangeFilter(
       type: PostgresChangeFilterType.eq,
       column: 'user_id',
       value: usuarioId,
     );
     var canal = client.channel('sync-$usuarioId');
-    for (final tabela in const ['subjects', 'attempts', 'attempt_analyses']) {
-      for (final evento in const [
-        PostgresChangeEvent.insert,
-        PostgresChangeEvent.update,
-      ]) {
+    void assinar(String tabela, List<PostgresChangeEvent> eventos) {
+      for (final evento in eventos) {
         canal = canal.onPostgresChanges(
           event: evento,
           schema: 'public',
           table: tabela,
           filter: filtro,
-          callback: (_) => aoMudar(),
+          callback: (mudanca) =>
+              aoMudar(EventoRemoto(tabela, mudanca.newRecord)),
         );
       }
     }
+
+    const gravacoes = [PostgresChangeEvent.insert, PostgresChangeEvent.update];
+    for (final tabela in const [
+      'subjects',
+      'attempts',
+      'attempt_analyses',
+      'error_notes',
+    ]) {
+      assinar(tabela, gravacoes);
+    }
+    assinar('deleted_records', const [PostgresChangeEvent.insert]);
     canal.subscribe();
     return () => client.removeChannel(canal);
   }

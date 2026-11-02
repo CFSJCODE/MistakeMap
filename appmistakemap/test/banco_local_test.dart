@@ -56,6 +56,7 @@ void main() {
       expect(tabelas.map((t) => t['name']), [
         'cache_consultas',
         'disciplinas',
+        'estado_sync',
         'fila_sync',
         'registros_erro',
       ]);

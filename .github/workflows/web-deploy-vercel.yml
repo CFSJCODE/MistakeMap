@@ -1,17 +1,11 @@
 name: Deploy web (Vercel)
 
-# Publica a versão web do aplicativo na Vercel a cada push no main que altera
-# o cliente Flutter. O main é protegido, então o código já passou pelo CI
-# (analyze, format e test) no pull request antes de chegar aqui.
+# Deploy manual (reserva). O deploy normal agora é feito pela integração Git da
+# Vercel: cada push no main dispara um build com scripts/vercel-build.sh (ver
+# vercel.json na raiz), sem precisar de token no GitHub. Este workflow só serve
+# para publicar à mão um build feito no GitHub Actions; exige o secret
+# VERCEL_TOKEN e as variáveis VERCEL_ORG_ID / VERCEL_PROJECT_ID.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "appmistakemap/**"
-      - "!appmistakemap/database/**"
-      - "!appmistakemap/**/*.md"
-      - ".github/workflows/web-deploy-vercel.yml"
   workflow_dispatch: {}
 
 permissions:
