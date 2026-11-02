@@ -1,16 +1,17 @@
 # Banco de dados local — Caderno de erros e cache offline
 
 Persistência no próprio aparelho, seguindo as aulas LDDM08 (Shared Preferences)
-e LDDM09 (SQLite com `sqflite`). O Caderno de erros funciona sem internet e é
-independente do Supabase: apagar o app apaga estes dados. Desde a versão 2 o
-mesmo banco guarda o cache offline do Supabase e a fila de envio (seção 4).
+e LDDM09 (SQLite com `sqflite`). O Caderno de erros funciona sem internet.
+Desde a versão 2 o mesmo banco guarda o cache offline do Supabase e a fila de
+envio (seção 4); desde a versão 3 o caderno sincroniza com a tabela
+`error_notes` da conta, entre todos os aparelhos (seção 5).
 
 | Mecanismo | Pacote | Para quê |
 |---|---|---|
 | SQLite | `sqflite` (Android/iOS/macOS), `sqflite_common_ffi` (Windows/Linux), `sqflite_common_ffi_web` (Web) | Registros de erro e disciplinas, com CRUD |
 | Shared Preferences | `shared_preferences` | Preferência "Ocultar revisados" da lista |
 
-Arquivo do banco: `mistakemap_local.db`, versão 2
+Arquivo do banco: `mistakemap_local.db`, versão 3
 (`lib/local/banco_local.dart`). Na Web ele fica no IndexedDB do navegador,
 usando `web/sqlite3.wasm` e `web/sqflite_sw.js`.
 
@@ -190,6 +191,67 @@ Dentro do `flutter test` o sincronizador nasce desabilitado (vai direto ao
 servidor falso e não grava no disco); `test/sincronizacao_test.dart` liga ele
 com um SQLite em memória.
 
+## 5. Caderno sincronizado e exclusões entre aparelhos (versão 3)
+
+A versão 3 acrescenta ao `registros_erro` as colunas que ligam cada registro ao
+servidor e uma tabela de cursores:
+
+```sql
+ALTER TABLE registros_erro ADD COLUMN uid TEXT;          -- error_notes.id (UUID v4)
+ALTER TABLE registros_erro ADD COLUMN pendente INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE registros_erro ADD COLUMN no_servidor INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE registros_erro ADD COLUMN excluido_em TEXT;  -- tombstone local
+CREATE UNIQUE INDEX idx_registros_uid ON registros_erro (uid);
+
+CREATE TABLE estado_sync (
+  usuario_id TEXT NOT NULL,
+  chave TEXT NOT NULL,        -- caderno_cursor, exclusoes_cursor
+  valor TEXT NOT NULL,        -- synced_at/deleted_at do servidor (UTC)
+  PRIMARY KEY (usuario_id, chave)
+);
+```
+
+Registros antigos ganham um UUID no upgrade e sobem na primeira sincronização.
+
+No servidor (migration `20261102003000_sync_caderno_exclusoes.sql`):
+
+| Tabela | Para quê |
+|---|---|
+| `error_notes` | Cópia do caderno, com RLS por aluno. Exclusão é `deleted_at` (tombstone), nunca `DELETE` |
+| `deleted_records` | Exercícios e tentativas apagados, gravado por trigger no `DELETE` |
+
+Rodada de sincronização (`Sincronizador.sincronizar`, em `lib/sync/`):
+
+1. **Exclusões do servidor.** Lê `deleted_records` desde o último cursor e tira
+   da `fila_sync` toda operação sobre esses exercícios e tentativas.
+2. **Fila.** Envia o que ficou guardado, como na versão 2.
+3. **Caderno** (`caderno_sync.dart`). Sobe os registros `pendente = 1` com
+   upsert, relê esses ids do servidor e aplica a versão de lá; depois lê o que
+   mudou desde o cursor (`synced_at`, relógio do servidor) e mescla.
+
+Regras da mesclagem, iguais no app e no trigger `guard_error_note`:
+
+- **Exclusão vence sempre** e não tem volta. Um tombstone no servidor apaga o
+  registro no aparelho mesmo com edição pendente; o servidor ignora qualquer
+  escrita numa nota já excluída.
+- **Entre edições vence a mais recente** (`updated_at`, last-writer-wins). Uma
+  edição antiga que chega depois é ignorada sem erro, e o aparelho adota a
+  versão do servidor.
+- Registro que nunca subiu é apagado de vez; o que já subiu vira tombstone até
+  a exclusão chegar ao servidor.
+
+**Barreira contra filas antigas.** Os exercícios do app são criados com UUID
+do aparelho e reenviados com upsert, então uma fila velha de outro aparelho
+recriaria o que foi apagado. O trigger `block_deleted_reinsert` recusa um
+`INSERT` em `exercises` ou `attempts` com id presente em `deleted_records`
+(SQLSTATE `MM410`). O app descarta a operação antes de enviar (passo 1) e, se
+ela passar, trata a recusa `MM410` tirando-a da fila com aviso.
+
+**Tempo real.** O Realtime não aplica RLS a `DELETE`, então as exclusões
+chegam como linha nova: `UPDATE` com `deleted_at` em `error_notes` e `INSERT`
+em `deleted_records`. O app assina as duas, roda uma sincronização e mostra
+"excluído em outro aparelho" só para o que não foi apagado no próprio aparelho.
+
 ## Testes
 
 - `test/banco_local_test.dart`: esquema, CRUD completo no SQLite em memória,
@@ -197,8 +259,9 @@ com um SQLite em memória.
 - `test/caderno_erros_test.dart`: fluxo das telas (criar, editar, revisar,
   excluir) e o filtro salvo.
 - `test/sincronizacao_test.dart`: cache com e sem rede, fila em ordem,
-  reconexão, conflitos, sobreposição nas telas, upgrade v1 → v2 e as
-  requisições idempotentes ao Supabase.
+  reconexão, conflitos, sobreposição nas telas, upgrade v1 → v3, as
+  requisições idempotentes ao Supabase, o caderno entre dois aparelhos
+  (criação, LWW, exclusão com aviso) e a barreira contra filas antigas.
 
 ## Evolução do esquema
 

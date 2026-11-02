@@ -10,7 +10,7 @@ MistakeMap mapeia os padrões de erro do estudante.
 | Camada | Onde | Tecnologia |
 |---|---|---|
 | Cliente (Android, Windows, Web) | `appmistakemap/` | Flutter + Dart |
-| Caderno de erros offline | `appmistakemap/lib/local/` | SQLite (`sqflite`, `ffi`, `ffi_web`) + `shared_preferences` — ver [BANCO_LOCAL.md](appmistakemap/BANCO_LOCAL.md) |
+| Caderno de erros (offline + sincronizado) | `appmistakemap/lib/local/`, `lib/sync/caderno_sync.dart` | SQLite (`sqflite`, `ffi`, `ffi_web`) + `shared_preferences`, espelhado em `error_notes` — ver [BANCO_LOCAL.md](appmistakemap/BANCO_LOCAL.md) |
 | Banco, Auth, RLS | `appmistakemap/database/supabase/migrations/` | Supabase (Postgres) |
 | IA e uploads | `supabase/functions/` | Edge Functions (Deno) + Google Gemini + Cloudflare R2 |
 | Worker OCR/LLM | `worker/` | Rust — **arquivado**, não evoluir |
@@ -51,7 +51,14 @@ Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
 - Offline-first (PR #24): o app consulta o Supabase primeiro e cai no SQLite sem rede;
   escritas offline vão para `fila_sync` e sobem ao reconectar; Realtime em
   `subjects`, `attempts` e `attempt_analyses`. Código em `appmistakemap/lib/sync/`.
-- Caderno de erros (PR #18) é local (SQLite); ainda **não** sincroniza com o Supabase.
+- Caderno de erros (PR #18) é local (SQLite) e, desde o BancoLocal v3, sincroniza com
+  `error_notes` (tombstone `deleted_at`, last-writer-wins por `updated_at`, exclusão vence sempre).
+- Exclusões de exercícios/tentativas ficam em `deleted_records` (trigger); o Realtime avisa os
+  outros aparelhos e o trigger `block_deleted_reinsert` (SQLSTATE `MM410`) impede que uma fila
+  antiga recrie o que foi apagado. Detalhes na seção 5 do BANCO_LOCAL.md.
+- Catálogo de exercícios revisados (`catalog_exercises` + `catalog_answer_keys`, gabarito sem
+  acesso do cliente): 5 por matéria/assunto/tema. O `generate-practice` serve o catálogo antes
+  da IA quando ele fecha a rodada (`_shared/catalog.ts`).
 - No `flutter test` o `Sincronizador` nasce desabilitado; `test/sincronizacao_test.dart` liga com SQLite em memória.
 - Evite `path_provider` (puxa `jni` e quebra o build Windows sem JDK).
 - `web/sqlite3.wasm` deve casar com a versão do pacote `sqlite3` no `pubspec.lock`.
@@ -93,7 +100,7 @@ Mergeados recentes: #27 (material de estudo), #29/#30 (barra de vidro líquido),
 **Pendências conhecidas**
 - Fórmula de prioridade P = F × R × I × (1 − M): falta o termo I (importância).
 - Fila de revisão; validação dos `error_events` pelo aluno; `focus_concept` some ao recarregar a prática.
-- Decidir se o Caderno de erros sincroniza (exigiria tabela `error_notes` + RLS).
+- Catálogo ainda sem tela própria de navegação (aparece pela prática); ampliar temas.
 - Insights não mostra itens ainda na fila de sync; sync não testado em aparelho real.
 - Avisos de validação do Caderno só somem ao salvar de novo.
 

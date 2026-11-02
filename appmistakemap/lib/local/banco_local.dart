@@ -2,8 +2,9 @@ import 'package:sqflite/sqflite.dart';
 
 import 'fabrica_banco.dart';
 
-/// Banco SQLite do aparelho: caderno de erros (v1) e, desde a v2, o cache
-/// offline do Supabase e a fila de envio (ver lib/sync/).
+/// Banco SQLite do aparelho: caderno de erros (v1), desde a v2 o cache
+/// offline do Supabase e a fila de envio (ver lib/sync/) e, desde a v3, o
+/// estado da sincronização do caderno com a tabela `error_notes`.
 ///
 /// O esquema está documentado em BANCO_LOCAL.md. Mudanças de esquema sobem
 /// [versao] e entram em `onUpgrade`, nunca reescrevendo o `onCreate`.
@@ -14,7 +15,7 @@ class BancoLocal {
   static final BancoLocal instancia = BancoLocal();
 
   static const String nomeArquivo = 'mistakemap_local.db';
-  static const int versao = 2;
+  static const int versao = 3;
 
   /// Nulo usa a fábrica da plataforma (ver fabrica_banco.dart).
   final DatabaseFactory? fabrica;
@@ -37,9 +38,11 @@ class BancoLocal {
         onCreate: (db, versao) async {
           await criarTabelas(db, versao);
           await criarTabelasSincronizacao(db);
+          await sincronizarCaderno(db);
         },
         onUpgrade: (db, de, para) async {
           if (de < 2) await criarTabelasSincronizacao(db);
+          if (de < 3) await sincronizarCaderno(db);
         },
       ),
     );
@@ -112,6 +115,56 @@ class BancoLocal {
       )
     ''');
     lote.execute('CREATE INDEX idx_fila_usuario ON fila_sync (usuario_id, id)');
+    await lote.commit(noResult: true);
+  }
+
+  /// DDL da versão 3: o caderno passa a sincronizar com o Supabase.
+  ///
+  /// * `uid`: id do registro no servidor (uuid), igual em todos os aparelhos.
+  /// * `pendente`: 1 enquanto a última alteração não subiu.
+  /// * `no_servidor`: 1 depois que o servidor confirmou o registro; um
+  ///   registro que nunca subiu é apagado de vez, sem tombstone.
+  /// * `excluido_em`: tombstone local. A linha some da tela na hora e só sai
+  ///   do banco depois que a exclusão chegou ao servidor.
+  ///
+  /// `estado_sync` guarda os cursores da leitura incremental, por usuário.
+  static Future<void> sincronizarCaderno(Database db) async {
+    final lote = db.batch();
+    lote.execute('ALTER TABLE registros_erro ADD COLUMN uid TEXT');
+    lote.execute(
+      'ALTER TABLE registros_erro '
+      'ADD COLUMN pendente INTEGER NOT NULL DEFAULT 1',
+    );
+    lote.execute(
+      'ALTER TABLE registros_erro '
+      'ADD COLUMN no_servidor INTEGER NOT NULL DEFAULT 0',
+    );
+    lote.execute('ALTER TABLE registros_erro ADD COLUMN excluido_em TEXT');
+    // Registros anteriores ganham um UUID v4 e sobem na primeira sincronização.
+    lote.execute('''
+      UPDATE registros_erro SET uid =
+        lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' ||
+        substr(lower(hex(randomblob(2))), 2) || '-' ||
+        substr('89ab', 1 + (abs(random()) % 4), 1) ||
+        substr(lower(hex(randomblob(2))), 2) || '-' ||
+        lower(hex(randomblob(6)))
+      WHERE uid IS NULL
+    ''');
+    lote.execute(
+      'CREATE UNIQUE INDEX idx_registros_uid ON registros_erro (uid)',
+    );
+    lote.execute(
+      'CREATE INDEX idx_registros_pendentes '
+      'ON registros_erro (usuario_id, pendente)',
+    );
+    lote.execute('''
+      CREATE TABLE estado_sync (
+        usuario_id TEXT NOT NULL,
+        chave TEXT NOT NULL,
+        valor TEXT NOT NULL,
+        PRIMARY KEY (usuario_id, chave)
+      )
+    ''');
     await lote.commit(noResult: true);
   }
 
