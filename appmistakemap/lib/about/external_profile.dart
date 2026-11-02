@@ -5,8 +5,16 @@ import 'package:url_launcher/url_launcher.dart';
 const claudioLinkedInProfileUrl =
     'https://www.linkedin.com/in/claudio-francisco-dos-santos-junior/';
 
-Future<bool> openClaudioLinkedInProfile() => launchUrl(
-  Uri.parse(claudioLinkedInProfileUrl),
+const lucasLinkedInProfileUrl = 'https://www.linkedin.com/in/devlucassilva/';
+
+Future<bool> openClaudioLinkedInProfile() =>
+    openLinkedInProfile(claudioLinkedInProfileUrl);
+
+Future<bool> openLucasLinkedInProfile() =>
+    openLinkedInProfile(lucasLinkedInProfileUrl);
+
+Future<bool> openLinkedInProfile(String url) => launchUrl(
+  Uri.parse(url),
   mode: LaunchMode.externalApplication,
   webOnlyWindowName: '_blank',
 );

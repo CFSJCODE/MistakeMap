@@ -5115,6 +5115,23 @@ class TelaSobre extends StatelessWidget {
               children: [
                 _heroi(context),
                 const SizedBox(height: 32),
+                const _SobreSecaoTitulo(titulo: 'Como funciona'),
+                const SizedBox(height: 12),
+                const _CartaoComoFunciona(),
+                const SizedBox(height: 32),
+                const _SobreSecaoTitulo(titulo: 'O que o app já faz'),
+                const SizedBox(height: 12),
+                for (final (i, f) in _funcionalidades.indexed) ...[
+                  if (i > 0) const SizedBox(height: 12),
+                  _MvvCard(
+                    icone: f.icone,
+                    cor: f.tinta,
+                    acento: f.acento,
+                    titulo: f.titulo,
+                    descricao: f.descricao,
+                  ),
+                ],
+                const SizedBox(height: 32),
                 // Missão, Visão, Valores
                 const _SobreSecaoTitulo(titulo: 'Nossa Identidade'),
                 const SizedBox(height: 12),
@@ -5161,32 +5178,52 @@ class TelaSobre extends StatelessWidget {
                   foto: claudioProfilePhotoBytes,
                   corAvatar: MistakeMapDesign.azure,
                   tinta: MistakeMapDesign.azureInk,
-                  responsabilidades: [
+                  responsabilidades: const [
                     'Backend',
-                    'Storage (R2)',
-                    'OCR',
+                    'Supabase',
                     'IA / LLM',
+                    'Sincronização',
                   ],
                   descricao:
-                      'Responsável pela arquitetura backend, integração com '
-                      'Supabase, armazenamento de arquivos no Cloudflare R2 '
-                      'e pipeline de processamento com OCR e IA.',
+                      'Responsável pela arquitetura backend: banco e segurança '
+                      'no Supabase, Edge Functions, fotos no Cloudflare R2, '
+                      'análise de erros e escolha do modelo de IA por tarefa, '
+                      'sincronização offline e atualizações do app.',
                   acao: LinkedInProfileButton(
                     name: 'Cláudio Francisco',
-                    onPressed: () => _abrirLinkedIn(context),
+                    onPressed: () =>
+                        _abrirLinkedIn(context, openClaudioLinkedInProfile),
                   ),
                 ),
                 const SizedBox(height: 12),
-                const _MembroCard(
+                _MembroCard(
                   iniciais: 'LE',
                   nome: 'Lucas Emanuel',
+                  foto: lucasProfilePhotoBytes,
                   corAvatar: MistakeMapDesign.violet,
                   tinta: MistakeMapDesign.violetInk,
-                  responsabilidades: ['Frontend', 'Design', 'UI/UX'],
+                  responsabilidades: const ['Frontend', 'Design', 'UI/UX'],
                   descricao:
                       'Responsável pela experiência do usuário, design de '
                       'interfaces, prototipagem no Figma e implementação '
                       'das telas no Flutter.',
+                  acao: LinkedInProfileButton(
+                    name: 'Lucas Emanuel',
+                    onPressed: () =>
+                        _abrirLinkedIn(context, openLucasLinkedInProfile),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const _MvvCard(
+                  icone: WindowsIcons.people,
+                  cor: MistakeMapDesign.aquaInk,
+                  acento: MistakeMapDesign.aqua,
+                  titulo: 'Projeto acadêmico',
+                  descricao:
+                      'Nasceu na disciplina Projeto Integrado I: '
+                      'Desenvolvimento Móvel, do curso de Engenharia de '
+                      'Computação da PUC Minas, com orientação de Ilo Amy '
+                      'Saldanha Rivero.',
                 ),
                 const SizedBox(height: 32),
                 // Stack técnica
@@ -5198,11 +5235,16 @@ class TelaSobre extends StatelessWidget {
                   children: [
                     _Pilula(texto: 'Flutter / Dart', cor: contentBlue),
                     _Pilula(texto: 'Supabase Auth', cor: contentBlue),
-                    _Pilula(texto: 'PostgreSQL', cor: contentBlue),
+                    _Pilula(texto: 'PostgreSQL + RLS', cor: contentBlue),
+                    _Pilula(texto: 'Supabase Realtime', cor: contentBlue),
+                    _Pilula(texto: 'Edge Functions (Deno)', cor: contentBlue),
+                    _Pilula(texto: 'SQLite offline', cor: contentBlue),
                     _Pilula(texto: 'Cloudflare R2', cor: contentBlue),
-                    _Pilula(texto: 'Edge Functions', cor: contentBlue),
-                    _Pilula(texto: 'OCR', cor: contentBlue),
-                    _Pilula(texto: 'LLM', cor: contentBlue),
+                    _Pilula(texto: 'Google Gemini', cor: contentBlue),
+                    _Pilula(texto: 'Claude Sonnet 5.5', cor: contentBlue),
+                    _Pilula(texto: 'OpenRouter', cor: contentBlue),
+                    _Pilula(texto: 'Shorebird', cor: contentBlue),
+                    _Pilula(texto: 'Vercel', cor: contentBlue),
                   ],
                 ),
                 const SizedBox(height: 32),
@@ -5217,9 +5259,12 @@ class TelaSobre extends StatelessWidget {
     );
   }
 
-  Future<void> _abrirLinkedIn(BuildContext context) async {
+  Future<void> _abrirLinkedIn(
+    BuildContext context,
+    Future<bool> Function() abrir,
+  ) async {
     try {
-      if (await openClaudioLinkedInProfile()) return;
+      if (await abrir()) return;
     } on Exception {
       // A falha do navegador é apresentada no mesmo canal dos avisos do app.
     }
@@ -5266,12 +5311,193 @@ class TelaSobre extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Transforme erros em aprendizado',
+            'Transforme cada erro em um mapa do que estudar a seguir.',
             textAlign: TextAlign.center,
             style: context.tipo.body?.copyWith(
               color: Cores.branco.withValues(alpha: 0.8),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// O que já está construído, na ordem em que o estudante encontra no app.
+const _funcionalidades = [
+  (
+    icone: WindowsIcons.camera,
+    tinta: MistakeMapDesign.violetInk,
+    acento: MistakeMapDesign.violet,
+    titulo: 'Análise do erro com evidência',
+    descricao:
+        'Fotografe ou digite a sua resolução. A IA transcreve, compara com '
+        'o esperado e classifica cada erro em 7 tipos (cálculo, conceito, '
+        'sinal, interpretação, procedimento, unidade e outro), mostrando o '
+        'conceito, o trecho que justifica o apontamento e a confiança. '
+        'Várias tentativas podem ir para uma fila analisada pelo servidor.',
+  ),
+  (
+    icone: WindowsIcons.relationship,
+    tinta: MistakeMapDesign.violetInk,
+    acento: MistakeMapDesign.violet,
+    titulo: 'Mapa de erros',
+    descricao:
+        'Os erros viram um grafo de conceitos e gráficos de frequência por '
+        'tipo, com as evidências de cada conceito. Você vê o que se repete '
+        'e em quais matérias.',
+  ),
+  (
+    icone: WindowsIcons.lightbulb,
+    tinta: MistakeMapDesign.aquaInk,
+    acento: MistakeMapDesign.aqua,
+    titulo: 'Estudar e praticar',
+    descricao:
+        'Para cada matéria, a IA prepara resumo, cartões de memorização e '
+        'um quiz corrigido no servidor. Na prática direcionada você escolhe '
+        'o tipo de erro e recebe de 3 a 5 exercícios sobre o que mais se '
+        'repete e mais recentemente; o que você já voltou a acertar perde '
+        'peso. Exercícios revisados por pessoas são usados antes da IA.',
+  ),
+  (
+    icone: WindowsIcons.education,
+    tinta: MistakeMapDesign.azureInk,
+    acento: MistakeMapDesign.azure,
+    titulo: 'Aprender',
+    descricao:
+        'Matérias organizadas por etapa, do 7º ano do ensino fundamental ao '
+        'ensino superior e ao estudo independente, e publicações curadas de '
+        'eletrônica, informática, robótica e projetos, com link para o '
+        'material.',
+  ),
+  (
+    icone: WindowsIcons.quick_note,
+    tinta: MistakeMapDesign.amberInk,
+    acento: MistakeMapDesign.amber,
+    titulo: 'Caderno de erros',
+    descricao:
+        'Anote com as suas palavras a regra que aprendeu. O caderno funciona '
+        'sem internet, guarda os seus filtros e sincroniza entre os seus '
+        'aparelhos.',
+  ),
+  (
+    icone: WindowsIcons.sync,
+    tinta: MistakeMapDesign.azureInk,
+    acento: MistakeMapDesign.azure,
+    titulo: 'Offline e em vários aparelhos',
+    descricao:
+        'Sem rede, tudo continua funcionando, e o que você fez sobe sozinho '
+        'quando a conexão volta. Exercícios, análises e caderno chegam em '
+        'tempo real aos outros aparelhos; se algo for excluído em outro '
+        'aparelho, você é avisado, e o item apagado não volta por engano.',
+  ),
+  (
+    icone: WindowsIcons.filter,
+    tinta: MistakeMapDesign.violetInk,
+    acento: MistakeMapDesign.violet,
+    titulo: 'A IA certa para cada tarefa',
+    descricao:
+        'Ler a foto, diagnosticar o erro, montar o material de estudo e '
+        'gerar exercícios são tarefas diferentes. Cada uma vai para o modelo '
+        'que se saiu melhor nela em avaliação medida, entre Google Gemini, '
+        'Claude Sonnet 5.5 e OpenRouter; com qualidade empatada, vence o '
+        'mais barato e rápido. A escolha é feita no servidor.',
+  ),
+  (
+    icone: WindowsIcons.lock,
+    tinta: MistakeMapDesign.mintInk,
+    acento: MistakeMapDesign.mint,
+    titulo: 'Privado por padrão',
+    descricao:
+        'Cada conta só enxerga os próprios dados, protegidos no banco. As '
+        'fotos ficam em armazenamento privado e os gabaritos nunca chegam '
+        'ao app: a correção acontece no servidor. Não há ranking público.',
+  ),
+  (
+    icone: WindowsIcons.refresh,
+    tinta: MistakeMapDesign.aquaInk,
+    acento: MistakeMapDesign.aqua,
+    titulo: 'Sempre atualizado',
+    descricao:
+        'No Android e no Windows, as correções chegam sozinhas em segundo '
+        'plano e valem na próxima vez que você abrir o app, sem reinstalar. '
+        'Versões novas que precisam de instalação aparecem no fim desta '
+        'página. Na web, cada acesso já abre a versão mais recente.',
+  ),
+  (
+    icone: WindowsIcons.home,
+    tinta: MistakeMapDesign.azureInk,
+    acento: MistakeMapDesign.azure,
+    titulo: 'Onde usar',
+    descricao:
+        'Na web (mistakemap-tau.vercel.app), no Android e no Windows. A '
+        'interface se adapta a celular, tablet, dobráveis e computador, com '
+        'navegação própria para cada largura de tela.',
+  ),
+];
+
+/// O ciclo de cinco passos que a tela inicial sugere em "O que fazer agora".
+class _CartaoComoFunciona extends StatelessWidget {
+  const _CartaoComoFunciona();
+
+  static const _passos = [
+    ('Analisar', 'Envie a foto ou o texto da sua resolução.'),
+    ('Revisar', 'Veja cada erro com o tipo, o conceito e a evidência.'),
+    ('Mapa de erros', 'Acompanhe os padrões por tipo e por conceito.'),
+    ('Estudar', 'Resumo, cartões, quiz e prática do seu tipo de erro.'),
+    ('Caderno', 'Guarde a regra aprendida para revisar depois.'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return _CartaoFluent(
+      acento: MistakeMapDesign.aqua,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, (titulo, texto)) in _passos.indexed) ...[
+            if (i > 0) const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: MistakeMapDesign.aqua,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${i + 1}',
+                    style: context.tipo.bodyStrong?.copyWith(
+                      color: MistakeMapDesign.abyss,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '$titulo. ',
+                          style: context.tipo.bodyStrong?.copyWith(
+                            color: MistakeMapDesign.aquaInk,
+                          ),
+                        ),
+                        TextSpan(text: texto),
+                      ],
+                    ),
+                    style: context.tipo.body?.copyWith(
+                      color: MistakeMapDesign.steel,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
