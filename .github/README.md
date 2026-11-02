@@ -238,7 +238,7 @@ Salvaguardas do pipeline:
 - **Cotas e orçamento.** Limite diário por usuário (`ai_daily_usage`), reserva de custo antes de chamar provedores pagos (`ai_budget_reservations`) e falha fechada quando a tabela de preços precisa de revisão.
 - **Modelo escolhido por tarefa, com evidência.** Cada tarefa vai para o modelo de melhor qualidade naquela tarefa, comparado em avaliação com pelo menos 20 amostras, qualidade ≥ 0,8 e dados com menos de 30 dias; dentro de 2 pontos de qualidade, vence o mais barato e rápido (veja abaixo).
 - **Reserva só para indisponibilidade.** Se o modelo escolhido estiver fora do ar, sem cota ou sem orçamento, o pedido segue para uma reserva sem expor o erro ao aluno. A reserva protege a disponibilidade; não é ela que decide qual IA atende.
-- **Contexto educacional.** Prática e material de estudo contextualizam as questões em tecnologia (computação, robótica, eletrônica, projetos digitais) quando isso ajuda a entender, sem mudar a matéria nem a dificuldade; matérias de domínio claro (como IoT) recebem tópicos de orientação próprios.
+- **Contexto educacional.** Todo exercício tem temática de tecnologia (computação, robótica, eletrônica, projetos digitais): o catálogo revisado, os exemplos da conta nova, a prática e o material de estudo, sem mudar a matéria nem a dificuldade; matérias de domínio claro (como IoT) recebem tópicos de orientação próprios.
 - **Recusas tratadas.** Bloqueios de segurança do provedor viram uma mensagem clara ao aluno (HTTP 422); resposta truncada ou fora do contrato nunca é gravada.
 
 <a id="provedores-ia"></a>

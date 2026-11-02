@@ -59,6 +59,10 @@ Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
 - Catálogo de exercícios revisados (`catalog_exercises` + `catalog_answer_keys`, gabarito sem
   acesso do cliente): 5 por matéria/assunto/tema. O `generate-practice` serve o catálogo antes
   da IA quando ele fecha a rodada (`_shared/catalog.ts`).
+- Todo exercício tem temática de tecnologia (computação, robótica, eletrônica, projetos
+  digitais), sem exceção: catálogo, exemplos da conta nova (`seed_example_exercises`), prática
+  e estudo gerados pela IA (`_shared/educational_context.ts`). Para revisar o catálogo, nova
+  migration com o upsert (ex.: `20261102173000_catalog_tecnologia.sql`).
 - No `flutter test` o `Sincronizador` nasce desabilitado; `test/sincronizacao_test.dart` liga com SQLite em memória.
 - Evite `path_provider` (puxa `jni` e quebra o build Windows sem JDK).
 - `web/sqlite3.wasm` deve casar com a versão do pacote `sqlite3` no `pubspec.lock`.
