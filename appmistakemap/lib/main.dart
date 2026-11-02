@@ -24,7 +24,9 @@ import 'auth/google_sign_in.dart';
 import 'ai/ai_material_shell.dart';
 import 'ai/analysis_repository.dart';
 import 'ai/insights_view.dart' show ErrorMapController, ErrorMapRequest;
-import 'ai/analysis_models.dart' show AttemptStatusGroup, attemptStatusGroup;
+import 'ai/analysis_models.dart'
+    show AttemptStatusGroup, PracticeExercise, attemptStatusGroup;
+import 'ai/exercise_submission_view.dart' show ExerciseSubmissionView;
 import 'admin/metrics_panel.dart';
 import 'atualizacao/atualizacao_codigo.dart' show EstadoPatch;
 import 'atualizacao/servico_atualizacao.dart';
@@ -3788,6 +3790,9 @@ class Exercicio {
   // guard_analyzed_exercise recusa mudar enunciado e matéria depois da
   // primeira tentativa, então a edição só vale antes de qualquer envio.
   bool get podeEditar => attemptId == null;
+
+  // Sem tentativa e já no servidor: pode ser respondido aqui mesmo.
+  bool get podeResponder => attemptId == null && status == 'sem_tentativa';
 }
 
 /// Tentativa mais recente do usuário entre as embutidas em `exercises`.
@@ -4484,6 +4489,30 @@ class TelaDetalheExercicio extends StatelessWidget {
     if (context.mounted && onFechar == null) Navigator.pop(context);
   }
 
+  /// Exercício ainda sem tentativa (ex.: exemplo do catálogo): abre o
+  /// formulário de resposta preso a este exercício, sem criar outro.
+  Future<void> _responder(BuildContext context) async {
+    await Navigator.of(context).push<String>(
+      MistakeMapPageRoute<String>(
+        context: context,
+        builder: (_) => ExerciseSubmissionView(
+          userId: user.id,
+          repository: SupabaseAnalysisRepository(_db),
+          practice: PracticeExercise(
+            id: exercicio.id,
+            subjectId: exercicio.subjectId,
+            subjectName: exercicio.subjectName,
+            prompt: exercicio.promptText,
+            difficulty: '',
+            focusConcept: '',
+          ),
+        ),
+      ),
+    );
+    onAtualizar();
+    if (context.mounted && onFechar == null) Navigator.pop(context);
+  }
+
   // A correção da IA mora no fluxo Material; sem este atalho o status
   // "Revisar" da lista não levava a lugar nenhum.
   Future<void> _verCorrecao(BuildContext context) async {
@@ -4598,6 +4627,32 @@ class TelaDetalheExercicio extends StatelessWidget {
                           textAlign: TextAlign.center,
                         ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (exercicio.podeResponder) ...[
+              SizedBox(
+                width: double.infinity,
+                child: MistakeMapFilledButton(
+                  key: const Key('detalhe-responder'),
+                  style: _estiloBotao(
+                    fundo: kAcento,
+                    texto: MistakeMapDesign.abyss,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 24,
+                    ),
+                  ),
+                  onPressed: () => _responder(context),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(WindowsIcons.send, size: 18),
+                      SizedBox(width: 8),
+                      Text('Responder exercício'),
                     ],
                   ),
                 ),

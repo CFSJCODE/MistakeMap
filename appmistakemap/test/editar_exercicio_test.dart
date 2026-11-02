@@ -184,6 +184,8 @@ void main() {
     );
     expect(find.text('Editar exercício'), findsOneWidget);
     expect(find.byTooltip('Editar'), findsOneWidget);
+    // Exercício sem tentativa (ex.: exemplo do catálogo) pode ser respondido.
+    expect(find.text('Responder exercício'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -198,6 +200,7 @@ void main() {
     );
     expect(find.text('Editar exercício'), findsNothing);
     expect(find.byTooltip('Editar'), findsNothing);
+    expect(find.text('Responder exercício'), findsNothing);
     expect(find.text('Excluir exercício'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
