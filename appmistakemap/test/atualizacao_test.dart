@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -45,6 +46,18 @@ class _FonteFalsa implements FontePatch {
       );
     }
   }
+}
+
+class _MemoriaFalsa implements MemoriaDownload {
+  _MemoriaFalsa([this.build]);
+
+  int? build;
+
+  @override
+  Future<int?> ler() async => build;
+
+  @override
+  Future<void> gravar(int build) async => this.build = build;
 }
 
 Map<String, dynamic> _release({
@@ -173,6 +186,7 @@ void main() {
         VerificadorVersaoNativa(
           cliente: MockClient((_) async => resposta),
           buildInstalado: 1,
+          memoria: _MemoriaFalsa(),
         );
 
     test('avisa quando o build publicado é mais novo', () async {
@@ -187,6 +201,7 @@ void main() {
           (_) async => http.Response(jsonEncodeRelease(tag: 'v1.0.0+1'), 200),
         ),
         buildInstalado: 1,
+        memoria: _MemoriaFalsa(),
       );
       await mesmo.verificar(TargetPlatform.android);
       expect(mesmo.novaVersao.value, isNull);
@@ -196,9 +211,71 @@ void main() {
       expect(semRelease.novaVersao.value, isNull);
     });
 
+    test('toques repetidos abrem um download só e ficam lembrados', () async {
+      final memoria = _MemoriaFalsa();
+      final liberar = Completer<bool>();
+      var aberturas = 0;
+      final v = VerificadorVersaoNativa(
+        cliente: MockClient(
+          (_) async => http.Response(jsonEncodeRelease(), 200),
+        ),
+        buildInstalado: 1,
+        memoria: memoria,
+        abrir: (_) {
+          aberturas++;
+          return liberar.future;
+        },
+      );
+      await v.verificar(TargetPlatform.android);
+      final nova = v.novaVersao.value!;
+
+      final primeiro = v.baixar(nova);
+      // Toques enquanto o navegador abre não disparam outro download.
+      await v.baixar(nova);
+      await v.baixar(nova);
+      liberar.complete(true);
+      expect(await primeiro, isTrue);
+
+      expect(aberturas, 1);
+      expect(v.abrindo.value, isFalse);
+      expect(v.downloadAberto.value, 2);
+      expect(memoria.build, 2);
+    });
+
+    test('lembra o download feito antes de o app fechar', () async {
+      final v = VerificadorVersaoNativa(
+        cliente: MockClient(
+          (_) async => http.Response(jsonEncodeRelease(), 200),
+        ),
+        buildInstalado: 1,
+        memoria: _MemoriaFalsa(2),
+        abrir: (_) async => true,
+      );
+      await v.verificar(TargetPlatform.android);
+      expect(v.novaVersao.value?.build, 2);
+      expect(v.downloadAberto.value, 2);
+    });
+
+    test('navegador que não abre não marca como baixado', () async {
+      final memoria = _MemoriaFalsa();
+      final v = VerificadorVersaoNativa(
+        cliente: MockClient(
+          (_) async => http.Response(jsonEncodeRelease(), 200),
+        ),
+        buildInstalado: 1,
+        memoria: memoria,
+        abrir: (_) async => false,
+      );
+      await v.verificar(TargetPlatform.android);
+      expect(await v.baixar(v.novaVersao.value!), isFalse);
+      expect(v.downloadAberto.value, isNull);
+      expect(memoria.build, isNull);
+    });
+
     test('erro de rede não lança', () async {
       final v = VerificadorVersaoNativa(
         cliente: MockClient((_) async => throw const SocketException('off')),
+        memoria: _MemoriaFalsa(),
       );
       await v.verificar(TargetPlatform.windows);
       expect(v.novaVersao.value, isNull);

@@ -1244,6 +1244,9 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     if (!mounted || versao == null || _versaoNativaAvisada == versao.build) {
       return;
     }
+    // O arquivo desta versão já foi baixado: falta só instalar, e o cartão
+    // em Sobre o App explica como. Avisar de novo levaria a outro download.
+    if (atualizacoes.nativa.downloadAberto.value == versao.build) return;
     _versaoNativaAvisada = versao.build;
     _avisar(
       context,
@@ -5673,10 +5676,14 @@ class _CartaoVersao extends StatelessWidget {
         codigo.estado,
         codigo.patchAtual,
         nativa.novaVersao,
+        nativa.downloadAberto,
+        nativa.abrindo,
       ]),
       builder: (context, _) {
         final patch = codigo.patchAtual.value;
         final nova = nativa.novaVersao.value;
+        final jaBaixada =
+            nova != null && nativa.downloadAberto.value == nova.build;
         return _CartaoFluent(
           acento: MistakeMapDesign.azure,
           child: Column(
@@ -5715,9 +5722,12 @@ class _CartaoVersao extends StatelessWidget {
                         if (nova != null) ...[
                           const SizedBox(height: 8),
                           Text(
-                            'A versão ${nova.versao} traz mudanças que não '
-                            'chegam por atualização automática. Baixe e '
-                            'instale por cima da atual; seus dados continuam.',
+                            jaBaixada
+                                ? _comoInstalar(nova)
+                                : 'A versão ${nova.versao} traz mudanças que '
+                                      'não chegam por atualização automática. '
+                                      'Baixe e instale por cima da atual; seus '
+                                      'dados continuam.',
                             style: context.tipo.body?.copyWith(
                               color: MistakeMapDesign.steel,
                               height: 1.5,
@@ -5735,11 +5745,21 @@ class _CartaoVersao extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    if (nova != null)
+                    if (nova != null && !jaBaixada)
                       MistakeMapFilledButton(
                         style: _estiloBotao(fonte: 14),
-                        onPressed: () => _baixar(context, nova),
+                        onPressed: nativa.abrindo.value
+                            ? null
+                            : () => _baixar(context, nova),
                         child: Text('Baixar versão ${nova.versao}'),
+                      ),
+                    if (nova != null && jaBaixada)
+                      MistakeMapButton(
+                        style: _estiloBotao(fonte: 14),
+                        onPressed: nativa.abrindo.value
+                            ? null
+                            : () => _baixar(context, nova),
+                        child: const Text('Baixar de novo'),
                       ),
                     MistakeMapButton(
                       style: _estiloBotao(fonte: 14),
@@ -5786,9 +5806,18 @@ class _CartaoVersao extends StatelessWidget {
     };
   }
 
+  /// Depois do download: o arquivo já está no aparelho, falta abrir.
+  static String _comoInstalar(VersaoPublicada nova) =>
+      defaultTargetPlatform == TargetPlatform.windows
+      ? 'O arquivo da versão ${nova.versao} já foi baixado. Abra o ZIP na '
+            'pasta Downloads e substitua a pasta do app; seus dados continuam.'
+      : 'O arquivo da versão ${nova.versao} já foi baixado. Toque na '
+            'notificação do download (ou abra a pasta Downloads) e escolha '
+            'Instalar; seus dados continuam. Não precisa baixar de novo.';
+
   Future<void> _baixar(BuildContext context, VersaoPublicada versao) async {
     try {
-      if (await abrirVersaoPublicada(versao)) return;
+      if (await atualizacoes.nativa.baixar(versao)) return;
     } on Exception {
       // A falha do navegador é apresentada no mesmo canal dos avisos do app.
     }
