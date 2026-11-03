@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 // O supabase_flutter já traz e registra este plugin nos alvos do app.
 // ignore: depend_on_referenced_packages
 import 'package:url_launcher/url_launcher.dart';
@@ -39,6 +40,42 @@ Future<bool> abrirVersaoPublicada(VersaoPublicada versao) => launchUrl(
   mode: LaunchMode.externalApplication,
   webOnlyWindowName: '_blank',
 );
+
+/// Guarda o build cujo download já foi aberto neste aparelho, para o app não
+/// pedir (nem deixar disparar sem querer) o mesmo arquivo de novo a cada
+/// visita.
+abstract class MemoriaDownload {
+  Future<int?> ler();
+  Future<void> gravar(int build);
+}
+
+class MemoriaDownloadPreferencias implements MemoriaDownload {
+  const MemoriaDownloadPreferencias();
+
+  static const _chave = 'atualizacao_download_build';
+
+  // Sem o plugin a chamada pode nunca responder; o aviso não pode travar.
+  static Future<SharedPreferences> _prefs() =>
+      SharedPreferences.getInstance().timeout(const Duration(seconds: 2));
+
+  @override
+  Future<int?> ler() async {
+    try {
+      return (await _prefs()).getInt(_chave);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> gravar(int build) async {
+    try {
+      await (await _prefs()).setInt(_chave, build);
+    } catch (_) {
+      // Sem armazenamento: vale só nesta sessão.
+    }
+  }
+}
 
 /// Sufixo do arquivo de cada plataforma nos assets do release, no formato
 /// gerado pelo workflow `shorebird-release.yml`.
@@ -98,9 +135,13 @@ class VerificadorVersaoNativa {
     this.buildInstalado = buildApp,
     this.intervaloMinimo = const Duration(hours: 6),
     DateTime Function()? relogio,
+    MemoriaDownload? memoria,
+    Future<bool> Function(VersaoPublicada)? abrir,
   }) : _cliente = cliente ?? http.Client(),
        _endpoint = endpoint ?? endpointPadrao,
-       _relogio = relogio ?? DateTime.now;
+       _relogio = relogio ?? DateTime.now,
+       _memoria = memoria ?? const MemoriaDownloadPreferencias(),
+       _abrir = abrir ?? abrirVersaoPublicada;
 
   static final endpointPadrao = Uri.parse(
     'https://api.github.com/repos/CFSJCODE/MistakeMap/releases/latest',
@@ -109,6 +150,8 @@ class VerificadorVersaoNativa {
   final http.Client _cliente;
   final Uri _endpoint;
   final DateTime Function() _relogio;
+  final MemoriaDownload _memoria;
+  final Future<bool> Function(VersaoPublicada) _abrir;
   final int buildInstalado;
 
   /// A API do GitHub sem login aceita 60 consultas por hora por IP; uma a
@@ -117,6 +160,17 @@ class VerificadorVersaoNativa {
 
   /// Release mais novo que o instalado, ou null se o app está em dia.
   final novaVersao = ValueNotifier<VersaoPublicada?>(null);
+
+  /// Build cujo download já foi aberto neste aparelho (sobrevive ao app
+  /// fechar). Com ele igual ao de [novaVersao], o arquivo já está baixado e
+  /// falta só instalar.
+  final downloadAberto = ValueNotifier<int?>(null);
+
+  /// Verdadeiro enquanto o navegador está sendo chamado: toques repetidos no
+  /// botão não abrem vários downloads.
+  final abrindo = ValueNotifier<bool>(false);
+
+  bool _memoriaLida = false;
 
   DateTime? _ultimaConsulta;
   Future<void>? _emCurso;
@@ -135,7 +189,34 @@ class VerificadorVersaoNativa {
     return _emCurso = _executar(plataforma).whenComplete(() => _emCurso = null);
   }
 
+  Future<void> _lerMemoria() async {
+    if (_memoriaLida) return;
+    _memoriaLida = true;
+    final salvo = await _memoria.ler();
+    // Um toque feito enquanto a leitura corria vale mais que o valor antigo.
+    downloadAberto.value ??= salvo;
+  }
+
+  /// Abre o download da versão nova uma vez por toque, ignorando toques
+  /// enquanto o navegador abre, e lembra que o arquivo já foi baixado.
+  /// Retorna false só quando o navegador não abriu.
+  Future<bool> baixar(VersaoPublicada versao) async {
+    if (abrindo.value) return true;
+    abrindo.value = true;
+    try {
+      final abriu = await _abrir(versao);
+      if (abriu) {
+        downloadAberto.value = versao.build;
+        await _memoria.gravar(versao.build);
+      }
+      return abriu;
+    } finally {
+      abrindo.value = false;
+    }
+  }
+
   Future<void> _executar(TargetPlatform plataforma) async {
+    await _lerMemoria();
     try {
       final resposta = await _cliente
           .get(
@@ -158,6 +239,8 @@ class VerificadorVersaoNativa {
 
   void dispose() {
     novaVersao.dispose();
+    downloadAberto.dispose();
+    abrindo.dispose();
     _cliente.close();
   }
 }
