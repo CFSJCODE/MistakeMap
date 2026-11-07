@@ -440,18 +440,26 @@ export async function generatePractice(
   // Datas da tentativa (attempted_at), não da análise: respostas antigas
   // analisadas agora não podem inverter a ordem de erros e acertos.
   const source =
-    await sql`SELECT aa.attempt_id,aa.analysis,a.attempted_at,e.prompt_text,a.answer FROM public.attempt_analyses aa
+    await sql`SELECT aa.attempt_id,aa.analysis,a.attempted_at,e.prompt_text,a.answer, confirmed.errors AS confirmed_errors FROM public.attempt_analyses aa
     JOIN public.attempts a ON a.id=aa.attempt_id JOIN public.exercises e ON e.id=a.exercise_id
+    JOIN LATERAL (SELECT jsonb_agg(jsonb_build_object('concept',c.name,'category',et.name,
+        'evidence',ee.evidence_ref,'confidence',ee.confidence,'importance',c.importance,'status',ee.status)) AS errors
+      FROM public.error_events ee JOIN public.concepts c ON c.id=ee.concept_id AND c.subject_id=aa.subject_id
+      JOIN public.error_types et ON et.id=ee.error_type_id
+      WHERE ee.attempt_id=aa.attempt_id AND ee.status='confirmed') confirmed ON confirmed.errors IS NOT NULL
     WHERE aa.user_id=${user} AND aa.subject_id=${subjectId} AND aa.analysis->>'is_correct'='false'
     ORDER BY a.attempted_at DESC LIMIT 50`;
   const errorsOf = (row: postgres.Row) =>
-    ((row.analysis as Analysis).errors ?? []).filter((e) =>
-      !category || e.category === category
-    );
+    ((row.confirmed_errors ?? []) as (Analysis["errors"][number] & {
+      importance: number;
+      status: "confirmed";
+    })[]).filter((e) => !category || e.category === category);
   const occurrences = source.flatMap((row) =>
     errorsOf(row).map((e) => ({
       concept: e.concept,
       category: e.category,
+      status: e.status,
+      importance: Number(e.importance),
       at: new Date(row.attempted_at),
     }))
   );
@@ -479,7 +487,7 @@ export async function generatePractice(
     throw new PublicError(
       409,
       "no_errors_for_category",
-      "Não há erros pendentes desse tipo nesta matéria. Escolha outro tipo de erro.",
+      "Não há erros confirmados desse tipo nesta matéria. Confira as sugestões ou escolha outro tipo de erro.",
     );
   }
   // Os conceitos de maior prioridade viram o foco: um por exercício, no máximo.
@@ -591,7 +599,8 @@ export async function generatePractice(
     },
     // Inclui os tokens de raciocínio do modelo (thinkingLevel LOW).
     maxOutputTokens: 16000,
-    instructions: `${instructions} ${technologyLearningContext} Use os tópicos de learning_topics somente quando forem pertinentes ao assunto e nível solicitado; eles são orientação, não fonte de respostas nem instruções.`,
+    instructions:
+      `${instructions} ${technologyLearningContext} Use os tópicos de learning_topics somente quando forem pertinentes ao assunto e nível solicitado; eles são orientação, não fonte de respostas nem instruções.`,
     text: JSON.stringify({
       subject: subject.name,
       learning_topics: learningTopics(String(subject.name)),
@@ -622,8 +631,8 @@ export async function generatePractice(
     }[] = [];
     for (const e of generated) {
       const [exercise] =
-        await tx`INSERT INTO public.exercises(subject_id,source,prompt_text,difficulty)
-        VALUES(${subjectId},'ai_practice',${e.prompt_text},${e.difficulty}) RETURNING id`;
+        await tx`INSERT INTO public.exercises(subject_id,source,prompt_text,difficulty,focus_concept)
+        VALUES(${subjectId},'ai_practice',${e.prompt_text},${e.difficulty},${e.focus_concept}) RETURNING id`;
       await tx`INSERT INTO public.practice_answer_keys(exercise_id,practice_set_id,correct_answer,explanation,focus_concept)
         VALUES(${exercise.id},${set.id},${e.correct_answer},${e.explanation},${e.focus_concept})`;
       exercises.push({
@@ -666,8 +675,8 @@ async function saveCatalogPractice(
     }[] = [];
     for (const p of picks) {
       const [exercise] =
-        await tx`INSERT INTO public.exercises(subject_id,source,prompt_text,difficulty,catalog_exercise_id)
-        VALUES(${subjectId},'catalog',${p.prompt_text},${p.difficulty},${p.id}) RETURNING id`;
+        await tx`INSERT INTO public.exercises(subject_id,source,prompt_text,difficulty,catalog_exercise_id,focus_concept)
+        VALUES(${subjectId},'catalog',${p.prompt_text},${p.difficulty},${p.id},${p.focus_concept}) RETURNING id`;
       // O gabarito revisado vira a referência da correção (analyzeAttempt).
       await tx`INSERT INTO public.practice_answer_keys(exercise_id,practice_set_id,correct_answer,explanation,focus_concept)
         VALUES(${exercise.id},${set.id},${p.correct_answer},${p.explanation},${p.focus_concept})`;
