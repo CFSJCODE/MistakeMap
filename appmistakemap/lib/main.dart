@@ -45,6 +45,8 @@ import 'sync/conexao.dart' show ehFalhaDeRede;
 import 'sync/remoto_supabase.dart';
 import 'sync/sincronizador.dart';
 import 'sync/sobreposicao.dart';
+import 'study/study_today_panel.dart';
+import 'platform/platform_hub.dart';
 
 part 'caderno_erros.dart';
 part 'learning_platform.dart';
@@ -945,7 +947,11 @@ void main() async {
 }
 
 class MistakeMapApp extends StatelessWidget {
-  const MistakeMapApp({super.key});
+  const MistakeMapApp({super.key, this.studyRepository});
+
+  /// Allows a host or widget test to supply study data without coupling the
+  /// authentication lifecycle to an external JSON worker isolate.
+  final StudyRepository? studyRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -974,7 +980,7 @@ class MistakeMapApp extends StatelessWidget {
           ),
         );
       },
-      home: const AuthGate(),
+      home: AuthGate(studyRepository: studyRepository),
     );
   }
 }
@@ -1000,7 +1006,8 @@ Future<void> _sairDaConta() async {
 // de recuperação de senha abre uma sessão temporária: enquanto ela durar, a
 // tela pede a nova senha antes de liberar o app.
 class AuthGate extends StatefulWidget {
-  const AuthGate({super.key});
+  const AuthGate({super.key, this.studyRepository});
+  final StudyRepository? studyRepository;
 
   @override
   State<AuthGate> createState() => _AuthGateState();
@@ -1035,7 +1042,12 @@ class _AuthGateState extends State<AuthGate> {
         // pelo cache e pela fila até a próxima entrada com internet.
         if (_db.auth.currentSession == null) {
           final offline = _sessaoOffline.value;
-          if (offline != null) return TelaNavegacao(user: offline);
+          if (offline != null) {
+            return TelaNavegacao(
+              user: offline,
+              studyRepository: widget.studyRepository,
+            );
+          }
         }
         final evento = snapshot.data?.event;
         if (evento == AuthChangeEvent.passwordRecovery) {
@@ -1053,7 +1065,10 @@ class _AuthGateState extends State<AuthGate> {
             onConcluido: () => setState(() => _recuperandoSenha = false),
           );
         }
-        return _CarregadorDePerfil(supaUser: session.user);
+        return _CarregadorDePerfil(
+          supaUser: session.user,
+          studyRepository: widget.studyRepository,
+        );
       },
     );
   }
@@ -1071,7 +1086,8 @@ class _LoadingScaffold extends StatelessWidget {
 // Busca o perfil do usuário no banco e exibe a navegação principal
 class _CarregadorDePerfil extends StatefulWidget {
   final User supaUser;
-  const _CarregadorDePerfil({required this.supaUser});
+  final StudyRepository? studyRepository;
+  const _CarregadorDePerfil({required this.supaUser, this.studyRepository});
 
   @override
   State<_CarregadorDePerfil> createState() => _CarregadorDePerfilState();
@@ -1127,7 +1143,10 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
   @override
   Widget build(BuildContext context) {
     if (_appUser == null) return const _LoadingScaffold();
-    return TelaNavegacao(user: _appUser!);
+    return TelaNavegacao(
+      user: _appUser!,
+      studyRepository: widget.studyRepository,
+    );
   }
 }
 
@@ -1135,7 +1154,13 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
 class TelaNavegacao extends StatefulWidget {
   final AppUser user;
   final AnalysisRepository? analysisRepository;
-  const TelaNavegacao({super.key, required this.user, this.analysisRepository});
+  final StudyRepository? studyRepository;
+  const TelaNavegacao({
+    super.key,
+    required this.user,
+    this.analysisRepository,
+    this.studyRepository,
+  });
 
   @override
   State<TelaNavegacao> createState() => _TelaNavegacaoState();
@@ -1284,7 +1309,10 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       await Navigator.of(context).push(
         MistakeMapPageRoute(
           context: context,
-          builder: (_) => TelaAprender(isAdmin: widget.user.isAdmin),
+          builder: (_) => TelaAprender(
+            isAdmin: widget.user.isAdmin,
+            userId: widget.user.id,
+          ),
         ),
       );
     } finally {
@@ -1336,6 +1364,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     TelaInicial(
       key: _inicioKey,
       user: widget.user,
+      studyRepository: widget.studyRepository,
       onAnalysis: () => _irAoMapa(ErrorMapRequest.analysis),
       onExercicios: () => _selecionar(1),
       onMapa: () => _selecionar(_mapa),
@@ -2091,6 +2120,7 @@ class _TelaNovaSenhaState extends State<TelaNovaSenha> {
 // ─── Tela inicial (dashboard) ─────────────────────────────────────────────────
 class TelaInicial extends StatefulWidget {
   final AppUser user;
+  final StudyRepository? studyRepository;
   final VoidCallback? onAnalysis;
 
   /// Atalhos do ciclo de estudo, na ordem em que o estudante os usa.
@@ -2102,6 +2132,7 @@ class TelaInicial extends StatefulWidget {
   const TelaInicial({
     super.key,
     required this.user,
+    this.studyRepository,
     this.onAnalysis,
     this.onExercicios,
     this.onMapa,
@@ -2115,9 +2146,11 @@ class TelaInicial extends StatefulWidget {
 }
 
 class _TelaInicialState extends State<TelaInicial> {
+  final _studyTodayKey = GlobalKey<StudyTodayPanelState>();
   int _totalExercicios = 0;
   int _paraRevisar = 0;
-  String _evolucao = '—';
+  String _analisesConcluidas = '—';
+  bool _falhaEstatisticas = false;
   bool _carregando = true;
 
   @override
@@ -2129,6 +2162,7 @@ class _TelaInicialState extends State<TelaInicial> {
   // Pública para a navegação recarregar ao voltar ao Início: as abas ficam
   // vivas no IndexedStack e o initState não roda de novo.
   Future<void> carregarEstatisticas() async {
+    unawaited(_studyTodayKey.currentState?.refresh() ?? Future<void>.value());
     try {
       final sync = _sync(widget.user.id);
       final fila = await sync.fila(widget.user.id);
@@ -2163,13 +2197,32 @@ class _TelaInicialState extends State<TelaInicial> {
         setState(() {
           _totalExercicios = total;
           _paraRevisar = paraRevisar;
-          _evolucao = pct;
+          _analisesConcluidas = pct;
+          _falhaEstatisticas = false;
           _carregando = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _carregando = false);
+      if (mounted) {
+        setState(() {
+          _carregando = false;
+          _falhaEstatisticas = true;
+        });
+      }
     }
+  }
+
+  Future<void> _abrirEspacoEstudos() async {
+    await Navigator.of(context).push<void>(
+      MistakeMapPageRoute(
+        context: context,
+        builder: (_) => PlatformHubPage(
+          userId: widget.user.id,
+          isAdmin: widget.user.isAdmin,
+        ),
+      ),
+    );
+    if (mounted) await carregarEstatisticas();
   }
 
   // O título repete o nome do destino na navegação: o aluno sabe onde está.
@@ -2194,6 +2247,24 @@ class _TelaInicialState extends State<TelaInicial> {
                   child: Column(
                     children: [
                       _cabecalho(context),
+                      const SizedBox(height: 24),
+                      StudyTodayPanel(
+                        key: _studyTodayKey,
+                        userId: widget.user.id,
+                        client: _db,
+                        repository: widget.studyRepository,
+                        onExplore: _abrirEspacoEstudos,
+                        onAnalyze: widget.onAnalysis,
+                        onStudy: widget.onEstudar,
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: MistakeMapFilledButton(
+                          onPressed: _abrirEspacoEstudos,
+                          child: const Text('Biblioteca, planos e simulados'),
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       if (widget.onAprender != null) ...[
                         _PainelVidro(
@@ -2346,7 +2417,7 @@ class _TelaInicialState extends State<TelaInicial> {
           ),
           const SizedBox(height: 4),
           Text(
-            widget.user.email,
+            'Um próximo passo para cada dificuldade.',
             textAlign: TextAlign.center,
             style: context.tipo.body?.copyWith(color: Cores.branco),
           ),
@@ -2366,17 +2437,30 @@ class _TelaInicialState extends State<TelaInicial> {
 
   // Cards de estatísticas
   Widget _resumo(BuildContext context) {
+    if (_falhaEstatisticas) {
+      return InfoBar(
+        title: const Text('Não foi possível atualizar suas tentativas'),
+        content: const Text(
+          'Seus registros continuam preservados. Tente atualizar quando a conexão voltar.',
+        ),
+        severity: InfoBarSeverity.warning,
+        action: MistakeMapButton(
+          onPressed: carregarEstatisticas,
+          child: const Text('Atualizar'),
+        ),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Dashboard do Estudante',
+          'Suas tentativas',
           textAlign: TextAlign.center,
           style: context.tipo.subtitle?.copyWith(color: titleBlue),
         ),
         const SizedBox(height: 8),
         Text(
-          'Acompanhe seu progresso e transforme erros em aprendizado.',
+          'Andamento das análises. Os resultados de estudo aparecem na sua sessão.',
           textAlign: TextAlign.center,
           style: context.tipo.body?.copyWith(color: contentBlue),
         ),
@@ -2395,15 +2479,15 @@ class _TelaInicialState extends State<TelaInicial> {
             ),
             _ResumoCard(
               icone: WindowsIcons.history,
-              label: 'Para revisar',
+              label: 'Correções para conferir',
               value: '$_paraRevisar',
               acento: MistakeMapDesign.amber,
               tinta: MistakeMapDesign.amberInk,
             ),
             _ResumoCard(
               icone: WindowsIcons.education,
-              label: 'Evolução',
-              value: _evolucao,
+              label: 'Análises concluídas',
+              value: _analisesConcluidas,
               acento: MistakeMapDesign.mint,
               tinta: MistakeMapDesign.mintInk,
             ),

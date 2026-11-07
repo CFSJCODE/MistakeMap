@@ -293,7 +293,13 @@ export function practiceCategory(value: unknown): Category | null {
   }
   return value as Category;
 }
-export type ErrorOccurrence = { concept: string; category: Category; at: Date };
+export type ErrorOccurrence = {
+  concept: string;
+  category: Category;
+  at: Date;
+  importance?: number;
+  status?: "pending" | "confirmed" | "rejected" | "superseded";
+};
 export type Recovery = { concept: string; at: Date };
 export type ConceptPriority = {
   concept: string;
@@ -324,10 +330,12 @@ export function rankConcepts(
     categories: Set<Category>;
   }>();
   for (const o of occurrences) {
+    if (o.status && o.status !== "confirmed") continue;
     if (category && o.category !== category) continue;
     const key = o.concept.trim().toLowerCase();
     if (!key) continue;
     const at = o.at.getTime();
+    if (!Number.isFinite(at)) continue;
     const age = Math.max(0, now.getTime() - at) / DAY_MS;
     const group = groups.get(key) ??
       {
@@ -337,7 +345,11 @@ export function rankConcepts(
         last: 0,
         categories: new Set(),
       };
-    group.weight += Math.pow(0.5, age / RECENCY_HALF_LIFE_DAYS);
+    // Peso curricular explícito, neutro por padrão. Não inferido pelo grafo.
+    const importance = Number.isFinite(o.importance)
+      ? Math.max(.5, Math.min(2, o.importance!))
+      : 1;
+    group.weight += Math.pow(0.5, age / RECENCY_HALF_LIFE_DAYS) * importance;
     group.frequency += 1;
     if (at >= group.last) {
       group.last = at;
