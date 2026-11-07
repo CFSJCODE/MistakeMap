@@ -32,3 +32,14 @@ verify_jwt = false
 
 [functions.study-material]
 verify_jwt = false
+
+# O gateway permite OPTIONS; o POST verifica o JWT no handler antes do banco.
+[functions.review-queue]
+verify_jwt = false
+
+[functions.study-platform]
+verify_jwt = false
+
+# Worker restrito ao segredo dedicado; JWT de aluno não autoriza exclusão.
+[functions.account-data]
+verify_jwt = false

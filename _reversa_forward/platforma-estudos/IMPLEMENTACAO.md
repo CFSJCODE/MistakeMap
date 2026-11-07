@@ -56,7 +56,7 @@ Esta entrega não aplicou migrations nem fez chamadas a R2/Auth de produção. A
 
 1. Revisar e aplicar as oito migrations pelo fluxo do repositório.
 2. Publicar `review-queue`, `study-platform` e o uploader atualizado. Os endpoints do estudante autenticam o JWT no handler antes de acessar o banco; o gateway precisa permitir o preflight OPTIONS, como nas funções existentes.
-3. O ajuste de `supabase/config.toml` está preparado em `deployment-config.patch`. Esse caminho precisa constar em `allowedPaths`; a política não foi alterada pelo agente. O patch pode ser conferido com `git apply --check`.
+3. `supabase/config.toml` registra `review-queue`, `study-platform` e `account-data` para a publicação contínua. O gateway permite o preflight das funções do estudante, que autenticam os pedidos no próprio handler. O worker de exclusão exige um segredo dedicado.
 4. O script `scripts/deploy-study-platform.ps1` oferece publicação explícita, exige confirmação de migrations aplicadas e suporta `-WhatIf`. Não publica implicitamente nem cria credenciais.
 5. Configurar o segredo dedicado e o agendador do worker de exclusão conforme [account-lifecycle.md](account-lifecycle.md). Usar Vault e chamadas assíncronas; não inserir segredos em migrations.
 6. Validar em ambiente de homologação com duas contas de aluno, uma de professor e uma de administrador, incluindo queda de rede, retomada entre aparelhos e revogação.
