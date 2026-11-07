@@ -2,8 +2,9 @@ part of 'main.dart';
 
 /// Catálogo compartilhado; o conteúdo e as permissões vêm do servidor.
 class TelaAprender extends StatefulWidget {
-  const TelaAprender({super.key, this.isAdmin = false});
+  const TelaAprender({super.key, this.isAdmin = false, this.userId});
   final bool isAdmin;
+  final String? userId;
 
   @override
   State<TelaAprender> createState() => _TelaAprenderState();
@@ -168,8 +169,21 @@ class _TelaAprenderState extends State<TelaAprender> {
                 const SizedBox(height: 16),
                 if (subjects.isEmpty)
                   const Text('Nenhuma matéria disponível nesta etapa.'),
+                if (widget.userId != null)
+                  MistakeMapFilledButton(
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MistakeMapPageRoute(
+                        context: context,
+                        builder: (_) => PlatformHubPage(
+                          userId: widget.userId!,
+                          isAdmin: widget.isAdmin,
+                        ),
+                      ),
+                    ),
+                    child: const Text('Abrir biblioteca de exercícios'),
+                  ),
                 const Text(
-                  'Os exercícios para estas matérias estão em preparação.',
+                  'Explore o catálogo revisado na biblioteca. A cobertura de assuntos é ampliada por revisão editorial.',
                 ),
                 const SizedBox(height: 8),
                 for (final subject in subjects)
