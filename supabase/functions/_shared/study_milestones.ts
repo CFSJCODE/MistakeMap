@@ -1,8 +1,7 @@
 import type postgres from "postgresjs";
-import type { database } from "./ai_service.ts";
+import type { Database } from "./ai_service.ts";
 import { PublicError } from "./ai_contract.ts";
 
-type Database = ReturnType<typeof database>;
 type Query = postgres.Sql | postgres.TransactionSql;
 type Activity = {
   date: string;

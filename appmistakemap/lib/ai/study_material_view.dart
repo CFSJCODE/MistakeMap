@@ -199,13 +199,7 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      _error!,
-                      style: const TextStyle(color: MistakeMapDesign.bad),
-                    ),
-                  ),
+                  child: ErrorNotice(_error!),
                 ),
               const SizedBox(height: 16),
               if (material != null) ...[
@@ -668,26 +662,8 @@ class _QuizPanelState extends State<QuizPanel> {
     }
   }
 
-  Widget _metric(String label, String value, String? detail) => SizedBox(
-    width: 96,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: MistakeMapDesign.steel)),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: mapTitleBlue,
-          ),
-        ),
-        if (detail != null)
-          Text(detail, style: const TextStyle(color: MistakeMapDesign.steel)),
-      ],
-    ),
-  );
+  Widget _metric(String label, String value, String? detail) =>
+      MaterialMetric(label: label, value: value, detail: detail);
 
   @override
   Widget build(BuildContext context) {
@@ -752,14 +728,7 @@ class _QuizPanelState extends State<QuizPanel> {
                   : () => setState(() => _answers[question.id] = option),
             ),
           ),
-        if (_error != null)
-          Semantics(
-            liveRegion: true,
-            child: Text(
-              _error!,
-              style: const TextStyle(color: MistakeMapDesign.bad),
-            ),
-          ),
+        if (_error != null) ErrorNotice(_error!),
         Row(
           spacing: 12,
           children: [

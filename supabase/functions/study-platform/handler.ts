@@ -6,7 +6,7 @@ import {
   readLimited,
 } from "../_shared/ai_http.ts";
 import { PublicError } from "../_shared/ai_contract.ts";
-import { database } from "../_shared/ai_service.ts";
+import { withDatabase } from "../_shared/ai_service.ts";
 import { type Input, platformAction } from "../_shared/platform_contract.ts";
 import { platformOperation } from "../_shared/platform_service.ts";
 import { requireRecentSignin } from "../_shared/privacy_auth.ts";
@@ -49,12 +49,6 @@ export function createPlatformHandler(services: PlatformServices) {
 }
 export const handler = createPlatformHandler({
   authenticate,
-  async run(user, input) {
-    const sql = database();
-    try {
-      return await platformOperation(sql, user, input);
-    } finally {
-      await sql.end({ timeout: 5 }).catch(() => {});
-    }
-  },
+  run: (user, input) =>
+    withDatabase((sql) => platformOperation(sql, user, input)),
 });

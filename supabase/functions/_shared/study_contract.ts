@@ -1,4 +1,4 @@
-import { PublicError, uuid } from "./ai_contract.ts";
+import { PublicError, str, uuid } from "./ai_contract.ts";
 
 // Contrato do material de estudo (resumo, cartões e quiz). O gabarito do quiz
 // (correct_choice e explanation) fica em study_quiz_keys e só volta ao
@@ -34,12 +34,6 @@ export type StudyMaterial = {
   flashcards: StudyFlashcard[];
   quiz: StudyQuestion[];
 };
-
-const str = (maxLength: number, minLength = 1) => ({
-  type: "string",
-  minLength,
-  maxLength,
-});
 
 export const FLASHCARDS = { min: 6, max: 12 };
 export const QUESTIONS = { min: 5, max: 8 };

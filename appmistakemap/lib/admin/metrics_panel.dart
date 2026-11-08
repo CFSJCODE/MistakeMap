@@ -260,29 +260,7 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
               'Tentativas & Envios',
               'Em processamento',
             ])
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: MistakeMapDesign.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: MistakeMapDesign.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label),
-                    const SizedBox(height: 8),
-                    Text(
-                      _values[label]?.toString() ?? '—',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: MistakeMapDesign.content,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _card(label, _values[label]?.toString() ?? '—', valueSize: 28),
           ],
         ),
         const SizedBox(height: 12),
@@ -472,8 +450,8 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
     return _card(
       label,
       value == null
-          ? '— / ${bytes ? '$limit GiB' : _number(limit)}'
-          : '${bytes ? _bytes(raw as num) : _number(value)} / ${bytes ? '$limit GiB' : _number(limit)}',
+          ? '— / ${bytes ? '$limit GiB' : formatarMilhar(limit)}'
+          : '${bytes ? _bytes(raw as num) : formatarMilhar(value)} / ${bytes ? '$limit GiB' : formatarMilhar(limit)}',
       progress: value == null
           ? null
           : (value / limit).clamp(0.0, 1.0).toDouble(),
@@ -485,7 +463,7 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
       'gemini-3.8-flash',
       'gemini-3.6-flash',
     ].contains(row['model']);
-    return '${row[key] is num ? _number(row[key] as num) : '—'} / ${confirmed ? _number(limit) : 'limite não confirmado'}';
+    return '${row[key] is num ? formatarMilhar(row[key] as num) : '—'} / ${confirmed ? formatarMilhar(limit) : 'limite não confirmado'}';
   }
 
   String _date(Object? value) {
@@ -496,10 +474,6 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
     return '${two(local.day)}/${two(local.month)}/${local.year} às ${two(local.hour)}:${two(local.minute)}';
   }
 
-  String _number(num value) => value.round().toString().replaceAllMapped(
-    RegExp(r'(\d)(?=(\d{3})+$)'),
-    (match) => '${match[1]}.',
-  );
   String _bytes(num value) {
     if (value < 1024) return '${value.round()} B';
     if (value < 1024 * 1024) {
@@ -511,7 +485,12 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
     return '${(value / (1024 * 1024 * 1024)).toStringAsFixed(2).replaceAll('.', ',')} GiB';
   }
 
-  Widget _card(String label, String value, {double? progress}) => Container(
+  Widget _card(
+    String label,
+    String value, {
+    double? progress,
+    double valueSize = 22,
+  }) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: MistakeMapDesign.surface,
@@ -525,8 +504,8 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 22,
+          style: TextStyle(
+            fontSize: valueSize,
             fontWeight: FontWeight.w700,
             color: MistakeMapDesign.content,
           ),

@@ -92,6 +92,28 @@ export async function body(req: Request): Promise<Record<string, unknown>> {
     );
   }
 }
+/**
+ * Endpoint autenticado padrão: trata OPTIONS/método, valida a sessão, lê o
+ * corpo JSON e converte erros em resposta pública.
+ */
+export function userEndpoint(
+  run: (
+    req: Request,
+    user: string,
+    input: Record<string, unknown>,
+  ) => Promise<Response>,
+): (req: Request) => Promise<Response> {
+  return async (req) => {
+    const early = preflight(req);
+    if (early) return early;
+    try {
+      const user = await authenticate(req);
+      return await run(req, user, await body(req));
+    } catch (error) {
+      return failure(req, error);
+    }
+  };
+}
 export async function readLimited(
   stream: ReadableStream<Uint8Array> | null,
   limit: number,

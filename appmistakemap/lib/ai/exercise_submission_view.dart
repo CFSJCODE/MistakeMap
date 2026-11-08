@@ -409,13 +409,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
           ],
           if (_error != null) ...[
             const SizedBox(height: 16),
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                _error!,
-                style: TextStyle(color: MistakeMapDesign.bad),
-              ),
-            ),
+            ErrorNotice(_error!),
             if (_attemptId != null)
               const Padding(
                 padding: EdgeInsets.only(top: 8),

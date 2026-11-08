@@ -1,4 +1,4 @@
-import type { database } from "./ai_service.ts";
+import type { Database } from "./ai_service.ts";
 import { CATEGORIES, PublicError } from "./ai_contract.ts";
 import {
   id,
@@ -9,7 +9,6 @@ import {
   text,
 } from "./platform_contract.ts";
 
-type Database = ReturnType<typeof database>;
 const missing = () =>
   new PublicError(
     404,

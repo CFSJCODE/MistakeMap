@@ -88,7 +88,6 @@ abstract final class Cores {
 
 // ─── Fluent UI + Liquid Glass — tokens ───────────────────────────────────────
 const Color kGlassBg = MistakeMapDesign.surface;
-const Color kGlassBorder = MistakeMapDesign.border;
 const Color kScaffoldBg = MistakeMapDesign.background;
 const double kRadius = 16;
 const double kRadiusSm = 10;
@@ -229,6 +228,35 @@ EdgeInsets _paddingCorpo(
     horizontal,
     p.bottom + base,
   );
+}
+
+/// Página fora do shell (login, nova senha): sem barras, conteúdo centrado.
+class _PaginaAuth extends StatelessWidget {
+  const _PaginaAuth({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassScaffold(
+      background: const _FundoMica(),
+      enableBackgroundSampling: false,
+      backgroundColor: kScaffoldBg,
+      statusBarStyle: GlassStatusBarStyle.dark,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _PaginaVidro extends StatelessWidget {
@@ -1671,34 +1699,19 @@ class _TelaCadastroState extends State<TelaCadastro> {
   @override
   Widget build(BuildContext context) {
     // Fora do shell: sem barra superior nem barra de abas.
-    return GlassScaffold(
-      background: const _FundoMica(),
-      enableBackgroundSampling: false,
-      backgroundColor: kScaffoldBg,
-      statusBarStyle: GlassStatusBarStyle.dark,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _cabecalho(context),
-                  const SizedBox(height: 32),
-                  _PainelVidro(
-                    padding: const EdgeInsets.all(24),
-                    child: _formulario(context),
-                  ),
-                  const SizedBox(height: 32),
-                  _termos(context),
-                ],
-              ),
-            ),
+    return _PaginaAuth(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _cabecalho(context),
+          const SizedBox(height: 32),
+          _PainelVidro(
+            padding: const EdgeInsets.all(24),
+            child: _formulario(context),
           ),
-        ),
+          const SizedBox(height: 32),
+          _termos(context),
+        ],
       ),
     );
   }
@@ -2042,76 +2055,61 @@ class _TelaNovaSenhaState extends State<TelaNovaSenha> {
 
   @override
   Widget build(BuildContext context) {
-    return GlassScaffold(
-      background: const _FundoMica(),
-      enableBackgroundSampling: false,
-      backgroundColor: kScaffoldBg,
-      statusBarStyle: GlassStatusBarStyle.dark,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: _PainelVidro(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Crie uma nova senha',
-                      style: context.tipo.subtitle?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: titleBlue,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Use ao menos $_tamanhoMinimo caracteres.',
-                      style: context.tipo.body?.copyWith(color: contentBlue),
-                    ),
-                    const SizedBox(height: 24),
-                    _campo(_senhaCtrl, 'nova senha', const Key('nova-senha')),
-                    const SizedBox(height: 16),
-                    _campo(
-                      _confirmacaoCtrl,
-                      'confirme a nova senha',
-                      const Key('nova-senha-confirmacao'),
-                    ),
-                    const SizedBox(height: 16),
-                    MistakeMapFilledButton(
-                      key: const Key('nova-senha-salvar'),
-                      style: _estiloBotao(
-                        fundo: kAcento,
-                        texto: MistakeMapDesign.abyss,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                          horizontal: 24,
-                        ),
-                      ),
-                      onPressed: _salvando ? null : _salvar,
-                      child: _salvando
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: ProgressRing(
-                                strokeWidth: 2.5,
-                                activeColor: MistakeMapDesign.abyss,
-                              ),
-                            )
-                          : const Text('Salvar nova senha'),
-                    ),
-                    const SizedBox(height: 8),
-                    MistakeMapHyperlinkButton(
-                      onPressed: _salvando ? null : _sairDaConta,
-                      child: const Text('Cancelar e voltar ao login'),
-                    ),
-                  ],
-                ),
+    return _PaginaAuth(
+      child: _PainelVidro(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Crie uma nova senha',
+              style: context.tipo.subtitle?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: titleBlue,
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              'Use ao menos $_tamanhoMinimo caracteres.',
+              style: context.tipo.body?.copyWith(color: contentBlue),
+            ),
+            const SizedBox(height: 24),
+            _campo(_senhaCtrl, 'nova senha', const Key('nova-senha')),
+            const SizedBox(height: 16),
+            _campo(
+              _confirmacaoCtrl,
+              'confirme a nova senha',
+              const Key('nova-senha-confirmacao'),
+            ),
+            const SizedBox(height: 16),
+            MistakeMapFilledButton(
+              key: const Key('nova-senha-salvar'),
+              style: _estiloBotao(
+                fundo: kAcento,
+                texto: MistakeMapDesign.abyss,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 24,
+                ),
+              ),
+              onPressed: _salvando ? null : _salvar,
+              child: _salvando
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: ProgressRing(
+                        strokeWidth: 2.5,
+                        activeColor: MistakeMapDesign.abyss,
+                      ),
+                    )
+                  : const Text('Salvar nova senha'),
+            ),
+            const SizedBox(height: 8),
+            MistakeMapHyperlinkButton(
+              onPressed: _salvando ? null : _sairDaConta,
+              child: const Text('Cancelar e voltar ao login'),
+            ),
+          ],
         ),
       ),
     );
