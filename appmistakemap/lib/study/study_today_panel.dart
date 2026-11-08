@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -439,18 +440,22 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
           ],
           if (widget.onExplore != null || widget.onAnalyze != null) ...[
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            _StudyActions(
               children: [
                 if (widget.onExplore != null)
-                  _StudyButton(
+                  _StudyActionButton(
+                    key: const Key('study-explore'),
+                    icon: WindowsIcons.education,
                     label: 'Explorar conteúdos',
+                    accent: MistakeMapDesign.azure,
                     onPressed: widget.onExplore,
                   ),
                 if (widget.onAnalyze != null)
-                  _StudyButton(
+                  _StudyActionButton(
+                    key: const Key('study-analyze'),
+                    icon: WindowsIcons.camera,
                     label: 'Enviar exercício',
+                    accent: MistakeMapDesign.violet,
                     onPressed: widget.onAnalyze,
                   ),
               ],
@@ -1220,6 +1225,87 @@ class _StudyButton extends StatelessWidget {
         foreground: primary ? MistakeMapDesign.abyss : MistakeMapDesign.content,
       ),
       child: Text(label, textAlign: TextAlign.center),
+    ),
+  );
+}
+
+/// Atalhos do fim do painel: lado a lado e centralizados quando cabem;
+/// em tela estreita, empilhados e centralizados, Explorar conteúdos primeiro.
+class _StudyActions extends StatelessWidget {
+  const _StudyActions({required this.children});
+  final List<Widget> children;
+
+  static const _gap = 16.0;
+  static const _width = 264.0;
+  static const _maxStacked = 340.0;
+
+  @override
+  Widget build(BuildContext context) {
+    if (children.isEmpty) return const SizedBox.shrink();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fitsInRow =
+            constraints.maxWidth >=
+            children.length * _width + (children.length - 1) * _gap;
+        if (fitsInRow) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) const SizedBox(width: _gap),
+                SizedBox(width: _width, child: children[i]),
+              ],
+            ],
+          );
+        }
+        final width = math.min(constraints.maxWidth, _maxStacked);
+        return Column(
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) const SizedBox(height: 12),
+              SizedBox(width: width, child: children[i]),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Botão de atalho com ícone e acento Aurora; a tinta Abyss sobre o
+/// preenchimento vivo mantém o contraste acima de 4,5:1.
+class _StudyActionButton extends StatelessWidget {
+  const _StudyActionButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.accent,
+    required this.onPressed,
+  });
+  final IconData icon;
+  final String label;
+  final Color accent;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: const BoxConstraints(minHeight: 52),
+    child: MistakeMapButton(
+      onPressed: onPressed,
+      style: MistakeMapControls.button(
+        radius: 14,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+        background: accent,
+        foreground: MistakeMapDesign.abyss,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: 10),
+          Flexible(child: Text(label, textAlign: TextAlign.center)),
+        ],
+      ),
     ),
   );
 }
