@@ -5385,21 +5385,41 @@ class TelaSobre extends StatelessWidget {
                   corAvatar: MistakeMapDesign.azure,
                   tinta: MistakeMapDesign.azureInk,
                   responsabilidades: const [
-                    'Criador e dono',
                     'Arquitetura',
-                    'Backend e IA',
-                    'Apps e publicação',
+                    'Backend Supabase',
+                    'IA e LLMs',
+                    'Offline e sync',
+                    'Integração dos apps',
+                    'CI/CD',
                   ],
                   descricao:
-                      'Criou o MistakeMap e responde pelo produto. Definiu a '
-                      'arquitetura e implementou o backend no Supabase (banco, '
-                      'segurança por usuário, Edge Functions e fotos no '
-                      'Cloudflare R2), a análise de erros com a IA escolhida '
-                      'por tarefa, a prática e o material de estudo, a '
-                      'plataforma de estudos com fila de revisão, a '
-                      'sincronização offline entre aparelhos e os apps para '
-                      'Android, Windows e Web, além da publicação na Vercel e '
-                      'das atualizações sem reinstalar pelo Shorebird.',
+                      '• Arquitetura: cliente Flutter sem regra de negócio; '
+                      'OCR, LLM e cálculos ficam no servidor, sem nenhum '
+                      'segredo no app.\n'
+                      '• Banco PostgreSQL no Supabase: modelagem, migrations '
+                      'versionadas, RLS por usuário, triggers de integridade, '
+                      'limite de uso no próprio banco e tarefas assíncronas '
+                      'com pg_cron + pg_net e segredos no Vault.\n'
+                      '• Edge Functions em Deno/TypeScript: análise da '
+                      'tentativa, fila em lote, prática, material de estudo, '
+                      'fila de revisão, dados da conta e URLs assinadas para '
+                      'fotos no Cloudflare R2.\n'
+                      '• IA: contrato JSON validado para a saída do modelo, '
+                      'classificação em 7 tipos de erro com evidência e '
+                      'confiança, roteador que escolhe o modelo por tarefa '
+                      '(visão, análise, estudo, prática) entre Gemini, Claude '
+                      'e OpenRouter, com reserva por disponibilidade.\n'
+                      '• Prática direcionada: conceitos ranqueados por '
+                      'frequência × recência (meia-vida de 14 dias), '
+                      'descontando acertos, e agenda de revisão com '
+                      'intervalos determinísticos.\n'
+                      '• Offline-first: SQLite local como cache, fila de envio '
+                      'com UUID do aparelho, Realtime, mesclagem por '
+                      'atualização mais recente e barreira contra recriar '
+                      'itens excluídos.\n'
+                      '• Integração dos apps Flutter (Android, Windows e Web) '
+                      'com o backend, CI no GitHub Actions, web na Vercel e '
+                      'patches de código pelo Shorebird.',
                   acao: LinkedInProfileButton(
                     name: 'Cláudio Francisco',
                     onPressed: () =>
@@ -5414,15 +5434,21 @@ class TelaSobre extends StatelessWidget {
                   corAvatar: MistakeMapDesign.violet,
                   tinta: MistakeMapDesign.violetInk,
                   responsabilidades: const [
-                    'Coautor',
-                    'Frontend',
-                    'Design',
+                    'Frontend Flutter',
+                    'Design de interfaces',
+                    'UI/UX',
                     'Grafo conceitual',
                   ],
                   descricao:
-                      'Coautor do app. Responsável pelo frontend e pelo design '
-                      'das interfaces em Flutter e pelo grafo conceitual que '
-                      'mostra como os erros se ligam no Mapa.',
+                      '• Frontend em Flutter/Dart com Fluent UI: telas, '
+                      'componentes e navegação responsiva para celular, '
+                      'tablet, Windows e Web.\n'
+                      '• Design das interfaces e da experiência do usuário: '
+                      'fluxo de estudo, hierarquia visual e leitura das '
+                      'telas.\n'
+                      '• Grafo conceitual do Mapa: erros como nós de conceito '
+                      'ligados por relações, para o estudante ver o que se '
+                      'repete e onde estudar.',
                   acao: LinkedInProfileButton(
                     name: 'Lucas Emanuel',
                     onPressed: () =>
