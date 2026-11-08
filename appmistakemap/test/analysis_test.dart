@@ -523,7 +523,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Grafo de erros'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    // A chamada para estudar fica no topo; o grafo é a visualização inicial.
+    // O diagnóstico vem primeiro; o convite para estudar fecha a página.
+    expect(find.byKey(const Key('map-role')), findsOneWidget);
     expect(find.byKey(const Key('map-study-callout')), findsOneWidget);
     await tester.ensureVisible(find.text('Gráficos'));
     await tester.tap(find.text('Gráficos'));

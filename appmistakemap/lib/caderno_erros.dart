@@ -171,9 +171,12 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Text(
         _ocultarRevisados
-            ? 'Mostrando só os erros pendentes. Sincronizados com sua conta.'
-            : 'Seus erros anotados ficam neste aparelho, mesmo sem internet, '
-                  'e sincronizam com sua conta.',
+            ? 'Mostrando só as regras que faltam revisar.'
+            // O Caderno guarda o que o aluno aprendeu, com as palavras dele;
+            // o diagnóstico da IA fica no Mapa e o treino, no Estudar.
+            : 'Suas regras, com as suas palavras: o que você errou e como não '
+                  'errar de novo. Funciona sem internet e sincroniza com sua '
+                  'conta.',
         textAlign: TextAlign.center,
         style: context.tipo.body?.copyWith(color: contentBlue),
       ),
@@ -230,7 +233,8 @@ class _CadernoVazio extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Anote um erro para revisar depois.',
+            'Depois de corrigir um erro, anote aqui a regra que você '
+            'aprendeu para revisar antes da prova.',
             textAlign: TextAlign.center,
             style: context.tipo.body?.copyWith(color: contentBlue),
           ),
@@ -494,7 +498,8 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
                   Text(
                     _editando
                         ? 'Atualize as informações do registro.'
-                        : 'Anote o erro para revisar depois.',
+                        : 'Escreva o erro e a regra certa com as suas '
+                              'palavras.',
                     textAlign: TextAlign.center,
                     style: context.tipo.body?.copyWith(color: contentBlue),
                   ),
@@ -516,7 +521,7 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
                         ),
                         const SizedBox(height: 16),
                         _AdicionarCampoTexto(
-                          rotulo: 'Título',
+                          rotulo: 'O que você errou',
                           dica: 'Ex.: Sinal na fórmula de Bhaskara',
                           controller: _tituloCtrl,
                           validator: (v) => _obrigatorio(
@@ -527,7 +532,7 @@ class _TelaRegistroErroState extends State<TelaRegistroErro> {
                         ),
                         const SizedBox(height: 16),
                         _AdicionarCampoTexto(
-                          rotulo: 'O que você errou?',
+                          rotulo: 'Regra para não errar de novo',
                           dica: 'Descreva o erro e como corrigir',
                           controller: _descricaoCtrl,
                           minLines: 4,

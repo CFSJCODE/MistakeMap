@@ -134,11 +134,14 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            // O Estudar é onde se treina; o diagnóstico fica no Mapa e as
+            // regras anotadas, no Caderno.
             const Text(
-              'A IA lê os exercícios que você registrou e os erros que ela '
-              'identificou nesta matéria e monta um resumo, cartões de revisão '
-              'e um quiz de múltipla escolha. O gabarito só aparece depois que '
-              'você responde.',
+              'Aqui você treina o que o Mapa de erros apontou. Escolha a '
+              'matéria: a IA monta um resumo, cartões de revisão, um quiz de '
+              'múltipla escolha e exercícios novos sobre os seus erros. O '
+              'gabarito só aparece depois que você responde.',
+              key: Key('study-role'),
             ),
             const SizedBox(height: 24),
             if (widget.subjects.isEmpty)
