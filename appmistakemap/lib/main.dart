@@ -47,9 +47,11 @@ import 'sync/sincronizador.dart';
 import 'sync/sobreposicao.dart';
 import 'study/study_today_panel.dart';
 import 'platform/platform_hub.dart';
+import 'exercicios/banco_questoes.dart';
 
 part 'caderno_erros.dart';
 part 'learning_platform.dart';
+part 'banco_exercicios.dart';
 
 // ─── Cores da identidade visual (Obsidian Glass, modo claro) ─────────────────
 // titleBlue e contentBlue mantêm o nome histórico; hoje são as tintas escuras
@@ -411,6 +413,7 @@ class _IndicadorConexao extends StatelessWidget {
 
 class _BotaoBarra extends StatelessWidget {
   const _BotaoBarra({
+    super.key,
     required this.icone,
     required this.dica,
     required this.onPressed,
@@ -1342,7 +1345,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     HapticFeedback.selectionClick();
     setState(() => _indiceAtual = i);
     if (i == 0) _inicioKey.currentState?.carregarEstatisticas();
-    if (i == 1) _listaKey.currentState?.carregarExercicios();
+    if (i == 1) _listaKey.currentState?.atualizar();
     if (i == _mapa) _mapaControle.refresh();
     if (i == 3) _cadernoKey.currentState?._carregar();
   }
@@ -3907,13 +3910,31 @@ String _msgExclusao(ResultadoEscrita resultado) =>
 // ─── Lista de exercícios ──────────────────────────────────────────────────────
 class TelaPrincipal extends StatefulWidget {
   final AppUser user;
-  const TelaPrincipal({super.key, required this.user});
+
+  /// Seção aberta primeiro: o banco para praticar, salvo pedido contrário.
+  final SecaoExercicios secaoInicial;
+
+  /// Repositório do banco de questões (testes usam um falso).
+  final RepositorioQuestoes? repositorioQuestoes;
+
+  const TelaPrincipal({
+    super.key,
+    required this.user,
+    this.secaoInicial = SecaoExercicios.praticar,
+    this.repositorioQuestoes,
+  });
 
   @override
   State<TelaPrincipal> createState() => _TelaPrincipalState();
 }
 
+/// Seções da aba Exercícios: o banco para responder no app e os exercícios
+/// que o aluno registrou (ou já respondeu).
+enum SecaoExercicios { praticar, meus }
+
 class _TelaPrincipalState extends State<TelaPrincipal> {
+  late SecaoExercicios _secao = widget.secaoInicial;
+  final _bancoKey = GlobalKey<BancoExerciciosState>();
   List<Exercicio> _exercicios = [];
   Exercicio? _selecionado;
   bool _carregando = true;
@@ -3953,6 +3974,41 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
       if (mounted) setState(() => _adicionandoExemplos = false);
     }
   }
+
+  /// Recarrega a seção visível (chamado ao voltar para a aba).
+  Future<void> atualizar() async {
+    if (_secao == SecaoExercicios.praticar) {
+      await _bancoKey.currentState?.carregar();
+    }
+    await carregarExercicios();
+  }
+
+  Widget _seletorSecao() => Align(
+    alignment: Alignment.centerLeft,
+    child: GlassSegmented<SecaoExercicios>(
+      accent: MistakeMapDesign.azure,
+      ink: MistakeMapDesign.azureInk,
+      segments: const [
+        (
+          value: SecaoExercicios.praticar,
+          label: Text('Praticar'),
+          icon: WindowsIcons.education,
+          key: Key('secao-praticar'),
+        ),
+        (
+          value: SecaoExercicios.meus,
+          label: Text('Meus exercícios'),
+          icon: WindowsIcons.bulleted_list,
+          key: Key('secao-meus'),
+        ),
+      ],
+      selected: _secao,
+      onSelected: (s) {
+        setState(() => _secao = s);
+        if (s == SecaoExercicios.meus) carregarExercicios();
+      },
+    ),
+  );
 
   Future<void> carregarExercicios() async {
     if (mounted) setState(() => _carregando = true);
@@ -4067,17 +4123,27 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 
   @override
   Widget build(BuildContext context) {
+    final praticar = _secao == SecaoExercicios.praticar;
     final lista = _PaginaVidro(
-      titulo: 'Meus exercícios',
+      titulo: 'Exercícios',
       acoes: [
         _BotaoBarra(
           icone: WindowsIcons.refresh,
           dica: 'Atualizar',
-          onPressed: carregarExercicios,
+          onPressed: atualizar,
         ),
       ],
-      corpo: _corpo(context),
+      corpo: praticar
+          ? BancoExercicios(
+              key: _bancoKey,
+              user: widget.user,
+              cabecalho: _seletorSecao(),
+              repositorio: widget.repositorioQuestoes,
+            )
+          : _corpo(context),
     );
+    // O banco ocupa a tela toda; o painel de detalhe é dos meus exercícios.
+    if (praticar) return lista;
     return DoisPaineis(
       inicio: lista,
       fim: _selecionado == null
@@ -4101,42 +4167,61 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 
   Widget _corpo(BuildContext context) {
     if (_carregando && _exercicios.isEmpty) {
-      return Padding(
-        padding: _paddingCorpo(context),
-        child: const Center(child: ProgressRing()),
+      return _ListaAtualizavel(
+        onRefresh: carregarExercicios,
+        children: [
+          _seletorSecao(),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 48),
+            child: Center(child: ProgressRing()),
+          ),
+        ],
       );
     }
     if (_exercicios.isEmpty && _falhaAoCarregar) {
-      return Padding(
-        padding: _paddingCorpo(context, horizontal: 32),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Não foi possível carregar seus exercícios. Verifique a conexão e tente novamente.',
-                textAlign: TextAlign.center,
-                style: context.tipo.body?.copyWith(color: contentBlue),
-              ),
-              const SizedBox(height: 16),
-              Button(
-                onPressed: carregarExercicios,
-                child: const Text('Tentar novamente'),
-              ),
-            ],
+      return _ListaAtualizavel(
+        onRefresh: carregarExercicios,
+        children: [
+          _seletorSecao(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Não foi possível carregar seus exercícios. Verifique a conexão e tente novamente.',
+                  textAlign: TextAlign.center,
+                  style: context.tipo.body?.copyWith(color: contentBlue),
+                ),
+                const SizedBox(height: 16),
+                Button(
+                  onPressed: carregarExercicios,
+                  child: const Text('Tentar novamente'),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       );
     }
     if (_exercicios.isEmpty) {
-      return ListaVazia(
-        onAdicionarExemplos: _adicionarExemplos,
-        adicionando: _adicionandoExemplos,
+      return _ListaAtualizavel(
+        onRefresh: carregarExercicios,
+        children: [
+          _seletorSecao(),
+          ListaVazia(
+            onAdicionarExemplos: _adicionarExemplos,
+            adicionando: _adicionandoExemplos,
+            emLista: true,
+          ),
+        ],
       );
     }
     return _ListaAtualizavel(
       onRefresh: carregarExercicios,
       children: [
+        _seletorSecao(),
+        const SizedBox(height: 16),
         if (_falhaAoCarregar)
           const Padding(
             padding: EdgeInsets.only(bottom: 16),
@@ -4166,12 +4251,18 @@ class ListaVazia extends StatelessWidget {
     super.key,
     this.onAdicionarExemplos,
     this.adicionando = false,
+    this.emLista = false,
   });
+
+  /// Dentro de uma lista que já desconta as barras: só o respiro lateral.
+  final bool emLista;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: _paddingCorpo(context, horizontal: 32),
+      padding: emLista
+          ? const EdgeInsets.fromLTRB(16, 32, 16, 0)
+          : _paddingCorpo(context, horizontal: 32),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

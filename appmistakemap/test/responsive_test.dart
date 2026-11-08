@@ -653,7 +653,7 @@ void main() {
     ) async {
       await _render(
         tester,
-        const TelaPrincipal(user: _user),
+        const TelaPrincipal(user: _user, secaoInicial: SecaoExercicios.meus),
         size: const Size(1280, 800),
       );
       await _settle(tester);
@@ -672,7 +672,7 @@ void main() {
         'Editar depois do envio', (tester) async {
       await _render(
         tester,
-        const TelaPrincipal(user: _user),
+        const TelaPrincipal(user: _user, secaoInicial: SecaoExercicios.meus),
         size: const Size(1280, 800),
       );
       await _settle(tester);
@@ -695,7 +695,7 @@ void main() {
     ) async {
       await _render(
         tester,
-        const TelaPrincipal(user: _user),
+        const TelaPrincipal(user: _user, secaoInicial: SecaoExercicios.meus),
         size: const Size(390, 800),
       );
       await _settle(tester);
@@ -715,7 +715,7 @@ void main() {
         const hinge = Rect.fromLTWH(360, 0, 34, 720);
         await _render(
           tester,
-          const TelaPrincipal(user: _user),
+          const TelaPrincipal(user: _user, secaoInicial: SecaoExercicios.meus),
           size: const Size(754, 720),
           features: const [
             DisplayFeature(

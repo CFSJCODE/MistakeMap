@@ -43,3 +43,7 @@ verify_jwt = false
 # Worker restrito ao segredo dedicado; JWT de aluno não autoriza exclusão.
 [functions.account-data]
 verify_jwt = false
+
+# Banco de questões: o POST verifica o JWT no handler antes do banco.
+[functions.question-bank]
+verify_jwt = false
