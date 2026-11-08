@@ -5385,16 +5385,21 @@ class TelaSobre extends StatelessWidget {
                   corAvatar: MistakeMapDesign.azure,
                   tinta: MistakeMapDesign.azureInk,
                   responsabilidades: const [
-                    'Backend',
-                    'Supabase',
-                    'IA / LLM',
-                    'Sincronização',
+                    'Criador e dono',
+                    'Arquitetura',
+                    'Backend e IA',
+                    'Apps e publicação',
                   ],
                   descricao:
-                      'Responsável pela arquitetura backend: banco e segurança '
-                      'no Supabase, Edge Functions, fotos no Cloudflare R2, '
-                      'análise de erros e escolha do modelo de IA por tarefa, '
-                      'sincronização offline e atualizações do app.',
+                      'Criou o MistakeMap e responde pelo produto. Definiu a '
+                      'arquitetura e implementou o backend no Supabase (banco, '
+                      'segurança por usuário, Edge Functions e fotos no '
+                      'Cloudflare R2), a análise de erros com a IA escolhida '
+                      'por tarefa, a prática e o material de estudo, a '
+                      'plataforma de estudos com fila de revisão, a '
+                      'sincronização offline entre aparelhos e os apps para '
+                      'Android, Windows e Web, além da publicação na Vercel e '
+                      'das atualizações sem reinstalar pelo Shorebird.',
                   acao: LinkedInProfileButton(
                     name: 'Cláudio Francisco',
                     onPressed: () =>
@@ -5408,11 +5413,15 @@ class TelaSobre extends StatelessWidget {
                   foto: lucasProfilePhotoBytes,
                   corAvatar: MistakeMapDesign.violet,
                   tinta: MistakeMapDesign.violetInk,
-                  responsabilidades: const ['Frontend', 'Design', 'UI/UX'],
+                  responsabilidades: const [
+                    'Coautor',
+                    'Frontend',
+                    'Design',
+                    'UI/UX',
+                  ],
                   descricao:
-                      'Responsável pela experiência do usuário, design de '
-                      'interfaces, prototipagem no Figma e implementação '
-                      'das telas no Flutter.',
+                      'Coautor do app. Colabora na experiência do usuário, no '
+                      'design das interfaces e nas telas em Flutter.',
                   acao: LinkedInProfileButton(
                     name: 'Lucas Emanuel',
                     onPressed: () =>
