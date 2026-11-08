@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:appmistakemap/main.dart';
+import 'package:appmistakemap/study/study_repository.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _TestAuthStorage extends GotrueAsyncStorage {
   const _TestAuthStorage();
@@ -27,6 +29,14 @@ GoTrueClient get _auth => Supabase.instance.client.auth;
 // Corpos enviados a /auth/v1/recover (link de redefinição de senha).
 final _pedidosRecuperacao = <Map<String, dynamic>>[];
 
+class _AuthStudyStore implements StudyStore {
+  final _values = <String, String>{};
+  @override
+  Future<String?> read(String key) async => _values[key];
+  @override
+  Future<void> write(String key, String value) async => _values[key] = value;
+}
+
 // Mesmo caminho do gotrue ao falhar o refresh ou o deep link do OAuth.
 void _injetarErro(Object erro) {
   // ignore: invalid_use_of_internal_member
@@ -39,7 +49,10 @@ Future<void> _settle(WidgetTester tester) => tester.pumpAndSettle(
   const Duration(seconds: 5),
 );
 
-Future<void> _renderApp(WidgetTester tester) async {
+Future<void> _renderApp(
+  WidgetTester tester, {
+  StudyRepository? studyRepository,
+}) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(1280, 900);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -48,7 +61,7 @@ Future<void> _renderApp(WidgetTester tester) async {
     LiquidGlassWidgets.wrap(
       theme: temaVidro,
       brightnessResolver: (context) => FluentTheme.maybeOf(context)?.brightness,
-      child: const MistakeMapApp(),
+      child: MistakeMapApp(studyRepository: studyRepository),
     ),
   );
   await _settle(tester);
@@ -57,6 +70,7 @@ Future<void> _renderApp(WidgetTester tester) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   setUpAll(() async {
     await Supabase.initialize(
@@ -81,6 +95,26 @@ void main() {
           );
           return http.Response(
             '{}',
+            200,
+            headers: {'content-type': 'application/json'},
+            request: request,
+          );
+        }
+        if (request.url.path == '/functions/v1/review-queue') {
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          return http.Response(
+            jsonEncode(
+              body['action'] == 'session'
+                  ? {'session': null}
+                  : {
+                      'profile': null,
+                      'due_count': 0,
+                      'pending_diagnostics': 0,
+                      'estimated_minutes': 0,
+                      'reviewed_today': 0,
+                      'progress': {'reviews': 0, 'period_days': 7},
+                    },
+            ),
             200,
             headers: {'content-type': 'application/json'},
             request: request,
@@ -130,6 +164,12 @@ void main() {
         'access_token': 'token-de-teste',
         'token_type': 'bearer',
         'refresh_token': 'refresh-de-teste',
+        'expires_in': 3600,
+        'expires_at':
+            DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
+            1000,
         'user': {
           'id': '11111111-1111-4111-8111-111111111111',
           'email': 'estudante@example.test',
@@ -139,8 +179,31 @@ void main() {
       }),
     );
     addTearDown(_auth.signOut);
-    await _renderApp(tester);
+    // Auth lifecycle is exercised under FakeAsync. Supply the study service
+    // through its public seam: FunctionsClient's JSON worker uses real
+    // isolates, which a virtual animation clock cannot drive. The real
+    // authenticated HTTP adapter is covered in study_repository_test.dart.
+    final studyRepository = SupabaseStudyRepository.withTransport((
+      userId,
+      body,
+    ) async {
+      expect(userId, '11111111-1111-4111-8111-111111111111');
+      return body['action'] == 'session'
+          ? {'session': null}
+          : {
+              'profile': null,
+              'due_count': 0,
+              'pending_diagnostics': 0,
+              'estimated_minutes': 0,
+              'reviewed_today': 0,
+              'progress': {'reviews': 0, 'period_days': 7},
+            };
+    }, store: _AuthStudyStore());
+    addTearDown(studyRepository.dispose);
+    await _renderApp(tester, studyRepository: studyRepository);
     expect(find.byType(TelaNavegacao), findsOneWidget);
+    expect(find.text('Seu estudo de hoje'), findsOneWidget);
+    expect(find.text('Definir meu objetivo'), findsOneWidget);
     final estadoAntes = tester.state(find.byType(TelaNavegacao));
 
     _injetarErro(AuthRetryableFetchException(message: 'Failed host lookup'));

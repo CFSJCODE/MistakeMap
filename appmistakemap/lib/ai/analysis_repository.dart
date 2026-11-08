@@ -136,7 +136,7 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
     final cached = jsonMap(
       await _sincronizador.consultar(
         userId,
-        'ia_tentativas',
+        'ia_tentativas_decisoes_v1',
         () => _fetchAttemptRows(userId),
       ),
     );
@@ -170,7 +170,7 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
     try {
       for (var offset = 0; ; offset += pageSize) {
         final page = await client
-            .from('attempt_analyses')
+            .from('student_attempt_analyses')
             .select('attempt_id,subject_id,analysis')
             .eq('user_id', userId)
             .order('attempt_id')
@@ -542,9 +542,9 @@ class SupabaseAnalysisRepository implements AnalysisRepository {
       final page = await client
           .from('exercises')
           .select(
-            'id,subject_id,prompt_text,difficulty,subjects!inner(name,user_id)',
+            'id,subject_id,prompt_text,difficulty,focus_concept,subjects!inner(name,user_id)',
           )
-          .eq('source', 'ai_practice')
+          .inFilter('source', ['ai_practice', 'catalog'])
           .eq('subjects.user_id', userId)
           .order('created_at', ascending: false)
           .order('id')

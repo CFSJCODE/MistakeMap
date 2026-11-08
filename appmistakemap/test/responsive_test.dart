@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'analysis_test.dart' show FakeRepository, sample;
@@ -119,6 +120,8 @@ void _expectOutsideTopFade(WidgetTester tester, Finder content) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   setUpAll(() async {
     if (const bool.fromEnvironment('GENERATE_PREVIEWS')) {
@@ -268,6 +271,10 @@ void main() {
       expect(find.text('Estudar com a IA', skipOffstage: false), findsWidgets);
       // Atalho do Início: troca para a aba do Mapa com o painel de análise
       // aberto; a navegação continua à vista.
+      await Scrollable.ensureVisible(
+        tester.element(find.text('Analisar um exercício')),
+        alignment: .5,
+      );
       await tester.tap(find.text('Analisar um exercício'));
       await _settle(tester);
       expect(find.byType(ErrorMapView), findsOneWidget);
@@ -403,8 +410,8 @@ void main() {
       scale: 1.5,
     );
     final exercises = tester.getTopLeft(find.text('Tentativas'));
-    final review = tester.getTopLeft(find.text('Para revisar'));
-    final progress = tester.getTopLeft(find.text('Evolução'));
+    final review = tester.getTopLeft(find.text('Correções para conferir'));
+    final progress = tester.getTopLeft(find.text('Análises concluídas'));
     expect(exercises.dy, lessThan(review.dy));
     expect(review.dy, lessThan(progress.dy));
     // Sobre e Sair moram na navegação (Mais e trilho), não no Início.
@@ -423,8 +430,8 @@ void main() {
       scale: 2,
     );
     final exercises = tester.getTopLeft(find.text('Tentativas'));
-    final review = tester.getTopLeft(find.text('Para revisar'));
-    final progress = tester.getTopLeft(find.text('Evolução'));
+    final review = tester.getTopLeft(find.text('Correções para conferir'));
+    final progress = tester.getTopLeft(find.text('Análises concluídas'));
     expect(exercises.dy, closeTo(review.dy, 1));
     expect(review.dy, closeTo(progress.dy, 1));
     // A rolagem ocupa a janela toda (barra de rolagem na borda direita);

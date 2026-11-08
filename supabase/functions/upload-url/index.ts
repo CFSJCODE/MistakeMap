@@ -20,9 +20,23 @@ const handler = createUploadHandler({
     });
     if (!response.ok) return null;
     const user = await response.json();
-    return typeof user.id === "string" && /^[0-9a-f-]{36}$/i.test(user.id)
-      ? user.id
-      : null;
+    if (typeof user.id !== "string" || !/^[0-9a-f-]{36}$/i.test(user.id)) {
+      return null;
+    }
+    const sql = postgres(required("SUPABASE_DB_URL"), {
+      prepare: false,
+      max: 1,
+      idle_timeout: 5,
+      connect_timeout: 10,
+    });
+    try {
+      const [deleting] =
+        await sql`SELECT EXISTS(SELECT 1 FROM public.platform_privacy_requests
+        WHERE user_id=${user.id} AND kind='account_deletion' AND status='processing') AS active`;
+      return deleting.active ? null : user.id;
+    } finally {
+      await sql.end({ timeout: 5 });
+    }
   },
   async sign(path, contentType, sizeBytes) {
     const r2 = new AwsClient({
