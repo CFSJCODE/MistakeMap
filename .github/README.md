@@ -532,7 +532,7 @@ MistakeMap/
 | **8 · Relatórios** | PDF/CSV e compartilhamento seletivo com professor ou tutor | 🔜 |
 | **9 · Lojas** | Play Store (chave de assinatura própria) e iOS | 🔜 |
 
-Próximos passos conhecidos: tela própria para navegar no catálogo e mais temas; mostrar nos insights o que ainda está na fila de envio; manter o foco da prática ao recarregar; mover o segredo do `pg_cron` para o Vault; remover da R2 as fotos de tentativas excluídas.
+Próximos passos conhecidos: tela própria para navegar no catálogo e mais temas; mostrar nos insights o que ainda está na fila de envio; manter o foco da prática ao recarregar; remover da R2 as fotos de tentativas excluídas.
 
 ---
 
