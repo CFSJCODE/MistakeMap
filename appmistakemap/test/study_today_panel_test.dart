@@ -86,10 +86,7 @@ void main() {
       );
       expect(find.text('Seu estudo de hoje'), findsOneWidget);
       expect(find.text('Começar revisão'), findsOneWidget);
-      expect(
-        find.text('6 autoavaliação(ões) nos últimos 7 dias.'),
-        findsOneWidget,
-      );
+      expect(find.text('6 autoavaliações nos últimos 7 dias.'), findsOneWidget);
       expect(find.textContaining('não representa nota'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());

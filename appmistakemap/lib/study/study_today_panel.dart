@@ -261,9 +261,16 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
               const Text('Um próximo passo que cabe na sua rotina.'),
               if (_loading) ...[
                 const SizedBox(height: 24),
+                // Centralizado e com tamanho fixo: na coluna esticada o anel
+                // virava uma elipse da largura do cartão.
                 Semantics(
                   label: 'Carregando seu estudo',
-                  child: const ProgressRing(),
+                  child: const Center(
+                    child: SizedBox.square(
+                      dimension: 32,
+                      child: ProgressRing(),
+                    ),
+                  ),
                 ),
               ] else if (dashboard != null) ...[
                 const SizedBox(height: 24),
@@ -299,7 +306,7 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
                   const SizedBox(height: 24),
                   Text(
                     dashboard.dueCount > 0
-                        ? '${dashboard.dueCount} revisões para hoje'
+                        ? '${_plural(dashboard.dueCount, 'revisão', 'revisões')} para hoje'
                         : 'Revisões em dia',
                     style: const TextStyle(
                       fontSize: 28,
@@ -364,7 +371,7 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
                 if (sync.pending > 0) ...[
                   const SizedBox(height: 8),
                   Text(
-                    '${sync.pending} autoavaliação(ões) aguardam envio. A agenda será atualizada pelo servidor ao sincronizar.',
+                    '${_plural(sync.pending, 'autoavaliação aguarda', 'autoavaliações aguardam')} envio. A agenda será atualizada ao sincronizar.',
                   ),
                 ],
                 if (sync.updatedAt != null)
@@ -398,7 +405,7 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
                   const _StudyTitle('Confira suas correções'),
                   const SizedBox(height: 8),
                   Text(
-                    '${dashboard.pendingDiagnostics} sugestão(ões) aguardam sua conferência. Você confirma, corrige ou rejeita.',
+                    '${_plural(dashboard.pendingDiagnostics, 'sugestão aguarda', 'sugestões aguardam')} sua conferência. Você confirma, corrige ou rejeita.',
                   ),
                   const SizedBox(height: 16),
                   _StudyButton(
@@ -415,7 +422,7 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
                 const _StudyTitle('Sua semana de revisão'),
                 const SizedBox(height: 8),
                 Text(
-                  '${dashboard.progress.reviews} autoavaliação(ões) nos últimos ${dashboard.progress.periodDays} dias.',
+                  '${_plural(dashboard.progress.reviews, 'autoavaliação', 'autoavaliações')} nos últimos ${dashboard.progress.periodDays} dias.',
                 ),
                 const SizedBox(height: 8),
                 if (dashboard.progress.recallRate != null &&
@@ -433,7 +440,9 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Hoje: ${dashboard.reviewedToday} revisão(ões) registrada(s) no servidor.',
+                  dashboard.reviewedToday == 0
+                      ? 'Nenhuma revisão registrada hoje.'
+                      : 'Hoje: ${_plural(dashboard.reviewedToday, 'revisão registrada', 'revisões registradas')}.',
                 ),
               ],
             ),
@@ -493,6 +502,10 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
     });
   }
 }
+
+/// "1 autoavaliação", "3 autoavaliações": evita o "(ões)" no texto.
+String _plural(int count, String singular, String plural) =>
+    '$count ${count == 1 ? singular : plural}';
 
 String _dateTime(BuildContext context, DateTime date) {
   final local = date.toLocal();
@@ -833,7 +846,7 @@ class _StudyReviewPageState extends State<StudyReviewPage> {
                       valueListenable: widget.repository.syncState,
                       builder: (context, state, _) => Text(
                         state.pending > 0
-                            ? '${state.pending} resposta(s) ainda aguardam envio. Mantenha o aplicativo aberto ao reconectar.'
+                            ? '${_plural(state.pending, 'resposta ainda aguarda', 'respostas ainda aguardam')} envio. Mantenha o aplicativo aberto ao reconectar.'
                             : 'Respostas desta rodada enviadas ao servidor.',
                       ),
                     ),

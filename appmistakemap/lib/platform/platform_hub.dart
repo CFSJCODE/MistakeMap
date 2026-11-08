@@ -274,7 +274,16 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
     return [
       InfoLabel(
         label: 'Buscar por matéria, assunto ou tema',
-        child: TextBox(controller: _search, onSubmitted: (_) => _load()),
+        child: TextBox(
+          controller: _search,
+          placeholder: 'Ex.: Física, Newton, sensores',
+          prefix: const Padding(
+            padding: EdgeInsetsDirectional.only(start: 10),
+            child: Icon(WindowsIcons.search, size: 16),
+          ),
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => _load(),
+        ),
       ),
       const SizedBox(height: 8),
       _button('Buscar no catálogo', _load),
@@ -914,27 +923,38 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
     );
   }
 
-  Widget _header() => LayoutBuilder(
-    builder: (context, box) {
-      final back = _button('Voltar', () => Navigator.of(context).pop());
-      const title = Text(
-        'Seu espaço de estudos',
-        style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
-      );
-      if (box.maxWidth < 600) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [back, const SizedBox(height: 16), title],
-        );
-      }
-      return Row(
-        children: [
-          back,
-          const SizedBox(width: 16),
-          const Expanded(child: title),
-        ],
-      );
-    },
+  // Mesmo cabeçalho das outras telas internas (Explorar e aprender, Sobre):
+  // seta de voltar à esquerda e o título ao lado, na mesma linha.
+  Widget _header() => Row(
+    children: [
+      Tooltip(
+        message: 'Voltar',
+        child: SizedBox.square(
+          dimension: 40,
+          child: MistakeMapIconButton(
+            style: MistakeMapControls.button(
+              padding: const EdgeInsets.all(11),
+              foreground: MistakeMapDesign.primary,
+            ),
+            icon: const Icon(WindowsIcons.back, size: 18),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+        ),
+      ),
+      const SizedBox(width: 12),
+      const Expanded(
+        child: Text(
+          'Seu espaço de estudos',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: MistakeMapDesign.primary,
+          ),
+        ),
+      ),
+    ],
   );
 
   List<Widget> _content() => [
@@ -1043,7 +1063,10 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
     content: SafeArea(
       child: Column(
         children: [
-          Padding(padding: const EdgeInsets.all(16), child: _header()),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 16, 4),
+            child: _header(),
+          ),
           Expanded(
             child: Align(
               alignment: Alignment.topCenter,

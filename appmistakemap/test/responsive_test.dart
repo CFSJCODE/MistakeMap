@@ -264,7 +264,7 @@ void main() {
         TelaNavegacao(user: _user, analysisRepository: FakeRepository()),
         size: Size(width, 900),
       );
-      expect(find.text('Analisar exercício com IA'), findsNothing);
+      expect(find.text('Analisar com a IA'), findsNothing);
       // O Início mostra o ciclo de estudo em passos, com o primeiro indicado.
       expect(find.text('O que fazer agora'), findsOneWidget);
       expect(find.text('Próximo passo'), findsOneWidget);
@@ -289,7 +289,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('navigation-2')));
       await _settle(tester);
       expect(find.text('Seu mapa ainda está vazio'), findsOneWidget);
-      expect(find.text('Analisar exercício com IA'), findsOneWidget);
+      expect(find.text('Analisar com a IA'), findsOneWidget);
       expect(find.text('Sua resposta'), findsOneWidget);
       await _voltar(tester);
       expect(find.text('O que fazer agora'), findsOneWidget);
@@ -543,7 +543,7 @@ void main() {
         // painel de análise do próprio Mapa faz esse papel.
         expect(find.byKey(const ValueKey('navigation-action')), findsNothing);
         expect(find.byType(FloatingActionButton), findsNothing);
-        expect(find.text('Analisar exercício com IA'), findsOneWidget);
+        expect(find.text('Analisar com a IA'), findsOneWidget);
         expect(tester.takeException(), isNull);
         // Voltar do sistema numa aba que não é o Início leva ao Início.
         await _voltar(tester);

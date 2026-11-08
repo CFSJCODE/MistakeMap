@@ -145,10 +145,13 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
               const _StudyEmptyState(
                 key: Key('study-no-subjects'),
                 icon: Icons.menu_book_outlined,
-                title: 'Nenhuma matéria ainda',
+                // As matérias vêm das tentativas analisadas: exercícios da
+                // Lista ainda sem resposta não entram aqui.
+                title: 'Nenhuma tentativa analisada ainda',
                 message:
-                    'Registre um exercício com a matéria dele. O material de '
-                    'estudo é montado a partir do que você já resolveu.',
+                    'Responda um exercício e envie para a IA analisar. O '
+                    'material de estudo de cada matéria é montado a partir '
+                    'das suas tentativas.',
               )
             else ...[
               DropdownButtonFormField<String>(
