@@ -47,7 +47,7 @@ class AppNavigationShell extends StatelessWidget {
 
   static const labels = [
     'Início',
-    'Meus exercícios',
+    'Exercícios',
     'Mapa de erros',
     'Caderno de erros',
     'Administração',
@@ -257,7 +257,7 @@ class AppNavigationShell extends StatelessWidget {
     );
     final text = Text(
       compact
-          ? const ['Início', 'Lista', 'Mapa', 'Caderno'][index]
+          ? const ['Início', 'Exercícios', 'Mapa', 'Caderno'][index]
           : labels[index],
       textAlign: compact ? TextAlign.center : TextAlign.start,
       maxLines: compact ? 1 : null,
@@ -719,7 +719,7 @@ class AppNavigationShell extends StatelessWidget {
   static const _compactGap = 6.0;
 
   /// Ordem dos botões na barra inferior — até sete fatias em qualquer
-  /// largura de celular: Início · Lista · Mapa · Estudar · Caderno · Sobre ·
+  /// largura de celular: Início · Exercícios · Mapa · Estudar · Caderno · Sobre ·
   /// Mais. Ícones compactos para que os 7 destinos caibam em qualquer celular.
   /// Analisar não tem fatia: o Mapa já traz o painel. Cada entrada é um índice
   /// de destino ou um dos atalhos negativos.

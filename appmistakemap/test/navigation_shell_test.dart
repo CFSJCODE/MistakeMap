@@ -256,7 +256,7 @@ void main() {
       await tester.pumpAndSettle();
       final labels = <int, String>{
         0: 'Início',
-        1: 'Meus exercícios',
+        1: 'Exercícios',
         3: 'Caderno de erros',
         2: 'Mapa de erros',
         4: 'Administração',

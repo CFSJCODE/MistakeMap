@@ -59,6 +59,12 @@ Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
 - Catálogo de exercícios revisados (`catalog_exercises` + `catalog_answer_keys`, gabarito sem
   acesso do cliente): 5 por matéria/assunto/tema. O `generate-practice` serve o catálogo antes
   da IA quando ele fecha a rodada (`_shared/catalog.ts`).
+- Aba Exercícios (antes "Lista"): seção **Praticar** com o banco de questões (`question_bank`,
+  8 tipos: múltipla escolha, várias corretas, V/F, numérica, lacunas, ordenação, associação e
+  dissertativa) respondidas no app, e seção **Meus exercícios**. Gabarito em `question_bank_keys`
+  (sem acesso do cliente); a Edge Function `question-bank` corrige (`_shared/question_bank.ts`),
+  grava a tentativa com análise no formato da IA e leva o erro ao Mapa; a dissertativa vai para a IA
+  com o gabarito como referência. Para revisar o banco, nova migration com o upsert por `slug`.
 - Todo exercício tem temática de tecnologia, sem exceção, variando as áreas (robótica,
   eletrônica, elétrica, hardware, software, programação, redes…) e com o dispositivo ou sistema
   como protagonista e fonte dos dados: catálogo, exemplos da conta nova (`seed_example_exercises`), prática

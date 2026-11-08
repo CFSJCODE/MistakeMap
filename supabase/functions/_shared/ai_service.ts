@@ -373,13 +373,18 @@ export async function analyzeAttempt(sql: Database, id: string, user: string) {
       );
     }
     // Gabarito da rodada de prática; sem ele, o revisado do catálogo (exemplos
-    // copiados por seed_example_exercises não têm rodada).
+    // copiados por seed_example_exercises não têm rodada) ou o do banco de
+    // questões (dissertativas da aba Exercícios).
     const [key] = await sql`SELECT correct_answer,explanation FROM (
         SELECT 1 AS o,correct_answer,explanation FROM public.practice_answer_keys
         WHERE exercise_id=${a.exercise_id}
         UNION ALL
         SELECT 2,k.correct_answer,k.explanation FROM public.exercises e
         JOIN public.catalog_answer_keys k ON k.catalog_exercise_id=e.catalog_exercise_id
+        WHERE e.id=${a.exercise_id}
+        UNION ALL
+        SELECT 3,k.correct_answer,k.explanation FROM public.exercises e
+        JOIN public.question_bank_keys k ON k.question_id=e.question_id
         WHERE e.id=${a.exercise_id}
       ) g ORDER BY o LIMIT 1`;
     let modelUsed = aiConfig().model;
