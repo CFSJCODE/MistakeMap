@@ -5417,11 +5417,12 @@ class TelaSobre extends StatelessWidget {
                     'Coautor',
                     'Frontend',
                     'Design',
-                    'UI/UX',
+                    'Grafo conceitual',
                   ],
                   descricao:
-                      'Coautor do app. Colabora na experiência do usuário, no '
-                      'design das interfaces e nas telas em Flutter.',
+                      'Coautor do app. Responsável pelo frontend e pelo design '
+                      'das interfaces em Flutter e pelo grafo conceitual que '
+                      'mostra como os erros se ligam no Mapa.',
                   acao: LinkedInProfileButton(
                     name: 'Lucas Emanuel',
                     onPressed: () =>
