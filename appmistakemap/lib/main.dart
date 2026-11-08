@@ -5393,33 +5393,10 @@ class TelaSobre extends StatelessWidget {
                     'CI/CD',
                   ],
                   descricao:
-                      '• Arquitetura: cliente Flutter sem regra de negócio; '
-                      'OCR, LLM e cálculos ficam no servidor, sem nenhum '
-                      'segredo no app.\n'
-                      '• Banco PostgreSQL no Supabase: modelagem, migrations '
-                      'versionadas, RLS por usuário, triggers de integridade, '
-                      'limite de uso no próprio banco e tarefas assíncronas '
-                      'com pg_cron + pg_net e segredos no Vault.\n'
-                      '• Edge Functions em Deno/TypeScript: análise da '
-                      'tentativa, fila em lote, prática, material de estudo, '
-                      'fila de revisão, dados da conta e URLs assinadas para '
-                      'fotos no Cloudflare R2.\n'
-                      '• IA: contrato JSON validado para a saída do modelo, '
-                      'classificação em 7 tipos de erro com evidência e '
-                      'confiança, roteador que escolhe o modelo por tarefa '
-                      '(visão, análise, estudo, prática) entre Gemini, Claude '
-                      'e OpenRouter, com reserva por disponibilidade.\n'
-                      '• Prática direcionada: conceitos ranqueados por '
-                      'frequência × recência (meia-vida de 14 dias), '
-                      'descontando acertos, e agenda de revisão com '
-                      'intervalos determinísticos.\n'
-                      '• Offline-first: SQLite local como cache, fila de envio '
-                      'com UUID do aparelho, Realtime, mesclagem por '
-                      'atualização mais recente e barreira contra recriar '
-                      'itens excluídos.\n'
-                      '• Integração dos apps Flutter (Android, Windows e Web) '
-                      'com o backend, CI no GitHub Actions, web na Vercel e '
-                      'patches de código pelo Shorebird.',
+                      'Arquitetura do sistema, banco e segurança no Supabase, '
+                      'Edge Functions, inteligência artificial, prática e '
+                      'estudo, sincronização offline e publicação dos apps.',
+                  contribuicoes: _contribuicoesClaudio,
                   acao: LinkedInProfileButton(
                     name: 'Cláudio Francisco',
                     onPressed: () =>
@@ -5440,15 +5417,9 @@ class TelaSobre extends StatelessWidget {
                     'Grafo conceitual',
                   ],
                   descricao:
-                      '• Frontend em Flutter/Dart com Fluent UI: telas, '
-                      'componentes e navegação responsiva para celular, '
-                      'tablet, Windows e Web.\n'
-                      '• Design das interfaces e da experiência do usuário: '
-                      'fluxo de estudo, hierarquia visual e leitura das '
-                      'telas.\n'
-                      '• Grafo conceitual do Mapa: erros como nós de conceito '
-                      'ligados por relações, para o estudante ver o que se '
-                      'repete e onde estudar.',
+                      'Frontend em Flutter com Fluent UI, design das '
+                      'interfaces e da navegação e grafo conceitual do Mapa.',
+                  contribuicoes: _contribuicoesLucas,
                   acao: LinkedInProfileButton(
                     name: 'Lucas Emanuel',
                     onPressed: () =>
@@ -5564,6 +5535,337 @@ class TelaSobre extends StatelessWidget {
     );
   }
 }
+
+/// Um item do que a pessoa desenvolveu, com os PRs que o comprovam.
+typedef _Contribuicao = ({String texto, String prs});
+
+/// Contribuições agrupadas por área técnica.
+typedef _AreaContribuicao = ({
+  IconData icone,
+  String area,
+  List<_Contribuicao> itens,
+});
+
+/// Lista expansível com tudo o que um membro da equipe desenvolveu,
+/// agrupada por área, para não alongar o cartão quando fechada.
+class _ContribuicoesMembro extends StatelessWidget {
+  const _ContribuicoesMembro({
+    required this.areas,
+    required this.tinta,
+    required this.acento,
+  });
+
+  final List<_AreaContribuicao> areas;
+  final Color tinta;
+  final Color acento;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = areas.fold<int>(0, (soma, a) => soma + a.itens.length);
+    return Expander(
+      header: Row(
+        children: [
+          Icon(WindowsIcons.bulleted_list, size: 16, color: tinta),
+          const SizedBox(width: 8),
+          Expanded(
+            // Em telas estreitas ou fonte grande a contagem desce de linha.
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  'Tudo o que desenvolveu',
+                  style: context.tipo.bodyStrong?.copyWith(color: tinta),
+                ),
+                _Pilula(texto: '$total entregas', cor: tinta),
+              ],
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, area) in areas.indexed) ...[
+            if (i > 0) const SizedBox(height: 16),
+            _area(context, area),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _area(BuildContext context, _AreaContribuicao area) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: acento.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(area.icone, size: 14, color: tinta),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                area.area,
+                style: context.tipo.bodyStrong?.copyWith(
+                  color: MistakeMapDesign.abyss,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        for (final item in area.itens)
+          Padding(
+            padding: const EdgeInsets.only(left: 38, bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 7),
+                  child: Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: acento,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      text: item.texto,
+                      children: [
+                        if (item.prs.isNotEmpty)
+                          TextSpan(
+                            text: '  ${item.prs}',
+                            style: context.tipo.caption?.copyWith(
+                              color: tinta,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
+                    ),
+                    style: context.tipo.body?.copyWith(
+                      color: MistakeMapDesign.steel,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Entregas do Cláudio, conferidas no histórico de PRs do repositório.
+const List<_AreaContribuicao> _contribuicoesClaudio = [
+  (
+    icone: WindowsIcons.lock,
+    area: 'Banco de dados e segurança',
+    itens: [
+      (
+        texto:
+            'Modelo de dados e migrations do Supabase, perfil acadêmico e '
+            'RLS por usuário',
+        prs: '',
+      ),
+      (
+        texto:
+            'Limite de uso por usuário no banco e alertas de armazenamento '
+            'do Storage e do R2',
+        prs: '',
+      ),
+      (
+        texto: 'Segredos do cron no Vault e troca automática do segredo',
+        prs: '#67 #68',
+      ),
+      (texto: 'Histórico de migrations alinhado com a produção', prs: '#7 #39'),
+    ],
+  ),
+  (
+    icone: WindowsIcons.send,
+    area: 'Backend e Edge Functions',
+    itens: [
+      (
+        texto:
+            'Processamento em lote com pg_cron + pg_net e migração do worker '
+            'Rust para Edge Functions',
+        prs: '#3',
+      ),
+      (texto: 'Login com Supabase Auth, deep link e seed de dados', prs: '#6'),
+      (texto: 'Recuperação de senha e aviso de perfil', prs: '#26'),
+      (texto: 'Envio de fotos ao Cloudflare R2 com URL assinada', prs: '#7'),
+      (
+        texto: 'Painel administrativo, papéis de usuário e métricas de IA',
+        prs: '#11',
+      ),
+    ],
+  ),
+  (
+    icone: WindowsIcons.lightbulb,
+    area: 'Inteligência artificial',
+    itens: [
+      (
+        texto: 'Análise do erro com Gemini, CORS e CI das funções',
+        prs: '#8 #9',
+      ),
+      (
+        texto: 'Saída da IA gravada como JSON validado, com modelo de reserva',
+        prs: '#17',
+      ),
+      (
+        texto:
+            'Provedores, orçamento e escolha do modelo por tarefa (Gemini, '
+            'Claude e OpenRouter)',
+        prs: '#36 #45 #50',
+      ),
+      (
+        texto: 'Contexto educacional e temática de tecnologia nos exercícios',
+        prs: '#44 #61',
+      ),
+    ],
+  ),
+  (
+    icone: WindowsIcons.education,
+    area: 'Prática e estudo',
+    itens: [
+      (
+        texto:
+            'Reforço por tipo de erro, com prioridade por frequência × '
+            'recência',
+        prs: '#20',
+      ),
+      (texto: 'Rodada guiada de prática com 5 exercícios', prs: '#25 #57'),
+      (texto: 'Material de estudo com resumo, cartões e quiz', prs: '#26 #27'),
+      (
+        texto: 'Tela Aprender, catálogo revisado e exercícios de exemplo',
+        prs: '#38 #44 #60',
+      ),
+      (
+        texto: 'Plataforma de estudos: agenda de revisão e dados da conta',
+        prs: '#64 #65 #66',
+      ),
+    ],
+  ),
+  (
+    icone: WindowsIcons.sync,
+    area: 'Offline e sincronização',
+    itens: [
+      (texto: 'Caderno de erros com SQLite local e CRUD', prs: '#18'),
+      (
+        texto: 'Supabase primeiro, cache local, fila de envio e Realtime',
+        prs: '#24 #29',
+      ),
+      (
+        texto:
+            'Caderno entre aparelhos, exclusões em tempo real e barreira '
+            'contra filas antigas',
+        prs: '#38',
+      ),
+    ],
+  ),
+  (
+    icone: WindowsIcons.refresh,
+    area: 'Publicação e atualizações',
+    itens: [
+      (texto: 'Versão web publicada na Vercel', prs: '#16 #41'),
+      (
+        texto: 'Atualização sem reinstalar pelo Shorebird e aviso de release',
+        prs: '#42 #46 #54 #62',
+      ),
+      (texto: 'Nome MistakeMap e ícone em todas as plataformas', prs: '#56'),
+    ],
+  ),
+  (
+    icone: WindowsIcons.quick_note,
+    area: 'Ferramentas e documentação',
+    itens: [
+      (texto: 'Reversa, harness de loops e portal de IA', prs: '#4 #5 #13'),
+      (
+        texto: 'README, AGENTS.md, CI de metadados e roadmap comercial',
+        prs: '#14 #15 #21 #43 #63',
+      ),
+    ],
+  ),
+];
+
+/// Entregas do Lucas: frontend, design e grafo conceitual.
+const List<_AreaContribuicao> _contribuicoesLucas = [
+  (
+    icone: WindowsIcons.edit,
+    area: 'Frontend em Flutter',
+    itens: [
+      (
+        texto:
+            'Primeira versão do frontend e migração do Material 3 para Fluent '
+            'UI',
+        prs: '',
+      ),
+      (texto: 'Tela Sobre com Missão, Visão, Valores e equipe', prs: '#6'),
+      (
+        texto:
+            'Layout adaptativo para celular, tablet, dobráveis e telas duplas',
+        prs: '#9 #10',
+      ),
+      (texto: 'Consistência visual dos botões', prs: '#12'),
+    ],
+  ),
+  (
+    icone: WindowsIcons.view,
+    area: 'Design e identidade visual',
+    itens: [
+      (texto: 'Identidade Obsidian Glass em modo claro', prs: '#23'),
+      (texto: 'Linguagem Aurora Glass (Fluent + vidro líquido)', prs: '#28'),
+      (
+        texto: 'Vidro mais forte e barra de rolagem na borda na web',
+        prs: '#52',
+      ),
+    ],
+  ),
+  (
+    icone: WindowsIcons.home,
+    area: 'Navegação',
+    itens: [
+      (texto: 'Navegação repensada, com Mapa e análise unificados', prs: '#22'),
+      (
+        texto:
+            'Barra em vidro, trilho compacto, barras de 5 e 7 fatias e '
+            'Analisar no centro',
+        prs: '#30–#35',
+      ),
+    ],
+  ),
+  (
+    icone: WindowsIcons.relationship,
+    area: 'Grafo conceitual',
+    itens: [
+      (texto: 'Grafo de erros recuperado no Mapa', prs: '#49'),
+      (
+        texto: 'Layout de força dirigida com custo limitado e cache',
+        prs: '#57 #58',
+      ),
+      (
+        texto: 'Colisão por grade espacial, sem rótulos sobrepostos',
+        prs: '#59',
+      ),
+      (texto: 'Testes do grafo em tablets e com texto 1,5x', prs: '#53'),
+    ],
+  ),
+];
 
 /// O que já está construído, na ordem em que o estudante encontra no app.
 const _funcionalidades = [
@@ -6013,6 +6315,7 @@ class _MembroCard extends StatelessWidget {
   final Color tinta;
   final List<String> responsabilidades;
   final String descricao;
+  final List<_AreaContribuicao> contribuicoes;
   final Widget? acao;
 
   const _MembroCard({
@@ -6023,6 +6326,7 @@ class _MembroCard extends StatelessWidget {
     required this.tinta,
     required this.responsabilidades,
     required this.descricao,
+    this.contribuicoes = const [],
     this.acao,
   });
 
@@ -6096,6 +6400,14 @@ class _MembroCard extends StatelessWidget {
               height: 1.5,
             ),
           ),
+          if (contribuicoes.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _ContribuicoesMembro(
+              areas: contribuicoes,
+              tinta: tinta,
+              acento: corAvatar,
+            ),
+          ],
           if (acao != null) ...[const SizedBox(height: 16), acao!],
         ],
       ),
