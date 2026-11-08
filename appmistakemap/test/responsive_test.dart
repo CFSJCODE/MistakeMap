@@ -377,7 +377,7 @@ void main() {
   );
 
   testWidgets(
-    'Sobre em 320px e fonte 2x abre as contribuições da equipe sem overflow',
+    'Sobre em 320px e fonte 2x mostra as contribuições da equipe sem overflow',
     (tester) async {
       await _render(
         tester,
@@ -385,22 +385,8 @@ void main() {
         size: const Size(320, 800),
         scale: 2,
       );
-      final abrir = find.text('Tudo o que desenvolveu');
-      expect(abrir, findsNWidgets(2));
-      for (var i = 0; i < 2; i++) {
-        // No meio da tela, longe das barras de vidro do topo e de baixo.
-        await Scrollable.ensureVisible(
-          tester.element(abrir.at(i)),
-          alignment: 0.5,
-        );
-        await _settle(tester);
-        await tester.tap(abrir.at(i));
-        await _settle(tester);
-        expect(tester.takeException(), isNull);
-      }
-      expect(find.text('Grafo conceitual'), findsWidgets);
       expect(find.text('Inteligência artificial'), findsOneWidget);
-      final ultimo = find.textContaining('Testes do grafo em tablets');
+      final ultimo = find.text('Mapa dos erros ligados por conceito');
       await Scrollable.ensureVisible(tester.element(ultimo), alignment: 0.5);
       await _settle(tester);
       expect(ultimo.hitTestable(), findsOneWidget);
