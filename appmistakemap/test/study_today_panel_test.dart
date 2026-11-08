@@ -240,4 +240,49 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     repo.dispose();
   });
+
+  for (final (width, sideBySide) in const [(1000.0, true), (360.0, false)]) {
+    testWidgets(
+      'atalhos ficam ${sideBySide ? 'lado a lado' : 'empilhados'} e centralizados em ${width.toInt()} px',
+      (tester) async {
+        final repo = SupabaseStudyRepository.withTransport(
+          (userId, body) async =>
+              body['action'] == 'dashboard' ? _dashboard() : {'session': null},
+          store: _MemoryStore(),
+        );
+        await _pump(
+          tester,
+          ScaffoldPage(
+            content: SingleChildScrollView(
+              child: StudyTodayPanel(
+                userId: 'aluno-a',
+                repository: repo,
+                onExplore: () {},
+                onAnalyze: () {},
+              ),
+            ),
+          ),
+          width: width,
+        );
+        final explore = tester.getRect(find.byKey(const Key('study-explore')));
+        final analyze = tester.getRect(find.byKey(const Key('study-analyze')));
+        final panel = tester.getRect(find.byType(StudyTodayPanel));
+        if (sideBySide) {
+          expect(explore.center.dy, moreOrLessEquals(analyze.center.dy));
+          expect(analyze.left - explore.right, moreOrLessEquals(16));
+          expect(
+            (explore.left + analyze.right) / 2,
+            moreOrLessEquals(panel.center.dx),
+          );
+        } else {
+          expect(analyze.top, greaterThan(explore.bottom));
+          expect(explore.center.dx, moreOrLessEquals(panel.center.dx));
+          expect(analyze.center.dx, moreOrLessEquals(panel.center.dx));
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        repo.dispose();
+      },
+    );
+  }
 }
