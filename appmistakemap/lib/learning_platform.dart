@@ -182,10 +182,11 @@ class _TelaAprenderState extends State<TelaAprender> {
                     ),
                     child: const Text('Abrir biblioteca de exercícios'),
                   ),
-                const Text(
-                  'Explore o catálogo revisado na biblioteca. A cobertura de assuntos é ampliada por revisão editorial.',
-                ),
                 const SizedBox(height: 8),
+                const Text(
+                  'Exercícios revisados por pessoas, com novos assuntos chegando aos poucos.',
+                ),
+                const SizedBox(height: 16),
                 for (final subject in subjects)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),

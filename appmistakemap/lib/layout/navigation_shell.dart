@@ -369,6 +369,11 @@ class AppNavigationShell extends StatelessWidget {
     child: DropDownButton(
       title: const Text('Mais'),
       leading: const Icon(WindowsIcons.more, size: 20),
+      // Na barra inferior o menu abre acima dela, alinhado à direita; abaixo
+      // não cabe e ele acabava por cima de Caderno, Sobre e Mais.
+      placement: compactRail
+          ? FlyoutPlacementMode.bottomCenter
+          : FlyoutPlacementMode.topRight,
       menuColor: MistakeMapDesign.white,
       menuShape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),

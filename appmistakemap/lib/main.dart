@@ -2191,7 +2191,8 @@ class _TelaInicialState extends State<TelaInicial> {
       final completos = grupos
           .where((g) => g == AttemptStatusGroup.completed)
           .length;
-      final pct = total > 0 ? '${((completos / total) * 100).round()}%' : '0%';
+      // Sem tentativas não há taxa: "0%" sugeria análises que falharam.
+      final pct = total > 0 ? '${((completos / total) * 100).round()}%' : '—';
 
       if (mounted) {
         setState(() {
@@ -2253,7 +2254,10 @@ class _TelaInicialState extends State<TelaInicial> {
                         userId: widget.user.id,
                         client: _db,
                         repository: widget.studyRepository,
-                        onExplore: _abrirEspacoEstudos,
+                        // "Explorar conteúdos" abre o mesmo destino em todo o
+                        // app (Explorar e aprender); biblioteca, planos e
+                        // simulados têm o botão próprio logo abaixo.
+                        onExplore: widget.onAprender ?? _abrirEspacoEstudos,
                         onAnalyze: widget.onAnalysis,
                         onStudy: widget.onEstudar,
                       ),
@@ -2266,31 +2270,6 @@ class _TelaInicialState extends State<TelaInicial> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      if (widget.onAprender != null) ...[
-                        _PainelVidro(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Explore e aprenda',
-                                style: context.tipo.subtitle?.copyWith(
-                                  color: titleBlue,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Matérias, tecnologia e conhecimentos para sua jornada.',
-                              ),
-                              const SizedBox(height: 16),
-                              FilledButton(
-                                onPressed: widget.onAprender,
-                                child: const Text('Explorar conteúdos'),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 720),
                         child: _proximosPassos(context),
@@ -2338,7 +2317,9 @@ class _TelaInicialState extends State<TelaInicial> {
           (
             icone: WindowsIcons.bulleted_list,
             titulo: _paraRevisar > 0
-                ? 'Revisar $_paraRevisar exercício(s)'
+                ? (_paraRevisar == 1
+                      ? 'Revisar 1 exercício'
+                      : 'Revisar $_paraRevisar exercícios')
                 : 'Ver meus exercícios',
             descricao:
                 'Confira a correção de cada tentativa e edite o que '

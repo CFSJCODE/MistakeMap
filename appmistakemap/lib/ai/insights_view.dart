@@ -196,7 +196,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
       maintainState: true,
       leading: const Icon(Icons.lightbulb_outline, color: mapTitleBlue),
       title: const Text(
-        'Analisar exercício com IA',
+        'Analisar com a IA',
         style: TextStyle(color: mapTitleBlue, fontWeight: FontWeight.w600),
       ),
       subtitle: const Text(
