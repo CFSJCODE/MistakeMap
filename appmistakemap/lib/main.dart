@@ -2332,8 +2332,8 @@ class _TelaInicialState extends State<TelaInicial> {
             icone: WindowsIcons.relationship,
             titulo: 'Ver o mapa de erros',
             descricao:
-                'Descubra quais tipos de erro se repetem e em quais '
-                'matérias.',
+                'Diagnóstico: quais tipos de erro se repetem e em quais '
+                'matérias e conceitos.',
             acento: MistakeMapDesign.violet,
             tinta: MistakeMapDesign.violetInk,
             acao: widget.onMapa,
@@ -2342,8 +2342,8 @@ class _TelaInicialState extends State<TelaInicial> {
             icone: WindowsIcons.education,
             titulo: 'Estudar com a IA',
             descricao:
-                'Resumo, cartões, quiz e exercícios novos feitos a '
-                'partir dos seus erros.',
+                'Treino: resumo, cartões, quiz e exercícios novos sobre o '
+                'que o mapa apontou.',
             acento: MistakeMapDesign.violet,
             tinta: MistakeMapDesign.violetInk,
             acao: widget.onEstudar,
@@ -2351,7 +2351,9 @@ class _TelaInicialState extends State<TelaInicial> {
           (
             icone: WindowsIcons.quick_note,
             titulo: 'Anotar no caderno de erros',
-            descricao: 'Guarde a regra que você aprendeu para revisar depois.',
+            descricao:
+                'Suas regras: escreva com suas palavras como não errar '
+                'de novo.',
             acento: MistakeMapDesign.amber,
             tinta: MistakeMapDesign.amberInk,
             acao: widget.onCaderno,
@@ -5753,9 +5755,9 @@ class _CartaoComoFunciona extends StatelessWidget {
   static const _passos = [
     ('Analisar', 'Envie a foto ou o texto da sua resolução.'),
     ('Revisar', 'Veja cada erro com o tipo, o conceito e a evidência.'),
-    ('Mapa de erros', 'Acompanhe os padrões por tipo e por conceito.'),
-    ('Estudar', 'Resumo, cartões, quiz e prática do seu tipo de erro.'),
-    ('Caderno', 'Guarde a regra aprendida para revisar depois.'),
+    ('Mapa de erros', 'Diagnóstico: os padrões por tipo e por conceito.'),
+    ('Estudar', 'Treino: resumo, cartões, quiz e prática do seu erro.'),
+    ('Caderno', 'Suas regras, com suas palavras, para revisar.'),
   ];
 
   @override

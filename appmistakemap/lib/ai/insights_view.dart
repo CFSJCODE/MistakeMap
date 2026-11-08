@@ -424,11 +424,16 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                     style: TextStyle(fontSize: 16, color: mapContentBlue),
                   ),
                 ] else ...[
-                  _StudyCallout(
-                    onStudy: () => _openStudy(subjectNames),
-                    subjectName: subjectNames[_subject],
+                  // O Mapa é o diagnóstico; treinar fica no Estudar e as
+                  // regras do aluno, no Caderno. O convite para estudar vem
+                  // depois do diagnóstico, como próximo passo.
+                  const Text(
+                    'Diagnóstico dos seus erros: o que se repete, em quais '
+                    'matérias e em quais conceitos.',
+                    key: Key('map-role'),
+                    style: TextStyle(fontSize: 16, color: mapContentBlue),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     initialValue: _subject ?? '',
                     isExpanded: true,
@@ -574,6 +579,12 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                       'Arraste e amplie para explorar. As conexões não indicam pré-requisitos.',
                     ),
                   ],
+                  const SizedBox(height: 24),
+                  _StudyCallout(
+                    onStudy: () => _openStudy(subjectNames),
+                    subjectName: subjectNames[_subject],
+                    topConcept: insights.concepts.firstOrNull?.label,
+                  ),
                 ],
                 const SizedBox(height: 24),
                 // A análise fica fora do carregamento do mapa: recarregar
@@ -590,11 +601,17 @@ class _ErrorMapViewState extends State<ErrorMapView> {
   }
 }
 
-/// Chamada principal do mapa: transformar os erros em estudo.
+/// Fim do diagnóstico: o próximo passo é treinar no Estudar o que o mapa
+/// apontou.
 class _StudyCallout extends StatelessWidget {
   final VoidCallback onStudy;
   final String? subjectName;
-  const _StudyCallout({required this.onStudy, this.subjectName});
+  final String? topConcept;
+  const _StudyCallout({
+    required this.onStudy,
+    this.subjectName,
+    this.topConcept,
+  });
 
   @override
   Widget build(BuildContext context) => Card(
@@ -616,7 +633,7 @@ class _StudyCallout extends StatelessWidget {
               spacing: 4,
               children: [
                 const Text(
-                  'Estude seus pontos fracos',
+                  'Próximo passo: treinar',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
@@ -624,9 +641,15 @@ class _StudyCallout extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  subjectName == null
-                      ? 'Resumo, cartões, quiz e exercícios feitos a partir dos seus erros.'
-                      : 'Resumo, cartões, quiz e exercícios de $subjectName.',
+                  [
+                    if (topConcept != null)
+                      'O que mais se repete: $topConcept.',
+                    subjectName == null
+                        ? 'No Estudar você treina isso com resumo, cartões, '
+                              'quiz e exercícios novos.'
+                        : 'No Estudar você treina $subjectName com resumo, '
+                              'cartões, quiz e exercícios novos.',
+                  ].join(' '),
                 ),
               ],
             ),
