@@ -1,6 +1,6 @@
 import type postgres from "postgresjs";
 import { PublicError, uuid } from "./ai_contract.ts";
-import type { database } from "./ai_service.ts";
+import type { Database } from "./ai_service.ts";
 import { freezeStreak, weeklySummary } from "./study_milestones.ts";
 import {
   ACTIONS,
@@ -15,7 +15,6 @@ import {
   sessionCapacity,
 } from "./review_contract.ts";
 
-type Database = ReturnType<typeof database>;
 type Queries = postgres.Sql | postgres.TransactionSql;
 const notFound = (kind: string): never => {
   throw new PublicError(

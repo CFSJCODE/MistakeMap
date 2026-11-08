@@ -3,32 +3,16 @@ import {
   practiceCount,
   uuid,
 } from "../_shared/ai_contract.ts";
-import {
-  authenticate,
-  body,
-  failure,
-  json,
-  preflight,
-} from "../_shared/ai_http.ts";
-import { database, generatePractice } from "../_shared/ai_service.ts";
-export async function handler(req: Request): Promise<Response> {
-  const early = preflight(req);
-  if (early) return early;
-  let sql: ReturnType<typeof database> | undefined;
-  try {
-    const user = await authenticate(req);
-    const input = await body(req);
-    const subject = uuid(input.subject_id);
-    const count = practiceCount(input.count);
-    const category = practiceCategory(input.category);
-    sql = database();
-    return json(
-      req,
-      await generatePractice(sql, user, subject, count, category),
-    );
-  } catch (error) {
-    return failure(req, error);
-  } finally {
-    await sql?.end({ timeout: 5 }).catch(() => {});
-  }
-}
+import { json, userEndpoint } from "../_shared/ai_http.ts";
+import { generatePractice, withDatabase } from "../_shared/ai_service.ts";
+export const handler = userEndpoint(async (req, user, input) => {
+  const subject = uuid(input.subject_id);
+  const count = practiceCount(input.count);
+  const category = practiceCategory(input.category);
+  return json(
+    req,
+    await withDatabase((sql) =>
+      generatePractice(sql, user, subject, count, category)
+    ),
+  );
+});

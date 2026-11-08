@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../ai/analysis_models.dart' show categoryLabels;
 import '../theme/control_styles.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
@@ -16,16 +17,6 @@ const _stageLabels = {
   'medio': 'Ensino Médio',
   'superior': 'Ensino Superior',
   'autodidata': 'Estudo independente',
-};
-
-const _categoryLabels = {
-  'calculo': 'Cálculo',
-  'conceito': 'Conceito',
-  'sinal': 'Sinal',
-  'interpretacao': 'Interpretação',
-  'procedimento': 'Procedimento',
-  'unidade': 'Unidade',
-  'outro': 'Outro',
 };
 
 /// Embeddable in Início; keeps the existing navigation and study flows.
@@ -1019,9 +1010,9 @@ class _StudyDiagnosticsPageState extends State<StudyDiagnosticsPage> {
   }
 
   Future<void> _correct(StudyDiagnostic diagnostic) async {
-    String category = _categoryLabels.containsKey(diagnostic.category)
+    String category = categoryLabels.containsKey(diagnostic.category)
         ? diagnostic.category
-        : _categoryLabels.keys.first;
+        : categoryLabels.keys.first;
     double importance = const [.5, 1.0, 2.0].contains(diagnostic.importance)
         ? diagnostic.importance
         : 1;
@@ -1045,7 +1036,7 @@ class _StudyDiagnosticsPageState extends State<StudyDiagnosticsPage> {
                     value: category,
                     isExpanded: true,
                     items: [
-                      for (final entry in _categoryLabels.entries)
+                      for (final entry in categoryLabels.entries)
                         ComboBoxItem(
                           value: entry.key,
                           child: Text(entry.value),
@@ -1146,7 +1137,7 @@ class _StudyDiagnosticsPageState extends State<StudyDiagnosticsPage> {
               _StudyTitle(item.conceptName),
               const SizedBox(height: 8),
               Text(
-                '${item.status == 'confirmed' ? 'Confirmado por você' : 'Sugestão'}: ${_categoryLabels[item.category] ?? item.category}',
+                '${item.status == 'confirmed' ? 'Confirmado por você' : 'Sugestão'}: ${categoryLabels[item.category] ?? item.category}',
               ),
               if (item.prompt.isNotEmpty) ...[
                 const SizedBox(height: 16),

@@ -27,7 +27,18 @@ export function database() {
     idle_timeout: 5,
   });
 }
-type Database = ReturnType<typeof database>;
+export type Database = ReturnType<typeof database>;
+/** Abre uma conexão só para `run` e a encerra mesmo se `run` falhar. */
+export async function withDatabase<T>(
+  run: (sql: Database) => Promise<T>,
+): Promise<T> {
+  const sql = database();
+  try {
+    return await run(sql);
+  } finally {
+    await sql.end({ timeout: 5 }).catch(() => {});
+  }
+}
 type Attempt = {
   id: string;
   user_id: string;
@@ -55,6 +66,20 @@ export function dailyLimit(kind: "analysis" | "practice") {
       fallback,
   );
   return Number.isInteger(n) && n >= 1 && n <= fallback ? n : fallback;
+}
+/** Conta um pedido de prática no dia; acima do limite, recusa com `message`. */
+export async function consumePracticeQuota(
+  sql: Database,
+  user: string,
+  message: string,
+): Promise<void> {
+  const [usage] =
+    await sql`INSERT INTO public.ai_daily_usage(user_id,kind,usage_day,requests) VALUES(${user},'practice',CURRENT_DATE,1)
+    ON CONFLICT(user_id,kind,usage_day) DO UPDATE SET requests=public.ai_daily_usage.requests+1
+    WHERE public.ai_daily_usage.requests < ${
+      dailyLimit("practice")
+    } RETURNING requests`;
+  if (!usage) throw new PublicError(429, "daily_limit", message);
 }
 async function attemptForUser(
   sql: Database,
@@ -563,19 +588,11 @@ export async function generatePractice(
       ORDER BY a.attempted_at DESC LIMIT 8`).map((r) =>
       String(r.prompt_text).slice(0, 1200)
     );
-  const [usage] =
-    await sql`INSERT INTO public.ai_daily_usage(user_id,kind,usage_day,requests) VALUES(${user},'practice',CURRENT_DATE,1)
-    ON CONFLICT(user_id,kind,usage_day) DO UPDATE SET requests=public.ai_daily_usage.requests+1
-    WHERE public.ai_daily_usage.requests < ${
-      dailyLimit("practice")
-    } RETURNING requests`;
-  if (!usage) {
-    throw new PublicError(
-      429,
-      "daily_limit",
-      "Você atingiu o limite diário de geração de exercícios.",
-    );
-  }
+  await consumePracticeQuota(
+    sql,
+    user,
+    "Você atingiu o limite diário de geração de exercícios.",
+  );
   // Nome da matéria e evidências vêm do aluno: ficam só nos dados (`text`),
   // nunca na instrução de sistema, para não virarem instrução.
   const instructions = patterns.length > 0

@@ -4,6 +4,55 @@ import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
 
+/// Mensagem de erro do fluxo de IA, anunciada pelo leitor de tela.
+class ErrorNotice extends StatelessWidget {
+  const ErrorNotice(this.message, {super.key});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    liveRegion: true,
+    child: Text(message, style: const TextStyle(color: MistakeMapDesign.bad)),
+  );
+}
+
+/// Número de resumo (acertos, erros…) com rótulo e detalhe opcional.
+class MaterialMetric extends StatelessWidget {
+  const MaterialMetric({
+    super.key,
+    required this.label,
+    required this.value,
+    this.detail,
+  });
+
+  final String label;
+  final String value;
+  final String? detail;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 96,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: MistakeMapDesign.steel)),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: MistakeMapDesign.primary,
+          ),
+        ),
+        if (detail != null)
+          Text(detail!, style: const TextStyle(color: MistakeMapDesign.steel)),
+      ],
+    ),
+  );
+}
+
 /// Scaffold do fluxo de IA sobre o fundo Aurora.
 /// A luz fica dentro da página, então cada rota continua opaca na transição e
 /// a tela anterior não aparece por trás da nova.

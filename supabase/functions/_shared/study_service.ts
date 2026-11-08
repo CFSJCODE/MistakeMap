@@ -2,7 +2,7 @@ import postgres from "postgresjs";
 import { technologyLearningContext } from "./educational_context.ts";
 import { learningTopics } from "./learning_topics.ts";
 import { type Analysis, PublicError } from "./ai_contract.ts";
-import { dailyLimit, type database } from "./ai_service.ts";
+import { consumePracticeQuota, type Database } from "./ai_service.ts";
 import { aiConfig, structuredResponse } from "./gemini.ts";
 import {
   gradeQuiz,
@@ -12,8 +12,6 @@ import {
   studySchema,
   validateStudy,
 } from "./study_contract.ts";
-
-type Database = ReturnType<typeof database>;
 
 /** Exercícios recentes da matéria, com a resposta e a análise de cada um. */
 async function studySources(sql: Database, user: string, subjectId: string) {
@@ -92,19 +90,11 @@ export async function generateStudy(
       })),
     };
   });
-  const [usage] =
-    await sql`INSERT INTO public.ai_daily_usage(user_id,kind,usage_day,requests) VALUES(${user},'practice',CURRENT_DATE,1)
-    ON CONFLICT(user_id,kind,usage_day) DO UPDATE SET requests=public.ai_daily_usage.requests+1
-    WHERE public.ai_daily_usage.requests < ${
-      dailyLimit("practice")
-    } RETURNING requests`;
-  if (!usage) {
-    throw new PublicError(
-      429,
-      "daily_limit",
-      "Você atingiu o limite diário de uso da IA. Tente novamente amanhã.",
-    );
-  }
+  await consumePracticeQuota(
+    sql,
+    user,
+    "Você atingiu o limite diário de uso da IA. Tente novamente amanhã.",
+  );
   let modelUsed = aiConfig().model;
   const raw = await structuredResponse({
     schema: studySchema,

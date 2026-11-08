@@ -1,6 +1,6 @@
 import type postgres from "postgresjs";
 import { PublicError } from "./ai_contract.ts";
-import type { database } from "./ai_service.ts";
+import type { Database } from "./ai_service.ts";
 import { contentOperation } from "./platform_content.ts";
 import {
   csvCell,
@@ -22,7 +22,6 @@ import {
   weeklyPlan,
 } from "./platform_contract.ts";
 
-type Database = ReturnType<typeof database>;
 type Query = postgres.Sql | postgres.TransactionSql;
 const denied = () =>
   new PublicError(403, "access_denied", "Você não tem acesso a esta operação.");

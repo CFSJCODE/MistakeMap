@@ -3,6 +3,12 @@ import 'package:fluent_ui/fluent_ui.dart';
 import '../theme/design_tokens.dart';
 import 'free_plan.dart';
 
+/// Inteiro arredondado com separador de milhar: 12345 → "12.345".
+String formatarMilhar(num value) => value.round().toString().replaceAllMapped(
+  RegExp(r'(\d)(?=(\d{3})+$)'),
+  (match) => '${match[1]}.',
+);
+
 /// Quotas are compared with calls observed by the app, not project-wide billing.
 class ModelQuotaCard extends StatelessWidget {
   const ModelQuotaCard({
@@ -22,11 +28,6 @@ class ModelQuotaCard extends StatelessWidget {
     final value = usage![key];
     return value is num && value >= 0 ? value : null;
   }
-
-  static String _number(num value) => value.round().toString().replaceAllMapped(
-    RegExp(r'(\d)(?=(\d{3})+$)'),
-    (match) => '${match[1]}.',
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -159,10 +160,10 @@ class ModelQuotaCard extends StatelessWidget {
         : '${(ratio * 100).toStringAsFixed(used == 0 || ratio >= 0.01 ? 0 : 1).replaceAll('.', ',')}% da cota${partial ? ' · parcial' : ''}';
     final balance = used == null || partial
         ? 'Saldo indisponível'
-        : '${_number(remaining!)} restantes';
+        : '${formatarMilhar(remaining!)} restantes';
     return Semantics(
       label:
-          '$label. ${used == null ? 'Uso indisponível' : '${_number(used)} usados'}. Limite ${_number(limit)}. $balance${partial ? '. Contagem parcial' : ''}.',
+          '$label. ${used == null ? 'Uso indisponível' : '${formatarMilhar(used)} usados'}. Limite ${formatarMilhar(limit)}. $balance${partial ? '. Contagem parcial' : ''}.',
       child: ExcludeSemantics(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -182,7 +183,7 @@ class ModelQuotaCard extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
-                  used == null ? '—' : _number(used),
+                  used == null ? '—' : formatarMilhar(used),
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
@@ -190,7 +191,7 @@ class ModelQuotaCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '/ ${_number(limit)}',
+                  '/ ${formatarMilhar(limit)}',
                   style: const TextStyle(
                     fontSize: 14,
                     color: MistakeMapDesign.content,

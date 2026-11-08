@@ -1156,13 +1156,7 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
             if (_busy) const LinearProgressIndicator(),
             if (_error != null) ...[
               const SizedBox(height: 16),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  _error!,
-                  style: TextStyle(color: MistakeMapDesign.bad),
-                ),
-              ),
+              ErrorNotice(_error!),
               const SizedBox(height: 16),
             ],
             if (attempt != null) ...[
@@ -1442,28 +1436,12 @@ class _PracticeViewState extends State<PracticeView> {
     }
   }
 
-  Widget _roundMetric(String label, int count, double? percentage) => SizedBox(
-    width: 96,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: MistakeMapDesign.steel)),
-        const SizedBox(height: 4),
-        Text(
-          '$count',
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: mapTitleBlue,
-          ),
-        ),
-        Text(
-          percentage == null ? '—' : '${percentage.toStringAsFixed(0)}%',
-          style: const TextStyle(color: MistakeMapDesign.steel),
-        ),
-      ],
-    ),
-  );
+  Widget _roundMetric(String label, int count, double? percentage) =>
+      MaterialMetric(
+        label: label,
+        value: '$count',
+        detail: percentage == null ? '—' : '${percentage.toStringAsFixed(0)}%',
+      );
 
   Widget _roundCard({
     required Key key,
@@ -1683,13 +1661,7 @@ class _PracticeViewState extends State<PracticeView> {
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    _error!,
-                    style: TextStyle(color: MistakeMapDesign.bad),
-                  ),
-                ),
+                child: ErrorNotice(_error!),
               ),
             if (_roundExercises.firstOrNull?.subjectId == _subject)
               if (!_roundStarted)

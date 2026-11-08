@@ -38,7 +38,8 @@ export type Practice = {
   correct_answer: string;
   explanation: string;
 };
-const str = (maxLength: number, minLength = 1) => ({
+/** Campo de texto do JSON Schema enviado aos modelos. */
+export const str = (maxLength: number, minLength = 1) => ({
   type: "string",
   minLength,
   maxLength,
@@ -109,23 +110,18 @@ export const practiceSchema = {
     },
   },
 };
+const invalidOutput = (
+  message = "A IA retornou um resultado inválido. Tente novamente.",
+) => new PublicError(502, "invalid_ai_output", message);
 function object(value: unknown, keys: string[]): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new PublicError(
-      502,
-      "invalid_ai_output",
-      "A IA retornou um resultado inválido. Tente novamente.",
-    );
+    throw invalidOutput();
   }
   const obj = value as Record<string, unknown>;
   if (
     Object.keys(obj).length !== keys.length || keys.some((k) => !(k in obj))
   ) {
-    throw new PublicError(
-      502,
-      "invalid_ai_output",
-      "A IA retornou um resultado inválido. Tente novamente.",
-    );
+    throw invalidOutput();
   }
   return obj;
 }
@@ -133,11 +129,7 @@ function text(value: unknown, max: number, empty = false): string {
   if (
     typeof value !== "string" || value.length > max || (!empty && !value.trim())
   ) {
-    throw new PublicError(
-      502,
-      "invalid_ai_output",
-      "A IA retornou um resultado inválido. Tente novamente.",
-    );
+    throw invalidOutput();
   }
   return value.trim();
 }
@@ -156,11 +148,7 @@ export function validateAnalysis(value: unknown): Analysis {
     !Array.isArray(a.errors) || a.errors.length > 5 ||
     !Array.isArray(a.concepts) || a.concepts.length > 12
   ) {
-    throw new PublicError(
-      502,
-      "invalid_ai_output",
-      "A IA retornou um resultado inválido. Tente novamente.",
-    );
+    throw invalidOutput();
   }
   const concepts = [...new Set(a.concepts.map((c) => text(c, 120)))];
   const errors = a.errors.map((v) => {
@@ -170,17 +158,11 @@ export function validateAnalysis(value: unknown): Analysis {
       typeof e.confidence !== "number" || !Number.isFinite(e.confidence) ||
       e.confidence < 0 || e.confidence > 1
     ) {
-      throw new PublicError(
-        502,
-        "invalid_ai_output",
-        "A IA retornou um resultado inválido. Tente novamente.",
-      );
+      throw invalidOutput();
     }
     const concept = text(e.concept, 120);
     if (!concepts.includes(concept)) {
-      throw new PublicError(
-        502,
-        "invalid_ai_output",
+      throw invalidOutput(
         "A IA retornou conceitos inconsistentes. Tente novamente.",
       );
     }
@@ -195,9 +177,7 @@ export function validateAnalysis(value: unknown): Analysis {
     (a.is_correct !== false && errors.length) ||
     (a.is_correct === false && !errors.length)
   ) {
-    throw new PublicError(
-      502,
-      "invalid_ai_output",
+    throw invalidOutput(
       "A IA retornou um diagnóstico inconsistente. Tente novamente.",
     );
   }
@@ -218,9 +198,7 @@ export function validatePractice(
 ): Practice[] {
   const a = object(value, ["exercises"]);
   if (!Array.isArray(a.exercises) || a.exercises.length !== count) {
-    throw new PublicError(
-      502,
-      "invalid_ai_output",
+    throw invalidOutput(
       "A IA não gerou a quantidade de exercícios solicitada.",
     );
   }
@@ -233,11 +211,7 @@ export function validatePractice(
       "explanation",
     ]);
     if (!["facil", "media", "dificil"].includes(String(e.difficulty))) {
-      throw new PublicError(
-        502,
-        "invalid_ai_output",
-        "A IA retornou uma dificuldade inválida.",
-      );
+      throw invalidOutput("A IA retornou uma dificuldade inválida.");
     }
     return {
       prompt_text: text(e.prompt_text, 8000),
@@ -248,19 +222,13 @@ export function validatePractice(
     };
   });
   if (new Set(list.map((e) => e.prompt_text)).size !== list.length) {
-    throw new PublicError(
-      502,
-      "invalid_ai_output",
-      "A IA retornou exercícios repetidos.",
-    );
+    throw invalidOutput("A IA retornou exercícios repetidos.");
   }
   if (
     targetConcepts.length &&
     list.some((e) => !targetConcepts.includes(e.focus_concept))
   ) {
-    throw new PublicError(
-      502,
-      "invalid_ai_output",
+    throw invalidOutput(
       "A IA não focou nos conceitos que precisam de reforço. Tente novamente.",
     );
   }
