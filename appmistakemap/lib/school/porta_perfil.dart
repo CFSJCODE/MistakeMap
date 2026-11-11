@@ -25,6 +25,8 @@ class PortaDePerfil extends StatefulWidget {
     required this.estudante,
     this.repositorio,
     this.preferencias = const PreferenciasPerfil(),
+    this.sair,
+    this.rodapeCadastro,
   });
 
   final String usuarioId;
@@ -33,6 +35,12 @@ class PortaDePerfil extends StatefulWidget {
   final Widget estudante;
   final RepositorioEscola? repositorio;
   final PreferenciasPerfil preferencias;
+
+  /// Sai da conta (testes trocam). Padrão: signOut do Supabase.
+  final Future<void> Function()? sair;
+
+  /// Fica no fim do "Quem é você?" (o app passa o cartão de atualização).
+  final Widget? rodapeCadastro;
 
   @override
   State<PortaDePerfil> createState() => _PortaDePerfilState();
@@ -47,6 +55,9 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
   String? _chaveAtiva;
   bool _consentimentoDispensado = false;
 
+  /// Perfil pedido no "Já tenho conta: entrar" antes deste login.
+  PerfilCadastro? _pedido;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +67,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
   Future<void> _iniciar() async {
     final salvo = await widget.preferencias.contexto(widget.usuarioId);
     final chave = await widget.preferencias.perfilAtivo(widget.usuarioId);
+    _pedido = await widget.preferencias.perfilPedidoNoLogin();
     if (!mounted) return;
     setState(() {
       _chaveAtiva = chave;
@@ -67,6 +79,34 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     await _atualizar();
   }
 
+  /// Abre o perfil pedido no login, se esta conta o tiver. O pedido é usado
+  /// uma vez só; sem o perfil, a conta abre como sempre.
+  void _aplicarPedido(ContextoPerfil ctx) {
+    final pedido = _pedido;
+    if (pedido == null) return;
+    _pedido = null;
+    unawaited(widget.preferencias.pedirPerfilNoLogin(null));
+    final papel = switch (pedido) {
+      PerfilCadastro.estudante || PerfilCadastro.estudanteEquipe => 'student',
+      _ => pedido.codigo,
+    };
+    for (final p in ctx.perfis) {
+      if (p.papel == papel) {
+        _chaveAtiva = p.chave;
+        unawaited(
+          widget.preferencias.guardarPerfilAtivo(widget.usuarioId, p.chave),
+        );
+        return;
+      }
+    }
+  }
+
+  Future<void> _entrarComOutraConta(PerfilCadastro perfil) async {
+    await widget.preferencias.pedirPerfilNoLogin(perfil);
+    final sair = widget.sair ?? () => Supabase.instance.client.auth.signOut();
+    await sair();
+  }
+
   Future<void> _atualizar() async {
     try {
       final ctx = await _repo.contexto();
@@ -74,6 +114,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
       setState(() {
         _ctx = ctx;
         _carregado = true;
+        _aplicarPedido(ctx);
       });
       unawaited(widget.preferencias.guardarContexto(widget.usuarioId, ctx));
     } catch (_) {
@@ -108,7 +149,12 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     final ctx = _ctx;
     if (ctx == null) return widget.estudante;
     if (ctx.precisaCadastro) {
-      return TelaQuemEVoce(repositorio: _repo, onConcluido: _concluiuCadastro);
+      return TelaQuemEVoce(
+        repositorio: _repo,
+        onConcluido: _concluiuCadastro,
+        onEntrarComConta: _entrarComOutraConta,
+        rodape: widget.rodapeCadastro,
+      );
     }
     final perfis = ctx.perfis;
     final ativo = ctx.perfilInicial(_chaveAtiva);

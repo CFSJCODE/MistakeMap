@@ -327,6 +327,86 @@ void main() {
   });
 
   testWidgets(
+    'porta: "Já tenho conta: entrar" guarda o perfil e sai; rodapé no fim',
+    (tester) async {
+      var saiu = 0;
+      await _render(
+        tester,
+        PortaDePerfil(
+          usuarioId: _uid,
+          repositorio: _RepoFalso(),
+          estudante: const Text('APP DO ESTUDANTE'),
+          sair: () async => saiu++,
+          rodapeCadastro: const Text('ATUALIZAÇÕES'),
+        ),
+      );
+      expect(find.text('Já tenho conta: entrar'), findsNWidgets(7));
+      expect(find.text('ATUALIZAÇÕES'), findsOneWidget);
+
+      await _tocar(tester, find.byKey(const ValueKey('entrar-teacher')));
+      expect(saiu, 1);
+      expect(
+        await const PreferenciasPerfil().perfilPedidoNoLogin(),
+        PerfilCadastro.professor,
+      );
+    },
+  );
+
+  testWidgets('porta: no formulário do perfil também dá para entrar', (
+    tester,
+  ) async {
+    var saiu = 0;
+    await _render(
+      tester,
+      PortaDePerfil(
+        usuarioId: _uid,
+        repositorio: _RepoFalso(),
+        estudante: const Text('APP DO ESTUDANTE'),
+        sair: () async => saiu++,
+      ),
+    );
+    await _tocar(tester, find.text('Dono da escola'));
+    await _tocar(tester, find.text('Já tenho conta de dono da escola: entrar'));
+    expect(saiu, 1);
+    expect(
+      await const PreferenciasPerfil().perfilPedidoNoLogin(),
+      PerfilCadastro.dono,
+    );
+  });
+
+  testWidgets('porta: perfil pedido no login abre direto e é usado uma vez', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'perfil_pedido_login': 'student'});
+    final repo = _RepoFalso(
+      ctx: const ContextoPerfil(
+        perfil: PerfilCadastro.dono,
+        papeis: [
+          PapelEscola(
+            escolaId: _escola,
+            escolaNome: 'Escola de Robótica',
+            papel: 'owner',
+          ),
+        ],
+      ),
+    );
+    await _render(
+      tester,
+      PortaDePerfil(
+        usuarioId: _uid,
+        repositorio: repo,
+        estudante: const Text('APP DO ESTUDANTE'),
+      ),
+    );
+    // Sem o pedido, o dono abriria no painel da escola.
+    expect(find.text('APP DO ESTUDANTE'), findsOneWidget);
+    expect(find.text('Painel do dono'), findsNothing);
+    expect(await const PreferenciasPerfil().perfilPedidoNoLogin(), isNull);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('perfil_ativo_$_uid'), 'student');
+  });
+
+  testWidgets(
     'porta: menor sem consentimento vê o pedido e pode seguir sem IA',
     (tester) async {
       final repo = _RepoFalso(

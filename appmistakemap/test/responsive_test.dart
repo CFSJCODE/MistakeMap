@@ -361,6 +361,23 @@ void main() {
     });
   }
 
+  testWidgets('Login mostra o perfil pedido no "Quem é você?" e esquece', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'perfil_pedido_login': 'teacher'});
+    await _render(tester, const TelaCadastro(), size: const Size(320, 800));
+    expect(find.text('Entrar como professor'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    final aviso = find.byKey(const ValueKey('login-perfil-pedido'));
+    await tester.tap(
+      find.descendant(of: aviso, matching: find.byType(IconButton)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Entrar como professor'), findsNothing);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('perfil_pedido_login'), isNull);
+  });
+
   testWidgets('Login sem contas da equipe não mostra o acesso da equipe', (
     tester,
   ) async {

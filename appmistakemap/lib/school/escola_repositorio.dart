@@ -142,4 +142,28 @@ class PreferenciasPerfil {
       await prefs.setString(_ativo(uid), chave);
     } catch (_) {}
   }
+
+  static const _pedidoLogin = 'perfil_pedido_login';
+
+  /// Perfil escolhido em "Já tenho conta: entrar". Vale para o próximo login
+  /// neste aparelho e é apagado assim que a porta de perfil o usa.
+  Future<PerfilCadastro?> perfilPedidoNoLogin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return PerfilCadastro.doCodigo(prefs.getString(_pedidoLogin));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> pedirPerfilNoLogin(PerfilCadastro? perfil) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (perfil == null) {
+        await prefs.remove(_pedidoLogin);
+      } else {
+        await prefs.setString(_pedidoLogin, perfil.codigo);
+      }
+    } catch (_) {}
+  }
 }
