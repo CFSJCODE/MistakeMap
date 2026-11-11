@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
 
+import '../billing/checkout_page.dart';
 import '../about/external_profile.dart' show openLearningLink;
 import '../sync/conexao.dart' show novoUuid;
 import '../teacher/assignment_result_page.dart';
@@ -917,6 +918,13 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
         const Text(
           'A cobrança está desativada. Seus conteúdos continuam acessíveis; o limite de sessões protege a capacidade do serviço.',
         ),
+        if (widget.isAdmin) ...[
+          const SizedBox(height: 16),
+          _button(
+            'Prévia: assinatura da escola',
+            () => _push(const SchoolCheckoutPage()),
+          ),
+        ],
       ]),
       _card('Progresso com evidências', [
         Text(
