@@ -5,6 +5,7 @@ import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 import 'package:appmistakemap/ai/insights_view.dart'
     show ConceptGraph, ErrorMapView;
 import 'package:appmistakemap/layout/navigation_shell.dart';
+import 'package:appmistakemap/auth/team_login.dart';
 import 'package:appmistakemap/main.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' show FloatingActionButton;
@@ -359,6 +360,42 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('Login sem contas da equipe não mostra o acesso da equipe', (
+    tester,
+  ) async {
+    await _render(tester, const TelaCadastro(), size: const Size(390, 800));
+    expect(find.text('Acesso da equipe'), findsNothing);
+    expect(find.byKey(const Key('login-equipe-developer')), findsNothing);
+    expect(find.byKey(const Key('login-equipe-admin')), findsNothing);
+  });
+
+  testWidgets('Login com contas da equipe mostra os atalhos em 320px e 2x', (
+    tester,
+  ) async {
+    await _render(
+      tester,
+      const TelaCadastro(
+        equipe: TeamLoginConfig(
+          devEmail: 'dev@exemplo.dev',
+          devPassword: 'x',
+          adminEmail: 'admin@exemplo.dev',
+        ),
+      ),
+      size: const Size(320, 640),
+      scale: 2,
+    );
+    for (final chave in ['login-equipe-developer', 'login-equipe-admin']) {
+      await tester.ensureVisible(find.byKey(Key(chave)));
+      expect(find.byKey(Key(chave)).hitTestable(), findsOneWidget);
+    }
+    // Sem senha no arquivo, o atalho de admin só preenche o e-mail.
+    await tester.tap(find.byKey(const Key('login-equipe-admin')));
+    await tester.pump();
+    expect(find.text('admin@exemplo.dev'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(seconds: 5));
+  });
 
   testWidgets(
     'Login compacto com fonte 2x e teclado permite chegar aos botões',

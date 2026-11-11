@@ -38,6 +38,16 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["appLabel"] = "MistakeMap"
+
+        // App "MistakeMap Equipe" (scripts/build-equipe.ps1 passa
+        // --android-project-arg=equipe=true): outro applicationId, para
+        // instalar ao lado do app dos alunos sem substituí-lo, e outro nome.
+        // Sem a propriedade, nada muda no build dos alunos nem no Shorebird.
+        if (project.hasProperty("equipe")) {
+            applicationIdSuffix = ".equipe"
+            manifestPlaceholders["appLabel"] = "MistakeMap Equipe"
+        }
     }
 
     signingConfigs {

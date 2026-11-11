@@ -181,6 +181,45 @@ void main() {
     });
   });
 
+  group('app da equipe', () {
+    test('só aceita tags equipe-v, mesmo em pré-release', () {
+      final equipe = interpretarRelease(
+        _release(tag: 'equipe-v1.1.0+4', prerelease: true),
+        TargetPlatform.android,
+        equipe: true,
+      )!;
+      expect(equipe.build, 4);
+      expect(
+        interpretarRelease(_release(), TargetPlatform.android, equipe: true),
+        isNull,
+      );
+      // O app dos alunos nunca vê o release da equipe.
+      expect(
+        interpretarRelease(
+          _release(tag: 'equipe-v1.1.0+4', prerelease: true),
+          TargetPlatform.android,
+        ),
+        isNull,
+      );
+    });
+
+    test('escolhe o release da equipe mais novo da lista', () async {
+      final lista = jsonEncode([
+        _release(),
+        _release(tag: 'equipe-v1.1.0+4', prerelease: true),
+        _release(tag: 'equipe-v1.0.9+3', prerelease: true),
+      ]);
+      final v = VerificadorVersaoNativa(
+        cliente: MockClient((_) async => http.Response(lista, 200)),
+        buildInstalado: 3,
+        memoria: _MemoriaFalsa(),
+        equipe: true,
+      );
+      await v.verificar(TargetPlatform.android);
+      expect(v.novaVersao.value?.build, 4);
+    });
+  });
+
   group('VerificadorVersaoNativa', () {
     VerificadorVersaoNativa verificador(http.Response resposta) =>
         VerificadorVersaoNativa(

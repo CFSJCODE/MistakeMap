@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // ignore: depend_on_referenced_packages
 import 'package:url_launcher/url_launcher.dart';
 
+import '../auth/team_login.dart' show kTeamBuild;
 import 'versao_app.dart';
 
 /// Release nativo publicado no GitHub (APK do Android, ZIP do Windows).
@@ -86,20 +87,29 @@ const sufixosDownload = {
 
 final _tag = RegExp(r'^v?(\d+\.\d+\.\d+)\+(\d+)$');
 
+/// Tags do app MistakeMap Equipe (`team-app.yml`): `equipe-v1.0.2+3`,
+/// publicadas como pré-release para o app dos alunos nunca as ver.
+final _tagEquipe = RegExp(r'^equipe-v(\d+\.\d+\.\d+)\+(\d+)$');
+
 /// Lê a resposta de `GET /repos/{dono}/{repo}/releases/latest`.
 ///
 /// A tag precisa seguir `v<versão>+<build>` (ex.: `v1.1.0+2`), igual ao
 /// `version:` do pubspec. Rascunhos, pré-releases e tags fora do formato são
 /// ignorados.
+///
+/// Com [equipe], só valem as tags `equipe-v<versão>+<build>` do app da
+/// equipe, que são pré-releases.
 VersaoPublicada? interpretarRelease(
   Map<String, dynamic> json,
-  TargetPlatform plataforma,
-) {
-  if (json['draft'] == true || json['prerelease'] == true) return null;
+  TargetPlatform plataforma, {
+  bool equipe = false,
+}) {
+  if (json['draft'] == true) return null;
+  if (!equipe && json['prerelease'] == true) return null;
   final tag = json['tag_name'];
   final pagina = Uri.tryParse('${json['html_url'] ?? ''}');
   if (tag is! String || pagina == null || !pagina.hasScheme) return null;
-  final partes = _tag.firstMatch(tag.trim());
+  final partes = (equipe ? _tagEquipe : _tag).firstMatch(tag.trim());
   if (partes == null) return null;
 
   Uri? download;
@@ -137,8 +147,9 @@ class VerificadorVersaoNativa {
     DateTime Function()? relogio,
     MemoriaDownload? memoria,
     Future<bool> Function(VersaoPublicada)? abrir,
+    this.equipe = kTeamBuild,
   }) : _cliente = cliente ?? http.Client(),
-       _endpoint = endpoint ?? endpointPadrao,
+       _endpoint = endpoint ?? (equipe ? endpointEquipe : endpointPadrao),
        _relogio = relogio ?? DateTime.now,
        _memoria = memoria ?? const MemoriaDownloadPreferencias(),
        _abrir = abrir ?? abrirVersaoPublicada;
@@ -146,6 +157,15 @@ class VerificadorVersaoNativa {
   static final endpointPadrao = Uri.parse(
     'https://api.github.com/repos/CFSJCODE/MistakeMap/releases/latest',
   );
+
+  /// O app da equipe procura o release `equipe-v…` mais novo na lista, porque
+  /// pré-releases nunca são o `latest`.
+  static final endpointEquipe = Uri.parse(
+    'https://api.github.com/repos/CFSJCODE/MistakeMap/releases?per_page=30',
+  );
+
+  /// Verdadeiro no app MistakeMap Equipe: só vê os releases da equipe.
+  final bool equipe;
 
   final http.Client _cliente;
   final Uri _endpoint;
@@ -227,14 +247,33 @@ class VerificadorVersaoNativa {
       // 404 = ainda não há release publicado.
       if (resposta.statusCode != 200) return;
       final json = jsonDecode(resposta.body);
-      if (json is! Map<String, dynamic>) return;
-      final release = interpretarRelease(json, plataforma);
+      final release = switch (json) {
+        Map<String, dynamic>() => interpretarRelease(
+          json,
+          plataforma,
+          equipe: equipe,
+        ),
+        List() => _maisNovo(
+          json.whereType<Map<String, dynamic>>().map(
+            (r) => interpretarRelease(r, plataforma, equipe: equipe),
+          ),
+        ),
+        _ => null,
+      };
       novaVersao.value = release != null && release.build > buildInstalado
           ? release
           : null;
     } catch (erro) {
       debugPrint('Consulta de versão nativa falhou: $erro');
     }
+  }
+
+  static VersaoPublicada? _maisNovo(Iterable<VersaoPublicada?> releases) {
+    VersaoPublicada? melhor;
+    for (final r in releases.whereType<VersaoPublicada>()) {
+      if (melhor == null || r.build > melhor.build) melhor = r;
+    }
+    return melhor;
   }
 
   void dispose() {

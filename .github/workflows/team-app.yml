@@ -1,0 +1,307 @@
+name: App da equipe (MistakeMap Equipe)
+
+# Gera e atualiza o "MistakeMap Equipe" (desenvolvimento e administração).
+# É o mesmo código do app dos alunos compilado com MISTAKEMAP_TEAM_BUILD=true:
+# o app inteiro, mais as funções de admin para quem é admin. Só entram contas
+# com papel 'admin' ou 'developer'. Detalhes em appmistakemap/APP_EQUIPE.md.
+#
+# Roda sozinho a cada push no main que muda o app:
+# - versão do pubspec SEM release da equipe ainda -> release nativo no
+#   Shorebird (app próprio da equipe) + pré-release `equipe-v<versão>` no
+#   GitHub Releases com o APK e o ZIP;
+# - versão que JÁ tem release da equipe -> patch do Shorebird (o app instalado
+#   atualiza sozinho) e uma linha nova nas notas do pré-release.
+#
+# O app da equipe tem app_id próprio no Shorebird (shorebird.equipe.yaml):
+# patches dos alunos nunca chegam nele, nem os dele nos alunos. Os releases
+# da equipe são pré-release e nunca viram o "Latest" que o app dos alunos
+# consulta. Nenhuma senha ou e-mail entra neste build.
+#
+# Primeira vez: rode este workflow à mão com "criar_app_shorebird" marcado;
+# ele cria o app "MistakeMap Equipe" no Shorebird e mostra o app_id no
+# resumo da execução. Grave-o em appmistakemap/shorebird.equipe.yaml.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "appmistakemap/lib/**"
+      - "appmistakemap/pubspec.yaml"
+      - "appmistakemap/pubspec.lock"
+      - "appmistakemap/android/**"
+      - "appmistakemap/windows/**"
+      - "appmistakemap/shorebird.equipe.yaml"
+      - ".github/workflows/team-app.yml"
+  workflow_dispatch:
+    inputs:
+      criar_app_shorebird:
+        description: Criar o app "MistakeMap Equipe" no Shorebird (só na primeira vez)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# Um por vez, na ordem dos pushes (patch depois de release).
+concurrency:
+  group: team-app
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: 3.47.2
+  # Igual aos builds dos alunos: todos os ícones no binário, e as flags da equipe.
+  FLUTTER_ARGS_ANDROID: --no-tree-shake-icons --dart-define=MISTAKEMAP_TEAM_BUILD=true --android-project-arg=equipe=true
+  FLUTTER_ARGS_WINDOWS: --no-tree-shake-icons --dart-define=MISTAKEMAP_TEAM_BUILD=true
+
+jobs:
+  criar-app:
+    name: Criar app da equipe no Shorebird
+    if: github.event_name == 'workflow_dispatch' && inputs.criar_app_shorebird
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: appmistakemap
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: shorebird init (app novo)
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        run: |
+          if [ -f shorebird.equipe.yaml ]; then
+            echo "::error::shorebird.equipe.yaml já existe; o app da equipe já foi criado."
+            exit 1
+          fi
+          shorebird init --force --display-name "MistakeMap Equipe"
+          app_id=$(grep -E '^app_id:' shorebird.yaml | awk '{print $2}')
+          echo "app_id do MistakeMap Equipe: $app_id"
+          {
+            echo "### App da equipe criado no Shorebird"
+            echo
+            echo "Grave em \`appmistakemap/shorebird.equipe.yaml\`:"
+            echo
+            echo '```yaml'
+            echo "app_id: $app_id"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  preparar:
+    name: Conferir versão e modo
+    if: github.event_name == 'push' || !inputs.criar_app_shorebird
+    runs-on: ubuntu-latest
+    outputs:
+      pronto: ${{ steps.modo.outputs.pronto }}
+      modo: ${{ steps.modo.outputs.modo }}
+      versao: ${{ steps.modo.outputs.versao }}
+      tag: ${{ steps.modo.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Release ou patch
+        id: modo
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        run: |
+          if [ ! -f appmistakemap/shorebird.equipe.yaml ] || [ -z "$SHOREBIRD_TOKEN" ]; then
+            echo "::warning::Falta appmistakemap/shorebird.equipe.yaml ou o secret SHOREBIRD_TOKEN; o app da equipe não foi gerado (veja o cabeçalho deste workflow)."
+            echo "pronto=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          versao=$(grep -E '^version:' appmistakemap/pubspec.yaml | awk '{print $2}')
+          tag="equipe-v$versao"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            modo=patch
+          else
+            modo=release
+          fi
+          echo "MistakeMap Equipe $versao: $modo"
+          {
+            echo "pronto=true"
+            echo "modo=$modo"
+            echo "versao=$versao"
+            echo "tag=$tag"
+          } >> "$GITHUB_OUTPUT"
+
+  android:
+    name: Android (equipe)
+    needs: preparar
+    if: needs.preparar.outputs.pronto == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: appmistakemap
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Usar o app_id da equipe
+        run: cp shorebird.equipe.yaml shorebird.yaml
+
+      # Mesma chave do app dos alunos: cada APK novo instala por cima do anterior.
+      - name: Gravar a chave de assinatura
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          [ -n "$ANDROID_KEYSTORE_BASE64" ] || { echo "::warning::Sem chave de release: APK assinado com a de debug."; exit 0; }
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/release.jks"
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+          } > android/key.properties
+
+      - name: shorebird release android (equipe)
+        if: needs.preparar.outputs.modo == 'release'
+        uses: shorebirdtech/shorebird-release@v1
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        with:
+          platform: android
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          working-directory: appmistakemap
+          args: --artifact apk -- ${{ env.FLUTTER_ARGS_ANDROID }}
+
+      - name: Renomear o APK
+        if: needs.preparar.outputs.modo == 'release'
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "dist/MistakeMap-Equipe-${{ needs.preparar.outputs.versao }}-android.apk"
+
+      - uses: actions/upload-artifact@v4
+        if: needs.preparar.outputs.modo == 'release'
+        with:
+          name: equipe-android
+          path: appmistakemap/dist/*.apk
+          if-no-files-found: error
+
+      - name: shorebird patch android (equipe)
+        if: needs.preparar.outputs.modo == 'patch'
+        uses: shorebirdtech/shorebird-patch@v1
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        with:
+          platform: android
+          release-version: ${{ needs.preparar.outputs.versao }}
+          working-directory: appmistakemap
+          args: -- ${{ env.FLUTTER_ARGS_ANDROID }}
+
+  windows:
+    name: Windows (equipe)
+    needs: preparar
+    if: needs.preparar.outputs.pronto == 'true'
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: appmistakemap
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Usar o app_id da equipe
+        run: cp shorebird.equipe.yaml shorebird.yaml
+
+      - name: shorebird release windows (equipe)
+        if: needs.preparar.outputs.modo == 'release'
+        uses: shorebirdtech/shorebird-release@v1
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        with:
+          platform: windows
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          working-directory: appmistakemap
+          args: -- ${{ env.FLUTTER_ARGS_WINDOWS }}
+
+      - name: Compactar a pasta do app
+        if: needs.preparar.outputs.modo == 'release'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path build/windows/x64/runner/Release/* `
+            -DestinationPath "dist/MistakeMap-Equipe-${{ needs.preparar.outputs.versao }}-windows.zip"
+
+      - uses: actions/upload-artifact@v4
+        if: needs.preparar.outputs.modo == 'release'
+        with:
+          name: equipe-windows
+          path: appmistakemap/dist/*.zip
+          if-no-files-found: error
+
+      - name: shorebird patch windows (equipe)
+        if: needs.preparar.outputs.modo == 'patch'
+        uses: shorebirdtech/shorebird-patch@v1
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        with:
+          platform: windows
+          release-version: ${{ needs.preparar.outputs.versao }}
+          working-directory: appmistakemap
+          args: -- ${{ env.FLUTTER_ARGS_WINDOWS }}
+
+  publicar:
+    name: GitHub Releases (equipe)
+    needs: [preparar, android, windows]
+    if: >-
+      always() && needs.preparar.outputs.pronto == 'true' &&
+      (needs.android.result == 'success' || needs.windows.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        if: needs.preparar.outputs.modo == 'release'
+        with:
+          path: dist
+          merge-multiple: true
+
+      # Pré-release e --latest=false: o "Latest" continua sendo o dos alunos,
+      # que é o único que o app dos alunos consulta.
+      - name: Criar o release ou anotar o patch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.preparar.outputs.tag }}
+          VERSAO: ${{ needs.preparar.outputs.versao }}
+          MODO: ${{ needs.preparar.outputs.modo }}
+          MENSAGEM: ${{ github.event.head_commit.message }}
+        run: |
+          curto="${GITHUB_SHA::7}"
+          titulo=$(printf '%s' "${MENSAGEM:-execução manual}" | head -n 1)
+          linha="- $(date -u +%Y-%m-%d) ${MODO} \`${curto}\`: ${titulo}"
+          if [ "$MODO" = "release" ] && ! gh release view "$TAG" >/dev/null 2>&1; then
+            {
+              echo "App **MistakeMap Equipe** (desenvolvimento e administração)."
+              echo "Só entram contas com papel admin ou developer. Instala ao lado do app dos alunos e se atualiza sozinho pelo Shorebird."
+              echo
+              echo "Versões:"
+              echo "$linha"
+            } > notas.md
+            gh release create "$TAG" dist/* \
+              --target "$GITHUB_SHA" \
+              --title "MistakeMap Equipe $VERSAO" \
+              --notes-file notas.md \
+              --prerelease --latest=false
+          else
+            [ -d dist ] && gh release upload "$TAG" dist/* --clobber
+            gh release view "$TAG" --json body --jq .body > notas.md
+            echo "$linha" >> notas.md
+            gh release edit "$TAG" --notes-file notas.md --prerelease --latest=false
+          fi
