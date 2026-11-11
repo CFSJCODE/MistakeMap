@@ -18,11 +18,20 @@ class TelaQuemEVoce extends StatefulWidget {
     super.key,
     required this.repositorio,
     required this.onConcluido,
+    this.onEntrarComConta,
+    this.rodape,
     this.hoje,
   });
 
   final RepositorioEscola repositorio;
   final ValueChanged<ContextoPerfil> onConcluido;
+
+  /// "Já tenho conta: entrar" em cada perfil: sai desta conta e volta ao
+  /// login com o perfil escolhido. Sem callback, o atalho não aparece.
+  final ValueChanged<PerfilCadastro>? onEntrarComConta;
+
+  /// Aparece no fim da escolha de perfil (o app passa as atualizações).
+  final Widget? rodape;
 
   /// Data de referência para a idade (testes).
   final DateTime? hoje;
@@ -202,12 +211,19 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
             for (final p in PerfilCadastro.values)
               SizedBox(
                 width: largura,
-                child: _CartaoPerfil(perfil: p, onTap: () => _escolher(p)),
+                child: _CartaoPerfil(
+                  perfil: p,
+                  onTap: () => _escolher(p),
+                  onEntrar: widget.onEntrarComConta == null
+                      ? null
+                      : () => widget.onEntrarComConta!(p),
+                ),
               ),
           ],
         );
       },
     ),
+    if (widget.rodape != null) ...[const SizedBox(height: 24), widget.rodape!],
   ];
 
   List<Widget> _formulario(PerfilCadastro perfil) => [
@@ -252,6 +268,15 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
           principal: true,
           onPressed: _enviando ? null : _continuar,
         ),
+        if (widget.onEntrarComConta != null) ...[
+          const SizedBox(height: 8),
+          BotaoEscola(
+            'Já tenho conta de ${perfil.titulo.toLowerCase()}: entrar',
+            onPressed: _enviando
+                ? null
+                : () => widget.onEntrarComConta!(perfil),
+          ),
+        ],
       ],
     ),
   ];
@@ -392,10 +417,15 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
 }
 
 class _CartaoPerfil extends StatelessWidget {
-  const _CartaoPerfil({required this.perfil, required this.onTap});
+  const _CartaoPerfil({
+    required this.perfil,
+    required this.onTap,
+    this.onEntrar,
+  });
 
   final PerfilCadastro perfil;
   final VoidCallback onTap;
+  final VoidCallback? onEntrar;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -453,6 +483,14 @@ class _CartaoPerfil extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: MistakeMapDesign.warn,
                       ),
+                    ),
+                  ],
+                  if (onEntrar != null) ...[
+                    const SizedBox(height: 4),
+                    HyperlinkButton(
+                      key: ValueKey('entrar-${perfil.codigo}'),
+                      onPressed: onEntrar,
+                      child: const Text('Já tenho conta: entrar'),
                     ),
                   ],
                 ],

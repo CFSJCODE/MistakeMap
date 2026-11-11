@@ -50,6 +50,8 @@ import 'sync/sobreposicao.dart';
 import 'study/study_today_panel.dart';
 import 'platform/platform_hub.dart';
 import 'exercicios/banco_questoes.dart';
+import 'school/escola_repositorio.dart' show PreferenciasPerfil;
+import 'school/perfil_modelos.dart' show PerfilCadastro;
 import 'school/porta_perfil.dart';
 
 part 'caderno_erros.dart';
@@ -1203,6 +1205,8 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
     // "Quem é você?", seletor de perfil e consentimento do responsável.
     return PortaDePerfil(
       usuarioId: _appUser!.id,
+      // No fim do "Quem é você?": versão instalada e atualizações.
+      rodapeCadastro: const CartaoVersaoApp(),
       estudante: TelaNavegacao(
         user: _appUser!,
         studyRepository: widget.studyRepository,
@@ -1509,11 +1513,37 @@ class _TelaCadastroState extends State<TelaCadastro> {
   late final TeamLoginConfig _equipe =
       widget.equipe ?? TeamLoginConfig.fromEnvironment();
 
+  /// Perfil escolhido em "Já tenho conta: entrar" no "Quem é você?".
+  PerfilCadastro? _perfilPedido;
+
   @override
   void initState() {
     super.initState();
     _avisarErroAuth();
+    _lerPerfilPedido();
   }
+
+  Future<void> _lerPerfilPedido() async {
+    final pedido = await const PreferenciasPerfil().perfilPedidoNoLogin();
+    if (mounted && pedido != null) setState(() => _perfilPedido = pedido);
+  }
+
+  void _esquecerPerfilPedido() {
+    setState(() => _perfilPedido = null);
+    unawaited(const PreferenciasPerfil().pedirPerfilNoLogin(null));
+  }
+
+  Widget _avisoPerfilPedido(PerfilCadastro perfil) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: InfoBar(
+      key: const ValueKey('login-perfil-pedido'),
+      title: Text('Entrar como ${perfil.titulo.toLowerCase()}'),
+      content: const Text(
+        'Entre com a conta desse perfil. Depois do login o app abre nele.',
+      ),
+      onClose: _esquecerPerfilPedido,
+    ),
+  );
 
   @override
   void didUpdateWidget(TelaCadastro oldWidget) {
@@ -1893,6 +1923,8 @@ class _TelaCadastroState extends State<TelaCadastro> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_perfilPedido != null && !_modoCadastro)
+          _avisoPerfilPedido(_perfilPedido!),
         // Campo de e-mail
         TextBox(
           controller: _emailCtrl,
@@ -5733,7 +5765,7 @@ class TelaSobre extends StatelessWidget {
                 const SizedBox(height: 32),
                 const _SobreSecaoTitulo(titulo: 'Versão do App'),
                 const SizedBox(height: 12),
-                const _CartaoVersao(),
+                const CartaoVersaoApp(),
               ],
             ),
           ),
@@ -6160,8 +6192,8 @@ class _SobreSecaoTitulo extends StatelessWidget {
 
 /// Versão instalada, situação do patch de código e link do release nativo
 /// novo, quando houver.
-class _CartaoVersao extends StatelessWidget {
-  const _CartaoVersao();
+class CartaoVersaoApp extends StatelessWidget {
+  const CartaoVersaoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
