@@ -192,6 +192,47 @@ void main() {
   });
 
   testWidgets(
+    'Quem é você? oferece entrar com conta existente em cada perfil',
+    (tester) async {
+      var saiu = 0;
+      await _render(
+        tester,
+        TelaQuemEVoce(
+          repositorio: _RepoFalso(),
+          onConcluido: (_) {},
+          onEntrarComOutraConta: () async => saiu++,
+        ),
+      );
+      final lista = find.text('Já tenho conta com um perfil — Entrar');
+      await tester.ensureVisible(lista);
+      await tester.tap(lista);
+      await tester.pumpAndSettle();
+      expect(saiu, 1);
+
+      await tester.tap(find.text(PerfilCadastro.coordenador.titulo));
+      await tester.pumpAndSettle();
+      final perfil = find.text(
+        'Já tenho conta de ${PerfilCadastro.coordenador.titulo} — Entrar',
+      );
+      await tester.ensureVisible(perfil);
+      await tester.tap(perfil);
+      await tester.pumpAndSettle();
+      expect(saiu, 2);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('Quem é você? sem saída configurada não mostra o atalho', (
+    tester,
+  ) async {
+    await _render(
+      tester,
+      TelaQuemEVoce(repositorio: _RepoFalso(), onConcluido: (_) {}),
+    );
+    expect(find.byKey(const Key('quem-e-voce-entrar')), findsNothing);
+  });
+
+  testWidgets(
     'coordenador sem código não avança; com código resgata o convite',
     (tester) async {
       final repo = _RepoFalso();
