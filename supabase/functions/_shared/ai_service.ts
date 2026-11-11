@@ -70,7 +70,7 @@ export function dailyLimit(kind: "analysis" | "practice") {
 }
 /**
  * Resultado da cota coletiva da escola (consume_school_ai, migration
- * 20261111071500). `no_school`: vale só a cota individual.
+ * 20261111210000). `no_school`: vale só a cota individual.
  */
 export type SchoolQuota = {
   status: "no_school" | "ok" | "extra";

@@ -1,6 +1,6 @@
 # Planos, cota coletiva e aluno ativo
 
-Migration: `supabase/migrations/20261111071500_school_plans_quota.sql` (depende de `20261111050000_schools_and_roles`, ver [ESCOLAS.md](ESCOLAS.md)).
+Migration: `supabase/migrations/20261111210000_school_plans_quota.sql` (depende de `20261111050000_schools_and_roles`, ver [ESCOLAS.md](ESCOLAS.md)).
 Testes: `scripts/verify-school-quota.sh` (Postgres local descartável, rodar como usuário que não seja root) e `deno test` em `supabase/functions` (roteador por plano).
 
 ## Planos

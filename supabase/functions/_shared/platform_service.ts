@@ -61,7 +61,7 @@ async function entitlements(sql: Query, user: string) {
     WHERE user_id=${user} AND created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`;
   // Membro de escola herda o plano dela (Grátis, Escola ou Escola Plus);
   // sem escola vale o plano individual de platform_entitlements.
-  // Confere a função antes: banco sem a migration 20261111071500 segue no
+  // Confere a função antes: banco sem a migration 20261111210000 segue no
   // plano individual (migrations e funções publicam em paralelo).
   const [ready] =
     await sql`SELECT to_regprocedure('public.user_school_plan(uuid)') IS NOT NULL AS ok`;
