@@ -32,6 +32,11 @@ o app:
   baixa sozinho e usa na próxima abertura) e uma linha nova nas notas do
   pré-release.
 
+O automático gera só o Android. O Windows sai quando você roda o workflow à
+mão (Actions → App da equipe → Run workflow) com **incluir_windows** marcado:
+o runner Windows gasta o dobro de minutos do Actions. Se a versão ainda não
+tem o ZIP do Windows no pré-release, ele faz o release nativo; senão, patch.
+
 Patches dos alunos nunca chegam no app da equipe e vice-versa: cada um tem seu
 `app_id`. O app da equipe também avisa quando sai um `equipe-v…` mais novo.
 

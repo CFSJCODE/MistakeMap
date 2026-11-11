@@ -12,6 +12,10 @@ name: App da equipe (MistakeMap Equipe)
 # - versão que JÁ tem release da equipe -> patch do Shorebird (o app instalado
 #   atualiza sozinho) e uma linha nova nas notas do pré-release.
 #
+# Windows só roda à mão (Run workflow com "incluir_windows" marcado), porque
+# o runner Windows custa o dobro do Linux. Se a versão ainda não tem o ZIP do
+# Windows no pré-release, ele faz o release nativo do Windows; senão, patch.
+#
 # O app da equipe tem app_id próprio no Shorebird (shorebird.equipe.yaml):
 # patches dos alunos nunca chegam nele, nem os dele nos alunos. Os releases
 # da equipe são pré-release e nunca viram o "Latest" que o app dos alunos
@@ -35,6 +39,10 @@ on:
     inputs:
       criar_app_shorebird:
         description: Criar o app "MistakeMap Equipe" no Shorebird (só na primeira vez)
+        type: boolean
+        default: false
+      incluir_windows:
+        description: Gerar também o Windows (custa mais minutos do Actions)
         type: boolean
         default: false
 
@@ -110,6 +118,7 @@ jobs:
     outputs:
       pronto: ${{ steps.modo.outputs.pronto }}
       modo: ${{ steps.modo.outputs.modo }}
+      modo_windows: ${{ steps.modo.outputs.modo_windows }}
       versao: ${{ steps.modo.outputs.versao }}
       tag: ${{ steps.modo.outputs.tag }}
     steps:
@@ -128,15 +137,22 @@ jobs:
           fi
           versao=$(grep -E '^version:' appmistakemap/pubspec.yaml | awk '{print $2}')
           tag="equipe-v$versao"
+          modo_windows=release
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             modo=patch
+            # O Windows pode ter ficado de fora do release (só roda à mão).
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" \
+                --json assets --jq '.assets[].name' | grep -q -- '-windows\.zip$'; then
+              modo_windows=patch
+            fi
           else
             modo=release
           fi
-          echo "MistakeMap Equipe $versao: $modo"
+          echo "MistakeMap Equipe $versao: Android $modo, Windows $modo_windows"
           {
             echo "pronto=true"
             echo "modo=$modo"
+            echo "modo_windows=$modo_windows"
             echo "versao=$versao"
             echo "tag=$tag"
           } >> "$GITHUB_OUTPUT"
@@ -220,7 +236,9 @@ jobs:
   windows:
     name: Windows (equipe)
     needs: preparar
-    if: needs.preparar.outputs.pronto == 'true'
+    if: >-
+      needs.preparar.outputs.pronto == 'true' &&
+      github.event_name == 'workflow_dispatch' && inputs.incluir_windows
     runs-on: windows-latest
     defaults:
       run:
@@ -237,7 +255,7 @@ jobs:
         run: cp shorebird.equipe.yaml shorebird.yaml
 
       - name: shorebird release windows (equipe)
-        if: needs.preparar.outputs.modo == 'release'
+        if: needs.preparar.outputs.modo_windows == 'release'
         uses: shorebirdtech/shorebird-release@v1
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
@@ -248,7 +266,7 @@ jobs:
           args: -- ${{ env.FLUTTER_ARGS_WINDOWS }}
 
       - name: Compactar a pasta do app
-        if: needs.preparar.outputs.modo == 'release'
+        if: needs.preparar.outputs.modo_windows == 'release'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
@@ -256,14 +274,14 @@ jobs:
             -DestinationPath "dist/MistakeMap-Equipe-${{ needs.preparar.outputs.versao }}-windows.zip"
 
       - uses: actions/upload-artifact@v4
-        if: needs.preparar.outputs.modo == 'release'
+        if: needs.preparar.outputs.modo_windows == 'release'
         with:
           name: equipe-windows
           path: appmistakemap/dist/*.zip
           if-no-files-found: error
 
       - name: shorebird patch windows (equipe)
-        if: needs.preparar.outputs.modo == 'patch'
+        if: needs.preparar.outputs.modo_windows == 'patch'
         uses: shorebirdtech/shorebird-patch@v1
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
@@ -282,7 +300,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
-        if: needs.preparar.outputs.modo == 'release'
+        if: >-
+          needs.preparar.outputs.modo == 'release' ||
+          (needs.windows.result == 'success' && needs.preparar.outputs.modo_windows == 'release')
         with:
           path: dist
           merge-multiple: true
