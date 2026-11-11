@@ -11,6 +11,7 @@ import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'theme/design_tokens.dart';
@@ -52,6 +53,7 @@ import 'exercicios/banco_questoes.dart';
 part 'caderno_erros.dart';
 part 'learning_platform.dart';
 part 'banco_exercicios.dart';
+part 'onboarding/primeira_analise.dart';
 
 // ─── Cores da identidade visual (Obsidian Glass, modo claro) ─────────────────
 // titleBlue e contentBlue mantêm o nome histórico; hoje são as tintas escuras
@@ -1318,6 +1320,14 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     _mapaControle.request(pedido);
   }
 
+  /// Conta nova: questão rápida do banco e, corrigida, o Mapa.
+  Future<void> _primeiraAnalise({bool semear = true}) => abrirPrimeiraAnalise(
+    context,
+    usuarioId: widget.user.id,
+    semear: semear,
+    onVerMapa: () => _selecionar(_mapa),
+  );
+
   Future<void> _abrirSobre() async {
     if (_paginaAberta) return;
     setState(() => _paginaAberta = true);
@@ -1402,8 +1412,13 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       onEstudar: () => _irAoMapa(ErrorMapRequest.study),
       onCaderno: () => _selecionar(3),
       onAprender: _abrirAprender,
+      onPrimeiraAnalise: _primeiraAnalise,
     ),
-    TelaPrincipal(key: _listaKey, user: widget.user),
+    TelaPrincipal(
+      key: _listaKey,
+      user: widget.user,
+      onPrimeiraAnalise: () => _primeiraAnalise(semear: false),
+    ),
     ErrorMapTab(
       userId: widget.user.id,
       repository: _analysisRepository,
@@ -2130,6 +2145,9 @@ class TelaInicial extends StatefulWidget {
   final VoidCallback? onEstudar;
   final VoidCallback? onCaderno;
   final VoidCallback? onAprender;
+
+  /// Conta sem tentativas: abre a primeira análise guiada.
+  final Future<void> Function()? onPrimeiraAnalise;
   const TelaInicial({
     super.key,
     required this.user,
@@ -2140,6 +2158,7 @@ class TelaInicial extends StatefulWidget {
     this.onEstudar,
     this.onCaderno,
     this.onAprender,
+    this.onPrimeiraAnalise,
   });
 
   @override
@@ -2250,6 +2269,16 @@ class _TelaInicialState extends State<TelaInicial> {
                     children: [
                       _cabecalho(context),
                       const SizedBox(height: 24),
+                      if (widget.onPrimeiraAnalise != null &&
+                          !_falhaEstatisticas &&
+                          _totalExercicios == 0)
+                        GuiaPrimeiraAnalise(
+                          usuarioId: widget.user.id,
+                          onComecar: () async {
+                            await widget.onPrimeiraAnalise!();
+                            if (mounted) await carregarEstatisticas();
+                          },
+                        ),
                       StudyTodayPanel(
                         key: _studyTodayKey,
                         userId: widget.user.id,
@@ -3915,11 +3944,15 @@ class TelaPrincipal extends StatefulWidget {
   /// Repositório do banco de questões (testes usam um falso).
   final RepositorioQuestoes? repositorioQuestoes;
 
+  /// Depois de "Começar com exemplos" numa conta nova: a primeira análise.
+  final Future<void> Function()? onPrimeiraAnalise;
+
   const TelaPrincipal({
     super.key,
     required this.user,
     this.secaoInicial = SecaoExercicios.praticar,
     this.repositorioQuestoes,
+    this.onPrimeiraAnalise,
   });
 
   @override
@@ -3959,6 +3992,10 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
             : 'Sua conta já tem exercícios.',
       );
       await carregarExercicios();
+      // Conta nova: em seguida, uma questão rápida e o próprio Mapa.
+      if (criados is int && criados > 0 && mounted) {
+        await widget.onPrimeiraAnalise?.call();
+      }
     } catch (e) {
       if (!mounted) return;
       _avisar(
