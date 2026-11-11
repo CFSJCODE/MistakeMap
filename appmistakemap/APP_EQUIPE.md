@@ -29,8 +29,14 @@ o app:
 - versão do `pubspec.yaml` ainda sem release da equipe → release nativo no
   Shorebird e pré-release `equipe-v<versão>` com o APK e o ZIP do Windows;
 - versão que já tem release da equipe → patch do Shorebird (o app instalado
-  baixa sozinho e usa na próxima abertura) e uma linha nova nas notas do
-  pré-release.
+  baixa sozinho e usa na próxima abertura), uma linha nova nas notas do
+  pré-release e o APK `MistakeMap-Equipe-<versão>-atual-android.apk` com o
+  código do commit, substituído a cada patch.
+
+Assim todo push que muda o app deixa um APK no GitHub. O APK `-atual` é um
+build Flutter comum: instala a versão mais nova na hora, mas não recebe patches
+do Shorebird. Para atualização automática, instale o APK da versão (sem
+`-atual`).
 
 O automático gera só o Android. O Windows sai quando você roda o workflow à
 mão (Actions → App da equipe → Run workflow) com **incluir_windows** marcado:
