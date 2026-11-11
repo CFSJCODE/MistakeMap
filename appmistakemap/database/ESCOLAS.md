@@ -35,6 +35,35 @@ O trigger `school_members_guard` vale para qualquer caminho de escrita, inclusiv
 
 Erros: `MM401` sem login, `MM403` sem permissão ou sem convite, `MM404` convite inválido, `MM429` limite de 5 escolas criadas por usuário.
 
+## Contrato e LGPD (item E)
+
+Migration: `supabase/migrations/20261111074500_school_agreements.sql`.
+Testes: `scripts/verify-school-agreements.sh`. Textos: `legal/` (ver `legal/README.md`).
+
+| Peça | O que faz |
+|---|---|
+| `legal_document_versions` | Termos de Uso, Contrato SaaS e Acordo de Tratamento de Dados, por versão, com hash; texto publicado não muda |
+| `school_agreements` | aceite do dono: documento, versão, hash, data, conta, nome, cargo e e-mail de quem assinou, IP e navegador; não muda nem é apagado |
+| `current_legal_documents()` | versão vigente de cada documento (a mais recente com `effective_at` já passado) |
+| `school_is_usable(school)` | escola `active`/`pilot` com os 3 documentos vigentes aceitos |
+| `school_agreement_status(school)` | texto vigente e situação do aceite; dono, coordenador e admin |
+| `accept_school_agreements(school, documentos, nome, cargo)` | só o dono; recusa (`MM409`) se a versão ou o hash não forem os vigentes |
+
+Enquanto `school_is_usable` for falso, triggers recusam com `MM428`: criar convite,
+entrar na escola por convite, vincular turma à escola e matricular aluno em turma
+da escola. Só o dono fundador entra antes do aceite, porque é ele quem aceita.
+Publicar versão nova de um documento bloqueia de novo todas as escolas até o novo aceite.
+Escola com aceite não é apagada (`on delete restrict`): encerrar é `status = 'closed'`.
+
+**Para os próximos itens:** toda ação em nome da escola (cota coletiva, cobrança,
+painéis, mapa da turma) deve chamar `public.school_is_usable(school)` ou
+`public.require_school_usable(school)` antes de agir. Os testes de outra
+migration que criam convites precisam aceitar o contrato antes (ver
+`scripts/school_agreements/tests.sql`).
+
+App: `lib/school/school_agreements.dart` (`SchoolAgreementsPage`), para o
+cadastro do dono (item B) e o painel do dono (item F) abrirem.
+
 ## O que ainda não tem
 
-Telas, Edge Function `school-admin`, cota coletiva, cobrança, contrato e auditoria ficam nas próximas etapas (itens B a F da onda 1).
+Telas de cadastro, Edge Function `school-admin`, cota coletiva, cobrança e auditoria ficam nas próximas etapas (itens B, C, D e F da onda 1).
