@@ -1,4 +1,5 @@
 import type postgres from "postgresjs";
+import { aiTierForPlan } from "./model_router.ts";
 import { PublicError } from "./ai_contract.ts";
 import type { Database } from "./ai_service.ts";
 import { contentOperation } from "./platform_content.ts";
@@ -53,8 +54,35 @@ async function entitlements(sql: Query, user: string) {
   const [usage] =
     await sql`SELECT count(*)::int AS used FROM public.platform_sessions
     WHERE user_id=${user} AND created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`;
+  // Membro de escola herda o plano dela (Grátis, Escola ou Escola Plus);
+  // sem escola vale o plano individual de platform_entitlements.
+  // Confere a função antes: banco sem a migration 20261111071500 segue no
+  // plano individual (migrations e funções publicam em paralelo).
+  const [ready] =
+    await sql`SELECT to_regprocedure('public.user_school_plan(uuid)') IS NOT NULL AS ok`;
+  const [school] = ready?.ok
+    ? await sql`SELECT * FROM public.user_school_plan(${user})`
+    : [];
+  const individual = row?.plan ?? "free";
   return {
-    plan: row?.plan ?? "free",
+    plan: school ? String(school.plan) : individual,
+    plan_label: school
+      ? String(school.plan_label)
+      : individual === "free"
+      ? "Gratuito"
+      : individual === "pro"
+      ? "Pro"
+      : "Piloto",
+    plan_source: school ? "school" : "individual",
+    school: school
+      ? {
+        id: school.school_id,
+        name: school.school_name,
+        role: school.role,
+        status: school.school_status,
+      }
+      : null,
+    ai_tier: aiTierForPlan(school?.plan),
     sessions_per_day: Number(row?.sessions_per_day ?? 10),
     sessions_used_today: Number(usage?.used ?? 0),
     usage_day_zone: "UTC",

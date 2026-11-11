@@ -1,5 +1,10 @@
 import { strict as assert } from "node:assert";
-import { type RoutingEvidence, selectModel } from "../_shared/model_router.ts";
+import {
+  aiTierForPlan,
+  providerAllowed,
+  type RoutingEvidence,
+  selectModel,
+} from "../_shared/model_router.ts";
 
 const now = Date.parse("2026-11-01T12:00:00Z");
 const base: RoutingEvidence = {
@@ -60,4 +65,17 @@ Deno.test("roteador rejeita evidências insuficientes, obsoletas e sem visão", 
     ),
     undefined,
   );
+});
+
+Deno.test("plano define o nível de IA: Claude só no Escola Plus", () => {
+  assert.equal(aiTierForPlan("plus"), "premium");
+  for (const plan of ["free", "escola", "pro", "pilot", null, undefined, 3]) {
+    assert.equal(aiTierForPlan(plan), "standard");
+  }
+  assert.equal(providerAllowed("anthropic", "standard"), false);
+  assert.equal(providerAllowed(" Anthropic ", "standard"), false);
+  assert.equal(providerAllowed("anthropic", "premium"), true);
+  for (const provider of ["gemini", "openrouter", undefined]) {
+    assert.equal(providerAllowed(provider, "standard"), true);
+  }
 });
