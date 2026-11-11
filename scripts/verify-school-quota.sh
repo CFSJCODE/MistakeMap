@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Testes de planos, cota coletiva e aluno ativo (migration 20261111071500) num
+# Testes de planos, cota coletiva e aluno ativo (migration 20261111210000) num
 # Postgres local descartável. Nunca toca o banco publicado.
 # Uso: scripts/verify-school-quota.sh   (precisa de initdb/pg_ctl/psql 15+,
 # rodando como usuário que não seja root)
@@ -34,7 +34,8 @@ run -f "$mig/20261102003100_catalog_exercises.sql"
 run -f "$mig/20261106020000_learning_platform_commercial.sql"
 run -o /dev/null -f "$mig/20261108030000_question_bank.sql"
 run -f "$mig/20261111050000_schools_and_roles.sql"
-run -f "$mig/20261111071500_school_plans_quota.sql"
+run -f "$mig/20261111200000_class_map_assignments.sql"
+run -f "$mig/20261111210000_school_plans_quota.sql"
 run -o /dev/null -f "$here/tests.sql" 2>&1 | sed -e 's/^psql:[^ ]* //' -e 's/^NOTICE:  //'
 [ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
 echo "verify-school-quota: todos os testes passaram"

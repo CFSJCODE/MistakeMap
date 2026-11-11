@@ -1,4 +1,4 @@
--- Casos de planos, cota coletiva e aluno ativo (migration 20261111071500).
+-- Casos de planos, cota coletiva e aluno ativo (migration 20261111210000).
 -- Trechos com "set role authenticated" imitam o PostgREST; o resto roda como
 -- o backend (Edge Function conectada ao banco).
 \set owner_a   '''a0000000-0000-4000-8000-000000000001'''
