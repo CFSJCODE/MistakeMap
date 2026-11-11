@@ -1,0 +1,7 @@
+# Shorebird do app "MistakeMap Equipe" (desenvolvimento e administração).
+# O workflow .github/workflows/team-app.yml copia este arquivo por cima do
+# shorebird.yaml antes do release/patch, então os patches dos alunos nunca
+# chegam no app da equipe e vice-versa. Ver appmistakemap/APP_EQUIPE.md.
+#
+# O app_id não é segredo.
+app_id: d76fa703-7938-48b3-a74e-0d1198ae1c4e
