@@ -2240,6 +2240,8 @@ class _TelaInicialState extends State<TelaInicial> {
         builder: (_) => PlatformHubPage(
           userId: widget.user.id,
           isAdmin: widget.user.isAdmin,
+          onOpenQuestionAssignment: (ctx, tarefa, ids) =>
+              abrirTarefaDoBanco(ctx, widget.user.id, tarefa, ids),
         ),
       ),
     );

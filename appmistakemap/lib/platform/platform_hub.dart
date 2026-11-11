@@ -8,6 +8,8 @@ import 'package:crypto/crypto.dart';
 
 import '../about/external_profile.dart' show openLearningLink;
 import '../sync/conexao.dart' show novoUuid;
+import '../teacher/assignment_result_page.dart';
+import '../teacher/class_map_page.dart';
 import '../theme/control_styles.dart';
 import '../theme/design_tokens.dart';
 import 'platform_repository.dart';
@@ -39,10 +41,20 @@ class PlatformHubPage extends StatefulWidget {
     required this.userId,
     this.repository,
     this.isAdmin = false,
+    this.onOpenQuestionAssignment,
   });
   final String userId;
   final PlatformRepository? repository;
   final bool isAdmin;
+
+  /// Abre uma tarefa com questões do banco (criada pelo mapa da turma).
+  /// Devolve uma mensagem de erro para mostrar, ou nulo.
+  final Future<String?> Function(
+    BuildContext context,
+    String assignmentId,
+    List<String> questionIds,
+  )?
+  onOpenQuestionAssignment;
 
   @override
   State<PlatformHubPage> createState() => _PlatformHubPageState();
@@ -617,6 +629,18 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
             SelectableText('Código de convite: ${item['code']}'),
           if (item['is_teacher'] == true) ...[
             const SizedBox(height: 16),
+            _button(
+              'Mapa da turma',
+              () => _push(
+                ClassMapPage(
+                  repository: _repository,
+                  classId: '${item['id']}',
+                  classTitle: '${item['title']}',
+                ),
+              ),
+              primary: true,
+            ),
+            const SizedBox(height: 8),
             _button('Atribuir lista do catálogo', () => _assign(item)),
             const SizedBox(height: 8),
             _button(
@@ -658,21 +682,7 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
           ],
         ]),
       for (final assignment in platformRows(_overview['assignments']))
-        _card('${assignment['title']}', [
-          Text('Prazo: ${assignment['due_at'] ?? 'sem prazo'}'),
-          const SizedBox(height: 16),
-          _button('Responder lista', () async {
-            final result = await _run('start_session', {
-              'request_id': novoUuid(),
-              'mode': 'practice',
-              'count': 5,
-              'assignment_id': assignment['id'],
-            });
-            if (result != null && mounted) {
-              await _session(platformMap(result['session']));
-            }
-          }),
-        ]),
+        _assignmentCard(assignment),
       if (platformRows(_overview['classes']).isEmpty)
         const Text('Entre com um convite para estudar com sua turma.'),
       for (final feedback in platformRows(_overview['feedback']))
@@ -682,6 +692,77 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
           SelectableText('${feedback['body']}'),
         ]),
     ];
+  }
+
+  Future<void> _push(Widget page) async {
+    await Navigator.of(context)
+        .push<void>(FluentPageRoute(builder: (_) => page));
+    if (mounted) await _load();
+  }
+
+  Widget _assignmentCard(PlatformData assignment) {
+    final questionIds = [
+      for (final id
+          in (assignment['question_ids'] is List
+              ? assignment['question_ids'] as List
+              : const []))
+        '$id',
+    ];
+    final teaches = platformRows(
+      _overview['classes'],
+    ).any((c) => c['id'] == assignment['class_id'] && c['is_teacher'] == true);
+    return _card('${assignment['title']}', [
+      Text('Prazo: ${assignment['due_at'] ?? 'sem prazo'}'),
+      if (questionIds.isNotEmpty)
+        Text(
+          '${questionIds.length} ${questionIds.length == 1 ? 'questão' : 'questões'} do banco',
+        ),
+      const SizedBox(height: 16),
+      if (teaches && questionIds.isNotEmpty)
+        _button(
+          'Ver resultado',
+          () => _push(
+            AssignmentResultPage(
+              repository: _repository,
+              assignmentId: '${assignment['id']}',
+              title: '${assignment['title']}',
+            ),
+          ),
+        )
+      else if (questionIds.isNotEmpty)
+        _button('Responder tarefa', () async {
+          final open = widget.onOpenQuestionAssignment;
+          if (open == null) {
+            setState(
+              () => _error = 'Abra esta tarefa pela aba Exercícios do app.',
+            );
+            return;
+          }
+          final failure = await open(
+            context,
+            '${assignment['id']}',
+            questionIds,
+          );
+          if (!mounted) return;
+          if (failure != null) {
+            setState(() => _error = failure);
+          } else {
+            await _load();
+          }
+        })
+      else
+        _button('Responder lista', () async {
+          final result = await _run('start_session', {
+            'request_id': novoUuid(),
+            'mode': 'practice',
+            'count': 5,
+            'assignment_id': assignment['id'],
+          });
+          if (result != null && mounted) {
+            await _session(platformMap(result['session']));
+          }
+        }),
+    ]);
   }
 
   Future<void> _classProgress(PlatformData item) async {
