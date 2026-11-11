@@ -203,11 +203,18 @@ abstract class RepositorioQuestoes {
 /// Leitura direta (questões públicas + respostas do próprio aluno, sob RLS);
 /// a correção é sempre da Edge Function, que guarda o gabarito.
 class RepositorioQuestoesSupabase implements RepositorioQuestoes {
-  RepositorioQuestoesSupabase(this.client, {Sincronizador? sincronizador})
-    : _sync = sincronizador;
+  RepositorioQuestoesSupabase(
+    this.client, {
+    Sincronizador? sincronizador,
+    this.tarefaId,
+  }) : _sync = sincronizador;
 
   final SupabaseClient client;
   final Sincronizador? _sync;
+
+  /// Tarefa da turma sendo respondida (nulo na prática livre). O servidor
+  /// confere se a questão é da tarefa e se o aluno é da turma.
+  final String? tarefaId;
 
   Sincronizador get _sincronizador => _sync ?? Sincronizador.instancia;
 
@@ -274,6 +281,7 @@ class RepositorioQuestoesSupabase implements RepositorioQuestoes {
               'action': 'answer',
               'question_id': questaoId,
               'response': resposta,
+              'assignment_id': ?tarefaId,
             },
           )
           .timeout(const Duration(seconds: 120));
@@ -330,3 +338,10 @@ Map<String, dynamic> respostaPara(
   TipoQuestao.associacao => {'pairs': pares},
   TipoQuestao.dissertativa => {'text': texto.trim()},
 };
+
+/// Questões de uma tarefa, na ordem definida pelo professor. Ignora as que
+/// não estão mais no banco.
+List<Questao> questoesDaTarefa(List<Questao> banco, List<String> ids) {
+  final porId = {for (final q in banco) q.id: q};
+  return [for (final id in ids) ?porId[id]];
+}

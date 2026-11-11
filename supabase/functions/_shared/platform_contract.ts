@@ -34,6 +34,9 @@ export const PLATFORM_ACTIONS = [
   "publish_content_draft",
   "reject_content_draft",
   "save_feedback",
+  "class_map",
+  "create_concept_assignment",
+  "assignment_result",
 ] as const;
 export type PlatformAction = typeof PLATFORM_ACTIONS[number];
 export type Input = Record<string, unknown>;

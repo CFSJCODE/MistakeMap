@@ -1,6 +1,11 @@
 import type postgres from "postgresjs";
 import { PublicError } from "./ai_contract.ts";
 import type { Database } from "./ai_service.ts";
+import {
+  assignmentResult,
+  classMap,
+  createConceptAssignment,
+} from "./class_map.ts";
 import { contentOperation } from "./platform_content.ts";
 import {
   csvCell,
@@ -122,7 +127,7 @@ export async function platformOverview(sql: Database, user: string) {
       FROM public.platform_classes c LEFT JOIN public.platform_memberships m ON m.class_id=c.id AND m.user_id=${user}
       LEFT JOIN public.platform_class_invites i ON i.class_id=c.id
       WHERE c.teacher_id=${user} OR m.user_id=${user} ORDER BY c.created_at DESC LIMIT 100`,
-    sql`SELECT a.id,a.class_id,a.title,a.due_at,a.catalog_ids FROM public.platform_assignments a
+    sql`SELECT a.id,a.class_id,a.title,a.due_at,a.catalog_ids,a.question_ids,a.source_concept FROM public.platform_assignments a
       JOIN public.platform_classes c ON c.id=a.class_id WHERE c.teacher_id=${user} OR EXISTS(
         SELECT 1 FROM public.platform_memberships m WHERE m.class_id=c.id AND m.user_id=${user})
       ORDER BY a.created_at DESC LIMIT 100`,
@@ -222,6 +227,13 @@ async function startSession(sql: Database, user: string, input: Input) {
         await tx`SELECT a.* FROM public.platform_assignments a JOIN public.platform_classes c ON c.id=a.class_id
         WHERE a.id=${assignmentId} AND (c.teacher_id=${user} OR EXISTS(SELECT 1 FROM public.platform_memberships m WHERE m.class_id=c.id AND m.user_id=${user}))`;
       if (!assignment) throw missing();
+      if (!(assignment.catalog_ids as string[]).length) {
+        throw new PublicError(
+          409,
+          "question_assignment",
+          "Esta tarefa usa o banco de questões. Responda pela opção Responder tarefa.",
+        );
+      }
       title = String(assignment.title);
       selected =
         await tx`SELECT c.*,k.correct_answer,k.explanation FROM public.catalog_exercises c JOIN public.catalog_answer_keys k ON k.catalog_exercise_id=c.id
@@ -510,7 +522,7 @@ async function classMutation(
       return {
         class: { ...row, is_teacher: row.teacher_id === user },
         sharing_notice:
-          "Entrar na turma não compartilha suas respostas, progresso ou notas. Você escolhe cada permissão.",
+          "Entrar na turma não compartilha suas respostas, progresso ou notas. Você escolhe cada permissão. Seus erros entram sem seu nome no mapa da turma, que só aparece com 5 alunos ou mais.",
       };
     });
   }
@@ -860,6 +872,12 @@ export async function platformOperation(
         return { feedback };
       });
     }
+    case "class_map":
+      return await classMap(sql, user, input);
+    case "create_concept_assignment":
+      return await createConceptAssignment(sql, user, input);
+    case "assignment_result":
+      return await assignmentResult(sql, user, input);
     case "content_drafts":
     case "save_content_draft":
     case "submit_content_draft":
