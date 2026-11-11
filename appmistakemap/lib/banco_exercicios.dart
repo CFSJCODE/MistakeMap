@@ -469,11 +469,16 @@ class TelaResponderQuestao extends StatefulWidget {
     required this.questoes,
     required this.inicial,
     required this.repositorio,
+    this.onVerMapa,
   });
 
   final List<Questao> questoes;
   final int inicial;
   final RepositorioQuestoes repositorio;
+
+  /// Primeira análise guiada: depois da correção, o botão principal leva
+  /// ao Mapa de erros em vez de seguir para o próximo exercício.
+  final VoidCallback? onVerMapa;
 
   @override
   State<TelaResponderQuestao> createState() => _TelaResponderQuestaoState();
@@ -707,6 +712,34 @@ class _TelaResponderQuestaoState extends State<TelaResponderQuestao> {
                 else ...[
                   _ResultadoQuestao(correcao: _correcao!),
                   const SizedBox(height: 16),
+                  if (widget.onVerMapa != null) ...[
+                    MistakeMapFilledButton(
+                      key: const Key('questao-ver-mapa'),
+                      style: _estiloBotao(
+                        fundo: kAcento,
+                        texto: MistakeMapDesign.abyss,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 20,
+                        ),
+                      ),
+                      onPressed: widget.onVerMapa,
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(WindowsIcons.relationship, size: 18),
+                          SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'Ver meu mapa de erros',
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   Row(
                     children: [
                       Expanded(
