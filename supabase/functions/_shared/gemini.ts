@@ -1,6 +1,11 @@
 import { PublicError } from "./ai_contract.ts";
 import { env, type Environment, readLimited, required } from "./ai_http.ts";
-import { type RoutingEvidence, selectModel } from "./model_router.ts";
+import {
+  type AiTier,
+  providerAllowed,
+  type RoutingEvidence,
+  selectModel,
+} from "./model_router.ts";
 import {
   type ClaudeBudgetStore,
   claudeCharge,
@@ -288,6 +293,11 @@ type StructuredOptions = {
   images?: string[];
   maxOutputTokens?: number;
   onModelUsed?: (model: string) => void;
+  /**
+   * Nível de IA do plano de quem pediu (model_router.ts). Sem valor vale o
+   * standard: Claude só atende o Escola Plus.
+   */
+  aiTier?: AiTier;
 };
 
 export async function structuredResponse(
@@ -301,6 +311,7 @@ export async function structuredResponse(
   } catch (error) {
     if (
       get("AI_CLAUDE_FALLBACK_ENABLED") !== "true" ||
+      !providerAllowed("anthropic", options.aiTier ?? "standard") ||
       !(error instanceof PublicError) ||
       ![
         "ai_unavailable",
@@ -338,6 +349,7 @@ async function structuredResponseImpl(
   fetcher: typeof fetch = fetch,
   budget: ClaudeBudgetStore = databaseBudget(get),
 ): Promise<unknown> {
+  const aiTier = options.aiTier ?? "standard";
   const tier = options.images?.length
     ? "VISION"
     : options.name === "mistakemap_study"
@@ -355,6 +367,7 @@ async function structuredResponseImpl(
   // Claude Sonnet is the only paid model with a guarded price and reservation.
   const freeEvidence = evidence.filter((item) =>
     item && typeof item.model === "string" &&
+    providerAllowed(item.provider, aiTier) &&
     ((item.provider === "gemini" &&
       item.model === (get("GEMINI_MODEL")?.trim() || "gemini-flash-latest") &&
       Boolean(get("GEMINI_API_KEY")?.trim())) ||
@@ -371,14 +384,25 @@ async function structuredResponseImpl(
     Date.now(),
     1,
   );
-  const selectedProvider = automatic?.provider ??
+  // Provedor configurado por tarefa (ou global) que o plano não cobre, como
+  // Claude fora do Plus, é ignorado e o pedido segue no Gemini.
+  const taskProvider = automatic?.provider ??
     get(`AI_${tier}_PROVIDER`)?.trim();
-  const selectedModel = automatic?.model ?? get(`AI_${tier}_MODEL`)?.trim();
+  const selectedProvider = providerAllowed(taskProvider, aiTier)
+    ? taskProvider
+    : undefined;
+  const selectedModel = selectedProvider
+    ? automatic?.model ?? get(`AI_${tier}_MODEL`)?.trim()
+    : undefined;
+  const baseProvider = get("AI_PROVIDER")?.trim();
+  const effectiveProvider = selectedProvider ||
+    (providerAllowed(baseProvider, aiTier) ? baseProvider : "gemini") ||
+    "gemini";
   const selectedGet: Environment = (name) => {
-    if (name === "AI_PROVIDER" && selectedProvider) return selectedProvider;
-    const provider = (selectedProvider || get("AI_PROVIDER") || "gemini")
-      .toUpperCase();
-    if (name === `${provider}_MODEL` && selectedModel) return selectedModel;
+    if (name === "AI_PROVIDER") return effectiveProvider;
+    if (
+      name === `${effectiveProvider.toUpperCase()}_MODEL` && selectedModel
+    ) return selectedModel;
     return get(name);
   };
   const config = aiConfig(selectedGet);

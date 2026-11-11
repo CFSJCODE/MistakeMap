@@ -422,7 +422,11 @@ Deno.test("Anthropic e OpenRouter recebem imagem e retornam JSON estruturado", a
       OPENROUTER_MODEL: "test/model",
     };
     const result = await structuredResponse(
-      { ...options, images: ["data:image/png;base64,AAAA"] },
+      {
+        ...options,
+        images: ["data:image/png;base64,AAAA"],
+        aiTier: "premium",
+      },
       (key) => values[key],
       fetchMock((url, init) => {
         assert.match(
@@ -474,7 +478,7 @@ Deno.test("Claude não recebe chamada de geração quando orçamento foi esgotad
   await assert.rejects(
     () =>
       structuredResponse(
-        options,
+        { ...options, aiTier: "premium" },
         (key) => values[key],
         fetchMock((url) => {
           calls.push(String(url));
@@ -501,7 +505,7 @@ Deno.test("fallback para Claude reserva orçamento antes de gerar", async () => 
   let reserved = false;
   let charged = false;
   const result = await structuredResponse(
-    options,
+    { ...options, aiTier: "premium" },
     (key) => values[key],
     fetchMock((url) => {
       calls.push(String(url));
@@ -533,6 +537,102 @@ Deno.test("fallback para Claude reserva orçamento antes de gerar", async () => 
   );
   assert.equal(calls.length, 3);
   assert.equal(charged, true);
+  assert.deepEqual(validateAnalysis(result), sample());
+});
+Deno.test("fora do Plus, Claude configurado como provedor dá lugar ao Gemini", async () => {
+  for (
+    const values of [
+      { AI_PROVIDER: "anthropic" },
+      { AI_ANALYSIS_PROVIDER: "anthropic", AI_ANALYSIS_MODEL: "claude-x" },
+    ] as Record<string, string>[]
+  ) {
+    const env: Record<string, string> = {
+      ...values,
+      ANTHROPIC_API_KEY: "test",
+      ANTHROPIC_MODEL: "claude-sonnet-5-5",
+      GEMINI_API_KEY: "test",
+      GEMINI_MODEL: "test-model",
+    };
+    const calls: string[] = [];
+    const result = await structuredResponse(
+      { ...options, aiTier: "standard" },
+      (key) => env[key],
+      fetchMock((url) => {
+        calls.push(String(url));
+        return wrapped(sample());
+      }),
+      {
+        reserve: () => Promise.reject(new Error("Claude não deve reservar")),
+        settle: () => Promise.resolve(),
+      },
+    );
+    assert.equal(calls.length, 1);
+    assert.match(calls[0], /generativelanguage\.googleapis\.com.*test-model/);
+    assert.deepEqual(validateAnalysis(result), sample());
+  }
+});
+Deno.test("fora do Plus, falha do Gemini não aciona o fallback pago do Claude", async () => {
+  const values: Record<string, string> = {
+    GEMINI_API_KEY: "test",
+    ANTHROPIC_API_KEY: "test",
+    AI_CLAUDE_FALLBACK_ENABLED: "true",
+  };
+  const calls: string[] = [];
+  await assert.rejects(
+    () =>
+      structuredResponse(
+        options,
+        (key) => values[key],
+        fetchMock((url) => {
+          calls.push(String(url));
+          return new Response("{}", { status: 400 });
+        }),
+        {
+          reserve: () => Promise.reject(new Error("Claude não deve reservar")),
+          settle: () => Promise.resolve(),
+        },
+      ),
+    (error: unknown) =>
+      error instanceof PublicError && error.code === "ai_unavailable",
+  );
+  assert.ok(calls.length > 0);
+  assert.ok(calls.every((url) => url.includes("generativelanguage")));
+});
+Deno.test("fora do Plus, evidência a favor do Claude é ignorada pelo roteador", async () => {
+  const base = {
+    task: "analysis",
+    datasetId: "test-v1",
+    vision: false,
+    samples: 30,
+    latencyMs: 1000,
+    costUsdPerRequest: 0,
+    evaluatedAt: new Date().toISOString(),
+  };
+  const records = [
+    {
+      ...base,
+      provider: "anthropic",
+      model: "claude-sonnet-5-5",
+      quality: .99,
+    },
+    { ...base, provider: "gemini", model: "test-model", quality: .9 },
+    { ...base, provider: "openrouter", model: "openrouter/free", quality: .7 },
+  ];
+  const values: Record<string, string> = {
+    GEMINI_API_KEY: "key",
+    GEMINI_MODEL: "test-model",
+    ANTHROPIC_API_KEY: "key",
+    OPENROUTER_API_KEY: "key",
+    AI_ROUTING_EVIDENCE: JSON.stringify(records),
+  };
+  const result = await structuredResponse(
+    { ...options, name: "mistakemap_analysis", aiTier: "standard" },
+    (key) => values[key],
+    fetchMock((url) => {
+      assert.match(String(url), /generativelanguage\.googleapis\.com/);
+      return wrapped(sample());
+    }),
+  );
   assert.deepEqual(validateAnalysis(result), sample());
 });
 Deno.test("roteamento por tipo de solicitação seleciona provedor e modelo configurados", async () => {

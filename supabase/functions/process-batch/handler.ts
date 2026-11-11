@@ -65,7 +65,13 @@ export async function handler(req: Request): Promise<Response> {
         }
         if (
           error instanceof PublicError &&
-          ["daily_limit", "attempt_changed", "attempt_not_ready", "retry_limit"]
+          [
+            "daily_limit",
+            "school_quota",
+            "attempt_changed",
+            "attempt_not_ready",
+            "retry_limit",
+          ]
             .includes(error.code)
         ) continue;
         break;

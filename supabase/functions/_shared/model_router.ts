@@ -51,3 +51,22 @@ export function selectModel(
     return aScore - bScore || b.quality - a.quality;
   })[0];
 }
+
+/**
+ * Nível de IA do plano. Grátis e Escola usam o nível standard (Gemini e
+ * modelos gratuitos); só o Escola Plus libera o premium (Claude). Sem plano
+ * conhecido vale o standard: o custo do Claude nunca é o padrão.
+ */
+export type AiTier = "standard" | "premium";
+
+export function aiTierForPlan(plan: unknown): AiTier {
+  return plan === "plus" ? "premium" : "standard";
+}
+
+/** Claude (provedor pago com orçamento próprio) só atende o nível premium. */
+export function providerAllowed(
+  provider: string | undefined | null,
+  tier: AiTier,
+): boolean {
+  return provider?.trim().toLowerCase() !== "anthropic" || tier === "premium";
+}

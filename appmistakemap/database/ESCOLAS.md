@@ -37,4 +37,4 @@ Erros: `MM401` sem login, `MM403` sem permissão ou sem convite, `MM404` convite
 
 ## O que ainda não tem
 
-Telas, Edge Function `school-admin`, cota coletiva, cobrança, contrato e auditoria ficam nas próximas etapas (itens B a F da onda 1).
+Telas, Edge Function `school-admin`, cobrança, contrato e auditoria ficam nas próximas etapas (itens B, D, E e F da onda 1). Planos, cota coletiva e aluno ativo estão em [PLANOS_E_COTA.md](PLANOS_E_COTA.md).

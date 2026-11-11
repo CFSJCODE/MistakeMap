@@ -90,15 +90,18 @@ export async function generateStudy(
       })),
     };
   });
-  await consumePracticeQuota(
+  // Material de estudo não sai do pote da escola; só segue o nível de IA do plano.
+  const quota = await consumePracticeQuota(
     sql,
     user,
     "Você atingiu o limite diário de uso da IA. Tente novamente amanhã.",
+    "none",
   );
   let modelUsed = aiConfig().model;
   const raw = await structuredResponse({
     schema: studySchema,
     name: "mistakemap_study",
+    aiTier: quota.aiTier,
     onModelUsed: (model) => {
       modelUsed = model;
     },
