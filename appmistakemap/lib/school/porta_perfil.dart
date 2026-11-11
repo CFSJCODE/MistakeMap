@@ -25,14 +25,9 @@ class PortaDePerfil extends StatefulWidget {
     required this.estudante,
     this.repositorio,
     this.preferencias = const PreferenciasPerfil(),
-    this.onSair,
   });
 
   final String usuarioId;
-
-  /// Sai da conta. No "Quem é você?" vira "Já tenho conta — Entrar", para
-  /// quem caiu numa conta nova mas já tem conta com o perfil.
-  final Future<void> Function()? onSair;
 
   /// O app de sempre (navegação do estudante).
   final Widget estudante;
@@ -113,11 +108,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     final ctx = _ctx;
     if (ctx == null) return widget.estudante;
     if (ctx.precisaCadastro) {
-      return TelaQuemEVoce(
-        repositorio: _repo,
-        onConcluido: _concluiuCadastro,
-        onEntrarComOutraConta: widget.onSair,
-      );
+      return TelaQuemEVoce(repositorio: _repo, onConcluido: _concluiuCadastro);
     }
     final perfis = ctx.perfis;
     final ativo = ctx.perfilInicial(_chaveAtiva);

@@ -2,7 +2,6 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../platform/platform_forms.dart' show PlatformCheck;
-import '../theme/control_styles.dart' show MistakeMapHyperlinkButton;
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'escola_repositorio.dart';
@@ -19,16 +18,11 @@ class TelaQuemEVoce extends StatefulWidget {
     super.key,
     required this.repositorio,
     required this.onConcluido,
-    this.onEntrarComOutraConta,
     this.hoje,
   });
 
   final RepositorioEscola repositorio;
   final ValueChanged<ContextoPerfil> onConcluido;
-
-  /// Sai desta conta (ainda sem perfil) e volta à tela de login, para quem já
-  /// tem conta com o perfil escolhido. Sem ele, a opção não aparece.
-  final Future<void> Function()? onEntrarComOutraConta;
 
   /// Data de referência para a idade (testes).
   final DateTime? hoje;
@@ -165,26 +159,6 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
     }
   }
 
-  Future<void> _entrarComOutraConta() async {
-    final sair = widget.onEntrarComOutraConta;
-    if (sair == null || _enviando) return;
-    setState(() => _enviando = true);
-    try {
-      await sair();
-    } finally {
-      if (mounted) setState(() => _enviando = false);
-    }
-  }
-
-  // Mesmo texto e botão do login ("Já tenho conta — Entrar").
-  Widget _jaTenhoConta(String texto) => Center(
-    child: MistakeMapHyperlinkButton(
-      key: const Key('quem-e-voce-entrar'),
-      onPressed: _enviando ? null : _entrarComOutraConta,
-      child: Text(texto, textAlign: TextAlign.center),
-    ),
-  );
-
   @override
   Widget build(BuildContext context) => AuroraBackground(
     child: SafeArea(
@@ -234,10 +208,6 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
         );
       },
     ),
-    if (widget.onEntrarComOutraConta != null) ...[
-      const SizedBox(height: 16),
-      _jaTenhoConta('Já tenho conta com um perfil — Entrar'),
-    ],
   ];
 
   List<Widget> _formulario(PerfilCadastro perfil) => [
@@ -282,10 +252,6 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
           principal: true,
           onPressed: _enviando ? null : _continuar,
         ),
-        if (widget.onEntrarComOutraConta != null) ...[
-          const SizedBox(height: 8),
-          _jaTenhoConta('Já tenho conta de ${perfil.titulo} — Entrar'),
-        ],
       ],
     ),
   ];

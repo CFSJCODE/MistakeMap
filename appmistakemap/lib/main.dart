@@ -1203,7 +1203,6 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
     // "Quem é você?", seletor de perfil e consentimento do responsável.
     return PortaDePerfil(
       usuarioId: _appUser!.id,
-      onSair: _sairDaConta,
       estudante: TelaNavegacao(
         user: _appUser!,
         studyRepository: widget.studyRepository,
