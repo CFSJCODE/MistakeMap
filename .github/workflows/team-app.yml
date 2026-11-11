@@ -10,7 +10,11 @@ name: App da equipe (MistakeMap Equipe)
 #   Shorebird (app próprio da equipe) + pré-release `equipe-v<versão>` no
 #   GitHub Releases com o APK e o ZIP;
 # - versão que JÁ tem release da equipe -> patch do Shorebird (o app instalado
-#   atualiza sozinho) e uma linha nova nas notas do pré-release.
+#   atualiza sozinho), uma linha nova nas notas do pré-release e o APK
+#   `MistakeMap-Equipe-<versão>-atual-android.apk` com o código do commit
+#   (substituído a cada patch). Esse APK é um build Flutter comum: serve para
+#   instalar a versão mais nova direto do GitHub, mas não recebe patches do
+#   Shorebird; quem quer atualização automática instala o APK da versão.
 #
 # O app da equipe tem app_id próprio no Shorebird (shorebird.equipe.yaml):
 # patches dos alunos nunca chegam nele, nem os dele nos alunos. Os releases
@@ -199,13 +203,6 @@ jobs:
           cp build/app/outputs/flutter-apk/app-release.apk \
             "dist/MistakeMap-Equipe-${{ needs.preparar.outputs.versao }}-android.apk"
 
-      - uses: actions/upload-artifact@v4
-        if: needs.preparar.outputs.modo == 'release'
-        with:
-          name: equipe-android
-          path: appmistakemap/dist/*.apk
-          if-no-files-found: error
-
       - name: shorebird patch android (equipe)
         if: needs.preparar.outputs.modo == 'patch'
         uses: shorebirdtech/shorebird-patch@v1
@@ -216,6 +213,27 @@ jobs:
           release-version: ${{ needs.preparar.outputs.versao }}
           working-directory: appmistakemap
           args: -- ${{ env.FLUTTER_ARGS_ANDROID }}
+
+      # Patch também deixa um APK no GitHub, com o código deste commit.
+      - uses: subosito/flutter-action@v2
+        if: needs.preparar.outputs.modo == 'patch'
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: APK atualizado (patch)
+        if: needs.preparar.outputs.modo == 'patch'
+        run: |
+          flutter build apk --release ${{ env.FLUTTER_ARGS_ANDROID }}
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "dist/MistakeMap-Equipe-${{ needs.preparar.outputs.versao }}-atual-android.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: equipe-android
+          path: appmistakemap/dist/*.apk
+          if-no-files-found: error
 
   windows:
     name: Windows (equipe)
@@ -281,8 +299,9 @@ jobs:
       (needs.android.result == 'success' || needs.windows.result == 'success')
     runs-on: ubuntu-latest
     steps:
+      # No patch só vem o APK atualizado (o Windows não gera arquivo).
       - uses: actions/download-artifact@v4
-        if: needs.preparar.outputs.modo == 'release'
+        continue-on-error: ${{ needs.preparar.outputs.modo == 'patch' }}
         with:
           path: dist
           merge-multiple: true
