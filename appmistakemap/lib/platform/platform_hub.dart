@@ -827,7 +827,7 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
     final progress = platformMap(_overview['progress']);
     return [
       _card('Seu plano e consumo', [
-        Text('Plano: ${plan['plan'] ?? 'gratuito'}'),
+        Text('Plano: ${plan['plan_label'] ?? plan['plan'] ?? 'gratuito'}'),
         const SizedBox(height: 8),
         Text(
           'Sessões hoje: ${plan['sessions_used_today'] ?? 0} de ${plan['sessions_per_day'] ?? '—'}',
