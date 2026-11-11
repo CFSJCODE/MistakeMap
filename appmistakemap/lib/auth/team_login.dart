@@ -7,9 +7,10 @@ import 'package:flutter/foundation.dart' show kReleaseMode;
 /// instala ao lado do app dos alunos e só aceita a conta de desenvolvimento e
 /// contas com papel admin ou developer no banco.
 ///
-/// As credenciais nunca ficam no repositório: chegam na compilação por
+/// As senhas nunca ficam no repositório: chegam na compilação por
 /// `--dart-define-from-file=.env.team.local` (arquivo ignorado pelo Git, só no
-/// computador de quem desenvolve). No app publicado dos alunos (loja, web,
+/// computador de quem desenvolve). O build de CI da equipe (team-app.yml) leva
+/// só o e-mail das contas demo. No app publicado dos alunos (loja, web,
 /// Shorebird), build de release sem a flag da equipe, os atalhos não existem,
 /// mesmo que alguém passe o arquivo.
 ///
