@@ -19,7 +19,7 @@ name: App da equipe (MistakeMap Equipe)
 # O app da equipe tem app_id próprio no Shorebird (shorebird.equipe.yaml):
 # patches dos alunos nunca chegam nele, nem os dele nos alunos. Os releases
 # da equipe são pré-release e nunca viram o "Latest" que o app dos alunos
-# consulta. Nenhuma senha ou e-mail entra neste build.
+# consulta. Nenhuma senha entra neste build (só o e-mail das contas demo).
 #
 # Primeira vez: rode este workflow à mão com "criar_app_shorebird" marcado;
 # ele cria o app "MistakeMap Equipe" no Shorebird e mostra o app_id no
@@ -56,6 +56,10 @@ concurrency:
 
 env:
   FLUTTER_VERSION: 3.47.2
+  # Atalhos de login do app da equipe: SÓ o e-mail das contas demo (não é
+  # segredo). Os Releases são públicos, então senha nunca entra aqui; o atalho
+  # preenche o e-mail e a pessoa digita a senha.
+  TEAM_LOGIN_ARGS: --dart-define=MISTAKEMAP_TEST_EMAIL=dev.demo@mistakemap.dev --dart-define=MISTAKEMAP_ADMIN_EMAIL=admin.demo@mistakemap.dev
   # Igual aos builds dos alunos: todos os ícones no binário, e as flags da equipe.
   FLUTTER_ARGS_ANDROID: --no-tree-shake-icons --dart-define=MISTAKEMAP_TEAM_BUILD=true --android-project-arg=equipe=true
   FLUTTER_ARGS_WINDOWS: --no-tree-shake-icons --dart-define=MISTAKEMAP_TEAM_BUILD=true
@@ -206,7 +210,7 @@ jobs:
           platform: android
           flutter-version: ${{ env.FLUTTER_VERSION }}
           working-directory: appmistakemap
-          args: --artifact apk -- ${{ env.FLUTTER_ARGS_ANDROID }}
+          args: --artifact apk -- ${{ env.FLUTTER_ARGS_ANDROID }} ${{ env.TEAM_LOGIN_ARGS }}
 
       - name: Renomear o APK
         if: needs.preparar.outputs.modo == 'release'
@@ -231,7 +235,7 @@ jobs:
           platform: android
           release-version: ${{ needs.preparar.outputs.versao }}
           working-directory: appmistakemap
-          args: -- ${{ env.FLUTTER_ARGS_ANDROID }}
+          args: -- ${{ env.FLUTTER_ARGS_ANDROID }} ${{ env.TEAM_LOGIN_ARGS }}
 
   windows:
     name: Windows (equipe)
@@ -263,7 +267,7 @@ jobs:
           platform: windows
           flutter-version: ${{ env.FLUTTER_VERSION }}
           working-directory: appmistakemap
-          args: -- ${{ env.FLUTTER_ARGS_WINDOWS }}
+          args: -- ${{ env.FLUTTER_ARGS_WINDOWS }} ${{ env.TEAM_LOGIN_ARGS }}
 
       - name: Compactar a pasta do app
         if: needs.preparar.outputs.modo_windows == 'release'
@@ -289,7 +293,7 @@ jobs:
           platform: windows
           release-version: ${{ needs.preparar.outputs.versao }}
           working-directory: appmistakemap
-          args: -- ${{ env.FLUTTER_ARGS_WINDOWS }}
+          args: -- ${{ env.FLUTTER_ARGS_WINDOWS }} ${{ env.TEAM_LOGIN_ARGS }}
 
   publicar:
     name: GitHub Releases (equipe)

@@ -10,7 +10,7 @@ Administração. Toda mudança no `main` chega nele automaticamente.
 | | App dos alunos | MistakeMap Equipe |
 |---|---|---|
 | Quem entra | Qualquer conta | Só contas com `profiles.role` = `admin` ou `developer` |
-| Atalhos no login | Nunca (nem compilados no release) | Só no build local, com `.env.team.local` |
+| Atalhos no login | Nunca (nem compilados no release) | Releases: só o e-mail; build local: o que estiver no `.env.team.local` |
 | Criar conta | Sim | Não |
 | Android | `com.example.appmistakemap` | `com.example.appmistakemap.equipe` (instala ao lado) |
 | Shorebird | app dos alunos (`shorebird.yaml`) | app próprio (`shorebird.equipe.yaml`) |
@@ -58,7 +58,10 @@ o app "MistakeMap Equipe" no Shorebird e mostra o `app_id`; grave em
 .\scripts\build-equipe.ps1 -Alvo run  # roda no emulador/dispositivo conectado
 ```
 
-O build de CI não leva e-mail nem senha.
+O APK/ZIP dos Releases (build de CI) também tem os atalhos, mas só com o
+e-mail das contas demo (`dev.demo@mistakemap.dev` e `admin.demo@mistakemap.dev`):
+o atalho preenche o e-mail e você digita a senha. Senha nunca entra no build de
+CI, porque os Releases são públicos.
 
 ## Observação
 
