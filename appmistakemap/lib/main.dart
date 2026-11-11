@@ -22,6 +22,7 @@ import 'theme/motion.dart';
 import 'layout/adaptativo.dart';
 import 'layout/navigation_shell.dart';
 import 'auth/google_sign_in.dart';
+import 'auth/team_login.dart';
 import 'ai/ai_material_shell.dart';
 import 'ai/analysis_repository.dart';
 import 'ai/insights_view.dart' show ErrorMapController, ErrorMapRequest;
@@ -976,7 +977,8 @@ void main() async {
       child: const MistakeMapApp(),
     ),
   );
-  // Patches de código e aviso de versão nativa nova (Android e Windows).
+  // Patches de código e aviso de versão nativa nova (Android e Windows). O
+  // app da equipe tem app próprio no Shorebird e só vê os releases equipe-v….
   atualizacoes.iniciar();
 }
 
@@ -990,7 +992,7 @@ class MistakeMapApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FluentApp(
-      title: 'MistakeMap',
+      title: kTeamBuild ? 'MistakeMap Equipe' : 'MistakeMap',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.light,
       theme: temaFluent,
@@ -1117,6 +1119,10 @@ class _LoadingScaffold extends StatelessWidget {
   }
 }
 
+// Aviso que sobrevive à troca para a tela de login (ex.: conta recusada no
+// app da equipe). A tela de login mostra e limpa.
+String? _avisoLoginPendente;
+
 // Busca o perfil do usuário no banco e exibe a navegação principal
 class _CarregadorDePerfil extends StatefulWidget {
   final User supaUser;
@@ -1160,7 +1166,10 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
       setState(() => _appUser = resultado.user);
     }
     final erro = resultado.erro;
-    if (erro == null) return;
+    if (erro == null) {
+      await _conferirAcessoEquipe(resultado.user);
+      return;
+    }
     if (primeiraCarga) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _avisar(context, mensagemFalhaPerfil(erro), erro: true);
@@ -1172,6 +1181,20 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
       _tentativas++;
       _novaTentativa = Timer(espera, _carregar);
     }
+  }
+
+  // No app da equipe, conta que não é admin nem a de desenvolvimento sai e
+  // volta ao login com o aviso. Só com o papel confirmado pelo servidor.
+  Future<void> _conferirAcessoEquipe(AppUser user) async {
+    if (!kTeamBuild) return;
+    final recusa = teamAccessDenied(
+      TeamLoginConfig.fromEnvironment(),
+      email: user.email,
+      role: user.role,
+    );
+    if (recusa == null) return;
+    _avisoLoginPendente = recusa;
+    await _db.auth.signOut();
   }
 
   @override
@@ -1467,7 +1490,11 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
 class TelaCadastro extends StatefulWidget {
   // Erro do stream de auth (ex.: deep link do OAuth) exibido como aviso.
   final Object? erroAuth;
-  const TelaCadastro({super.key, this.erroAuth});
+
+  /// Atalhos da equipe; só existem em build de desenvolvimento (ver
+  /// auth/team_login.dart). Testes passam a configuração direto.
+  final TeamLoginConfig? equipe;
+  const TelaCadastro({super.key, this.erroAuth, this.equipe});
 
   @override
   State<TelaCadastro> createState() => _TelaCadastroState();
@@ -1479,6 +1506,8 @@ class _TelaCadastroState extends State<TelaCadastro> {
   bool _senhaVisivel = false;
   bool _carregando = false;
   bool _modoCadastro = false; // false = entrar, true = criar conta
+  late final TeamLoginConfig _equipe =
+      widget.equipe ?? TeamLoginConfig.fromEnvironment();
 
   @override
   void initState() {
@@ -1507,6 +1536,13 @@ class _TelaCadastroState extends State<TelaCadastro> {
   }
 
   void _avisarErroAuth() {
+    final pendente = _avisoLoginPendente;
+    if (pendente != null) {
+      _avisoLoginPendente = null;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _snack(pendente, erro: true),
+      );
+    }
     final erro = widget.erroAuth;
     if (erro == null) return;
     // O aviso usa o Overlay; espera o frame terminar de montar a tela.
@@ -1557,6 +1593,50 @@ class _TelaCadastroState extends State<TelaCadastro> {
           await _entrarOffline(email, senha)) {
         return;
       }
+      _snack(_mensagemErroAuth(e), erro: true);
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
+
+  /// Atalho da equipe. Com senha no arquivo local, entra direto; sem senha,
+  /// só preenche o e-mail. O atalho de admin confere `profiles.role` e sai da
+  /// conta se ela não for administradora.
+  Future<void> _entrarComEquipe(TeamAccount conta) async {
+    final email = _equipe.emailOf(conta);
+    if (!_equipe.canSignInDirectly(conta)) {
+      setState(() {
+        _modoCadastro = false;
+        _emailCtrl.text = email;
+        _senhaCtrl.clear();
+      });
+      _snack(
+        'E-mail da ${_equipe.label(conta).toLowerCase()} preenchido. '
+        'Digite a senha para entrar.',
+      );
+      return;
+    }
+    setState(() => _carregando = true);
+    try {
+      final res = await _db.auth.signInWithPassword(
+        email: email,
+        password: _equipe.passwordOf(conta),
+      );
+      final user = res.user;
+      if (user == null) return;
+      if (conta == TeamAccount.admin) {
+        final perfil = await _db
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle();
+        final erro = teamRoleMismatch(conta, perfil?['role'] as String?);
+        if (erro != null) {
+          await _db.auth.signOut();
+          _snack(erro, erro: true);
+        }
+      }
+    } catch (e) {
       _snack(_mensagemErroAuth(e), erro: true);
     } finally {
       if (mounted) setState(() => _carregando = false);
@@ -1749,7 +1829,9 @@ class _TelaCadastroState extends State<TelaCadastro> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Transforme erros em aprendizado',
+          kTeamBuild
+              ? 'Versão da equipe: desenvolvimento e administração'
+              : 'Transforme erros em aprendizado',
           textAlign: TextAlign.center,
           style: context.tipo.body?.copyWith(color: contentBlue),
         ),
@@ -1874,14 +1956,16 @@ class _TelaCadastroState extends State<TelaCadastro> {
               : Text(_modoCadastro ? 'Criar conta' : 'Entrar'),
         ),
         const SizedBox(height: 8),
-        MistakeMapHyperlinkButton(
-          onPressed: () => setState(() => _modoCadastro = !_modoCadastro),
-          child: Text(
-            _modoCadastro
-                ? 'Já tenho conta — Entrar'
-                : 'Não tenho conta — Criar',
+        // O app da equipe não cria contas: só entra com as que já existem.
+        if (!kTeamBuild)
+          MistakeMapHyperlinkButton(
+            onPressed: () => setState(() => _modoCadastro = !_modoCadastro),
+            child: Text(
+              _modoCadastro
+                  ? 'Já tenho conta — Entrar'
+                  : 'Não tenho conta — Criar',
+            ),
           ),
-        ),
         if (!_modoCadastro)
           MistakeMapHyperlinkButton(
             key: const Key('login-esqueci-senha'),
@@ -1955,8 +2039,77 @@ class _TelaCadastroState extends State<TelaCadastro> {
             ),
           ),
         ],
+        if (!_modoCadastro && !_equipe.isEmpty) ..._acessoEquipe(context),
       ],
     );
+  }
+
+  // Mesmo traçado do botão do Google: botão secundário com contorno.
+  ButtonStyle get _estiloSecundario =>
+      _estiloBotao(
+        fundo: Cores.cinza100,
+        texto: contentBlue,
+        fonte: 14,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+      ).copyWith(
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(kRadiusSm),
+            side: const BorderSide(color: contentBlue),
+          ),
+        ),
+      );
+
+  // Só em build de desenvolvimento com o arquivo local de contas da equipe.
+  List<Widget> _acessoEquipe(BuildContext context) {
+    return [
+      const SizedBox(height: 16),
+      Row(
+        children: [
+          Expanded(child: _divisor()),
+          // Flexível: com fonte 2x em 320px o rótulo quebra em vez de vazar.
+          Flexible(
+            flex: 3,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Acesso da equipe',
+                textAlign: TextAlign.center,
+                style: context.tipo.body?.copyWith(color: contentBlue),
+              ),
+            ),
+          ),
+          Expanded(child: _divisor()),
+        ],
+      ),
+      for (final conta in TeamAccount.values)
+        if (_equipe.has(conta)) ...[
+          const SizedBox(height: 8),
+          MistakeMapButton(
+            key: Key('login-equipe-${conta.name}'),
+            style: _estiloSecundario,
+            onPressed: _carregando ? null : () => _entrarComEquipe(conta),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  conta == TeamAccount.admin
+                      ? WindowsIcons.admin
+                      : WindowsIcons.developer_tools,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    _equipe.label(conta),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+    ];
   }
 
   bool get _googleDisponivel =>
@@ -5365,7 +5518,7 @@ class _TelaAdminState extends State<TelaAdmin> {
             ),
             if (!isCurrentUser) ...[
               const SizedBox(width: 8),
-              _menuPapel(uid, isAdmin),
+              _menuPapel(uid, role),
             ],
           ],
         ),
@@ -5374,7 +5527,10 @@ class _TelaAdminState extends State<TelaAdmin> {
   }
 
   // Menu de troca de papel: cada opção só fica habilitada quando muda o papel.
-  Widget _menuPapel(String uid, bool isAdmin) {
+  // Desenvolvedor usa o app inteiro como usuário comum e pode entrar no app
+  // MistakeMap Equipe.
+  Widget _menuPapel(String uid, String role) {
+    final isAdmin = role == 'admin';
     return DropDownButton(
       placement: FlyoutPlacementMode.bottomRight,
       menuShape: MistakeMapControls.menuShape,
@@ -5396,6 +5552,20 @@ class _TelaAdminState extends State<TelaAdmin> {
           texto: 'Revogar administrador',
           onPressed: isAdmin ? () => _alterarRole(uid, 'user') : null,
         ),
+        _itemMenu(
+          icone: WindowsIcons.developer_tools,
+          texto: 'Tornar desenvolvedor',
+          onPressed: role == 'user'
+              ? () => _alterarRole(uid, 'developer')
+              : null,
+        ),
+        _itemMenu(
+          icone: WindowsIcons.contact,
+          texto: 'Revogar desenvolvedor',
+          onPressed: role == 'developer'
+              ? () => _alterarRole(uid, 'user')
+              : null,
+        ),
       ],
     );
   }
@@ -5407,10 +5577,13 @@ class _RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = role == 'admin';
     return _Pilula(
-      texto: isAdmin ? 'Administrador' : 'Usuário',
-      cor: isAdmin ? contentBlue : Cores.cinza700,
+      texto: switch (role) {
+        'admin' => 'Administrador',
+        'developer' => 'Desenvolvedor',
+        _ => 'Usuário',
+      },
+      cor: role == 'user' ? Cores.cinza700 : contentBlue,
     );
   }
 }
