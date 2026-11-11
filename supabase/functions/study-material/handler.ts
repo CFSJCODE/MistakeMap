@@ -1,6 +1,7 @@
 import { uuid } from "../_shared/ai_contract.ts";
 import { json, userEndpoint } from "../_shared/ai_http.ts";
 import { withDatabase } from "../_shared/ai_service.ts";
+import { assertAiAllowed } from "../_shared/guardian_consent.ts";
 import { quizAnswers, studyAction } from "../_shared/study_contract.ts";
 import { generateStudy, gradeStudy } from "../_shared/study_service.ts";
 export const handler = userEndpoint(async (req, user, input) => {
@@ -19,6 +20,9 @@ export const handler = userEndpoint(async (req, user, input) => {
     : uuid(input.previous_material_id);
   return json(
     req,
-    await withDatabase((sql) => generateStudy(sql, user, subject, previous)),
+    await withDatabase(async (sql) => {
+      await assertAiAllowed(sql, user);
+      return await generateStudy(sql, user, subject, previous);
+    }),
   );
 });

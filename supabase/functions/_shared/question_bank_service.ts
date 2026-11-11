@@ -5,6 +5,7 @@ import postgres from "postgresjs";
 import { PublicError, uuid } from "./ai_contract.ts";
 import { analyzeAttempt, database } from "./ai_service.ts";
 import { checkAssignmentAnswer } from "./class_map.ts";
+import { assertAiAllowed } from "./guardian_consent.ts";
 import {
   fullPrompt,
   type Grade,
@@ -215,6 +216,8 @@ export async function answerQuestion(
     throw new PublicError(400, "invalid_response", "Resposta inválida.");
   }
   if (q.kind === "dissertativa") {
+    // A dissertativa é corrigida pela IA.
+    await assertAiAllowed(sql, user);
     return await answerEssay(
       sql,
       user,

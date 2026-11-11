@@ -39,11 +39,21 @@ async function isAdmin(sql: Query, user: string): Promise<boolean> {
   const [row] = await sql`SELECT role FROM public.profiles WHERE id=${user}`;
   return row?.role === "admin";
 }
+// Papéis de escola que podem dar aula numa turma da escola.
+const SCHOOL_TEACHING_ROLES = ["owner", "coordinator", "teacher"];
+async function teachingSchools(sql: Query, user: string): Promise<string[]> {
+  const rows =
+    await sql`SELECT DISTINCT m.school_id FROM public.school_members m
+    WHERE m.user_id=${user} AND m.status='active'
+      AND m.role = ANY(${SCHOOL_TEACHING_ROLES}::text[])`;
+  return rows.map((row) => String(row.school_id));
+}
 async function teacherEnabled(sql: Query, user: string): Promise<boolean> {
   if (await isAdmin(sql, user)) return true;
   const rows =
     await sql`SELECT 1 FROM public.platform_teachers WHERE user_id=${user}`;
-  return rows.length > 0;
+  // Professor convidado pela escola não depende da habilitação do admin.
+  return rows.length > 0 || (await teachingSchools(sql, user)).length > 0;
 }
 async function ownClass(sql: Query, user: string, classId: string) {
   const [row] =
@@ -513,8 +523,14 @@ async function classMutation(
           "O limite atual é de 20 turmas por professor.",
         );
       }
+      // Quem dá aula em uma escola só cria a turma nela; com várias escolas
+      // (ou nenhuma), a turma fica sem escola até o app escolher.
+      const schools = await teachingSchools(tx, user);
+      const school = optionalId(input, "school_id") ??
+        (schools.length === 1 ? schools[0] : null);
+      if (school && !schools.includes(school)) throw denied();
       const [row] =
-        await tx`INSERT INTO public.platform_classes(teacher_id,title) VALUES(${user},${title}) RETURNING id,title,teacher_id`;
+        await tx`INSERT INTO public.platform_classes(teacher_id,title,school_id) VALUES(${user},${title},${school}) RETURNING id,title,teacher_id,school_id`;
       const [invite] =
         await tx`INSERT INTO public.platform_class_invites(class_id) VALUES(${row.id}) RETURNING code`;
       return { class: { ...row, code: invite.code, is_teacher: true } };

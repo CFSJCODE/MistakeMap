@@ -120,6 +120,15 @@ void main() {
             request: request,
           );
         }
+        // Conta que já passou pelo "Quem é você?": abre no app de estudante.
+        if (request.url.path == '/rest/v1/user_signups') {
+          return http.Response(
+            '[{"persona":"student","birth_date":"2000-01-01"}]',
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+            request: request,
+          );
+        }
         if (!request.url.path.startsWith('/rest/v1/')) {
           throw StateError(
             'Requisição não esperada no teste: ${request.url.path}',
