@@ -37,4 +37,25 @@ Erros: `MM401` sem login, `MM403` sem permissão ou sem convite, `MM404` convite
 
 ## O que ainda não tem
 
-Telas, Edge Function `school-admin`, cobrança, contrato e auditoria ficam nas próximas etapas (itens B, D, E e F da onda 1). Planos, cota coletiva e aluno ativo estão em [PLANOS_E_COTA.md](PLANOS_E_COTA.md).
+Contrato, cobrança e auditoria ficam nas próximas etapas (itens D, E e F da onda 1). Planos, cota coletiva e aluno ativo estão em [PLANOS_E_COTA.md](PLANOS_E_COTA.md).
+
+## Cadastro por perfil (item B)
+
+Migration: `supabase/migrations/20261111223000_signup_profiles.sql`.
+Testes: `scripts/verify-signup-profiles.sh` (Postgres local, usuário não root).
+Edge Function: `school-admin` (toda escrita do cadastro e da escola).
+Telas: `lib/school/` (`quem_e_voce.dart`, `porta_perfil.dart`, `painel_escola.dart`).
+
+| Tabela | O que guarda |
+|---|---|
+| `user_signups` | perfil escolhido em "Quem é você?" e data de nascimento do estudante. É só um pedido: não dá papel |
+| `guardian_consent_requests` | código (hash) que o menor mostra ao responsável; uso único, 7 dias |
+| `guardian_links` | responsável → estudante, versão do termo, data, revogação |
+| `school_teams`, `school_team_members` | equipe de robótica com código (hash) e função (programação, mecânica, eletrônica, estratégia) |
+
+Regras:
+
+- Professor da escola, coordenação e TI só ganham o papel com convite. A `school-admin` confere se o papel do convite bate com o perfil escolhido; o trigger `school_members_guard` confere o resto.
+- Professor sem convite começa no plano Grátis: `start_free_teacher` cria uma escola Grátis com ele como dono e professor (pelo mesmo caminho de convite). Turma nova de quem dá aula em uma escola só fica ligada a ela.
+- `guardian_consent_pending(user)`: estudante menor de 18 anos, sem papel de estudante numa escola, sem turma de escola e sem aceite ativo do responsável. As funções de IA (analyze-attempt, generate-practice, study-material, dissertativa do question-bank e process-batch) recusam enquanto for verdadeiro. Conta antiga sem data de nascimento não é bloqueada.
+- Conta sem perfil e sem papel vê "Quem é você?". Quem já tem papel (convite, planilha) pula a tela. Mais de um papel → seletor de perfil no topo.

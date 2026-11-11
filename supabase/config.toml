@@ -47,3 +47,7 @@ verify_jwt = false
 # Banco de questões: o POST verifica o JWT no handler antes do banco.
 [functions.question-bank]
 verify_jwt = false
+
+# Cadastro por perfil e escola: o POST verifica o JWT no handler antes do banco.
+[functions.school-admin]
+verify_jwt = false

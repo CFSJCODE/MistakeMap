@@ -49,6 +49,7 @@ import 'sync/sobreposicao.dart';
 import 'study/study_today_panel.dart';
 import 'platform/platform_hub.dart';
 import 'exercicios/banco_questoes.dart';
+import 'school/porta_perfil.dart';
 
 part 'caderno_erros.dart';
 part 'learning_platform.dart';
@@ -1176,9 +1177,13 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
   @override
   Widget build(BuildContext context) {
     if (_appUser == null) return const _LoadingScaffold();
-    return TelaNavegacao(
-      user: _appUser!,
-      studyRepository: widget.studyRepository,
+    // "Quem é você?", seletor de perfil e consentimento do responsável.
+    return PortaDePerfil(
+      usuarioId: _appUser!.id,
+      estudante: TelaNavegacao(
+        user: _appUser!,
+        studyRepository: widget.studyRepository,
+      ),
     );
   }
 }

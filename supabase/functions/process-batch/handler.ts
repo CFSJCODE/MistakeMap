@@ -23,6 +23,7 @@ export async function handler(req: Request): Promise<Response> {
       AND (r.retry_count>=3 OR NOT EXISTS(SELECT 1 FROM public.ai_daily_usage u WHERE u.user_id=a.user_id AND u.kind='analysis' AND u.usage_day=CURRENT_DATE AND u.requests>=${
       dailyLimit("analysis")
     }))
+      AND NOT public.guardian_consent_pending(a.user_id)
       ORDER BY a.attempted_at LIMIT 20`;
     const summary = {
       encontradas: rows.length,
