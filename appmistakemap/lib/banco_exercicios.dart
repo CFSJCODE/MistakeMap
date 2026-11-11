@@ -459,6 +459,40 @@ class _QuestaoCard extends StatelessWidget {
   }
 }
 
+/// Abre uma tarefa da turma criada pelo mapa ("Treinar este conceito"): as
+/// questões do banco, respondidas com a mesma tela da aba Exercícios. Cada
+/// resposta vai com a tarefa, para o resultado do professor. Devolve a
+/// mensagem de erro para quem chamou mostrar, ou nulo.
+Future<String?> abrirTarefaDoBanco(
+  BuildContext context,
+  String usuarioId,
+  String tarefaId,
+  List<String> questaoIds,
+) async {
+  final repo = RepositorioQuestoesSupabase(_db, tarefaId: tarefaId);
+  final List<Questao> questoes;
+  try {
+    questoes = questoesDaTarefa(await repo.carregar(usuarioId), questaoIds);
+  } catch (_) {
+    return 'Não foi possível carregar as questões da tarefa. Tente de novo.';
+  }
+  if (questoes.isEmpty) {
+    return 'As questões desta tarefa não estão mais no banco. Avise o professor.';
+  }
+  if (!context.mounted) return null;
+  await Navigator.of(context).push(
+    MistakeMapPageRoute(
+      context: context,
+      builder: (_) => TelaResponderQuestao(
+        questoes: questoes,
+        inicial: 0,
+        repositorio: repo,
+      ),
+    ),
+  );
+  return null;
+}
+
 // ─── Responder questão ────────────────────────────────────────────────────────
 
 /// Responde uma questão e mostra a correção do servidor. "Próximo" segue

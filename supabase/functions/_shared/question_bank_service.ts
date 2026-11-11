@@ -4,6 +4,7 @@
 import postgres from "postgresjs";
 import { PublicError, uuid } from "./ai_contract.ts";
 import { analyzeAttempt, database } from "./ai_service.ts";
+import { checkAssignmentAnswer } from "./class_map.ts";
 import {
   fullPrompt,
   type Grade,
@@ -72,6 +73,7 @@ async function saveObjective(
   q: Question,
   response: unknown,
   grade: Grade,
+  assignmentId: string | null,
 ) {
   const analysis = gradeAnalysis(q, grade);
   return await sql.begin(async (tx) => {
@@ -113,10 +115,10 @@ async function saveObjective(
         VALUES(${concept.id},${attempt.id},'question_bank_correct')`;
     }
     await tx`INSERT INTO public.question_responses(user_id,question_id,
-        attempt_id,response,is_correct,score)
+        attempt_id,response,is_correct,score,assignment_id)
       VALUES(${user},${q.id},${attempt.id},
         ${tx.json(response as postgres.JSONValue)},${grade.is_correct},
-        ${grade.score})`;
+        ${grade.score},${assignmentId})`;
     return attempt.id as string;
   });
 }
@@ -126,6 +128,7 @@ async function answerEssay(
   user: string,
   q: Question,
   response: Record<string, unknown>,
+  assignmentId: string | null,
 ) {
   const text = typeof response.text === "string" ? response.text.trim() : "";
   if (text.length < 3 || text.length > 8000) {
@@ -141,8 +144,10 @@ async function answerEssay(
         answer,solution_text,status)
       VALUES(${exerciseId},${user},${text},${text},'pending') RETURNING id`;
     await tx`INSERT INTO public.question_responses(user_id,question_id,
-        attempt_id,response,is_correct,score)
-      VALUES(${user},${q.id},${attempt.id},${tx.json({ text })},NULL,NULL)`;
+        attempt_id,response,is_correct,score,assignment_id)
+      VALUES(${user},${q.id},${attempt.id},${
+      tx.json({ text })
+    },NULL,NULL,${assignmentId})`;
     return attempt.id as string;
   });
   // A IA corrige com o gabarito revisado como referência. Sem IA agora, a
@@ -200,15 +205,33 @@ export async function answerQuestion(
   input: Record<string, unknown>,
 ) {
   const q = await loadQuestion(sql, uuid(input.question_id));
+  // Resposta de tarefa da turma: só vale para questão da tarefa e aluno da turma.
+  const assignmentId = input.assignment_id == null
+    ? null
+    : uuid(input.assignment_id);
+  if (assignmentId) await checkAssignmentAnswer(sql, user, assignmentId, q.id);
   const response = input.response;
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     throw new PublicError(400, "invalid_response", "Resposta inválida.");
   }
   if (q.kind === "dissertativa") {
-    return await answerEssay(sql, user, q, response as Record<string, unknown>);
+    return await answerEssay(
+      sql,
+      user,
+      q,
+      response as Record<string, unknown>,
+      assignmentId,
+    );
   }
   const grade = gradeObjective(q, response);
-  const attemptId = await saveObjective(sql, user, q, response, grade);
+  const attemptId = await saveObjective(
+    sql,
+    user,
+    q,
+    response,
+    grade,
+    assignmentId,
+  );
   return {
     status: "graded",
     attempt_id: attemptId,
