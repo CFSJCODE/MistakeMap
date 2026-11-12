@@ -1,6 +1,6 @@
 # Template do estimate.md
 
-Este e o template Markdown que o agente `reversa-pricing-estimate` usa para gerar `_reversa_sdd/_pricing/<feature>/estimate.md`. Substitua todos os `<placeholders>` pelos valores reais. Mantenha a estrutura fixa.
+Este e o template Markdown que o agente `reversa-pricing-estimate` usa para gerar `reversa/sdd/_pricing/<feature>/estimate.md`. Substitua todos os `<placeholders>` pelos valores reais. Mantenha a estrutura fixa.
 
 ```markdown
 # Estimativa de Preco
@@ -117,7 +117,7 @@ Heuristica geral:
 
 ## Disclaimer
 
-Os numeros nesta estimativa sao aproximacoes para orientacao de orcamento, nao garantia de fechamento de venda. O fator de imposto e uma reserva aproximada, nao uma aliquota legal exata. Validacao tributaria real e responsabilidade do contador do usuario. A faixa de mercado e estatica e baseada nas fontes documentadas em `market-benchmarks.md`. O retorno declarado pelo cliente no cenario Valor e input bruto, nao validado. Recomenda-se adicionar `_reversa_sdd/_pricing/<feature>/estimate.{md,json}` ao `.gitignore` antes de commitar.
+Os numeros nesta estimativa sao aproximacoes para orientacao de orcamento, nao garantia de fechamento de venda. O fator de imposto e uma reserva aproximada, nao uma aliquota legal exata. Validacao tributaria real e responsabilidade do contador do usuario. A faixa de mercado e estatica e baseada nas fontes documentadas em `market-benchmarks.md`. O retorno declarado pelo cliente no cenario Valor e input bruto, nao validado. Recomenda-se adicionar `reversa/sdd/_pricing/<feature>/estimate.{md,json}` ao `.gitignore` antes de commitar.
 ```
 
 ## Billing currency

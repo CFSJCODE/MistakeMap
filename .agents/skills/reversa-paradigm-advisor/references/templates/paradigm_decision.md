@@ -17,7 +17,7 @@ hash: "sha256:<hash do corpo abaixo do front-matter>"
 - **Paradigma principal**: <procedural | OO clássico | OO com DI | funcional | event-driven | actor model | dataflow | híbrido: ...>
 - **Confiança**: 🟢 CONFIRMADO | 🟡 INFERIDO | 🔴 LACUNA | ⚠️ AMBÍGUO
 - **Evidências**:
-  - <evidência 1, com referência a artefato do `_reversa_sdd/`>
+  - <evidência 1, com referência a artefato do `reversa/sdd/`>
   - <evidência 2>
 - **Variações observadas** (se híbrido):
   - <componente A: paradigma X, evidência>

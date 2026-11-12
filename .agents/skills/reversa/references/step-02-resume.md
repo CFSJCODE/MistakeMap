@@ -2,7 +2,7 @@
 
 ## 0. Verificação de migração em andamento
 
-Antes de tudo, leia `.reversa/state.json` apenas para resolver `output_folder` (padrão `_reversa_sdd`).
+Antes de tudo, leia `.reversa/state.json` apenas para resolver `output_folder` (padrão `reversa/sdd`).
 
 Verifique se `<output_folder>/migration/.state.json` existe. Se não existir, pule esta seção e siga para a seção 1.
 
@@ -72,7 +72,7 @@ Exemplo:
 ## 5. Modo de resposta a lacunas
 
 Se `answer_mode` for `"file"`:
-> "Lembre-se: suas respostas às perguntas devem ser preenchidas em `_reversa_sdd/questions.md`. Me avise quando terminar."
+> "Lembre-se: suas respostas às perguntas devem ser preenchidas em `reversa/sdd/questions.md`. Me avise quando terminar."
 
 Se `answer_mode` for `"chat"` (padrão):
 > Continue normalmente — farei as perguntas aqui no chat.

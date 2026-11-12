@@ -35,7 +35,7 @@ CLAUDE_CONFIG=harness.yaml claude /<comando> "<objetivo>"
 | Custo por execução | US$ 0,50 |
 | Ciclos máximos | 10 |
 | Stall (sem progresso) | aborta em 3 ciclos |
-| Escrita permitida | `appmistakemap/`, `archive/worker/src/`, `_reversa_*/`, `.reversa/` |
+| Escrita permitida | `appmistakemap/`, `archive/worker/src/`, `reversa/*/`, `.reversa/` |
 | Execução desacompanhada | habilitada, máx. 120 min |
 
 ---
@@ -94,13 +94,15 @@ O Reversa está instalado completo neste projeto (63 agentes). Todos os artefato
 
 ### Pasta de artefatos
 ```
-_reversa_sdd/        ← especificações extraídas (Discovery)
-_reversa_forward/    ← features em evolução (Forward)
-_reversa_bugs/       ← registro de defeitos (Debugger)
-_reversa_docs/       ← mini-site de documentação
-_reversa_refactor/   ← oportunidades de melhoria de código
+reversa/sdd/         ← especificações extraídas (Discovery)
+reversa/forward/     ← features em evolução (Forward)
+reversa/bugs/        ← registro de defeitos (Debugger)
+reversa/docs/        ← mini-site de documentação
+reversa/refactor/    ← oportunidades de melhoria de código
 .reversa/            ← estado, configuração e hooks
 ```
+
+> Os skills do Reversa vêm de fábrica com as pastas `_reversa_sdd/`, `_reversa_forward/` etc. na raiz. Neste repositório elas ficam em `reversa/` e os skills de `.claude/skills/` e `.agents/skills/` foram ajustados. Ao atualizar o Reversa, troque de novo `_reversa_<nome>` por `reversa/<nome>` nos skills, em `.reversa/` e nas docs.
 
 ---
 
@@ -110,7 +112,7 @@ _reversa_refactor/   ← oportunidades de melhoria de código
 /reversa
 ```
 Orquestra Scout → Archaeologist → Detective → Architect → Writer → Reviewer.  
-Ao final gera o SDD completo em `_reversa_sdd/`.
+Ao final gera o SDD completo em `reversa/sdd/`.
 
 **Modo autônomo (sem pausas entre agentes):**
 ```
@@ -124,7 +126,7 @@ Ao final gera o SDD completo em `_reversa_sdd/`.
 | `reversa-archaeologist` | Analisa módulo a módulo (lib/domain, lib/features, worker Rust) |
 | `reversa-detective` | Extrai regras de negócio implícitas (RLS, fórmula de prioridade P = F×R×I×(1−M)) |
 | `reversa-architect` | Gera diagramas C4, ERD e mapa de integração Flutter↔Supabase↔R2↔Worker |
-| `reversa-writer` | Produz especificações operacionais em `_reversa_sdd/` |
+| `reversa-writer` | Produz especificações operacionais em `reversa/sdd/` |
 | `reversa-reviewer` | Valida gaps com o usuário antes de fechar o ciclo |
 | `reversa-spec-sdd` | Geração direta de SDD a partir de código sem o pipeline completo |
 | `reversa-explorer` | Exploração dirigida de módulo específico |
@@ -138,7 +140,7 @@ Ao final gera o SDD completo em `_reversa_sdd/`.
 ```
 /reversa-forward
 ```
-Detecta o estágio da feature ativa em `_reversa_forward/` e roteia para o próximo agente.
+Detecta o estágio da feature ativa em `reversa/forward/` e roteia para o próximo agente.
 
 **Pipeline forward:**
 ```
@@ -156,7 +158,7 @@ requirements → clarify → plan → to-do → audit → quality → coding →
 | `reversa-coding` | Gera o código com hooks `flutter analyze` + `flutter test` |
 | `reversa-code-express` | Codificação rápida sem o pipeline completo |
 | `reversa-add` | Adiciona uma sub-feature a uma feature existente |
-| `reversa-sync` | Sincroniza artefatos de `_reversa_forward/` com `_reversa_sdd/` |
+| `reversa-sync` | Sincroniza artefatos de `reversa/forward/` com `reversa/sdd/` |
 
 **Hooks automáticos configurados em `.reversa/hooks.yml`:**
 - Após `coding`: `flutter analyze` + `flutter test`
@@ -207,7 +209,7 @@ requirements → clarify → plan → to-do → audit → quality → coding →
 ```
 /reversa-docs
 ```
-Gera mini-site HTML autocontido em `_reversa_docs/` com arquitetura 3D, dashboards, glossário e deck de apresentação.
+Gera mini-site HTML autocontido em `reversa/docs/` com arquitetura 3D, dashboards, glossário e deck de apresentação.
 
 | Agente | O que faz |
 |---|---|
@@ -317,11 +319,12 @@ MistakeMap/
 │   ├── config.toml          # Configuração do projeto
 │   ├── reversa-config.json  # Política de edição de arquivos legados
 │   └── hooks.yml            # Hooks de CI nos gates do ciclo forward
-├── _reversa_sdd/            # Especificações geradas (Discovery)
-├── _reversa_forward/        # Features em evolução (Forward)
-├── _reversa_bugs/           # Registro de defeitos
-├── _reversa_docs/           # Mini-site de documentação
-└── _reversa_refactor/       # Oportunidades de refatoração
+└── reversa/                 # Artefatos gerados pelo Reversa
+    ├── sdd/                 # Especificações geradas (Discovery)
+    ├── forward/             # Features em evolução (Forward)
+    ├── bugs/                # Registro de defeitos
+    ├── docs/                # Mini-site de documentação
+    └── refactor/            # Oportunidades de refatoração
 ```
 
 ---
@@ -368,4 +371,4 @@ Quando o usuário digitar `/reversa` ou qualquer `/reversa-*`:
 3. Leia o `SKILL.md` na íntegra e siga exatamente as instruções
 
 **Regra de escrita:**  
-Antes de modificar qualquer arquivo fora das pastas `_reversa_*/` e `.reversa/`, leia `.reversa/reversa-config.json`. Com `allowLegacyEdits: false` (padrão atual), recuse qualquer escrita fora dessas pastas e informe o usuário como liberar.
+Antes de modificar qualquer arquivo fora das pastas `reversa/*/` e `.reversa/`, leia `.reversa/reversa-config.json`. Com `allowLegacyEdits: false` (padrão atual), recuse qualquer escrita fora dessas pastas e informe o usuário como liberar.

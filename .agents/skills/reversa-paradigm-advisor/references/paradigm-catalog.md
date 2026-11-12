@@ -8,37 +8,37 @@
 ### Procedural
 - **Características**: funções top-level, fluxo linear em controllers, ausência de classes ou uso ornamental, dados como dicts/structs, side effects abertos.
 - **Exemplos no legado**: scripts PHP clássicos, COBOL batch, sistemas Perl pré-OO, scripts shell.
-- **Sinais em `_reversa_sdd/`**: domínio descrito como "funções", fluxos lineares em `process_flows`, ausência de aggregates explícitos.
+- **Sinais em `reversa/sdd/`**: domínio descrito como "funções", fluxos lineares em `process_flows`, ausência de aggregates explícitos.
 
 ### OO clássico
 - **Características**: hierarquia de classes, herança forte, padrão Active Record, lógica acoplada aos modelos.
 - **Exemplos no legado**: Rails monolítico, Django tradicional, Java EE pré-DI, .NET WebForms / clássico.
-- **Sinais em `_reversa_sdd/`**: classes com responsabilidades amplas, herança em domain model, controllers anêmicos chamando métodos do modelo.
+- **Sinais em `reversa/sdd/`**: classes com responsabilidades amplas, herança em domain model, controllers anêmicos chamando métodos do modelo.
 
 ### OO com DI
 - **Características**: containers de injeção, interfaces explícitas, padrão Repository / Service, separação clara entre camadas.
 - **Exemplos no legado**: Spring moderno, .NET 6+, NestJS, Symfony moderno.
-- **Sinais em `_reversa_sdd/`**: aggregates explícitos, interfaces de repositório, ausência de Active Record.
+- **Sinais em `reversa/sdd/`**: aggregates explícitos, interfaces de repositório, ausência de Active Record.
 
 ### Funcional
 - **Características**: imutabilidade dominante, funções puras, composição, ausência de side effects implícitos, tipagem rica.
 - **Exemplos no legado**: Haskell, Elm, F#, Scala funcional, Clojure.
-- **Sinais em `_reversa_sdd/`**: tipos algébricos, ausência de classes, fluxo expresso como composição.
+- **Sinais em `reversa/sdd/`**: tipos algébricos, ausência de classes, fluxo expresso como composição.
 
 ### Event-driven (assíncrono)
 - **Características**: filas / tópicos, handlers desacoplados, ausência de fluxo linear, consistência eventual, idempotência explícita.
 - **Exemplos no legado**: backends Node moderno orientado a fila, sistemas SQS / Kafka heavy, microsserviços assíncronos.
-- **Sinais em `_reversa_sdd/`**: eventos no domain model, integrações via fila, processos de longa duração com retry.
+- **Sinais em `reversa/sdd/`**: eventos no domain model, integrações via fila, processos de longa duração com retry.
 
 ### Actor model
 - **Características**: atores isolados com mailbox, supervisão, isolamento de estado.
 - **Exemplos no legado**: Erlang / Elixir / OTP, Akka.
-- **Sinais em `_reversa_sdd/`**: processos supervisionados, mensagens entre atores.
+- **Sinais em `reversa/sdd/`**: processos supervisionados, mensagens entre atores.
 
 ### Dataflow
 - **Características**: pipelines declarativos, transformações em fluxo, ausência de loops imperativos no domínio.
 - **Exemplos no legado**: ETLs clássicos, Spark, Flink.
-- **Sinais em `_reversa_sdd/`**: descrição em DAG, transformações em estágios.
+- **Sinais em `reversa/sdd/`**: descrição em DAG, transformações em estágios.
 
 ## Mapeamento stack → paradigma natural
 

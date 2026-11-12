@@ -1,6 +1,6 @@
 # Platform Detection
 
-Heurísticas que o `reversa-screen-translator` usa para classificar a plataforma origem do legado a partir do conteúdo de `_reversa_sdd/inventory.md` e do código fonte. Use junto com `references/adapter-pairs.md` para escolher o adapter.
+Heurísticas que o `reversa-screen-translator` usa para classificar a plataforma origem do legado a partir do conteúdo de `reversa/sdd/inventory.md` e do código fonte. Use junto com `references/adapter-pairs.md` para escolher o adapter.
 
 A escala de confiança aplicada por classificação:
 

@@ -15,11 +15,11 @@
 | **Reversa** — estado | [`/.reversa/`](../../.reversa/) | Estado, config e hooks do framework Reversa |
 | **Reversa** — skills Claude | [`/.claude/skills/`](../../.claude/skills/) | 63 agentes para Claude Code |
 | **Reversa** — skills outros | [`/.agents/skills/`](../../.agents/skills/) | 63 agentes para Codex e outros engines |
-| **Artefatos Discovery** | `/_reversa_sdd/` | Especificações extraídas do código *(criada ao rodar `/reversa`)* |
-| **Artefatos Forward** | [`/_reversa_forward/`](../../_reversa_forward/) | Requisitos, planos e verificações das features entregues |
-| **Artefatos Bugs** | [`/_reversa_bugs/`](../../_reversa_bugs/) | Registro de defeitos |
-| **Artefatos Docs** | `/_reversa_docs/` | Mini-site de documentação visual *(criada ao rodar `/reversa-docs`)* |
-| **Artefatos Refactor** | `/_reversa_refactor/` | Oportunidades de melhoria *(criada ao rodar `/reversa-refactor`)* |
+| **Artefatos Discovery** | `/reversa/sdd/` | Especificações extraídas do código *(criada ao rodar `/reversa`)* |
+| **Artefatos Forward** | [`/reversa/forward/`](../../reversa/forward/) | Requisitos, planos e verificações das features entregues |
+| **Artefatos Bugs** | [`/reversa/bugs/`](../../reversa/bugs/) | Registro de defeitos |
+| **Artefatos Docs** | `/reversa/docs/` | Mini-site de documentação visual *(criada ao rodar `/reversa-docs`)* |
+| **Artefatos Refactor** | `/reversa/refactor/` | Oportunidades de melhoria *(criada ao rodar `/reversa-refactor`)* |
 
 > **Por que os arquivos funcionais não estão aqui?**  
 > Claude Code, Codex, Gemini CLI e o framework Reversa lêem seus arquivos em caminhos fixos e obrigatórios (raiz do projeto). Mover quebraria todas as ferramentas. Esta pasta é só o portal de documentação — não substitui os caminhos de convenção.
@@ -66,7 +66,7 @@ Arquivo: [`/harness.yaml`](../../harness.yaml)
 | Ciclos máximos | 10 |
 | Stall sem progresso | aborta em 3 ciclos |
 | Execução autônoma | habilitada, máx. 120 min |
-| Escrita permitida | `appmistakemap/`, `archive/worker/src/`, `_reversa_*/`, `.reversa/` |
+| Escrita permitida | `appmistakemap/`, `archive/worker/src/`, `reversa/*/`, `.reversa/` |
 
 ---
 
@@ -140,7 +140,7 @@ cargo check         # AC3
 
 ## Regras de Segurança dos Agentes
 
-1. Agentes **nunca modificam** arquivos fora de `_reversa_*/` e `.reversa/` por padrão.
+1. Agentes **nunca modificam** arquivos fora de `reversa/*/` e `.reversa/` por padrão.
 2. Para liberar edições no código-fonte, o usuário deve editar `.reversa/reversa-config.json` manualmente.
 3. O harness bloqueia escrita em `.env`, `secrets/` e qualquer caminho fora do projeto.
 4. Loops autônomos abortam após 3 ciclos sem progresso nos ACs.

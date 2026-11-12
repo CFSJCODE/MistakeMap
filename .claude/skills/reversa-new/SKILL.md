@@ -1,6 +1,6 @@
 ---
 name: reversa-new
-description: 'Orquestrador greenfield do Reversa: da ideia em linguagem natural a brainstorm, personas, PRD e specs SDD em `_reversa_sdd/`. Dois modos, guiado (passo a passo) e expresso (entrevista única até o código). Use com "/reversa-new", "/reversa-new expresso", "começar projeto novo", "da ideia ao código".'
+description: 'Orquestrador greenfield do Reversa: da ideia em linguagem natural a brainstorm, personas, PRD e specs SDD em `reversa/sdd/`. Dois modos, guiado (passo a passo) e expresso (entrevista única até o código). Use com "/reversa-new", "/reversa-new expresso", "começar projeto novo", "da ideia ao código".'
 license: MIT
 compatibility: Claude Code, Codex, Cursor, Gemini CLI e demais agentes compatíveis com Agent Skills.
 metadata:
@@ -56,12 +56,12 @@ No modo guiado você nunca executa um agente automaticamente sem CONTINUAR do us
      "chat_language": "pt-br",
      "doc_language": "Português",
      "project": "",
-     "output_folder": "_reversa_sdd"
+     "output_folder": "reversa/sdd"
    }
    ```
    Se faltar `user_name`, peça antes de prosseguir (mesmo padrão de `/reversa`). Exceção: no modo expresso, essa coleta acontece no bloco 1 da entrevista única, não pergunte duas vezes.
-2. Resolva `output_folder` a partir de `state.json` (padrão `_reversa_sdd`). Quando o texto deste SKILL.md menciona `_reversa_sdd/`, use o valor real.
-3. Garanta que `_reversa_sdd/` existe (criação recursiva, sem `.gitkeep`). Mesmo padrão do `/reversa-forward`.
+2. Resolva `output_folder` a partir de `state.json` (padrão `reversa/sdd`). Quando o texto deste SKILL.md menciona `reversa/sdd/`, use o valor real.
+3. Garanta que `reversa/sdd/` existe (criação recursiva, sem `.gitkeep`). Mesmo padrão do `/reversa-forward`.
 
 ## Detecção de re-execução
 
@@ -79,7 +79,7 @@ Antes de pedir brief novo, verifique se há pipeline em andamento. Leia `state.j
    Como você quer proceder?
 
      [1] Continuar de onde parou (recomendado)
-     [2] Recriar tudo do zero (sobrescreve artefatos existentes em _reversa_sdd/)
+     [2] Recriar tudo do zero (sobrescreve artefatos existentes em reversa/sdd/)
      [3] Re-executar a partir de um agente específico
      [4] Cancelar
    ```
@@ -151,7 +151,7 @@ Se o usuário passou argumento livre ao `/reversa-new`, use como brief inicial. 
 
 > "Olá `<user_name>`. O que você quer construir? Descreva em uma frase ou parágrafo curto."
 
-Salve o brief em `_reversa_sdd/newproject-brief.md`:
+Salve o brief em `reversa/sdd/newproject-brief.md`:
 
 ```markdown
 # Brief inicial, /reversa-new
@@ -203,16 +203,16 @@ A sequência é fixa:
 
 | Ordem | Agente | Output | Próximo stage no state |
 |---|---|---|---|
-| 1 | reversa-ideator | `_reversa_sdd/ideation.md` | `researcher` |
-| 2 | reversa-researcher | `_reversa_sdd/personas.md` | `drafter` |
-| 3 | reversa-drafter | `_reversa_sdd/prd.md` | `spec-sdd` |
-| 4 | reversa-spec-sdd | `_reversa_sdd/sdd/<componente>.md` | `done` |
+| 1 | reversa-ideator | `reversa/sdd/ideation.md` | `researcher` |
+| 2 | reversa-researcher | `reversa/sdd/personas.md` | `drafter` |
+| 3 | reversa-drafter | `reversa/sdd/prd.md` | `spec-sdd` |
+| 4 | reversa-spec-sdd | `reversa/sdd/sdd/<componente>.md` | `done` |
 
 ## Handoff final (modo guiado)
 
 Quando o `reversa-spec-sdd` concluir, atualize `stage` para `done` e exiba o relatório final:
 
-> `<user_name>`, o pipeline `/reversa-new` terminou. Artefatos gerados em `_reversa_sdd/`:
+> `<user_name>`, o pipeline `/reversa-new` terminou. Artefatos gerados em `reversa/sdd/`:
 >
 > - `newproject-brief.md`, brief original
 > - `ideation.md`, brainstorm da ideia
@@ -315,7 +315,7 @@ A retomada respeita o `mode` salvo: guiado volta a pedir CONTINUAR, expresso seg
 
 ## Regra absoluta
 
-Nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto do usuário. O Reversa escreve APENAS em `.reversa/`, `_reversa_sdd/` e, no modo expresso (estágios forward), `_reversa_forward/`. O código de aplicação criado pelo `reversa-coding` no modo expresso é sempre arquivo NOVO ou arquivo criado pelo próprio pipeline nesta execução, nunca modificação de arquivo pré-existente. Em re-execução opção 2 ou 3, só sobrescreve dentro de `_reversa_sdd/` após confirmação explícita.
+Nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto do usuário. O Reversa escreve APENAS em `.reversa/`, `reversa/sdd/` e, no modo expresso (estágios forward), `reversa/forward/`. O código de aplicação criado pelo `reversa-coding` no modo expresso é sempre arquivo NOVO ou arquivo criado pelo próprio pipeline nesta execução, nunca modificação de arquivo pré-existente. Em re-execução opção 2 ou 3, só sobrescreve dentro de `reversa/sdd/` após confirmação explícita.
 
 ## Saída final
 

@@ -36,7 +36,7 @@ screens:
       command: "<comando completo de captura, ex: 'echo -e \"1\\n123456\\n0\\n\" | docker run --rm -i legacy-atm:1.0 > tela_login.txt'>"
       expectedExitCode: 0
       determinismStrategy: "fake-clock + fixed-seed"
-    file: "tela-login.txt"          # caminho relativo a _reversa_sdd/screens/golden/
+    file: "tela-login.txt"          # caminho relativo a reversa/sdd/screens/golden/
     format: "ansi-byte-stream"      # ansi-byte-stream | png | html-css-snapshot | raw
     present: true                   # false quando o usuário ainda não rodou a captura
     captureBy: "<nome-do-usuario-ou-CI>"

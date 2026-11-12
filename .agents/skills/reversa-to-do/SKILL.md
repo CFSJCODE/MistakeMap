@@ -17,7 +17,7 @@ Você é o decompositor. Sua missão é transformar o `roadmap.md` num `actions.
 ## Antes de começar
 
 1. Leia `.reversa/state.json` para resolver `output_folder` e `forward_folder`
-2. Use os valores reais nos lugares onde o texto mencionar `_reversa_sdd/` ou `_reversa_forward/`
+2. Use os valores reais nos lugares onde o texto mencionar `reversa/sdd/` ou `reversa/forward/`
 
 ## Verificações Iniciais
 

@@ -17,11 +17,11 @@ Você é o redator de requisitos do Reversa. Sua missão é converter o argument
 ## Antes de começar
 
 1. Leia `.reversa/state.json`
-   1.1. `output_folder` → pasta da extração reversa (padrão `_reversa_sdd`)
-   1.2. `forward_folder` → pasta das features forward (padrão `_reversa_forward`)
+   1.1. `output_folder` → pasta da extração reversa (padrão `reversa/sdd`)
+   1.2. `forward_folder` → pasta das features forward (padrão `reversa/forward`)
    1.3. `chat_language` e `doc_language` → idioma de interação e do documento
-2. A partir daqui, sempre que o texto deste skill mencionar `_reversa_sdd/`, troque pelo `output_folder` real
-3. Sempre que mencionar `_reversa_forward/`, troque pelo `forward_folder` real
+2. A partir daqui, sempre que o texto deste skill mencionar `reversa/sdd/`, troque pelo `output_folder` real
+3. Sempre que mencionar `reversa/forward/`, troque pelo `forward_folder` real
 
 ## Verificações Iniciais
 
@@ -88,7 +88,7 @@ Aguarde a resposta. NÃO escolha por conta própria, NÃO interprete silêncio c
 ### Opção 1, continuar a anterior
 
 1. Não escreva em `active-requirements.json`
-2. Não crie pasta nova em `_reversa_forward/`
+2. Não crie pasta nova em `reversa/forward/`
 3. Sugira ao usuário o próximo skill apropriado para o estágio físico:
    3.1. `requirements` → `/reversa-clarify` (se houver marcadores `[DÚVIDA]` no `requirements.md`) ou `/reversa-plan`
    3.2. `plan` → `/reversa-to-do`
@@ -122,18 +122,18 @@ Aguarde a resposta. NÃO escolha por conta própria, NÃO interprete silêncio c
 
 1. Leia o `active-requirements.json` atual e o campo `paused-features`
    1.1. Se o campo não existir, considere `paused-features: []`
-2. NÃO adicione a feature recém-abandonada ao array `paused-features` (ela fica órfã na pasta `_reversa_forward/`, sem registro ativo, recuperável apenas por listagem manual)
+2. NÃO adicione a feature recém-abandonada ao array `paused-features` (ela fica órfã na pasta `reversa/forward/`, sem registro ativo, recuperável apenas por listagem manual)
 3. Siga normalmente. Ao escrever o `active-requirements.json` novo, preserve o array `paused-features` herdado do JSON anterior (sem adicionar a abandonada)
 
-A diretriz **non-destructive** vale aqui: em nenhuma das três opções a pasta da feature anterior em `_reversa_forward/` é apagada ou modificada. Apenas o `active-requirements.json` (gerenciado pelo Reversa) é reescrito.
+A diretriz **non-destructive** vale aqui: em nenhuma das três opções a pasta da feature anterior em `reversa/forward/` é apagada ou modificada. Apenas o `active-requirements.json` (gerenciado pelo Reversa) é reescrito.
 
 ## Resolução do diretório da feature
 
 1. Leia `.reversa/setup.json`
-   1.1. Se `prefix-format` estiver ausente ou for `sequencial`, calcule o próximo `NNN` listando subpastas de `_reversa_forward/` no formato `NNN-*` e somando 1 ao maior
+   1.1. Se `prefix-format` estiver ausente ou for `sequencial`, calcule o próximo `NNN` listando subpastas de `reversa/forward/` no formato `NNN-*` e somando 1 ao maior
    1.2. Se `prefix-format` for `timestamp`, use `YYYYMMDD-HHMMSS` da hora corrente
 2. Gere um `short-name` em kebab-case ASCII a partir do argumento livre, máximo trinta caracteres
-3. Defina `feature-dir = _reversa_forward/<NNN>-<short-name>` (ou `_reversa_forward/<TIMESTAMP>-<short-name>`)
+3. Defina `feature-dir = reversa/forward/<NNN>-<short-name>` (ou `reversa/forward/<TIMESTAMP>-<short-name>`)
 4. Crie `feature-dir` se não existir
 5. Atualize `.reversa/active-requirements.json` com o conteúdo abaixo, usando escrita atômica (tempfile mais rename):
 
@@ -159,14 +159,14 @@ Política de re-execução: se `active-requirements.json` já apontar para uma f
 
 Antes de escrever o requirements, leia, na ordem (pulando o que não existir):
 
-1. `_reversa_sdd/architecture.md` (panorama dos componentes)
-2. `_reversa_sdd/domain.md` (regras de negócio confirmadas)
-3. `_reversa_sdd/inventory.md` (superfície do código)
-4. `_reversa_sdd/code-analysis.md` SOMENTE nas seções dos componentes que o argumento livre parece tocar
-5. `_reversa_sdd/addenda/*.md` (adendos de features já entregues pelo ciclo forward, criados pelo `/reversa-sync`). Considere APENAS os vigentes (seção Vigência sem linha de superação): eles corrigem a leitura dos artefatos acima para deltas que a extração ainda não absorveu
+1. `reversa/sdd/architecture.md` (panorama dos componentes)
+2. `reversa/sdd/domain.md` (regras de negócio confirmadas)
+3. `reversa/sdd/inventory.md` (superfície do código)
+4. `reversa/sdd/code-analysis.md` SOMENTE nas seções dos componentes que o argumento livre parece tocar
+5. `reversa/sdd/addenda/*.md` (adendos de features já entregues pelo ciclo forward, criados pelo `/reversa-sync`). Considere APENAS os vigentes (seção Vigência sem linha de superação): eles corrigem a leitura dos artefatos acima para deltas que a extração ainda não absorveu
 6. `.reversa/principles.md` (princípios do projeto, se existir)
 
-Identifique os arquivos relevantes. Cada citação dentro do requirements precisa apontar para essas fontes no formato `_reversa_sdd/<arquivo>#<seção>`.
+Identifique os arquivos relevantes. Cada citação dentro do requirements precisa apontar para essas fontes no formato `reversa/sdd/<arquivo>#<seção>`.
 
 ## Construção do requirements.md
 

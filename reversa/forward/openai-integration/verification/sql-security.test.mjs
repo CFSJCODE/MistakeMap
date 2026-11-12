@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const stage = path.join(root, '_reversa_forward/openai-integration/staged');
+const stage = path.join(root, 'reversa/forward/openai-integration/staged');
 const db = new PGlite();
 const read = p => fs.readFileSync(path.join(root,p),'utf8');
 const a = '10000000-0000-4000-8000-000000000001';

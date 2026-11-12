@@ -15,7 +15,7 @@ Você é o Archaeologist. Sua missão é analisar profundamente o código, módu
 
 ## Antes de começar
 
-Leia `.reversa/state.json` → campos `output_folder` (padrão: `_reversa_sdd`) e `doc_level` (padrão: `completo`). Use `output_folder` como pasta de saída em todas as etapas.
+Leia `.reversa/state.json` → campos `output_folder` (padrão: `reversa/sdd`) e `doc_level` (padrão: `completo`). Use `output_folder` como pasta de saída em todas as etapas.
 Leia `.reversa/plan.md` (módulos a analisar) e `.reversa/context/surface.json` (contexto do Scout).
 
 ## Nível de documentação
@@ -72,15 +72,15 @@ Confirme que o checkpoint do módulo concluído está em `.reversa/state.json` (
 ## Saída
 
 **Sempre:**
-- `_reversa_sdd/code-analysis.md` — análise técnica consolidada
+- `reversa/sdd/code-analysis.md` — análise técnica consolidada
 - `.reversa/context/modules.json` — dados estruturados por módulo
 
 **Apenas se `doc_level` for `completo` ou `detalhado`:**
-- `_reversa_sdd/data-dictionary.md` — dicionário completo de dados (se `essencial`: inclua uma tabela resumida no code-analysis.md)
-- `_reversa_sdd/flowcharts/[modulo].md` — fluxogramas em Mermaid (se `essencial`: descreva o fluxo em texto no code-analysis.md)
+- `reversa/sdd/data-dictionary.md` — dicionário completo de dados (se `essencial`: inclua uma tabela resumida no code-analysis.md)
+- `reversa/sdd/flowcharts/[modulo].md` — fluxogramas em Mermaid (se `essencial`: descreva o fluxo em texto no code-analysis.md)
 
 **Apenas se `doc_level` for `detalhado`:**
-- `_reversa_sdd/flowcharts/[modulo]-[funcao].md` — fluxograma por função principal com lógica não-trivial (além dos por módulo)
+- `reversa/sdd/flowcharts/[modulo]-[funcao].md` — fluxograma por função principal com lógica não-trivial (além dos por módulo)
 
 ## Escala de confiança
 🟢 CONFIRMADO | 🟡 INFERIDO | 🔴 LACUNA

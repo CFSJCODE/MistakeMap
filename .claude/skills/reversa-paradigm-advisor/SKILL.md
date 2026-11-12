@@ -24,27 +24,27 @@ Você é o agente mais opinativo do time. Você **educa o usuário, não apenas 
 
 ## Pré-requisitos
 
-1. `_reversa_sdd/migration/migration_brief.md` deve existir (com `Stack alvo` declarada).
-2. `_reversa_sdd/` deve estar populado pelo Time de Descoberta (Scout, Archaeologist, Detective, Architect, Writer, Reviewer).
+1. `reversa/sdd/migration/migration_brief.md` deve existir (com `Stack alvo` declarada).
+2. `reversa/sdd/` deve estar populado pelo Time de Descoberta (Scout, Archaeologist, Detective, Architect, Writer, Reviewer).
 
-Se algum pré-requisito faltar, encerre com mensagem clara ao usuário e oriente a executar `/reversa-migrate` (que conduz o brief) ou `/reversa` (que popula o `_reversa_sdd/`).
+Se algum pré-requisito faltar, encerre com mensagem clara ao usuário e oriente a executar `/reversa-migrate` (que conduz o brief) ou `/reversa` (que popula o `reversa/sdd/`).
 
 ## Inputs
 
 Leia somente o que precisar:
 
-- `_reversa_sdd/migration/migration_brief.md` (obrigatório, para extrair stack alvo)
-- `_reversa_sdd/domain.md` (ou `domain_model.md` em versões antigas)
-- `_reversa_sdd/architecture.md`
-- `_reversa_sdd/inventory.md` (ou `legacy_inventory.md`)
-- `_reversa_sdd/code-analysis.md` (ou `process_flows.md`), opcional, ler só se a detecção do paradigma estiver ambígua
+- `reversa/sdd/migration/migration_brief.md` (obrigatório, para extrair stack alvo)
+- `reversa/sdd/domain.md` (ou `domain_model.md` em versões antigas)
+- `reversa/sdd/architecture.md`
+- `reversa/sdd/inventory.md` (ou `legacy_inventory.md`)
+- `reversa/sdd/code-analysis.md` (ou `process_flows.md`), opcional, ler só se a detecção do paradigma estiver ambígua
 - Catálogo: `references/paradigm-catalog.md` (cópia local do catálogo consultivo)
 
 Não leia código-fonte do legado; opere 100% no nível das specs.
 
 ## Output
 
-- `_reversa_sdd/migration/paradigm_decision.md` (obrigatório)
+- `reversa/sdd/migration/paradigm_decision.md` (obrigatório)
 
 Use o template em `references/templates/paradigm_decision.md` e preencha **todos** os campos.
 
@@ -52,7 +52,7 @@ Use o template em `references/templates/paradigm_decision.md` e preencha **todos
 
 ### 1. Detectar o paradigma do legado
 
-Use a tabela em `references/paradigm-catalog.md` § "Catálogo de paradigmas" para classificar com base em sinais observados nos artefatos de `_reversa_sdd/`:
+Use a tabela em `references/paradigm-catalog.md` § "Catálogo de paradigmas" para classificar com base em sinais observados nos artefatos de `reversa/sdd/`:
 
 - **Procedural**: domain pobre, fluxos lineares em controllers, ausência de aggregates, lógica em scripts ou métodos top-level.
 - **OO clássico**: hierarquia de classes, herança forte, padrão Active Record, controllers anêmicos.
@@ -90,12 +90,12 @@ Compare paradigma legado com paradigma alvo:
 
 ### 4. Apresentar o gap concretamente
 
-Use `references/paradigm-catalog.md` § "Tabela de gaps típicos por par" para a combinação detectada. **Nunca apresente o gap em abstrato**: traga exemplos do próprio sistema legado citando regras / fluxos / componentes específicos identificados em `_reversa_sdd/`.
+Use `references/paradigm-catalog.md` § "Tabela de gaps típicos por par" para a combinação detectada. **Nunca apresente o gap em abstrato**: traga exemplos do próprio sistema legado citando regras / fluxos / componentes específicos identificados em `reversa/sdd/`.
 
 Mínimo de **4 implicações concretas** com exemplo do legado. Exemplo de formato:
 
 > **Implicação 1: tratamento de erro deixa de ser try/catch local; vira retry/DLQ**
-> No legado, vejo que `OrderService.confirmOrder()` (em `_reversa_sdd/orders/design.md`) lança exceção e depende do controller para responder 500 ao usuário. No paradigma alvo (event-driven em Node), confirmar pedido vira evento; falhas vão para DLQ; o usuário recebe 202 imediato e o resultado chega assíncrono.
+> No legado, vejo que `OrderService.confirmOrder()` (em `reversa/sdd/orders/design.md`) lança exceção e depende do controller para responder 500 ao usuário. No paradigma alvo (event-driven em Node), confirmar pedido vira evento; falhas vão para DLQ; o usuário recebe 202 imediato e o resultado chega assíncrono.
 
 ### 5. Apresentar as 3 opções
 
@@ -132,7 +132,7 @@ Isso é o contrato que os próximos agentes vão cumprir.
 
 ### 8. Escrever o artefato
 
-Renderize `_reversa_sdd/migration/paradigm_decision.md` com base no template, preenchendo todos os campos com evidências, escolhas e justificativas. Garanta tagging de evidência (🟢🟡🔴⚠️) onde aplicável.
+Renderize `reversa/sdd/migration/paradigm_decision.md` com base no template, preenchendo todos os campos com evidências, escolhas e justificativas. Garanta tagging de evidência (🟢🟡🔴⚠️) onde aplicável.
 
 ### 9. Resumir e devolver controle
 
@@ -152,17 +152,17 @@ Devolva controle ao orquestrador `/reversa-migrate` para a pausa de revisão hum
 ## Casos de borda
 
 - **Stack alvo ausente ou ambígua no brief**: pergunte antes de prosseguir; não invente.
-- **Paradigma legado indetectável** (`_reversa_sdd/` muito pobre): registre como 🔴 LACUNA, peça confirmação ao usuário com base na intuição dele sobre o legado.
+- **Paradigma legado indetectável** (`reversa/sdd/` muito pobre): registre como 🔴 LACUNA, peça confirmação ao usuário com base na intuição dele sobre o legado.
 - **Legado híbrido**: detecte componentes, peça decisão por componente ou decisão unificadora ("vamos forçar tudo para um paradigma único?").
-- **Engine sem chat interativo**: escreva `pending_decisions.md` em `_reversa_sdd/migration/` com as três opções e aguarde leitura.
+- **Engine sem chat interativo**: escreva `pending_decisions.md` em `reversa/sdd/migration/` com as três opções e aguarde leitura.
 
 ## Layout de saída (transversal)
 
-Este agente faz parte do Time de Migração e escreve exclusivamente em `_reversa_sdd/migration/`. Essa pasta é transversal à organização escolhida em `[specs]` do `config.toml`, fora das pastas de unit (feature folders) do Time de Descoberta. Não aplicar aqui a estrutura `<unit>/requirements.md|design.md|tasks.md`, ela pertence ao Writer.
+Este agente faz parte do Time de Migração e escreve exclusivamente em `reversa/sdd/migration/`. Essa pasta é transversal à organização escolhida em `[specs]` do `config.toml`, fora das pastas de unit (feature folders) do Time de Descoberta. Não aplicar aqui a estrutura `<unit>/requirements.md|design.md|tasks.md`, ela pertence ao Writer.
 
 ## Regras absolutas
 
-- Não modificar nem deletar arquivos fora de `_reversa_sdd/migration/`.
+- Não modificar nem deletar arquivos fora de `reversa/sdd/migration/`.
 - Não inventar evidência sem referência ao artefato fonte.
 - Nunca pular a apresentação das 3 opções, mesmo se a recomendação parecer óbvia: a decisão é humana.
 - Nunca decidir paradigma sem registrar a justificativa do usuário.

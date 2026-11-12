@@ -23,8 +23,8 @@
     "scout": {
       "completed_at": "2026-10-31T19:11:00Z",
       "files": [
-        "_reversa_sdd/inventory.md",
-        "_reversa_sdd/dependencies.md",
+        "reversa/sdd/inventory.md",
+        "reversa/sdd/dependencies.md",
         ".reversa/context/surface.json"
       ]
     },
@@ -41,23 +41,23 @@
       ],
       "modules_pending": [],
       "files": [
-        "_reversa_sdd/code-analysis.md",
+        "reversa/sdd/code-analysis.md",
         ".reversa/context/modules.json"
       ]
     },
     "detective": {
       "completed_at": "2026-10-31T19:45:00Z",
       "files": [
-        "_reversa_sdd/domain.md",
-        "_reversa_sdd/state-machines.md",
-        "_reversa_sdd/permissions.md"
+        "reversa/sdd/domain.md",
+        "reversa/sdd/state-machines.md",
+        "reversa/sdd/permissions.md"
       ]
     },
     "architect": {
       "completed_at": "2026-10-31T19:45:10Z",
       "files": [
-        "_reversa_sdd/architecture.md",
-        "_reversa_sdd/c4-context.md"
+        "reversa/sdd/architecture.md",
+        "reversa/sdd/c4-context.md"
       ]
     },
     "writer": {
@@ -73,35 +73,35 @@
         "ci-cd-deploy-web"
       ],
       "files": [
-        "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/requirements.md",
-        "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/design.md",
-        "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/tasks.md",
-        "_reversa_sdd/analise-exercicios-mapa-pratica/requirements.md",
-        "_reversa_sdd/analise-exercicios-mapa-pratica/design.md",
-        "_reversa_sdd/analise-exercicios-mapa-pratica/tasks.md",
-        "_reversa_sdd/analise-exercicios-mapa-pratica/questions.md",
-        "_reversa_sdd/caderno-local-sincronizacao-offline/requirements.md",
-        "_reversa_sdd/caderno-local-sincronizacao-offline/design.md",
-        "_reversa_sdd/caderno-local-sincronizacao-offline/tasks.md",
-        "_reversa_sdd/caderno-local-sincronizacao-offline/questions.md",
-        "_reversa_sdd/administracao-metricas-layout/requirements.md",
-        "_reversa_sdd/administracao-metricas-layout/design.md",
-        "_reversa_sdd/administracao-metricas-layout/tasks.md",
-        "_reversa_sdd/edge-functions-supabase-servico-ia/requirements.md",
-        "_reversa_sdd/edge-functions-supabase-servico-ia/design.md",
-        "_reversa_sdd/edge-functions-supabase-servico-ia/tasks.md",
-        "_reversa_sdd/edge-functions-supabase-servico-ia/questions.md",
-        "_reversa_sdd/migracoes-postgresql-supabase/requirements.md",
-        "_reversa_sdd/migracoes-postgresql-supabase/design.md",
-        "_reversa_sdd/migracoes-postgresql-supabase/tasks.md",
-        "_reversa_sdd/migracoes-postgresql-supabase/questions.md",
-        "_reversa_sdd/worker-rust-arquivado/requirements.md",
-        "_reversa_sdd/worker-rust-arquivado/design.md",
-        "_reversa_sdd/worker-rust-arquivado/tasks.md",
-        "_reversa_sdd/ci-cd-deploy-web/requirements.md",
-        "_reversa_sdd/ci-cd-deploy-web/design.md",
-        "_reversa_sdd/ci-cd-deploy-web/tasks.md",
-        "_reversa_sdd/ci-cd-deploy-web/questions.md"
+        "reversa/sdd/aplicativo-flutter-autenticacao-navegacao/requirements.md",
+        "reversa/sdd/aplicativo-flutter-autenticacao-navegacao/design.md",
+        "reversa/sdd/aplicativo-flutter-autenticacao-navegacao/tasks.md",
+        "reversa/sdd/analise-exercicios-mapa-pratica/requirements.md",
+        "reversa/sdd/analise-exercicios-mapa-pratica/design.md",
+        "reversa/sdd/analise-exercicios-mapa-pratica/tasks.md",
+        "reversa/sdd/analise-exercicios-mapa-pratica/questions.md",
+        "reversa/sdd/caderno-local-sincronizacao-offline/requirements.md",
+        "reversa/sdd/caderno-local-sincronizacao-offline/design.md",
+        "reversa/sdd/caderno-local-sincronizacao-offline/tasks.md",
+        "reversa/sdd/caderno-local-sincronizacao-offline/questions.md",
+        "reversa/sdd/administracao-metricas-layout/requirements.md",
+        "reversa/sdd/administracao-metricas-layout/design.md",
+        "reversa/sdd/administracao-metricas-layout/tasks.md",
+        "reversa/sdd/edge-functions-supabase-servico-ia/requirements.md",
+        "reversa/sdd/edge-functions-supabase-servico-ia/design.md",
+        "reversa/sdd/edge-functions-supabase-servico-ia/tasks.md",
+        "reversa/sdd/edge-functions-supabase-servico-ia/questions.md",
+        "reversa/sdd/migracoes-postgresql-supabase/requirements.md",
+        "reversa/sdd/migracoes-postgresql-supabase/design.md",
+        "reversa/sdd/migracoes-postgresql-supabase/tasks.md",
+        "reversa/sdd/migracoes-postgresql-supabase/questions.md",
+        "reversa/sdd/worker-rust-arquivado/requirements.md",
+        "reversa/sdd/worker-rust-arquivado/design.md",
+        "reversa/sdd/worker-rust-arquivado/tasks.md",
+        "reversa/sdd/ci-cd-deploy-web/requirements.md",
+        "reversa/sdd/ci-cd-deploy-web/design.md",
+        "reversa/sdd/ci-cd-deploy-web/tasks.md",
+        "reversa/sdd/ci-cd-deploy-web/questions.md"
       ]
     },
     "reviewer": {
@@ -113,8 +113,8 @@
       "questions_answered": 0,
       "confidence_percent": 86.4,
       "files": [
-        "_reversa_sdd/questions.md",
-        "_reversa_sdd/confidence-report.md"
+        "reversa/sdd/questions.md",
+        "reversa/sdd/confidence-report.md"
       ],
       "status": "awaiting_answers"
     }
@@ -200,7 +200,7 @@
     "reversa-writer"
   ],
   "answer_mode": "file",
-  "output_folder": "_reversa_sdd",
+  "output_folder": "reversa/sdd",
   "created_files": [
     ".claude\\skills\\reversa",
     ".agents\\skills\\reversa",
@@ -371,36 +371,36 @@
   "redator_progress": {
     "total_files": 29,
     "completed_files": [
-      "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/requirements.md",
-      "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/design.md",
-      "_reversa_sdd/aplicativo-flutter-autenticacao-navegacao/tasks.md",
-      "_reversa_sdd/analise-exercicios-mapa-pratica/requirements.md",
-      "_reversa_sdd/analise-exercicios-mapa-pratica/design.md",
-      "_reversa_sdd/analise-exercicios-mapa-pratica/tasks.md",
-      "_reversa_sdd/analise-exercicios-mapa-pratica/questions.md",
-      "_reversa_sdd/caderno-local-sincronizacao-offline/requirements.md",
-      "_reversa_sdd/caderno-local-sincronizacao-offline/design.md",
-      "_reversa_sdd/caderno-local-sincronizacao-offline/tasks.md",
-      "_reversa_sdd/caderno-local-sincronizacao-offline/questions.md",
-      "_reversa_sdd/administracao-metricas-layout/requirements.md",
-      "_reversa_sdd/administracao-metricas-layout/design.md",
-      "_reversa_sdd/administracao-metricas-layout/tasks.md",
-      "_reversa_sdd/edge-functions-supabase-servico-ia/requirements.md",
-      "_reversa_sdd/edge-functions-supabase-servico-ia/design.md",
-      "_reversa_sdd/edge-functions-supabase-servico-ia/tasks.md",
-      "_reversa_sdd/edge-functions-supabase-servico-ia/questions.md",
-      "_reversa_sdd/migracoes-postgresql-supabase/requirements.md",
-      "_reversa_sdd/migracoes-postgresql-supabase/design.md",
-      "_reversa_sdd/migracoes-postgresql-supabase/tasks.md",
-      "_reversa_sdd/migracoes-postgresql-supabase/questions.md",
-      "_reversa_sdd/worker-rust-arquivado/requirements.md",
-      "_reversa_sdd/worker-rust-arquivado/design.md",
-      "_reversa_sdd/worker-rust-arquivado/tasks.md",
-      "_reversa_sdd/ci-cd-deploy-web/requirements.md",
-      "_reversa_sdd/ci-cd-deploy-web/design.md",
-      "_reversa_sdd/ci-cd-deploy-web/tasks.md",
-      "_reversa_sdd/ci-cd-deploy-web/questions.md"
+      "reversa/sdd/aplicativo-flutter-autenticacao-navegacao/requirements.md",
+      "reversa/sdd/aplicativo-flutter-autenticacao-navegacao/design.md",
+      "reversa/sdd/aplicativo-flutter-autenticacao-navegacao/tasks.md",
+      "reversa/sdd/analise-exercicios-mapa-pratica/requirements.md",
+      "reversa/sdd/analise-exercicios-mapa-pratica/design.md",
+      "reversa/sdd/analise-exercicios-mapa-pratica/tasks.md",
+      "reversa/sdd/analise-exercicios-mapa-pratica/questions.md",
+      "reversa/sdd/caderno-local-sincronizacao-offline/requirements.md",
+      "reversa/sdd/caderno-local-sincronizacao-offline/design.md",
+      "reversa/sdd/caderno-local-sincronizacao-offline/tasks.md",
+      "reversa/sdd/caderno-local-sincronizacao-offline/questions.md",
+      "reversa/sdd/administracao-metricas-layout/requirements.md",
+      "reversa/sdd/administracao-metricas-layout/design.md",
+      "reversa/sdd/administracao-metricas-layout/tasks.md",
+      "reversa/sdd/edge-functions-supabase-servico-ia/requirements.md",
+      "reversa/sdd/edge-functions-supabase-servico-ia/design.md",
+      "reversa/sdd/edge-functions-supabase-servico-ia/tasks.md",
+      "reversa/sdd/edge-functions-supabase-servico-ia/questions.md",
+      "reversa/sdd/migracoes-postgresql-supabase/requirements.md",
+      "reversa/sdd/migracoes-postgresql-supabase/design.md",
+      "reversa/sdd/migracoes-postgresql-supabase/tasks.md",
+      "reversa/sdd/migracoes-postgresql-supabase/questions.md",
+      "reversa/sdd/worker-rust-arquivado/requirements.md",
+      "reversa/sdd/worker-rust-arquivado/design.md",
+      "reversa/sdd/worker-rust-arquivado/tasks.md",
+      "reversa/sdd/ci-cd-deploy-web/requirements.md",
+      "reversa/sdd/ci-cd-deploy-web/design.md",
+      "reversa/sdd/ci-cd-deploy-web/tasks.md",
+      "reversa/sdd/ci-cd-deploy-web/questions.md"
     ],
-    "last_completed": "_reversa_sdd/ci-cd-deploy-web/questions.md"
+    "last_completed": "reversa/sdd/ci-cd-deploy-web/questions.md"
   }
 }

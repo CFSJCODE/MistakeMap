@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://reversa.dev/schemas/screens/inventory.json",
   "title": "Screen Translator Internal Inventory",
-  "description": "Inventário interno do Screen Translator. Lista cada unidade visual detectada no legado, com identidade estável e rastreabilidade ao código fonte. Salvo em _reversa_sdd/screens/inventory.json. Sobrescrito a cada execução.",
+  "description": "Inventário interno do Screen Translator. Lista cada unidade visual detectada no legado, com identidade estável e rastreabilidade ao código fonte. Salvo em reversa/sdd/screens/inventory.json. Sobrescrito a cada execução.",
   "type": "object",
   "required": ["schemaVersion", "generatedAt", "sourcePlatform", "screens"],
   "properties": {
@@ -76,11 +76,11 @@
           },
           "matchesUiInventory": {
             "type": "boolean",
-            "description": "true se a tela aparece em _reversa_sdd/ui/inventory.md."
+            "description": "true se a tela aparece em reversa/sdd/ui/inventory.md."
           },
           "uiInventoryRef": {
             "type": ["string", "null"],
-            "description": "Linha ou âncora correspondente em _reversa_sdd/ui/inventory.md."
+            "description": "Linha ou âncora correspondente em reversa/sdd/ui/inventory.md."
           },
           "interpolations": {
             "type": "array",
@@ -118,7 +118,7 @@
     },
     "divergenceFromUiInventory": {
       "type": "object",
-      "description": "Comparação contra _reversa_sdd/ui/inventory.md. Se divergencePercent > 10, o agente para e pede revisão (RF-05).",
+      "description": "Comparação contra reversa/sdd/ui/inventory.md. Se divergencePercent > 10, o agente para e pede revisão (RF-05).",
       "properties": {
         "totalInUiInventory": { "type": "integer" },
         "totalInThisInventory": { "type": "integer" },

@@ -101,7 +101,7 @@ Deno.test({
       );
       await db.exec(
         await read(
-          "_reversa_forward/openai-integration/staged/supabase/change.sql",
+          "reversa/forward/openai-integration/staged/supabase/change.sql",
         ),
       );
       await db.exec(`insert into auth.users values('${userA}'),('${userB}');

@@ -17,7 +17,7 @@ Você é o arquiteto de evolução do Reversa. Sua missão é traduzir o `requir
 ## Antes de começar
 
 1. Leia `.reversa/state.json` para resolver `output_folder` e `forward_folder`
-2. Use os valores reais nos lugares onde o texto mencionar `_reversa_sdd/` ou `_reversa_forward/`
+2. Use os valores reais nos lugares onde o texto mencionar `reversa/sdd/` ou `reversa/forward/`
 
 ## Verificações Iniciais
 
@@ -32,12 +32,12 @@ Você é o arquiteto de evolução do Reversa. Sua missão é traduzir o `requir
 
 Leia os artefatos da pipeline reversa nesta ordem, ignorando os que não existirem:
 
-1. `_reversa_sdd/architecture.md` (componentes, dependências internas)
-2. `_reversa_sdd/c4-context.md` (fronteiras externas)
-3. `_reversa_sdd/state-machines.md` (máquinas de estado afetadas)
-4. `_reversa_sdd/dependencies.md` (bibliotecas usadas)
-5. `_reversa_sdd/code-analysis.md`, mas apenas as seções dos componentes citados no requirements
-6. `_reversa_sdd/addenda/*.md` (adendos vigentes de features já entregues, criados pelo `/reversa-sync`, com deltas que a extração ainda não absorveu)
+1. `reversa/sdd/architecture.md` (componentes, dependências internas)
+2. `reversa/sdd/c4-context.md` (fronteiras externas)
+3. `reversa/sdd/state-machines.md` (máquinas de estado afetadas)
+4. `reversa/sdd/dependencies.md` (bibliotecas usadas)
+5. `reversa/sdd/code-analysis.md`, mas apenas as seções dos componentes citados no requirements
+6. `reversa/sdd/addenda/*.md` (adendos vigentes de features já entregues, criados pelo `/reversa-sync`, com deltas que a extração ainda não absorveu)
 7. `.reversa/principles.md` (princípios obrigatórios)
 
 Anote quais arquivos serão tocados pela mudança proposta. Essa lista vai virar parte do `legacy-impact.md` quando o `/reversa-coding` rodar mais tarde, então registre-a em rascunho mental.
@@ -58,7 +58,7 @@ Carregue o template em `.reversa/templates/roadmap-template.md` e gere os arquiv
 |---------|-------------------|
 | `roadmap.md` | resumo da abordagem, princípios aplicados, decisões técnicas, delta arquitetural, delta de dados, delta de contratos, plano de migração, riscos, critério de pronto |
 | `investigation.md` | pesquisa de fundo, alternativas avaliadas, links para fontes externas, padrões aplicáveis |
-| `data-delta.md` | diff conceitual sobre o modelo extraído em `_reversa_sdd/`, novos campos, campos removidos, migrações necessárias |
+| `data-delta.md` | diff conceitual sobre o modelo extraído em `reversa/sdd/`, novos campos, campos removidos, migrações necessárias |
 | `onboarding.md` | passo a passo executável para um humano que vai testar a feature pela primeira vez |
 | `interfaces/<nome>.md` | um arquivo por contrato externo afetado (HTTP, fila, gRPC, GraphQL), descreve request, response, erros, idempotência, timeouts |
 
@@ -67,7 +67,7 @@ Quando a feature não tocar contratos externos, omita o diretório `interfaces/`
 ## Regras de redação
 
 - Escreva o `roadmap.md` em forma de delta, jamais redescreva a arquitetura inteira do legado
-- Cite componentes do `_reversa_sdd/` por nome literal e arquivo de origem
+- Cite componentes do `reversa/sdd/` por nome literal e arquivo de origem
 - Marque cada decisão técnica com 🟢 / 🟡 / 🔴 conforme a confidência sobre a fonte
 - Se uma decisão depender de uma `[DÚVIDA]` aceita como premissa, use 🟡
 

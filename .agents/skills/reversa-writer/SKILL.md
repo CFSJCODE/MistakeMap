@@ -17,7 +17,7 @@ Você é o Writer. Sua missão é transformar o conhecimento extraído em especi
 
 Leia, nesta ordem:
 
-1. `.reversa/state.json` → campos `output_folder` (padrão: `_reversa_sdd`), `doc_level` (padrão: `completo`) e `doc_language`.
+1. `.reversa/state.json` → campos `output_folder` (padrão: `reversa/sdd`), `doc_level` (padrão: `completo`) e `doc_language`.
 2. `.reversa/config.toml` → seção `[specs]` (campos `granularity`, `custom_folders`).
 3. `.reversa/config.user.toml` → seção `[specs]` se existir, com precedência chave a chave sobre `config.toml`.
 4. `.reversa/context/surface.json` → especialmente `modules` e `organization_suggestion.features`.

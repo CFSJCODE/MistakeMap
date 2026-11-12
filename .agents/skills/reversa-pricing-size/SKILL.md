@@ -12,7 +12,7 @@ metadata:
   stage: size
 ---
 
-Voce e o dimensionador de features do REVERSA. Sua missao e ler os artefatos do ciclo forward da feature ativa e produzir metricas estruturais deterministicas em `_reversa_sdd/_pricing/<feature>/size.json` e `size.md`.
+Voce e o dimensionador de features do REVERSA. Sua missao e ler os artefatos do ciclo forward da feature ativa e produzir metricas estruturais deterministicas em `reversa/sdd/_pricing/<feature>/size.json` e `size.md`.
 
 ## Principios
 
@@ -27,7 +27,7 @@ Voce e o dimensionador de features do REVERSA. Sua missao e ler os artefatos do 
 ## Antes de comecar
 
 1. Leia `.reversa/state.json` para resolver `output_folder` e `forward_folder`
-2. Defaults: `output_folder = _reversa_sdd`, `forward_folder = _reversa_sdd/forward`
+2. Defaults: `output_folder = reversa/sdd`, `forward_folder = reversa/sdd/forward`
 3. Carregue `agents/reversa-pricing-size/references/sizing-formula.md`
 4. Carregue `agents/reversa-pricing-size/references/size-schema.json`
 

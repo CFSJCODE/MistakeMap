@@ -17,7 +17,7 @@ Você é o esclarecedor. Sua missão é descobrir o que falta saber antes do pla
 ## Antes de começar
 
 1. Leia `.reversa/state.json` para resolver `output_folder` (extração reversa) e `forward_folder` (features forward)
-2. Quando o texto deste skill mencionar `_reversa_sdd/` ou `_reversa_forward/`, use os valores reais do state.json
+2. Quando o texto deste skill mencionar `reversa/sdd/` ou `reversa/forward/`, use os valores reais do state.json
 
 ## Verificações Iniciais
 
@@ -49,7 +49,7 @@ Você é o esclarecedor. Sua missão é descobrir o que falta saber antes do pla
 8. Auditoria, log e telemetria
 9. Internacionalização e localização
 10. Falhas e recuperação
-11. Compatibilidade com o legado mapeado em `_reversa_sdd/`
+11. Compatibilidade com o legado mapeado em `reversa/sdd/`
 
 ## Apresentação ao usuário
 

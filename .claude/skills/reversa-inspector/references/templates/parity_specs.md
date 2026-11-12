@@ -54,7 +54,7 @@ hash: "sha256:<hash do corpo abaixo do front-matter>"
 - **Resiliência** (se aplicável): <falha de fila, dependência externa indisponível>
 
 ## Reuso de characterization_specs do time de descoberta
-- **Origem**: `_reversa_sdd/characterization_specs/` ou equivalente disponível.
+- **Origem**: `reversa/sdd/characterization_specs/` ou equivalente disponível.
 - **Adaptações necessárias para o sistema novo**: <texto>
 
 ## Saídas

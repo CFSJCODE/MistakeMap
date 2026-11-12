@@ -24,7 +24,7 @@ sources:
     description: "Histórico de eventos, releases e incidentes. Origem da timeline interativa."
 
   - id: topology
-    path: "_reversa_sdd/architecture.md"
+    path: "reversa/sdd/architecture.md"
     producer: "reversa-architect"
     consumed_by:
       - "Mapper (topologia.html)"
@@ -34,7 +34,7 @@ sources:
     optional: true
 
   - id: sdd_specs
-    path: "_reversa_sdd/"
+    path: "reversa/sdd/"
     pattern: "*/requirements.md"
     producer: "reversa-writer"
     consumed_by:

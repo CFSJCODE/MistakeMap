@@ -23,8 +23,8 @@ hash: "sha256:<hash do corpo abaixo do front-matter>"
 - **Modo aplicado**: <literal | modernizado | híbrido>
 - **Telas geradas**: <N>
 - **Adapter**: <slug>
-- **Tokens consumidos**: ver `_reversa_sdd/design-system/tokens.md` e `tokens-derived.md` quando aplicável
-- **Golden files**: <N> em `_reversa_sdd/screens/golden/` (manifest em `golden/manifest.yaml`)
+- **Tokens consumidos**: ver `reversa/sdd/design-system/tokens.md` e `tokens-derived.md` quando aplicável
+- **Golden files**: <N> em `reversa/sdd/screens/golden/` (manifest em `golden/manifest.yaml`)
 - **Deviations registradas**: <N> em `screen_deviation_log.md`
 
 > Caso o legado não possua UI (sistema batch / API / daemon), substituir esta seção por:
@@ -200,7 +200,7 @@ spec.viewmodel:
 
 ## Apêndice: rastreabilidade ao inventário
 
-| Tela do `target_screens.md` | Origem em `_reversa_sdd/ui/inventory.md` | Origem em `_reversa_sdd/screens/inventory.json` |
+| Tela do `target_screens.md` | Origem em `reversa/sdd/ui/inventory.md` | Origem em `reversa/sdd/screens/inventory.json` |
 |---|---|---|
 | <tela 1> | <linha do inventário> | <id do inventário interno> |
 | <tela 2> | <linha do inventário> | <id do inventário interno> |

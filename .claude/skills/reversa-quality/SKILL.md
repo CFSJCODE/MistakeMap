@@ -19,7 +19,7 @@ Esse skill avalia QUALIDADE DE ESCRITA, não COBERTURA DE TESTES de implementaç
 ## Antes de começar
 
 1. Leia `.reversa/state.json` para resolver `output_folder` e `forward_folder`
-2. Use os valores reais nos lugares onde o texto mencionar `_reversa_sdd/` ou `_reversa_forward/`
+2. Use os valores reais nos lugares onde o texto mencionar `reversa/sdd/` ou `reversa/forward/`
 
 ## Verificações Iniciais
 

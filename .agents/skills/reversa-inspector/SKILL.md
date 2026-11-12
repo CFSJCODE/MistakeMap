@@ -22,27 +22,27 @@ Os artefatos produzidos são **specs de paridade**, não testes executáveis. O 
 
 ## Pré-requisitos
 
-- `_reversa_sdd/migration/paradigm_decision.md`
-- `_reversa_sdd/migration/migration_strategy.md` (com estratégia confirmada)
-- `_reversa_sdd/migration/target_architecture.md` (Designer concluído e arquitetura aprovada)
-- `_reversa_sdd/migration/screen_modernization_decision.md` (Screen Translator concluído ou em modo `skipped`)
-- `_reversa_sdd/migration/screen_deviation_log.md` sem deviations pendentes (deviations bloqueiam o handoff ao Inspector)
+- `reversa/sdd/migration/paradigm_decision.md`
+- `reversa/sdd/migration/migration_strategy.md` (com estratégia confirmada)
+- `reversa/sdd/migration/target_architecture.md` (Designer concluído e arquitetura aprovada)
+- `reversa/sdd/migration/screen_modernization_decision.md` (Screen Translator concluído ou em modo `skipped`)
+- `reversa/sdd/migration/screen_deviation_log.md` sem deviations pendentes (deviations bloqueiam o handoff ao Inspector)
 
 ## Inputs
 
 - Os pré-requisitos acima.
-- `_reversa_sdd/code-analysis.md` (fluxos legados)
-- `_reversa_sdd/sequences/` ou `_reversa_sdd/flowcharts/` (se existirem)
-- `_reversa_sdd/characterization_specs/` (se existir; reusar como base)
-- `_reversa_sdd/migration/target_business_rules.md` (regras MIGRAR)
-- `_reversa_sdd/migration/target_domain_model.md`
-- `_reversa_sdd/migration/target_screens.md` (Screen Translator) quando há UI
-- `_reversa_sdd/screens/golden/manifest.yaml` (Screen Translator) quando o oráculo executa
+- `reversa/sdd/code-analysis.md` (fluxos legados)
+- `reversa/sdd/sequences/` ou `reversa/sdd/flowcharts/` (se existirem)
+- `reversa/sdd/characterization_specs/` (se existir; reusar como base)
+- `reversa/sdd/migration/target_business_rules.md` (regras MIGRAR)
+- `reversa/sdd/migration/target_domain_model.md`
+- `reversa/sdd/migration/target_screens.md` (Screen Translator) quando há UI
+- `reversa/sdd/screens/golden/manifest.yaml` (Screen Translator) quando o oráculo executa
 
 ## Outputs
 
-- `_reversa_sdd/migration/parity_specs.md`
-- `_reversa_sdd/migration/parity_tests/*.feature` (um arquivo por fluxo crítico)
+- `reversa/sdd/migration/parity_specs.md`
+- `reversa/sdd/migration/parity_tests/*.feature` (um arquivo por fluxo crítico)
 
 ## Procedimento
 
@@ -67,14 +67,14 @@ Critérios de "paridade aceita" obrigatórios:
 
 ### 2b. Incorporar paridade de telas
 
-Se `_reversa_sdd/migration/screen_modernization_decision.md` existe e não está em `skipped`:
+Se `reversa/sdd/migration/screen_modernization_decision.md` existe e não está em `skipped`:
 
-- Em modo **literal**: adicione modo de validação **golden file comparison** à `parity_specs.md`. Para cada tela com entrada em `_reversa_sdd/screens/golden/manifest.yaml`, exija comparação byte-a-byte (ou pixel-equivalente) entre o output da implementação alvo e o golden file, dentro das `normalizationRules` declaradas no manifest. Crie um cenário Gherkin por tela em `parity_tests/screens/<NN>-<tela>.feature` com tag `@paridade-visual`.
+- Em modo **literal**: adicione modo de validação **golden file comparison** à `parity_specs.md`. Para cada tela com entrada em `reversa/sdd/screens/golden/manifest.yaml`, exija comparação byte-a-byte (ou pixel-equivalente) entre o output da implementação alvo e o golden file, dentro das `normalizationRules` declaradas no manifest. Crie um cenário Gherkin por tela em `parity_tests/screens/<NN>-<tela>.feature` com tag `@paridade-visual`.
 - Em modo **modernizado**: adicione modo de validação **contract test de tela**. Para cada tela em `target_screens.md`, exija que a implementação respeite a hierarquia de componentes, eventos declarados, conteúdo textual e os 4 estados (idle, loading, error, success). Não há comparação byte-a-byte.
 - Em modo **híbrido**: aplique cada estratégia conforme o modo declarado da tela em `screen_modernization_decision.md`.
 - Em status `skipped` (legado sem UI): pule esta seção; nenhum cenário de paridade visual é gerado.
 
-Toda deviation aprovada em `_reversa_sdd/migration/screen_deviation_log.md` deve ser propagada para `parity_specs.md § Exceções`, com referência ao `DEV-XXX` original. Deviations pendentes bloquearam o handoff e não chegam aqui.
+Toda deviation aprovada em `reversa/sdd/migration/screen_deviation_log.md` deve ser propagada para `parity_specs.md § Exceções`, com referência ao `DEV-XXX` original. Deviations pendentes bloquearam o handoff e não chegam aqui.
 
 ### 3. Adaptar cobertura ao paradigma alvo
 
@@ -110,7 +110,7 @@ Cada `.feature` deve:
 
 ### 5. Reusar characterization_specs
 
-Se `_reversa_sdd/characterization_specs/` existir, leia e reuse como base. Adapte:
+Se `reversa/sdd/characterization_specs/` existir, leia e reuse como base. Adapte:
 
 - Entradas / saídas para o sistema novo.
 - Critérios de aceitação ao paradigma alvo.
@@ -137,11 +137,11 @@ Se `_reversa_sdd/characterization_specs/` existir, leia e reuse como base. Adapt
 
 ## Layout de saída (transversal)
 
-Este agente faz parte do Time de Migração e escreve exclusivamente em `_reversa_sdd/migration/`. Essa pasta é transversal à organização escolhida em `[specs]` do `config.toml`, fora das pastas de unit (feature folders) do Time de Descoberta. Não aplicar aqui a estrutura `<unit>/requirements.md|design.md|tasks.md`, ela pertence ao Writer.
+Este agente faz parte do Time de Migração e escreve exclusivamente em `reversa/sdd/migration/`. Essa pasta é transversal à organização escolhida em `[specs]` do `config.toml`, fora das pastas de unit (feature folders) do Time de Descoberta. Não aplicar aqui a estrutura `<unit>/requirements.md|design.md|tasks.md`, ela pertence ao Writer.
 
 ## Regras absolutas
 
-- Não escrever fora de `_reversa_sdd/migration/`.
+- Não escrever fora de `reversa/sdd/migration/`.
 - Arquivos `.feature` são **specs**, não testes executáveis. Não introduza chamadas a frameworks.
 - Cada cenário tem rastreabilidade explícita à origem (process_flows, target_architecture).
 - Cobertura adaptada ao paradigma é **obrigatória** quando há mudança de paradigma; não pode ser equivalência funcional ingênua.

@@ -23,37 +23,37 @@ Você é o Reconstructor. Sua missão é transformar as especificações geradas
 
 ### Passo 1 — Verificar pré-requisitos
 
-Verifique se a pasta `_reversa_sdd/` existe no diretório atual.
+Verifique se a pasta `reversa/sdd/` existe no diretório atual.
 
 Se não existir, encerre:
-> "Não encontrei `_reversa_sdd/`. Execute o Reversa no projeto original primeiro, depois copie a pasta para este diretório."
+> "Não encontrei `reversa/sdd/`. Execute o Reversa no projeto original primeiro, depois copie a pasta para este diretório."
 
 ### Passo 2 — Detectar migração e perguntar a fonte
 
-Verifique se `_reversa_sdd/migration/handoff.md` existe.
+Verifique se `reversa/sdd/migration/handoff.md` existe.
 
 **Se NÃO existir:** o projeto não tem migração concluída, vá direto para o Passo 3 com fonte `original` (comportamento padrão).
 
 **Se existir:** o projeto tem migração concluída e o usuário pode escolher reconstruir a partir das specs originais (sistema fiel ao legado) ou das specs da migração (sistema novo na stack alvo). Pergunte:
 
-> "Encontrei specs de **migração** em `_reversa_sdd/migration/`. Você quer reconstruir a partir de:
+> "Encontrei specs de **migração** em `reversa/sdd/migration/`. Você quer reconstruir a partir de:
 >
-> 1. **Specs originais**: reimplementa o sistema fiel ao legado a partir de `_reversa_sdd/`
-> 2. **Specs da migração**: implementa o sistema novo na stack alvo a partir de `_reversa_sdd/migration/`
+> 1. **Specs originais**: reimplementa o sistema fiel ao legado a partir de `reversa/sdd/`
+> 2. **Specs da migração**: implementa o sistema novo na stack alvo a partir de `reversa/sdd/migration/`
 > 3. **Outro**: descreva (ex: \"reconstruir só um módulo\", \"misturar fontes\")
 >
 > Use o menu interativo da engine (no Claude Code, `AskUserQuestion`); em engines sem suporte, peça o número 1–3 ou texto livre."
 
 Aguarde a resposta. NÃO escolha por conta própria. Persista a escolha em memória da sessão para usar nos passos 3 e 4 e para gravar no plano. Se a opção 3 for ambígua, refaça a pergunta uma vez antes de decidir.
 
-**Caso especial: migração em andamento (sem `handoff.md`).** Se existir `_reversa_sdd/migration/.state.json` mas não existir `handoff.md`, informe:
+**Caso especial: migração em andamento (sem `handoff.md`).** Se existir `reversa/sdd/migration/.state.json` mas não existir `handoff.md`, informe:
 > "Detectei uma migração **em andamento** (sem `handoff.md`). Para reconstruir a partir das specs da migração, finalize-a com `/reversa-migrate` antes. Vou prosseguir com as specs originais. Tudo bem?"
 >
 > Se o usuário disser não, encerre sem fazer nada.
 
 ### Passo 3 — Verificar plano existente
 
-Verifique se `_reversa_sdd/reconstruction-plan.md` já existe.
+Verifique se `reversa/sdd/reconstruction-plan.md` já existe.
 
 **Se existir:** leia apenas o cabeçalho (primeiras 30 linhas) e identifique o campo `**Fonte:**` (`original` ou `migração`). Mostre o status atual e pergunte:
 > "Encontrei um plano existente (fonte: <original|migração>). [X] tarefas concluídas, [Y] pendentes.
@@ -74,13 +74,13 @@ Se a fonte do plano existente for diferente da escolhida no Passo 2, alerte expl
 Leia APENAS estes arquivos (nesta ordem):
 
 1. `.reversa/state.json` — se existir: extrai `project`, `user_name`, `chat_language`
-2. `_reversa_sdd/gaps.md` — se existir
-3. `_reversa_sdd/confidence-report.md` — se existir
-4. `_reversa_sdd/architecture.md`
-5. `_reversa_sdd/dependencies.md`
-6. `_reversa_sdd/traceability/code-spec-matrix.md` — se existir
+2. `reversa/sdd/gaps.md` — se existir
+3. `reversa/sdd/confidence-report.md` — se existir
+4. `reversa/sdd/architecture.md`
+5. `reversa/sdd/dependencies.md`
+6. `reversa/sdd/traceability/code-spec-matrix.md` — se existir
 
-Não leia o conteúdo dos arquivos das pastas de unit (`<unit>/requirements.md`, `design.md`, `tasks.md`), nem de `openapi/` ou `user-stories/` agora. Apenas liste as units existentes (subpastas de `_reversa_sdd/` que contenham os 3 arquivos canônicos) a partir do `code-spec-matrix.md` ou do `dependencies.md`.
+Não leia o conteúdo dos arquivos das pastas de unit (`<unit>/requirements.md`, `design.md`, `tasks.md`), nem de `openapi/` ou `user-stories/` agora. Apenas liste as units existentes (subpastas de `reversa/sdd/` que contenham os 3 arquivos canônicos) a partir do `code-spec-matrix.md` ou do `dependencies.md`.
 
 ### Como determinar a ordem das tarefas
 
@@ -107,7 +107,7 @@ A partir de `gaps.md` e `confidence-report.md`, identifique gaps 🔴 que bloque
 
 ### Gerar o plano
 
-Gere `_reversa_sdd/reconstruction-plan.md` seguindo o template em `references/reconstruction-plan-template.md`.
+Gere `reversa/sdd/reconstruction-plan.md` seguindo o template em `references/reconstruction-plan-template.md`.
 
 Inclua no cabeçalho do plano: `**Fonte:** original`.
 
@@ -130,17 +130,17 @@ Após gerar, apresente ao usuário:
 
 ## Modo Planejamento — Migração
 
-> Use este modo quando a fonte escolhida no Passo 2 for `migração` (handoff.md presente em `_reversa_sdd/migration/`).
+> Use este modo quando a fonte escolhida no Passo 2 for `migração` (handoff.md presente em `reversa/sdd/migration/`).
 
 Leia APENAS estes arquivos (nesta ordem):
 
 1. `.reversa/state.json` — se existir: extrai `project`, `user_name`, `chat_language`
-2. `_reversa_sdd/migration/handoff.md` — ponto de entrada, lista artefatos disponíveis e itens REFERIDOS À CODIFICAÇÃO
-3. `_reversa_sdd/migration/paradigm_decision.md` — decide o "como pensar" (paradigma alvo)
-4. `_reversa_sdd/migration/topology_decision.md` — decide o "como organizar a árvore" (preservar/modernizar/híbrido)
-5. `_reversa_sdd/migration/migration_strategy.md` — fases e ordem da migração (big bang, strangler, paralela, etc.)
-6. `_reversa_sdd/migration/target_architecture.md` — módulos da arquitetura alvo
-7. `_reversa_sdd/migration/ambiguity_log.md` — itens REFERIDOS À CODIFICAÇÃO e RESOLVIDOS COM DECISÃO HUMANA
+2. `reversa/sdd/migration/handoff.md` — ponto de entrada, lista artefatos disponíveis e itens REFERIDOS À CODIFICAÇÃO
+3. `reversa/sdd/migration/paradigm_decision.md` — decide o "como pensar" (paradigma alvo)
+4. `reversa/sdd/migration/topology_decision.md` — decide o "como organizar a árvore" (preservar/modernizar/híbrido)
+5. `reversa/sdd/migration/migration_strategy.md` — fases e ordem da migração (big bang, strangler, paralela, etc.)
+6. `reversa/sdd/migration/target_architecture.md` — módulos da arquitetura alvo
+7. `reversa/sdd/migration/ambiguity_log.md` — itens REFERIDOS À CODIFICAÇÃO e RESOLVIDOS COM DECISÃO HUMANA
 
 Não leia ainda `target_domain_model.md`, `target_data_model.md`, `data_migration_plan.md`, `target_business_rules.md`, `parity_specs.md`, nem `parity_tests/`. Esses arquivos são lidos apenas pelas tarefas que precisam deles, no Modo Execução.
 
@@ -174,7 +174,7 @@ Em `handoff.md`, releia a seção "REFERIDOS À CODIFICAÇÃO" para garantir cob
 
 ### Gerar o plano (migração)
 
-Gere `_reversa_sdd/reconstruction-plan.md` seguindo o template em `references/reconstruction-plan-migration-template.md`.
+Gere `reversa/sdd/reconstruction-plan.md` seguindo o template em `references/reconstruction-plan-migration-template.md`.
 
 Inclua no cabeçalho do plano: `**Fonte:** migração`.
 
@@ -205,8 +205,8 @@ Ativado quando o usuário diz "INICIAR", "CONTINUAR", "execute a tarefa N" ou eq
 
 ### Passo 1 — Identificar a tarefa
 
-Leia `_reversa_sdd/reconstruction-plan.md` (cabeçalho + lista de tarefas) e localize:
-- Identifique a `**Fonte:**` declarada no cabeçalho (`original` ou `migração`). Use isso só para ajustar a base de paths (`_reversa_sdd/...` vs `_reversa_sdd/migration/...`); a execução em si segue a regra "leia apenas o que o campo `Lê:` da tarefa diz".
+Leia `reversa/sdd/reconstruction-plan.md` (cabeçalho + lista de tarefas) e localize:
+- Identifique a `**Fonte:**` declarada no cabeçalho (`original` ou `migração`). Use isso só para ajustar a base de paths (`reversa/sdd/...` vs `reversa/sdd/migration/...`); a execução em si segue a regra "leia apenas o que o campo `Lê:` da tarefa diz".
 - Se o usuário especificou número: a tarefa com esse número
 - Se disse "continuar" ou "iniciar": a primeira tarefa com status `pending`
 
@@ -237,7 +237,7 @@ Implemente exatamente o que as specs dizem. Não invente comportamentos não doc
 
 ## Saída
 
-- `_reversa_sdd/reconstruction-plan.md` — criado no Modo Planejamento, atualizado a cada tarefa concluída
+- `reversa/sdd/reconstruction-plan.md` — criado no Modo Planejamento, atualizado a cada tarefa concluída
 - Arquivos de código implementados conforme cada tarefa executada
 
-O Reconstructor não modifica nenhum outro arquivo em `_reversa_sdd/`.
+O Reconstructor não modifica nenhum outro arquivo em `reversa/sdd/`.

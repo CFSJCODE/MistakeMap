@@ -1,14 +1,14 @@
 # Política de extração de dados (Mapper)
 
-Define quando invocar scripts de extração vs reusar cache em `_reversa_docs/assets/data/`.
+Define quando invocar scripts de extração vs reusar cache em `reversa/docs/assets/data/`.
 
 ## Cache hit (reutilizar)
 
 Use o JSON existente quando **todas** as condições forem verdadeiras:
 
-1. O arquivo existe em `_reversa_docs/assets/data/<nome>.json`.
+1. O arquivo existe em `reversa/docs/assets/data/<nome>.json`.
 2. `mtime` do JSON é maior que o `mtime` máximo entre todos os arquivos fonte relevantes:
-   - Para `modules.json`: maior `mtime` dentro do código fonte (excluindo `.reversa/`, `_reversa_sdd/`, `node_modules/`, `.git/`).
+   - Para `modules.json`: maior `mtime` dentro do código fonte (excluindo `.reversa/`, `reversa/sdd/`, `node_modules/`, `.git/`).
    - Para `deps.json`: maior `mtime` do código fonte E do `modules.json`.
 3. O `schemaVersion` do JSON é compatível com a versão atual (1).
 
@@ -19,11 +19,11 @@ Em qualquer outro caso, invoque o script Python correspondente:
 ```bash
 python templates/documentation/scripts/extract_modules.py \
     --root . \
-    --out _reversa_docs/assets/data/modules.json
+    --out reversa/docs/assets/data/modules.json
 
 python templates/documentation/scripts/extract_deps.py \
-    --modules _reversa_docs/assets/data/modules.json \
-    --out _reversa_docs/assets/data/deps.json
+    --modules reversa/docs/assets/data/modules.json \
+    --out reversa/docs/assets/data/deps.json
 ```
 
 ## Python indisponível

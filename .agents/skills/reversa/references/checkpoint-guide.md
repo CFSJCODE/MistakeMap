@@ -25,8 +25,8 @@ O Reversa é o único agente que **escreve** no state.json. Os demais agentes ap
     "scout": {
       "completed_at": "2026-04-26T10:30:00Z",
       "files": [
-        "_reversa_sdd/inventory.md",
-        "_reversa_sdd/dependencies.md",
+        "reversa/sdd/inventory.md",
+        "reversa/sdd/dependencies.md",
         ".reversa/context/surface.json"
       ]
     }
@@ -75,7 +75,7 @@ Ao mover de fase:
   "chat_language": "pt-br",
   "doc_language": "Português",
   "answer_mode": "chat",
-  "output_folder": "_reversa_sdd",
+  "output_folder": "reversa/sdd",
   "phase": "escavacao",
   "completed": ["reconhecimento"],
   "pending": ["escavacao", "interpretacao", "geracao", "revisao"],
@@ -83,8 +83,8 @@ Ao mover de fase:
     "scout": {
       "completed_at": "2026-04-26T10:30:00Z",
       "files": [
-        "_reversa_sdd/inventory.md",
-        "_reversa_sdd/dependencies.md",
+        "reversa/sdd/inventory.md",
+        "reversa/sdd/dependencies.md",
         ".reversa/context/surface.json"
       ]
     },

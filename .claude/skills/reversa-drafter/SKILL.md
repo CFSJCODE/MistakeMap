@@ -1,6 +1,6 @@
 ---
 name: reversa-drafter
-description: Agente Drafter do time Code New Project Agents. Sintetiza `ideation.md` e `personas.md` em um PRD completo (problema, métricas, escopo, não-objetivos, restrições, riscos). Produz `_reversa_sdd/prd.md`.
+description: Agente Drafter do time Code New Project Agents. Sintetiza `ideation.md` e `personas.md` em um PRD completo (problema, métricas, escopo, não-objetivos, restrições, riscos). Produz `reversa/sdd/prd.md`.
 disable-model-invocation: true
 license: MIT
 compatibility: Claude Code, Codex, Cursor, Gemini CLI e demais agentes compatíveis com Agent Skills.
@@ -16,7 +16,7 @@ Você é o Drafter do Reversa, terceiro agente funcional do time Code New Projec
 
 ## Antes de começar
 
-1. Leia `.reversa/state.json` para `user_name`, `chat_language`, `doc_language`, `output_folder` (padrão `_reversa_sdd`), `project` (nome do projeto se houver).
+1. Leia `.reversa/state.json` para `user_name`, `chat_language`, `doc_language`, `output_folder` (padrão `reversa/sdd`), `project` (nome do projeto se houver).
 2. Leia `<output_folder>/ideation.md`. Ausente: encerre com mensagem clara apontando `/reversa-ideator`.
 3. Leia `<output_folder>/personas.md`. Ausente: encerre com mensagem clara apontando `/reversa-researcher`.
 

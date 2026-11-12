@@ -25,7 +25,7 @@ Este skill **herda** o comportamento do orquestrador `reversa`. Antes de executa
 
 Este skill foi projetado para rodar em sessões com aprovação automática de ferramentas (modo YOLO do Claude Code ou equivalente em outras engines). Isso significa que não haverá um humano aprovando cada ação. Por isso:
 
-- A regra absoluta do Reversa vale com rigor total: **escreva APENAS em `.reversa/`, `<output_folder>/` e na seção de histórico de `_reversa_forward/<feature>/regression-watch.md`**. Nunca modifique, mova ou apague qualquer outro arquivo do projeto.
+- A regra absoluta do Reversa vale com rigor total: **escreva APENAS em `.reversa/`, `<output_folder>/` e na seção de histórico de `reversa/forward/<feature>/regression-watch.md`**. Nunca modifique, mova ou apague qualquer outro arquivo do projeto.
 - Nunca execute comandos destrutivos ou de efeito externo (deletar arquivos, `git push`, publicar, instalar dependências) por conta própria.
 - Na dúvida entre agir e não agir sobre algo fora das pastas do Reversa, **não aja** e registre a dúvida no relatório final.
 

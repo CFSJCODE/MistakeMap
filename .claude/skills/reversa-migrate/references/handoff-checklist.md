@@ -7,7 +7,7 @@ Antes de fechar o pipeline, o orquestrador valida que `handoff.md` cumpre todos 
 - [ ] `paradigm_decision.md` aparece como **primeiro item** da seção "Leitura obrigatória" e da "Ordem de leitura recomendada".
 - [ ] `topology_decision.md` aparece como **segundo item** da seção "Leitura obrigatória".
 - [ ] `screen_modernization_decision.md` aparece como **terceiro item** quando há UI; em legado sem UI (Screen Translator skipped), a entrada é omitida com nota explícita "Screen Translator pulado, legado sem UI".
-- [ ] Lista de artefatos produzidos é completa e reflete `_reversa_sdd/migration/` e `_reversa_sdd/screens/` reais.
+- [ ] Lista de artefatos produzidos é completa e reflete `reversa/sdd/migration/` e `reversa/sdd/screens/` reais.
 - [ ] Deviations pendentes em `screen_deviation_log.md` aparecem como bloqueadores; deviations aprovadas estão refletidas em `parity_specs.md § Exceções`.
 - [ ] Itens REFERIDOS À CODIFICAÇÃO de `ambiguity_log.md` aparecem em seção dedicada de `handoff.md`.
 - [ ] Bloqueadores listados ou linha "nenhum bloqueador, prosseguir".

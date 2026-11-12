@@ -20,31 +20,31 @@ Produzir as specs do sistema novo: arquitetura alvo, domain model alvo, data mod
 
 ## Pré-requisitos
 
-- `_reversa_sdd/migration/migration_brief.md`
-- `_reversa_sdd/migration/paradigm_decision.md`
-- `_reversa_sdd/migration/target_business_rules.md` (Curator)
-- `_reversa_sdd/migration/migration_strategy.md` (Strategist com **estratégia confirmada pelo usuário**)
+- `reversa/sdd/migration/migration_brief.md`
+- `reversa/sdd/migration/paradigm_decision.md`
+- `reversa/sdd/migration/target_business_rules.md` (Curator)
+- `reversa/sdd/migration/migration_strategy.md` (Strategist com **estratégia confirmada pelo usuário**)
 
 Se a estratégia ainda não foi confirmada pelo usuário, encerre e instrua a aprovar antes de continuar.
 
 ## Inputs
 
 - Os quatro pré-requisitos.
-- `_reversa_sdd/domain.md`
-- `_reversa_sdd/architecture.md`
-- `_reversa_sdd/inventory.md` (ou `legacy_inventory.md`)
-- `_reversa_sdd/data-dictionary.md` (se existir; trate ausência graciosamente)
-- `_reversa_sdd/dependencies.md`
-- `_reversa_sdd/erd-complete.md` (se existir)
-- `_reversa_sdd/migration/topology_decision.md` (apenas na Fase 2; produzido pela Fase 1 deste mesmo agente)
+- `reversa/sdd/domain.md`
+- `reversa/sdd/architecture.md`
+- `reversa/sdd/inventory.md` (ou `legacy_inventory.md`)
+- `reversa/sdd/data-dictionary.md` (se existir; trate ausência graciosamente)
+- `reversa/sdd/dependencies.md`
+- `reversa/sdd/erd-complete.md` (se existir)
+- `reversa/sdd/migration/topology_decision.md` (apenas na Fase 2; produzido pela Fase 1 deste mesmo agente)
 
 ## Outputs
 
-- `_reversa_sdd/migration/topology_decision.md` (produzido na Fase 1, antes dos demais)
-- `_reversa_sdd/migration/target_architecture.md` (com diagrama Mermaid)
-- `_reversa_sdd/migration/target_domain_model.md`
-- `_reversa_sdd/migration/target_data_model.md`
-- `_reversa_sdd/migration/data_migration_plan.md`
+- `reversa/sdd/migration/topology_decision.md` (produzido na Fase 1, antes dos demais)
+- `reversa/sdd/migration/target_architecture.md` (com diagrama Mermaid)
+- `reversa/sdd/migration/target_domain_model.md`
+- `reversa/sdd/migration/target_data_model.md`
+- `reversa/sdd/migration/data_migration_plan.md`
 
 ## Princípios embutidos
 
@@ -71,8 +71,8 @@ O Designer opera em duas fases. A **Fase 1** decide a topologia (com pausa human
 
 Sempre verifique antes de qualquer outra ação:
 
-- Se `_reversa_sdd/migration/topology_decision.md` **não existe**: rode a Fase 1 (passos 1 a 7).
-- Se `topology_decision.md` existe e `_reversa_sdd/migration/.state.json` tem `currentAgent.topologyApproved = true`: pule direto para a Fase 2 (passo 8). **`.state.json` é a fonte única de verdade da aprovação**, mantida pelo orquestrador.
+- Se `reversa/sdd/migration/topology_decision.md` **não existe**: rode a Fase 1 (passos 1 a 7).
+- Se `topology_decision.md` existe e `reversa/sdd/migration/.state.json` tem `currentAgent.topologyApproved = true`: pule direto para a Fase 2 (passo 8). **`.state.json` é a fonte única de verdade da aprovação**, mantida pelo orquestrador.
 - Se `topology_decision.md` existe mas `currentAgent.topologyApproved` é `false` ou ausente: o orquestrador errou ao re-ativar. Encerre com mensagem ao orquestrador pedindo a aprovação humana antes de prosseguir.
 - Se a invocação trouxe `--regenerate-phase=topology`: descarte `topology_decision.md` e demais artefatos do Designer e rode tudo do zero.
 - Se trouxe `--regenerate-phase=architecture`: preserve `topology_decision.md`, descarte os outros artefatos do Designer e rode da Fase 2.
@@ -85,7 +85,7 @@ Internalize o paradigma alvo e as `Implicações pendentes para próximos agente
 
 #### 2. Detectar a topologia do legado
 
-A partir de `_reversa_sdd/architecture.md`, `_reversa_sdd/inventory.md` e `_reversa_sdd/dependencies.md`, classifique a organização do legado: package-by-layer, package-by-feature, feature-sliced, módulos por domínio, DDD com bounded contexts, monorepo, monolito sem fronteiras claras, ou híbrido.
+A partir de `reversa/sdd/architecture.md`, `reversa/sdd/inventory.md` e `reversa/sdd/dependencies.md`, classifique a organização do legado: package-by-layer, package-by-feature, feature-sliced, módulos por domínio, DDD com bounded contexts, monorepo, monolito sem fronteiras claras, ou híbrido.
 
 Registre evidências citáveis com referência aos artefatos. Use a escala 🟢 CONFIRMADO / 🟡 INFERIDO / 🔴 LACUNA / ⚠️ AMBÍGUO. Inclua um esboço curto da árvore legada.
 
@@ -111,7 +111,7 @@ Pergunte explicitamente: **"Qual opção você escolhe?"**. Nunca decidir em sil
 
 #### 6. Escrever `topology_decision.md`
 
-Renderize `_reversa_sdd/migration/topology_decision.md` usando o template em `references/templates/topology_decision.md`. Preencha topologia detectada, diagnóstico, proposta, opções, decisão do usuário, mapeamento legado→novo e implicações para as etapas seguintes do Designer.
+Renderize `reversa/sdd/migration/topology_decision.md` usando o template em `references/templates/topology_decision.md`. Preencha topologia detectada, diagnóstico, proposta, opções, decisão do usuário, mapeamento legado→novo e implicações para as etapas seguintes do Designer.
 
 #### 7. Pausa humana (devolver controle com resumo)
 
@@ -205,11 +205,11 @@ Em `data_migration_plan.md`:
 
 ## Layout de saída (transversal)
 
-Este agente faz parte do Time de Migração e escreve exclusivamente em `_reversa_sdd/migration/`. Essa pasta é transversal à organização escolhida em `[specs]` do `config.toml`, fora das pastas de unit (feature folders) do Time de Descoberta. Não aplicar aqui a estrutura `<unit>/requirements.md|design.md|tasks.md`, ela pertence ao Writer.
+Este agente faz parte do Time de Migração e escreve exclusivamente em `reversa/sdd/migration/`. Essa pasta é transversal à organização escolhida em `[specs]` do `config.toml`, fora das pastas de unit (feature folders) do Time de Descoberta. Não aplicar aqui a estrutura `<unit>/requirements.md|design.md|tasks.md`, ela pertence ao Writer.
 
 ## Regras absolutas
 
-- Não escrever fora de `_reversa_sdd/migration/`.
+- Não escrever fora de `reversa/sdd/migration/`.
 - Não reusar nome de arquivo do legado como nome de bounded context.
 - Decomposição 1-para-1 é proibida; cada agrupamento ou separação tem justificativa explícita.
 - A seção "Honra ao paradigma escolhido" é obrigatória sempre que houver mudança de paradigma.

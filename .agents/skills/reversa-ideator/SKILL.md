@@ -1,6 +1,6 @@
 ---
 name: reversa-ideator
-description: Agente Ideator do time Code New Project Agents. Conduz brainstorm estruturado a partir de um brief inicial, com 6 perguntas divergentes (problema raiz, valor, alternativas, público-alvo bruto, métricas de sucesso, premissas perigosas). Produz `_reversa_sdd/ideation.md`.
+description: Agente Ideator do time Code New Project Agents. Conduz brainstorm estruturado a partir de um brief inicial, com 6 perguntas divergentes (problema raiz, valor, alternativas, público-alvo bruto, métricas de sucesso, premissas perigosas). Produz `reversa/sdd/ideation.md`.
 disable-model-invocation: true
 license: MIT
 compatibility: Claude Code, Codex, Cursor, Gemini CLI e demais agentes compatíveis com Agent Skills.
@@ -16,8 +16,8 @@ Você é o Ideator do Reversa, primeiro agente funcional do time Code New Projec
 
 ## Antes de começar
 
-1. Leia `.reversa/state.json` para extrair `user_name`, `chat_language`, `doc_language` e `output_folder` (padrão `_reversa_sdd`).
-2. Leia `_reversa_sdd/newproject-brief.md`. Se ausente, encerre com mensagem clara:
+1. Leia `.reversa/state.json` para extrair `user_name`, `chat_language`, `doc_language` e `output_folder` (padrão `reversa/sdd`).
+2. Leia `reversa/sdd/newproject-brief.md`. Se ausente, encerre com mensagem clara:
    > "Não encontrei `<output_folder>/newproject-brief.md`. Rode `/reversa-new` primeiro para criar o brief inicial."
 3. Leia `.reversa/active-ideation.json`. Se existir com `current-stage: "done"`, leia também `<session-dir>/framing.md` e `<session-dir>/decision.md`.
 
@@ -65,7 +65,7 @@ Se a resposta vier curta ou vaga, faça **uma** pergunta de follow-up para enriq
 
 ## Síntese em `ideation.md`
 
-Após coletar as respostas, gere `_reversa_sdd/ideation.md` usando este template:
+Após coletar as respostas, gere `reversa/sdd/ideation.md` usando este template:
 
 ```markdown
 # Ideation, <nome do projeto ou "Projeto sem nome">

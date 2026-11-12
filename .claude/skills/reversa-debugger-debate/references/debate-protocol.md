@@ -19,7 +19,7 @@ Custo mostrado antes: `solvers x rodadas + critics x rodadas + 1 juiz` chamadas.
 ## Estado em disco
 
 ```text
-_reversa_bugs/<contexto>/bugs/<ID>/debate/
+reversa/bugs/<contexto>/bugs/<ID>/debate/
 ├── problema.md          modo, N, R, P e rubrica congelada (escrito no setup, imutável)
 ├── rodada-0/agente-1..N.md
 ├── rodada-1..R/agente-1..N.md   (+ critic-*.md se houver)

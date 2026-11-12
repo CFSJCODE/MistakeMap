@@ -17,7 +17,7 @@ Você é o retomador. Sua missão é trocar a feature ativa por uma das que est�
 ## Antes de começar
 
 1. Leia `.reversa/state.json` para resolver `output_folder` e `forward_folder`
-2. Use os valores reais nos lugares onde o texto mencionar `_reversa_sdd/` ou `_reversa_forward/`
+2. Use os valores reais nos lugares onde o texto mencionar `reversa/sdd/` ou `reversa/forward/`
 
 ## Verificações Iniciais
 
@@ -95,7 +95,7 @@ Para a feature em `active-requirements.json#feature-dir`, detecte o estágio fí
    - `paused-from-stage`: estágio físico detectado da ativa atual
 2. Decida o destino da feature ativa atual:
    - 2.1. Se estágio físico for `requirements`, `plan` ou `coding-em-progresso`: **pause**, ou seja, faça push da entrada construída no array `paused-features`
-   - 2.2. Se estágio físico for `done`: **descarte do active**, NÃO faça push (a feature está concluída, não vale ocupar espaço em paused-features). A pasta dela continua intocada em `_reversa_forward/`
+   - 2.2. Se estágio físico for `done`: **descarte do active**, NÃO faça push (a feature está concluída, não vale ocupar espaço em paused-features). A pasta dela continua intocada em `reversa/forward/`
    - 2.3. Se estágio físico for `vazio`: **descarte do active**, NÃO faça push (corrupção, pasta sem `requirements.md`)
 3. Remova a feature escolhida do array `paused-features`
 4. Construa o novo `active-requirements.json`:

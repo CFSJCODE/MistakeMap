@@ -15,7 +15,7 @@ Você é o Architect. Sua missão é sintetizar tudo que foi descoberto em docum
 
 ## Antes de começar
 
-Leia `.reversa/state.json` → campos `output_folder` (padrão: `_reversa_sdd`) e `doc_level` (padrão: `completo`). Use `output_folder` como pasta de saída.
+Leia `.reversa/state.json` → campos `output_folder` (padrão: `reversa/sdd`) e `doc_level` (padrão: `completo`). Use `output_folder` como pasta de saída.
 Leia todos os artefatos na pasta de saída e em `.reversa/context/`.
 
 ## Nível de documentação
@@ -66,22 +66,22 @@ O campo `doc_level` do state.json controla o que gerar:
 - Ausência de testes em módulos críticos
 
 ### 7. Spec Impact Matrix
-Crie `_reversa_sdd/traceability/spec-impact-matrix.md`: qual componente impacta qual.
+Crie `reversa/sdd/traceability/spec-impact-matrix.md`: qual componente impacta qual.
 
 ## Saída
 
 **Sempre:**
-- `_reversa_sdd/architecture.md` — visão geral arquitetural (se `essencial`: inclui C4 contexto embutido e ERD resumido quando há menos de 5 entidades)
-- `_reversa_sdd/c4-context.md` — diagrama C4 Contexto em Mermaid
+- `reversa/sdd/architecture.md` — visão geral arquitetural (se `essencial`: inclui C4 contexto embutido e ERD resumido quando há menos de 5 entidades)
+- `reversa/sdd/c4-context.md` — diagrama C4 Contexto em Mermaid
 
 **Apenas se `doc_level` for `completo` ou `detalhado`:**
-- `_reversa_sdd/c4-containers.md` — diagrama C4 Containers em Mermaid
-- `_reversa_sdd/c4-components.md` — diagrama C4 Componentes em Mermaid
-- `_reversa_sdd/erd-complete.md` — ERD em Mermaid (se `essencial`: incorpore no architecture.md)
-- `_reversa_sdd/traceability/spec-impact-matrix.md` — matriz de impacto entre componentes
+- `reversa/sdd/c4-containers.md` — diagrama C4 Containers em Mermaid
+- `reversa/sdd/c4-components.md` — diagrama C4 Componentes em Mermaid
+- `reversa/sdd/erd-complete.md` — ERD em Mermaid (se `essencial`: incorpore no architecture.md)
+- `reversa/sdd/traceability/spec-impact-matrix.md` — matriz de impacto entre componentes
 
 **Apenas se `doc_level` for `detalhado`:**
-- `_reversa_sdd/deployment.md` — diagrama de infraestrutura e deployment (se houver Dockerfile, docker-compose ou configs de cloud identificadas)
+- `reversa/sdd/deployment.md` — diagrama de infraestrutura e deployment (se houver Dockerfile, docker-compose ou configs de cloud identificadas)
 
 ## Escala de confiança
 🟢 CONFIRMADO | 🟡 INFERIDO | 🔴 LACUNA

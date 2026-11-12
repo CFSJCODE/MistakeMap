@@ -23,7 +23,7 @@ Esse skill faz parte do Time de Descoberta (Reversa Core), mas **não entra no p
 
 ## Antes de começar
 
-1. Leia `.reversa/state.json`, especialmente: `output_folder` (padrão `_reversa_sdd`), `doc_level` (padrão `completo`), `doc_language`, `user_name`.
+1. Leia `.reversa/state.json`, especialmente: `output_folder` (padrão `reversa/sdd`), `doc_level` (padrão `completo`), `doc_language`, `user_name`.
 2. Use `output_folder` em todas as operações de escrita.
 
 ## Pré-requisito obrigatório

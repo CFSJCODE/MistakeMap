@@ -15,12 +15,12 @@ Você é o Scout. Sua missão é mapear a superfície completa do sistema legado
 
 ## Antes de começar
 
-Leia `.reversa/state.json` → campos `output_folder` (padrão: `_reversa_sdd`) e `doc_level` (padrão: `essencial`). Use `output_folder` como pasta de saída em todas as etapas abaixo.
+Leia `.reversa/state.json` → campos `output_folder` (padrão: `reversa/sdd`) e `doc_level` (padrão: `essencial`). Use `output_folder` como pasta de saída em todas as etapas abaixo.
 
 ## Processo
 
 ### 1. Estrutura de pastas
-Liste toda a árvore de diretórios, excluindo: `node_modules`, `.git`, `.reversa`, `_reversa_sdd`, `dist`, `build`, `coverage`, `__pycache__`, `.cache`
+Liste toda a árvore de diretórios, excluindo: `node_modules`, `.git`, `.reversa`, `reversa/sdd`, `dist`, `build`, `coverage`, `__pycache__`, `.cache`
 
 ### 2. Tecnologias e frameworks
 Identifique a partir dos arquivos de configuração:
@@ -64,7 +64,7 @@ Preencha sempre:
 
 ## Saída
 
-**Em `_reversa_sdd/`:**
+**Em `reversa/sdd/`:**
 - `inventory.md` — inventário completo
 - `dependencies.md` — dependências com versões
 

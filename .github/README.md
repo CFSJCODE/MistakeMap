@@ -254,7 +254,7 @@ Todas as chamadas passam por um único ponto, `structuredResponse()` em [`_share
 | **Google Gemini** | `gemini-3.5-flash-lite` | 2ª reserva do Gemini, roda em capacidade separada e costuma responder quando os Flash estão sobrecarregados | idem | `GEMINI_LITE_MODEL` (`off` desliga) |
 | **Anthropic** | `claude-sonnet-5-5` | Candidato do roteador em qualquer tarefa (único pago, com teto de custo); opcionalmente também **última reserva** quando todo o Gemini falha | `output_config` com JSON Schema, imagens em base64 | Rota direta: `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` + `ANTHROPIC_MODEL=claude-sonnet-5-5` (obrigatório; o controle de custo só aceita esse modelo). Última reserva: `AI_CLAUDE_FALLBACK_ENABLED=true` + `ANTHROPIC_API_KEY` (o modelo é definido internamente) |
 | **OpenRouter** | configurável (`openrouter/free` ou modelos `:free` no roteador automático) | Candidato do roteador com modelos gratuitos de terceiros; também pode ser a rota fixa de uma tarefa | `response_format` `json_schema` estrito, `require_parameters` | `AI_PROVIDER=openrouter` + `OPENROUTER_API_KEY` + `OPENROUTER_MODEL` (obrigatório) |
-| **OpenAI** | `gpt-4.1-mini` (Responses API) | Integração preparada e validada localmente, **ainda não ativada** | Structured Outputs | pendente de chave e publicação ([`_reversa_forward/openai-integration`](../_reversa_forward/openai-integration/README.md)) |
+| **OpenAI** | `gpt-4.1-mini` (Responses API) | Integração preparada e validada localmente, **ainda não ativada** | Structured Outputs | pendente de chave e publicação ([`reversa/forward/openai-integration`](../reversa/forward/openai-integration/README.md)) |
 
 **Uma escolha para cada tarefa.** O servidor separa as chamadas em quatro tarefas, cada uma com exigências próprias: `VISION` (ler a foto da resolução), `ANALYSIS` (diagnosticar o erro a partir do texto), `STUDY` (material de estudo) e `PRACTICE` (exercícios). Para cada pedido, o roteador ([`_shared/model_router.ts`](../supabase/functions/_shared/model_router.ts)) escolhe o modelo assim:
 
@@ -308,7 +308,7 @@ flowchart TD
 > [!WARNING]
 > Esse controle de custo vale **só para o Claude**. O roteador automático só considera modelos gratuitos do OpenRouter, mas um modelo pago configurado explicitamente em `OPENROUTER_MODEL` ou `AI_<ROTA>_MODEL` não passa pela reserva de US$ 1 nem pelo teto de US$ 100. Limite os gastos desses modelos na própria conta do OpenRouter.
 
-**Observabilidade.** Retentativas e erros dos provedores aparecem nos logs (`ai_provider_retry`, `ai_provider_error`) só com código e status, nunca com conteúdo do aluno. O painel administrativo mostra as cotas do plano gratuito do Gemini por modelo (RPM, TPM e RPD); a telemetria detalhada por provedor está preparada em [`_reversa_forward/admin-monitoring`](../_reversa_forward/admin-monitoring/README.md).
+**Observabilidade.** Retentativas e erros dos provedores aparecem nos logs (`ai_provider_retry`, `ai_provider_error`) só com código e status, nunca com conteúdo do aluno. O painel administrativo mostra as cotas do plano gratuito do Gemini por modelo (RPM, TPM e RPD); a telemetria detalhada por provedor está preparada em [`reversa/forward/admin-monitoring`](../reversa/forward/admin-monitoring/README.md).
 
 > [!NOTE]
 > Na camada gratuita do Gemini, o Google pode usar prompts e imagens para melhorar seus produtos. Fotos com nome ou matrícula devem ser recortadas antes do envio, ou deve-se usar uma camada paga.
@@ -510,6 +510,8 @@ MistakeMap/
 │   ├── BACKEND.md               # Decisões de arquitetura do backend
 │   └── ai/                      # Portal dos agentes de IA (Claude, Codex, Gemini, Reversa)
 ├── archive/worker/              # Worker Rust original (arquivado)
+├── reversa/                     # Artefatos do Reversa (sdd, forward, bugs, docs)
+├── .reversa/ · .claude/ · .agents/   # Config do Reversa e skills dos agentes
 ├── .github/                     # README, CI/CD, licença, citação e políticas
 └── AGENTS.md · CLAUDE.md · GEMINI.md   # Regras e decisões para agentes de código
 ```

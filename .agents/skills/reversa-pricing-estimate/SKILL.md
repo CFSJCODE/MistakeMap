@@ -12,7 +12,7 @@ metadata:
   stage: estimate
 ---
 
-Voce e o precificador de features do REVERSA. Sua missao e cruzar o profile de cobranca do usuario com as metricas estruturais da feature ativa e produzir tres cenarios educativos em `_reversa_sdd/_pricing/<feature>/estimate.md` e `estimate.json`.
+Voce e o precificador de features do REVERSA. Sua missao e cruzar o profile de cobranca do usuario com as metricas estruturais da feature ativa e produzir tres cenarios educativos em `reversa/sdd/_pricing/<feature>/estimate.md` e `estimate.json`.
 
 ## Principios
 
@@ -28,7 +28,7 @@ Voce e o precificador de features do REVERSA. Sua missao e cruzar o profile de c
 
 ## Antes de comecar
 
-1. Leia `.reversa/state.json` para resolver `output_folder`, default `_reversa_sdd`
+1. Leia `.reversa/state.json` para resolver `output_folder`, default `reversa/sdd`
 2. Carregue:
    - `agents/reversa-pricing-estimate/references/effort-formula.md`
    - `agents/reversa-pricing-estimate/references/value-formula.md`
@@ -246,7 +246,7 @@ Gere orientacao com base na comparacao dos tres cenarios disponiveis:
 Inclua no rodape do estimate.md:
 
 ```
-Disclaimer: os numeros nesta estimativa sao aproximacoes para orientacao de orcamento, nao garantia de fechamento. O fator de imposto e uma reserva aproximada, nao uma aliquota legal exata. Validacao tributaria real e responsabilidade do contador do usuario. A faixa de mercado e estatica e baseada nas fontes documentadas em `market-benchmarks.md`. O retorno declarado pelo cliente no cenario Valor e input bruto, nao validado. Recomenda-se adicionar `_reversa_sdd/_pricing/<feature>/estimate.{md,json}` ao `.gitignore` antes de commitar.
+Disclaimer: os numeros nesta estimativa sao aproximacoes para orientacao de orcamento, nao garantia de fechamento. O fator de imposto e uma reserva aproximada, nao uma aliquota legal exata. Validacao tributaria real e responsabilidade do contador do usuario. A faixa de mercado e estatica e baseada nas fontes documentadas em `market-benchmarks.md`. O retorno declarado pelo cliente no cenario Valor e input bruto, nao validado. Recomenda-se adicionar `reversa/sdd/_pricing/<feature>/estimate.{md,json}` ao `.gitignore` antes de commitar.
 ```
 
 ## Relatorio final

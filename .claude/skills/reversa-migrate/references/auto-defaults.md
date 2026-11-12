@@ -25,7 +25,7 @@ Quando o usuário invoca `/reversa-migrate --auto`, o orquestrador pula pausas h
 - **Geração (Fase 2)**: aceita o `target_screens.md` gerado e propaga deviations como `pendente`. `--auto` não aprova deviations sozinho; elas ficam em `ambiguity_log.md` como `auto-decidido` para revisão posterior, sem bloquear o handoff (exceção a `--auto`: se uma deviation for `tipo=correcao` em modo literal, o agente recusa e pede aprovação humana mesmo em `--auto`, pois mudar texto sem aval rompe expectativa).
 - **Captura de golden files**: não automatiza em `--auto` (driver de oráculo é OQ-02). Apenas emite `manifest.yaml` com comandos sugeridos.
 - **Legado sem UI**: marca status `skipped` automaticamente, sem perguntar.
-- **Pré-requisitos Discovery ausentes** (`_reversa_sdd/design-system/` ou `_reversa_sdd/ui/inventory.md`): cria `tokens-derived.md` mínimo e constrói inventário só a partir do código fonte; alerta no `ambiguity_log.md`.
+- **Pré-requisitos Discovery ausentes** (`reversa/sdd/design-system/` ou `reversa/sdd/ui/inventory.md`): cria `tokens-derived.md` mínimo e constrói inventário só a partir do código fonte; alerta no `ambiguity_log.md`.
 
 ## Inspector
 - Usa critérios de paridade derivados diretamente do paradigma escolhido (ver `parity-coverage-matrix.md` no agente).

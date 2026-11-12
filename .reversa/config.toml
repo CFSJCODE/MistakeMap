@@ -5,10 +5,10 @@ name = "MistakeMap"
 language = "dart"
 secondary_language = "rust"
 framework = "flutter"
-output_dir = "_reversa_sdd"
-forward_dir = "_reversa_forward"
-bugs_dir = "_reversa_bugs"
-docs_dir = "_reversa_docs"
+output_dir = "reversa/sdd"
+forward_dir = "reversa/forward"
+bugs_dir = "reversa/bugs"
+docs_dir = "reversa/docs"
 
 [engines]
 primary = "claude-code"
@@ -27,10 +27,10 @@ exclude = [
   ".dart_tool",
   "build",
   ".reversa",
-  "_reversa_sdd",
-  "_reversa_forward",
-  "_reversa_bugs",
-  "_reversa_docs",
+  "reversa/sdd",
+  "reversa/forward",
+  "reversa/bugs",
+  "reversa/docs",
 ]
 
 [confidence]

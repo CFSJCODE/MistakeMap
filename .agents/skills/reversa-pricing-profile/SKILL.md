@@ -12,7 +12,7 @@ metadata:
   stage: profile
 ---
 
-Voce e o configurador de perfil de cobranca do REVERSA. Sua missao e conduzir uma entrevista breve e gravar `_reversa_sdd/_pricing/profile.json` e `profile.md` com o perfil que servira de base para os agentes Sizer e Pricer.
+Voce e o configurador de perfil de cobranca do REVERSA. Sua missao e conduzir uma entrevista breve e gravar `reversa/sdd/_pricing/profile.json` e `profile.md` com o perfil que servira de base para os agentes Sizer e Pricer.
 
 ## Principios
 
@@ -26,14 +26,14 @@ Voce e o configurador de perfil de cobranca do REVERSA. Sua missao e conduzir um
 
 ## Antes de comecar
 
-1. Leia `.reversa/state.json` para resolver `output_folder`. Se ausente, assuma `_reversa_sdd/`
-2. Garanta que `_reversa_sdd/_pricing/` exista. Crie se necessario, sem tocar nada alem
+1. Leia `.reversa/state.json` para resolver `output_folder`. Se ausente, assuma `reversa/sdd/`
+2. Garanta que `reversa/sdd/_pricing/` exista. Crie se necessario, sem tocar nada alem
 3. Carregue `agents/reversa-pricing-profile/references/tax-regimes.md`
 4. Carregue `agents/reversa-pricing-profile/references/profile-schema.json`
 
 ## Verificacoes iniciais
 
-1. Se `_reversa_sdd/_pricing/profile.json` ja existir, leia e mostre os campos atuais em tabela
+1. Se `reversa/sdd/_pricing/profile.json` ja existir, leia e mostre os campos atuais em tabela
 2. Pergunte literalmente: "Ja existe um perfil de cobranca. Deseja sobrescrever? S/N"
 3. Se a resposta for "N", encerre sem mudancas
 4. Se a resposta for "S", renomeie o arquivo atual para `profile.json.bak.<YYYYMMDD-HHMMSS>` antes de prosseguir
@@ -226,14 +226,14 @@ exchange_rate_to_local
 
 Valide mentalmente contra o schema. Se algo estiver ausente, refaca apenas a pergunta correspondente.
 
-Grave `_reversa_sdd/_pricing/profile.json` e `_reversa_sdd/_pricing/profile.md` atomicamente.
+Grave `reversa/sdd/_pricing/profile.json` e `reversa/sdd/_pricing/profile.md` atomicamente.
 
 ## Disclaimer do profile.md
 
 Inclua:
 
 ```
-Disclaimer: o fator de imposto registrado e uma reserva aproximada para orcamento, nao uma aliquota legal exata. Validacao tributaria real e responsabilidade do contador do usuario. Este arquivo contem dados financeiros sensiveis. Recomenda-se adicionar `_reversa_sdd/_pricing/profile.json` e `_reversa_sdd/_pricing/profile.md` ao `.gitignore` antes de commitar.
+Disclaimer: o fator de imposto registrado e uma reserva aproximada para orcamento, nao uma aliquota legal exata. Validacao tributaria real e responsabilidade do contador do usuario. Este arquivo contem dados financeiros sensiveis. Recomenda-se adicionar `reversa/sdd/_pricing/profile.json` e `reversa/sdd/_pricing/profile.md` ao `.gitignore` antes de commitar.
 ```
 
 ## Encerramento sem mudancas

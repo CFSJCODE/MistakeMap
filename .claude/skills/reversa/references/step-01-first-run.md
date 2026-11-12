@@ -43,7 +43,7 @@ Verifique se `.reversa/plan.md` já existe:
 - Pergunte: "O plano está aprovado ou quer ajustar algo antes de começar?"
 
 **Se o arquivo não existe** (instalação manual):
-1. Analise rapidamente a estrutura de pastas raiz (exclua: `node_modules`, `.git`, `.reversa`, `_reversa_sdd`, `dist`, `build`, `coverage`, `__pycache__`)
+1. Analise rapidamente a estrutura de pastas raiz (exclua: `node_modules`, `.git`, `.reversa`, `reversa/sdd`, `dist`, `build`, `coverage`, `__pycache__`)
 2. Identifique os módulos e componentes principais
 3. Crie `.reversa/plan.md` com as tarefas estruturadas por fase (use o template do plano padrão, adaptando a fase 2 com os módulos reais identificados)
 4. Apresente o plano e pergunte: "O plano está aprovado ou quer ajustar algo?"

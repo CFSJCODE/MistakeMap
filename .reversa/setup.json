@@ -10,8 +10,8 @@
     "block-on-red": false
   },
   "paths": {
-    "sdd-dir": "_reversa_sdd",
-    "forward-dir": "_reversa_forward",
+    "sdd-dir": "reversa/sdd",
+    "forward-dir": "reversa/forward",
     "config-dir": ".reversa"
   },
   "principles": {

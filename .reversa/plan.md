@@ -32,9 +32,9 @@
   - Mapa de integração Flutter ↔ Supabase ↔ R2 ↔ Worker
   - Diagrama de sequência: submissão → OCR → LLM → validação → mapa
 
-- [x] **Writer** — Geração de especificações operacionais em `_reversa_sdd/`
+- [x] **Writer** — Geração de especificações operacionais em `reversa/sdd/`
 
-- [x] **Reviewer** — Revisão das oito units concluída; quatro perguntas críticas aguardam resposta em `_reversa_sdd/questions.md`
+- [x] **Reviewer** — Revisão das oito units concluída; quatro perguntas críticas aguardam resposta em `reversa/sdd/questions.md`
 
 ## Prioridades
 
@@ -46,7 +46,7 @@
 
 ## Após o Discovery — Próximos Fluxos Sugeridos
 
-Quando o SDD estiver em `_reversa_sdd/`:
+Quando o SDD estiver em `reversa/sdd/`:
 
 1. **`/reversa-docs`** — Gerar mini-site de documentação para a apresentação do trabalho
 2. **`/reversa-forward`** — Implementar features pendentes com pipeline completo

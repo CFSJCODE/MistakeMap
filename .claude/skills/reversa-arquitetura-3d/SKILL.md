@@ -35,7 +35,7 @@ Padrões compartilhados de Three.js, lighting, controles e performance vivem em 
 Os dados podem vir de:
 
 - **JSON inline**: usuário fornece `modules.json` (lista de módulos) e/ou `deps.json` (grafo de dependências).
-- **Caminho de arquivo**: usuário aponta para JSONs em `_reversa_docs/assets/data/` (gerados pelo agente `/reversa-documentation`).
+- **Caminho de arquivo**: usuário aponta para JSONs em `reversa/docs/assets/data/` (gerados pelo agente `/reversa-documentation`).
 - **Solicitado ao usuário**: se a skill é invocada sem dados, perguntar caminho ou pedir colagem inline.
 
 **Schema esperado de `modules.json`**:
@@ -136,7 +136,7 @@ Consultar `references/THREE_PATTERNS.md` para setup base (renderer, cena, câmer
 
 ### 5. Salvar e entregar
 
-O output é sempre HTML standalone. Salvar no caminho indicado pelo agente orquestrador (geralmente `_reversa_docs/arquitetura.html`).
+O output é sempre HTML standalone. Salvar no caminho indicado pelo agente orquestrador (geralmente `reversa/docs/arquitetura.html`).
 
 Quando invocada fora do contexto do `/reversa-documentation`, perguntar caminho de destino ou usar `<modo>-<timestamp>.html` no diretório atual.
 

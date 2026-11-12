@@ -27,20 +27,20 @@ O padrão continua valendo na saída: você encerra sugerindo o próximo passo e
 ## Antes de começar
 
 1. Leia `.reversa/state.json` para resolver `output_folder`, `forward_folder` e `user_name`
-2. Use os valores reais nos lugares onde o texto mencionar `_reversa_sdd/` ou `_reversa_forward/`
+2. Use os valores reais nos lugares onde o texto mencionar `reversa/sdd/` ou `reversa/forward/`
 
 ## Âncora de contexto: legado ou greenfield
 
-Este skill EXIGE uma âncora em `_reversa_sdd/`, pelo mesmo motivo do `/reversa-coding`: sem ela, `legacy-impact.md` e `regression-watch.md` perdem o valor e o express vira um gerador de código genérico. Duas âncoras são válidas:
+Este skill EXIGE uma âncora em `reversa/sdd/`, pelo mesmo motivo do `/reversa-coding`: sem ela, `legacy-impact.md` e `regression-watch.md` perdem o valor e o express vira um gerador de código genérico. Duas âncoras são válidas:
 
-1. **Legado:** `_reversa_sdd/` contém `architecture.md` E `domain.md`
-2. **Greenfield:** `_reversa_sdd/` contém `prd.md` E pelo menos uma spec em `_reversa_sdd/sdd/`
+1. **Legado:** `reversa/sdd/` contém `architecture.md` E `domain.md`
+2. **Greenfield:** `reversa/sdd/` contém `prd.md` E pelo menos uma spec em `reversa/sdd/sdd/`
 
 Se as duas existirem, use a de legado como principal e as specs SDD como complemento.
 
 Se NENHUMA existir, aborte sem escrever nada:
 
-> 🛑 `/reversa-code-express` exige uma âncora de contexto em `_reversa_sdd/` e não encontrei nenhuma:
+> 🛑 `/reversa-code-express` exige uma âncora de contexto em `reversa/sdd/` e não encontrei nenhuma:
 >
 > - **Legado:** `architecture.md` + `domain.md` (gere com `/reversa`)
 > - **Greenfield:** `prd.md` + specs em `sdd/` (gere com `/reversa-new`)
@@ -93,7 +93,7 @@ Não escreva nada em disco depois de recusar. Não ofereça fazer "só a parte p
 Uma rodada só, três perguntas, numa única mensagem:
 
 1. O que essa feature entrega, em uma ou duas frases
-2. Onde ela encosta no código atual (componente, pasta, arquivo). Se não souber, diga, e eu infiro do `_reversa_sdd/`
+2. Onde ela encosta no código atual (componente, pasta, arquivo). Se não souber, diga, e eu infiro do `reversa/sdd/`
 3. Como você sabe que funcionou, um critério observável
 
 Regras:
@@ -104,27 +104,27 @@ Regras:
 
 ## Leitura de contexto, fatiada
 
-O que faz o express ser rápido é o que ele NÃO lê. Não carregue o `_reversa_sdd/` inteiro.
+O que faz o express ser rápido é o que ele NÃO lê. Não carregue o `reversa/sdd/` inteiro.
 
 **Cenário legado**, nesta ordem, pulando o que não existir:
 
-1. `_reversa_sdd/inventory.md`, só para localizar os componentes citados na entrevista
-2. `_reversa_sdd/architecture.md`, SOMENTE as seções desses componentes
-3. `_reversa_sdd/domain.md`, SOMENTE as regras desses componentes
-4. `_reversa_sdd/addenda/*.md` vigentes que citem esses componentes (seção Vigência sem linha de superação)
+1. `reversa/sdd/inventory.md`, só para localizar os componentes citados na entrevista
+2. `reversa/sdd/architecture.md`, SOMENTE as seções desses componentes
+3. `reversa/sdd/domain.md`, SOMENTE as regras desses componentes
+4. `reversa/sdd/addenda/*.md` vigentes que citem esses componentes (seção Vigência sem linha de superação)
 5. `.reversa/principles.md`, se existir
 
-**Cenário greenfield:** `_reversa_sdd/prd.md` mais SOMENTE as specs de `_reversa_sdd/sdd/` que a feature encosta.
+**Cenário greenfield:** `reversa/sdd/prd.md` mais SOMENTE as specs de `reversa/sdd/sdd/` que a feature encosta.
 
 Se a leitura fatiada não bastar para decidir o que fazer, não amplie a leitura: isso é sinal de que o delta é maior do que a entrevista revelou. Volte à trava.
 
 ## Diretório da feature
 
 1. Leia `.reversa/setup.json`
-   1.1. `prefix-format` ausente ou `sequencial`: calcule o próximo `NNN` listando subpastas `NNN-*` de `_reversa_forward/` e somando 1 ao maior
+   1.1. `prefix-format` ausente ou `sequencial`: calcule o próximo `NNN` listando subpastas `NNN-*` de `reversa/forward/` e somando 1 ao maior
    1.2. `prefix-format` igual a `timestamp`: use `YYYYMMDD-HHMMSS` da hora corrente
 2. Gere `short-name` em kebab-case ASCII, máximo trinta caracteres
-3. `feature-dir = _reversa_forward/<NNN>-<short-name>`, crie se não existir
+3. `feature-dir = reversa/forward/<NNN>-<short-name>`, crie se não existir
 4. Escreva `.reversa/active-requirements.json` com escrita atômica (tempfile mais rename):
 
 ```json
@@ -173,7 +173,7 @@ Não carregue `.reversa/templates/requirements-template.md`, ele é do ciclo com
 
 1. Cabeçalho com identificador `<NNN>-<short-name>`, data, `Modo: express` e a pasta da extração
 2. `## 1. Resumo executivo`, até cinco linhas, o que entrega e para quem, sem falar de implementação
-3. `## 2. Contexto a partir do legado`, tabela `Fonte | Trecho relevante | Confidência`, SOMENTE as fontes que você realmente leu, citadas como `_reversa_sdd/<arquivo>#<seção>`
+3. `## 2. Contexto a partir do legado`, tabela `Fonte | Trecho relevante | Confidência`, SOMENTE as fontes que você realmente leu, citadas como `reversa/sdd/<arquivo>#<seção>`
 4. `## 4. Regras de negócio novas ou alteradas`, itens `RN-01`, `RN-02`, cada um com tipo (nova, alterada, removida) e confidência 🟢 🟡 🔴
 5. `## 7. Critérios de Aceitação`, derivados da terceira pergunta da entrevista, verificáveis
 6. `## Emendas`, vazia, reservada ao `/reversa-add`

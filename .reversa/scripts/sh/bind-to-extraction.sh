@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # bind-to-extraction.sh
-# Helper que lê _reversa_sdd/ e devolve um JSON com as fontes canônicas que os skills forward devem consultar como contexto.
+# Helper que lê reversa/sdd/ e devolve um JSON com as fontes canônicas que os skills forward devem consultar como contexto.
 # Diferencial REVERSA: skills forward jamais partem do zero, sempre amarram raciocínio nos artefatos da pipeline reversa.
 #
 # Uso:
@@ -13,18 +13,18 @@
 #   --for to-do          Lista architecture, code-analysis
 #   --for audit          Lista architecture, domain
 #   --for coding         Lista architecture, domain, code-analysis (para gerar legacy-impact)
-#   sem --for            Lista todos os arquivos presentes em _reversa_sdd/
+#   sem --for            Lista todos os arquivos presentes em reversa/sdd/
 #
 # Códigos de saída:
 #   0 = sucesso
-#   1 = _reversa_sdd ausente
+#   1 = reversa/sdd ausente
 #   2 = uso inválido
 
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-SDD_DIR="$PROJECT_ROOT/_reversa_sdd"
+SDD_DIR="$PROJECT_ROOT/reversa/sdd"
 
 JSON_MODE=0
 TARGET=""

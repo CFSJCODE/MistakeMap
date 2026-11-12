@@ -30,7 +30,7 @@ for row in git('diff', '--cached', '--ignore-space-at-eol', '--numstat').splitli
 for path in git('ls-files', '--others', '--exclude-standard', '--', 'appmistakemap').splitlines():
     if path.endswith('.dart') and path.startswith(('appmistakemap/lib/', 'appmistakemap/test/')):
         paths.add(path)
-monitor = root / '_reversa_forward/admin-monitoring'
+monitor = root / 'reversa/forward/admin-monitoring'
 for path in monitor.rglob('*'):
     if path.is_file() and path.suffix in {'.sql', '.ts', '.json', '.dart'}:
         paths.add(path.relative_to(root).as_posix())

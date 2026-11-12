@@ -37,11 +37,11 @@ A skill usa uma pasta dedicada como ponto de entrada para os JSONs exportados do
 
    Se faltar qualquer campo, pare e informe o usuário qual campo está ausente antes de continuar.
 
-### Pasta de saída: `_reversa_n8n/<slug>/`
+### Pasta de saída: `reversa/n8n/<slug>/`
 
 4. Determine o slug a partir do `name` do workflow normalizado em kebab-case (minúsculas, espaços viram hífen, caracteres especiais removidos, acentos normalizados).
 
-5. Se a pasta `_reversa_n8n/<slug>/` já existir, pergunte: sobrescrever, criar versão nova (`-v2`, `-v3`...) ou cancelar.
+5. Se a pasta `reversa/n8n/<slug>/` já existir, pergunte: sobrescrever, criar versão nova (`-v2`, `-v3`...) ou cancelar.
 
 ## Processo
 
@@ -150,12 +150,12 @@ Se `.reversa/state.json` ainda não existir, crie a partir do template em `templ
 - `chat_language`: `pt-br` por padrão (ou seguir o que o usuário usou na conversa)
 - `doc_language`: `Português` por padrão
 - `doc_level`: `essencial` (a spec do N8N já é compacta, o pipeline não precisa expandir muito)
-- `output_folder`: `_reversa_sdd` (default do pipeline principal)
+- `output_folder`: `reversa/sdd` (default do pipeline principal)
 - `phase`: `null` (deixar o `/reversa` definir como `reconhecimento` ao iniciar)
 - `engines`: lista vazia (será preenchida pelo /reversa)
 - `agents`: lista vazia
 - `created_files`: lista vazia
-- Adicione um campo `source` com valor `"n8n"` e `source_artifacts` apontando para `_reversa_n8n/<slug>/` para que o Scout saiba que existe pré-análise.
+- Adicione um campo `source` com valor `"n8n"` e `source_artifacts` apontando para `reversa/n8n/<slug>/` para que o Scout saiba que existe pré-análise.
 
 Se `.reversa/state.json` já existir, **não sobrescreva**. Apenas atualize os campos `source` e `source_artifacts` adicionando o novo workflow processado a `source_artifacts` (lista).
 
@@ -170,7 +170,7 @@ Adicione uma seção `## Fase 0: Origem N8N 🔁` no topo (antes da Fase 1) com 
 ```markdown
 ## Fase 0: Origem N8N 🔁
 
-> A análise foi iniciada a partir de um workflow N8N. A pré-análise gerou specs em `_reversa_n8n/<slug>/`. O Scout deve incluir esses artefatos no inventário.
+> A análise foi iniciada a partir de um workflow N8N. A pré-análise gerou specs em `reversa/n8n/<slug>/`. O Scout deve incluir esses artefatos no inventário.
 
 - [x] **N8N Translator**: conversão do workflow `<slug>` para spec SDD
 ```
@@ -181,7 +181,7 @@ Se `.reversa/plan.md` já existir, apenas adicione a linha do N8N Translator na 
 
 Após criar os arquivos, mostre:
 ```
-✅ Spec gerada em _reversa_n8n/<slug>/
+✅ Spec gerada em reversa/n8n/<slug>/
 ✅ Estado inicial criado em .reversa/state.json
 ✅ Plano criado em .reversa/plan.md
 
@@ -217,7 +217,7 @@ Registre cada ambiguidade no `workflow-overview.md` em `## Ambiguidades`, com fo
 n8n_json_workflows/                  (entrada, criada se não existir)
 └── <arquivo>.json
 
-_reversa_n8n/<slug-do-workflow>/     (spec gerada da fonte)
+reversa/n8n/<slug-do-workflow>/     (spec gerada da fonte)
 ├── workflow-overview.md
 ├── requirements.md
 └── design.md
@@ -229,7 +229,7 @@ _reversa_n8n/<slug-do-workflow>/     (spec gerada da fonte)
 
 ## Layout transversal
 
-Os artefatos da spec ficam em `_reversa_n8n/<slug>/`. Os arquivos de estado para o pipeline principal ficam em `.reversa/`. Os JSONs de entrada permanecem em `n8n_json_workflows/` intactos. Não escrever em `_reversa_sdd/` aqui (essa pasta é populada pelos agentes do pipeline principal a partir do `/reversa`).
+Os artefatos da spec ficam em `reversa/n8n/<slug>/`. Os arquivos de estado para o pipeline principal ficam em `.reversa/`. Os JSONs de entrada permanecem em `n8n_json_workflows/` intactos. Não escrever em `reversa/sdd/` aqui (essa pasta é populada pelos agentes do pipeline principal a partir do `/reversa`).
 
 ## Próximo passo
 
@@ -239,7 +239,7 @@ Ao concluir, informe ao usuário:
 - Ambiguidades pendentes (se houver)
 
 Sugira ao usuário:
-1. Revisar a spec em `_reversa_n8n/<slug>/`
+1. Revisar a spec em `reversa/n8n/<slug>/`
 2. Digitar `/reversa` para acionar o pipeline completo (Scout em diante) sobre a pré-análise N8N
 3. Ou processar outro workflow direto, se houver mais arquivos em `n8n_json_workflows/`
 
@@ -248,7 +248,7 @@ Termine com: `Digite CONTINUAR para processar outro workflow, ou /reversa para i
 ## Regras absolutas
 
 - Nunca modificar o arquivo JSON original em `n8n_json_workflows/`
-- Escrever apenas em `n8n_json_workflows/` (criar a pasta), `_reversa_n8n/` e `.reversa/`
+- Escrever apenas em `n8n_json_workflows/` (criar a pasta), `reversa/n8n/` e `.reversa/`
 - Nunca sobrescrever `.reversa/state.json` se já existir, apenas atualizar os campos `source` e `source_artifacts`
 - Nunca expor credenciais, tokens ou secrets em nenhum artefato (registrar apenas o tipo e o serviço)
 - Nunca inventar funcionalidades não presentes no workflow

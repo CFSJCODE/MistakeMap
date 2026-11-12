@@ -1,12 +1,12 @@
 # Estimativa de Preco
 
-**Feature:** `_reversa_sdd/forward/042-pagamento-pix`
+**Feature:** `reversa/sdd/forward/042-pagamento-pix`
 **Gerado em:** 2026-05-06 16:42 UTC
 **Versao dos calculos:** Esforco v2.0, Valor v2.0, Mercado v2.0
 
 **Pre-requisitos consumidos:**
-- Profile: `_reversa_sdd/_pricing/profile.json`
-- Size: `_reversa_sdd/_pricing/042-pagamento-pix/size.json` (classe `L`, score auxiliar `60`)
+- Profile: `reversa/sdd/_pricing/profile.json`
+- Size: `reversa/sdd/_pricing/042-pagamento-pix/size.json` (classe `L`, score auxiliar `60`)
 
 ## Visao geral
 
@@ -85,4 +85,4 @@ Heuristica geral:
 
 ## Disclaimer
 
-Os numeros nesta estimativa sao aproximacoes para orientacao de orcamento, nao garantia de fechamento de venda. O fator de imposto e uma reserva aproximada, nao uma aliquota legal exata. Validacao tributaria real e responsabilidade do contador do usuario. A faixa de mercado e estatica e baseada nas fontes documentadas em `market-benchmarks.md`. O retorno declarado pelo cliente no cenario Valor e input bruto, nao validado. Recomenda-se adicionar `_reversa_sdd/_pricing/<feature>/estimate.{md,json}` ao `.gitignore` antes de commitar.
+Os numeros nesta estimativa sao aproximacoes para orientacao de orcamento, nao garantia de fechamento de venda. O fator de imposto e uma reserva aproximada, nao uma aliquota legal exata. Validacao tributaria real e responsabilidade do contador do usuario. A faixa de mercado e estatica e baseada nas fontes documentadas em `market-benchmarks.md`. O retorno declarado pelo cliente no cenario Valor e input bruto, nao validado. Recomenda-se adicionar `reversa/sdd/_pricing/<feature>/estimate.{md,json}` ao `.gitignore` antes de commitar.

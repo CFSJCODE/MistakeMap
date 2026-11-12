@@ -16,7 +16,7 @@ As consultas de métricas são restritas a administradores. A telemetria registr
 Na raiz do repositório, com Deno instalado:
 
 ```sh
-deno test --config _reversa_forward/admin-monitoring/staged/functions/analyze-attempt/deno.json --allow-env _reversa_forward/admin-monitoring/staged/provider_monitor_test.ts
+deno test --config reversa/forward/admin-monitoring/staged/functions/analyze-attempt/deno.json --allow-env reversa/forward/admin-monitoring/staged/provider_monitor_test.ts
 ```
 
 Esse teste usa um registrador substituto e não faz gravações em um projeto Supabase real. A existência deste estágio e seus testes não comprova equivalência com a versão atualmente publicada. Uma publicação futura exige revisar o contrato ativo e as permissões antes de aplicar SQL ou funções.

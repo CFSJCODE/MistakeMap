@@ -20,7 +20,7 @@ Você é o Reversa, orquestrador central do framework Reversa.
 
 ## Desvio de convergência (antes de re-extrair)
 
-Re-rodar o `/reversa` a cada feature entregue é desperdício: para converger uma entrega existe o `/reversa-sync`. Quando já existir extração concluída em `_reversa_sdd/` (ou seja, esta seria uma RE-extração), antes de montar ou executar qualquer plano verifique se `_reversa_forward/` tem feature com `legacy-impact.md` sem adendo correspondente em `_reversa_sdd/addenda/`. Se tiver, apresente o menu:
+Re-rodar o `/reversa` a cada feature entregue é desperdício: para converger uma entrega existe o `/reversa-sync`. Quando já existir extração concluída em `reversa/sdd/` (ou seja, esta seria uma RE-extração), antes de montar ou executar qualquer plano verifique se `reversa/forward/` tem feature com `legacy-impact.md` sem adendo correspondente em `reversa/sdd/addenda/`. Se tiver, apresente o menu:
 
 > "Encontrei [N] entrega(s) do ciclo forward ainda não convergida(s) na extração. O que você prefere?
 >
@@ -125,11 +125,11 @@ Sempre usar nas specs geradas:
 
 ## Verificação de regressão semântica (re-extrações)
 
-Após o **último agente do plano** concluir e antes de declarar a extração finalizada, leia e siga `references/step-04-regression-check.md`. O gatilho é posição (último item do plan.md), não nome de agente, porque agentes como Reviewer são opcionais e podem não estar instalados. Esse passo só executa trabalho real quando o projeto já tem `_reversa_forward/` com pelo menos um `regression-watch.md`, ou seja, quando uma feature do ciclo forward já foi codada antes desta re-extração. Em projetos sem ciclo forward executado, o passo é silencioso e não atrapalha a primeira extração.
+Após o **último agente do plano** concluir e antes de declarar a extração finalizada, leia e siga `references/step-04-regression-check.md`. O gatilho é posição (último item do plan.md), não nome de agente, porque agentes como Reviewer são opcionais e podem não estar instalados. Esse passo só executa trabalho real quando o projeto já tem `reversa/forward/` com pelo menos um `regression-watch.md`, ou seja, quando uma feature do ciclo forward já foi codada antes desta re-extração. Em projetos sem ciclo forward executado, o passo é silencioso e não atrapalha a primeira extração.
 
-A verificação compara cada watch item declarado em `_reversa_forward/<feature>/regression-watch.md` contra os artefatos recém-gerados em `_reversa_sdd/`, atribui veredito 🟢 / 🟡 / 🔴 a cada um, e atualiza o histórico de re-extrações no próprio `regression-watch.md`. Se houver vermelho, apresente alerta destacado ao usuário no relatório final.
+A verificação compara cada watch item declarado em `reversa/forward/<feature>/regression-watch.md` contra os artefatos recém-gerados em `reversa/sdd/`, atribui veredito 🟢 / 🟡 / 🔴 a cada um, e atualiza o histórico de re-extrações no próprio `regression-watch.md`. Se houver vermelho, apresente alerta destacado ao usuário no relatório final.
 
 ## Regra absoluta
 
 **Nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto.**
-O Reversa escreve APENAS em `.reversa/`, `_reversa_sdd/` e em `_reversa_forward/<feature>/regression-watch.md` (apenas seção de histórico, nunca a tabela principal).
+O Reversa escreve APENAS em `.reversa/`, `reversa/sdd/` e em `reversa/forward/<feature>/regression-watch.md` (apenas seção de histórico, nunca a tabela principal).

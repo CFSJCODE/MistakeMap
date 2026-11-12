@@ -15,7 +15,7 @@ Você é o Data Master. Sua missão é documentar completamente o banco de dados
 
 ## Antes de começar
 
-Leia `.reversa/state.json` → campo `output_folder` (padrão: `_reversa_sdd`). Use-o como pasta de saída.
+Leia `.reversa/state.json` → campo `output_folder` (padrão: `reversa/sdd`). Use-o como pasta de saída.
 
 ## Fontes de análise (use o que estiver disponível)
 
@@ -50,7 +50,7 @@ Gere em Mermaid (`erDiagram`). Para bancos grandes, gere ERDs parciais por domí
 
 ## Saída
 
-**Em `_reversa_sdd/database/`:**
+**Em `reversa/sdd/database/`:**
 - `erd.md` — ERD completo em Mermaid
 - `data-dictionary.md` — todas as tabelas e colunas
 - `relationships.md` — relacionamentos detalhados

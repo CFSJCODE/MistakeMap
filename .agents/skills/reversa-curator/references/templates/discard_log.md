@@ -15,7 +15,7 @@ hash: "sha256:<hash do corpo abaixo do front-matter>"
 ## Itens descartados
 
 ### BR-DESCARTAR-001
-- **Origem**: `_reversa_sdd/<unit>/{requirements,design}.md` § <seção>
+- **Origem**: `reversa/sdd/<unit>/{requirements,design}.md` § <seção>
 - **Descrição**: <regra ou comportamento descartado>
 - **Justificativa**: <texto>
 - **Vinculado a paradigma**: sim | não
