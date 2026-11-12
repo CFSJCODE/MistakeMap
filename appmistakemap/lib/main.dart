@@ -1423,6 +1423,10 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   /// Voltar do sistema: primeiro desempilha o que estiver aberto dentro do
   /// Mapa; numa aba que não é o Início, volta ao Início; no Início, sai.
   void _voltar() {
+    if (_indiceAtual == 0) {
+      VoltarAosPerfis.of(context)?.call();
+      return;
+    }
     if (_indiceAtual == _mapa) {
       final pilha = _mapaNavegador.currentState;
       if (pilha != null && pilha.canPop()) {
@@ -1474,7 +1478,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       onSignOut: _sair,
       onAbout: _abrirSobre,
       child: PopScope(
-        canPop: _indiceAtual == 0,
+        canPop: _indiceAtual == 0 && VoltarAosPerfis.of(context) == null,
         onPopInvokedWithResult: (didPop, result) {
           if (!didPop) _voltar();
         },
