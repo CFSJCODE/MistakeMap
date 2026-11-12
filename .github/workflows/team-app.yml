@@ -232,7 +232,9 @@ jobs:
           platform: android
           release-version: ${{ needs.preparar.outputs.versao }}
           working-directory: appmistakemap
-          args: -- ${{ env.FLUTTER_ARGS_ANDROID }} ${{ env.TEAM_LOGIN_ARGS }}
+          # O release 1.0.2+3 da equipe saiu antes dos atalhos de e-mail; as
+          # --dart-define só mudam constantes do Dart, então o patch pode diferir.
+          args: --allow-build-flag-diffs -- ${{ env.FLUTTER_ARGS_ANDROID }} ${{ env.TEAM_LOGIN_ARGS }}
 
       # Patch também deixa um APK no GitHub, com o código deste commit.
       - uses: subosito/flutter-action@v2
@@ -311,7 +313,9 @@ jobs:
           platform: windows
           release-version: ${{ needs.preparar.outputs.versao }}
           working-directory: appmistakemap
-          args: -- ${{ env.FLUTTER_ARGS_WINDOWS }} ${{ env.TEAM_LOGIN_ARGS }}
+          # O release 1.0.2+3 da equipe saiu antes dos atalhos de e-mail; as
+          # --dart-define só mudam constantes do Dart, então o patch pode diferir.
+          args: --allow-build-flag-diffs -- ${{ env.FLUTTER_ARGS_WINDOWS }} ${{ env.TEAM_LOGIN_ARGS }}
 
   publicar:
     name: GitHub Releases (equipe)
