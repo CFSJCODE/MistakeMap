@@ -62,6 +62,9 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
   String? _chaveAtiva;
   bool _consentimentoDispensado = false;
 
+  /// Tela inicial do seletor (lista de perfis) aberta pelo voltar.
+  bool _naInicial = false;
+
   /// Perfil pedido no "Já tenho conta: entrar" antes deste login.
   PerfilCadastro? _pedido;
 
@@ -142,11 +145,16 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
   }
 
   void _trocar(PerfilAtivo perfil) {
-    setState(() => _chaveAtiva = perfil.chave);
+    setState(() {
+      _chaveAtiva = perfil.chave;
+      _naInicial = false;
+    });
     unawaited(
       widget.preferencias.guardarPerfilAtivo(widget.usuarioId, perfil.chave),
     );
   }
+
+  void _voltarAosPerfis() => setState(() => _naInicial = true);
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +173,14 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     }
     final perfis = ctx.perfis;
     final ativo = ctx.perfilInicial(_chaveAtiva);
+    final variosPerfis = perfis.length >= 2;
+    if (variosPerfis && _naInicial) {
+      return TelaInicialPerfis(
+        perfis: perfis,
+        ativo: ativo,
+        onEscolher: _trocar,
+      );
+    }
     Widget conteudo;
     if (ativo.ehEstudante &&
         ctx.consentimentoPendente &&
@@ -189,19 +205,36 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
         repositorio: _repo,
       );
     }
+    final noEstudante = identical(conteudo, widget.estudante);
+    // Fora do app de estudante (que trata o próprio voltar e chama
+    // VoltarAosPerfis no Início), o voltar do sistema leva aos perfis.
+    if (!noEstudante && variosPerfis) {
+      conteudo = PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _voltarAosPerfis();
+        },
+        child: conteudo,
+      );
+    }
     // O app de estudante fica vivo (IndexedStack) ao trocar de perfil, para
     // não perder abas, rascunhos e a fila de sincronização.
-    final pilha = IndexedStack(
-      index: identical(conteudo, widget.estudante) ? 0 : 1,
-      children: [
-        widget.estudante,
-        identical(conteudo, widget.estudante) ? const SizedBox() : conteudo,
-      ],
+    final pilha = VoltarAosPerfis(
+      onVoltar: variosPerfis ? _voltarAosPerfis : null,
+      child: IndexedStack(
+        index: noEstudante ? 0 : 1,
+        children: [widget.estudante, noEstudante ? const SizedBox() : conteudo],
+      ),
     );
-    if (perfis.length < 2) return pilha;
+    if (!variosPerfis) return pilha;
     return Column(
       children: [
-        SeletorPerfil(perfis: perfis, ativo: ativo, onTrocar: _trocar),
+        SeletorPerfil(
+          perfis: perfis,
+          ativo: ativo,
+          onTrocar: _trocar,
+          onVoltar: _voltarAosPerfis,
+        ),
         Expanded(
           child: MediaQuery.removePadding(
             context: context,
@@ -221,11 +254,15 @@ class SeletorPerfil extends StatelessWidget {
     required this.perfis,
     required this.ativo,
     required this.onTrocar,
+    this.onVoltar,
   });
 
   final List<PerfilAtivo> perfis;
   final PerfilAtivo ativo;
   final ValueChanged<PerfilAtivo> onTrocar;
+
+  /// Volta à tela inicial do seletor (lista de perfis).
+  final VoidCallback? onVoltar;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -241,6 +278,17 @@ class SeletorPerfil extends StatelessWidget {
     ),
     child: Row(
       children: [
+        if (onVoltar != null) ...[
+          Tooltip(
+            message: 'Voltar aos perfis',
+            child: IconButton(
+              key: const ValueKey('voltar-perfis'),
+              icon: const Icon(WindowsIcons.back, size: 18),
+              onPressed: onVoltar,
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
         const Text(
           'Perfil',
           style: TextStyle(
@@ -271,6 +319,75 @@ class SeletorPerfil extends StatelessWidget {
           ),
         ),
       ],
+    ),
+  );
+}
+
+/// Avisa o app de estudante de que existe a tela de perfis acima dele: no
+/// Início, o voltar do sistema leva para lá em vez de fechar o app.
+class VoltarAosPerfis extends InheritedWidget {
+  const VoltarAosPerfis({
+    super.key,
+    required this.onVoltar,
+    required super.child,
+  });
+
+  /// Nulo quando a conta tem um perfil só (o voltar fecha o app, como antes).
+  final VoidCallback? onVoltar;
+
+  static VoidCallback? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<VoltarAosPerfis>()?.onVoltar;
+
+  @override
+  bool updateShouldNotify(VoltarAosPerfis old) =>
+      (old.onVoltar == null) != (onVoltar == null);
+}
+
+/// Tela inicial do seletor: todos os perfis da conta. O voltar daqui fecha o
+/// app; cada perfil abre a tela dele sem outro login.
+class TelaInicialPerfis extends StatelessWidget {
+  const TelaInicialPerfis({
+    super.key,
+    required this.perfis,
+    required this.ativo,
+    required this.onEscolher,
+  });
+
+  final List<PerfilAtivo> perfis;
+  final PerfilAtivo ativo;
+  final ValueChanged<PerfilAtivo> onEscolher;
+
+  @override
+  Widget build(BuildContext context) => AuroraBackground(
+    child: SafeArea(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 32),
+            children: [
+              CartaoEscola(
+                titulo: 'Escolha o perfil',
+                subtitulo:
+                    'Toque num perfil para abrir. Para voltar a esta lista, '
+                    'use o voltar do aparelho ou a seta ao lado de "Perfil".',
+                children: [
+                  for (final p in perfis) ...[
+                    BotaoEscola(
+                      p.chave == ativo.chave ? '${p.rotulo} (atual)' : p.rotulo,
+                      key: ValueKey('perfil-${p.chave}'),
+                      principal: p.chave == ativo.chave,
+                      onPressed: () => onEscolher(p),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     ),
   );
 }

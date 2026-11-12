@@ -169,15 +169,22 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
   }
 
   @override
-  Widget build(BuildContext context) => AuroraBackground(
-    child: SafeArea(
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 880),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
-            children: _perfil == null ? _escolha() : _formulario(_perfil!),
+  Widget build(BuildContext context) => PopScope(
+    // Voltar do sistema no formulário volta à lista de perfis.
+    canPop: _perfil == null,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop && !_enviando) _escolher(null);
+    },
+    child: AuroraBackground(
+      child: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 880),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+              children: _perfil == null ? _escolha() : _formulario(_perfil!),
+            ),
           ),
         ),
       ),

@@ -452,6 +452,63 @@ void main() {
     },
   );
 
+  testWidgets('porta: voltar leva à tela de perfis e dali a outro perfil', (
+    tester,
+  ) async {
+    final repo = _RepoFalso(
+      ctx: const ContextoPerfil(
+        perfil: PerfilCadastro.dono,
+        papeis: [
+          PapelEscola(
+            escolaId: _escola,
+            escolaNome: 'Escola de Robótica',
+            papel: 'owner',
+          ),
+        ],
+      ),
+    );
+    await _render(
+      tester,
+      PortaDePerfil(
+        usuarioId: _uid,
+        repositorio: repo,
+        estudante: const Text('APP DO ESTUDANTE'),
+      ),
+    );
+    expect(find.text('Painel do dono'), findsOneWidget);
+
+    // Voltar do aparelho no painel: abre a tela de perfis.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(TelaInicialPerfis), findsOneWidget);
+    expect(find.text('Escolha o perfil'), findsOneWidget);
+
+    await _tocar(tester, find.byKey(const ValueKey('perfil-student')));
+    expect(find.text('APP DO ESTUDANTE'), findsOneWidget);
+    expect(find.byType(TelaInicialPerfis), findsNothing);
+
+    // A seta ao lado de "Perfil" também volta.
+    await _tocar(tester, find.byKey(const ValueKey('voltar-perfis')));
+    expect(find.byType(TelaInicialPerfis), findsOneWidget);
+    await _tocar(tester, find.byKey(const ValueKey('perfil-owner:$_escola')));
+    expect(find.text('Painel do dono'), findsOneWidget);
+  });
+
+  testWidgets('Quem é você?: voltar do aparelho no formulário volta à lista', (
+    tester,
+  ) async {
+    await _render(
+      tester,
+      TelaQuemEVoce(repositorio: _RepoFalso(), onConcluido: (_) {}),
+    );
+    await _tocar(tester, find.text('Coordenador'));
+    expect(find.text('Continuar'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Continuar'), findsNothing);
+    expect(find.text('Coordenador'), findsOneWidget);
+  });
+
   testWidgets('dono gera convite de coordenação de uso único', (tester) async {
     final repo = _RepoFalso();
     await _render(
