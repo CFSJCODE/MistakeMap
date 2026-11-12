@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 
+import '../auth/team_login.dart';
 import '../school/escola_ui.dart';
 import '../theme/design_tokens.dart';
 import 'billing_repository.dart';
@@ -23,12 +24,17 @@ class CartaoCobranca extends StatefulWidget {
     required this.escolaNome,
     required this.papel,
     required this.repositorio,
+    this.mostrarCobrancaTeste = kTeamBuild,
   });
 
   final String escolaId;
   final String escolaNome;
   final String papel;
   final BillingRepository repositorio;
+
+  /// Botão "Cobrança de teste (R$ 5)": só no app da equipe, para que um
+  /// cliente não gere um Pix de teste por engano no app de produção.
+  final bool mostrarCobrancaTeste;
 
   @override
   State<CartaoCobranca> createState() => _CartaoCobrancaState();
@@ -313,7 +319,7 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
                 _editando ? 'Fechar dados de cobrança' : 'Dados de cobrança',
                 onPressed: () => setState(() => _editando = !_editando),
               ),
-              if (paga && !demo)
+              if (paga && !demo && widget.mostrarCobrancaTeste)
                 BotaoEscola(
                   r'Cobrança de teste (R$ 5)',
                   onPressed: ativo && !_salvando ? _cobrancaTeste : null,
@@ -325,7 +331,7 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
                 ),
             ],
           ),
-          if (paga && !demo)
+          if (paga && !demo && widget.mostrarCobrancaTeste)
             const Padding(
               padding: EdgeInsets.only(top: 8),
               child: Text(

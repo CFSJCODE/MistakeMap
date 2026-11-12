@@ -37,7 +37,11 @@ class _FakeBilling implements BillingRepository {
   }
 }
 
-Future<void> _render(WidgetTester tester, _FakeBilling billing) async {
+Future<void> _render(
+  WidgetTester tester,
+  _FakeBilling billing, {
+  bool appEquipe = true,
+}) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(420, 1600);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -51,6 +55,7 @@ Future<void> _render(WidgetTester tester, _FakeBilling billing) async {
             escolaNome: 'Escola Teste de Cobrança (real)',
             papel: 'owner',
             repositorio: billing,
+            mostrarCobrancaTeste: appEquipe,
           ),
         ),
       ),
@@ -80,5 +85,11 @@ void main() {
   testWidgets('escola demo não mostra a cobrança de teste', (tester) async {
     await _render(tester, _FakeBilling(demo: true));
     expect(find.text(r'Cobrança de teste (R$ 5)'), findsNothing);
+  });
+
+  testWidgets('app de produção não mostra a cobrança de teste', (tester) async {
+    await _render(tester, _FakeBilling(), appEquipe: false);
+    expect(find.text(r'Cobrança de teste (R$ 5)'), findsNothing);
+    expect(find.text('Escolher plano e pagar'), findsOneWidget);
   });
 }
