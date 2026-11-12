@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/team_login.dart' show kTeamBuild;
 import '../billing/billing_repository.dart';
+import '../reports/school_reports.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'escola_repositorio.dart';
@@ -27,6 +28,7 @@ class PortaDePerfil extends StatefulWidget {
     required this.estudante,
     this.repositorio,
     this.cobranca,
+    this.relatorios,
     this.preferencias = const PreferenciasPerfil(),
     this.sair,
     this.rodapeCadastro,
@@ -41,6 +43,7 @@ class PortaDePerfil extends StatefulWidget {
   final Widget estudante;
   final RepositorioEscola? repositorio;
   final BillingRepository? cobranca;
+  final SchoolReportsRepository? relatorios;
   final PreferenciasPerfil preferencias;
 
   /// Sai da conta (testes trocam). Padrão: signOut do Supabase.
@@ -76,6 +79,12 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
       widget.cobranca ??
       (widget.repositorio == null
           ? SupabaseBillingRepository(Supabase.instance.client)
+          : null);
+
+  late final SchoolReportsRepository? _relatorios =
+      widget.relatorios ??
+      (widget.repositorio == null
+          ? SupabaseSchoolReportsRepository(Supabase.instance.client)
           : null);
 
   ContextoPerfil? _ctx;
@@ -248,6 +257,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
         perfil: ativo,
         repositorio: _repo,
         cobranca: _cobranca,
+        relatorios: _relatorios,
       );
     }
     final noEstudante = identical(conteudo, widget.estudante);

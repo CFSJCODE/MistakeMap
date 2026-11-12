@@ -3,6 +3,8 @@ import 'package:fluent_ui/fluent_ui.dart';
 import '../billing/billing_panel.dart';
 import '../billing/billing_repository.dart';
 import '../platform/platform_forms.dart' show PlatformCheck;
+import '../reports/school_reports.dart';
+import '../reports/school_reports_page.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'escola_repositorio.dart';
@@ -36,6 +38,7 @@ class TelaPainelEscola extends StatefulWidget {
     required this.perfil,
     required this.repositorio,
     this.cobranca,
+    this.relatorios,
   });
 
   final PerfilAtivo perfil;
@@ -43,6 +46,9 @@ class TelaPainelEscola extends StatefulWidget {
 
   /// Cobrança (Edge Function school-billing). Sem ela, o cartão não aparece.
   final BillingRepository? cobranca;
+
+  /// Relatórios (RPC school_reports). Sem ele, o cartão não aparece.
+  final SchoolReportsRepository? relatorios;
 
   @override
   State<TelaPainelEscola> createState() => _TelaPainelEscolaState();
@@ -218,6 +224,13 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
               papel: papel,
               repositorio: widget.cobranca!,
             ),
+          if (widget.relatorios != null &&
+              widget.perfil.escolaId != null &&
+              const {'owner', 'finance', 'coordinator'}.contains(papel))
+            _cartaoRelatorios(
+              papel,
+              '${escola['name'] ?? widget.perfil.escolaNome ?? 'Escola'}',
+            ),
           if (membros.isNotEmpty && papel != 'teacher')
             CartaoEscola(
               titulo: 'Pessoas na escola',
@@ -238,6 +251,59 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
           if (podeEquipe || equipes.isNotEmpty)
             _cartaoEquipes(podeEquipe, equipes),
         ],
+      ],
+    );
+  }
+
+  Widget _cartaoRelatorios(String papel, String nome) {
+    void abrir(ReportSection secao) => Navigator.of(context).push(
+      FluentPageRoute(
+        builder: (_) => SchoolReportsPage(
+          schoolId: widget.perfil.escolaId!,
+          schoolName: nome,
+          repository: widget.relatorios!,
+          initial: secao,
+        ),
+      ),
+    );
+    final pedagogico = papel != 'finance';
+    final financeiro = papel != 'coordinator';
+    return CartaoEscola(
+      titulo: 'Relatórios',
+      subtitulo: switch (papel) {
+        'owner' =>
+          'Uso pedagógico (alunos ativos, análises, práticas, turmas e mapa '
+              'de erros) e financeiro (custo, faturas, pagamentos e formas de '
+              'pagamento).',
+        'finance' =>
+          'Custo pelo uso, faturas, pagamentos e formas de pagamento. '
+              'Exporta as faturas em CSV.',
+        _ =>
+          'Alunos ativos, análises, práticas, turmas e o mapa de erros da '
+              'escola, só com totais.',
+      },
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (pedagogico)
+              FilledButton(
+                onPressed: () => abrir(ReportSection.pedagogical),
+                child: const Text('Relatório pedagógico'),
+              ),
+            if (financeiro && pedagogico)
+              Button(
+                onPressed: () => abrir(ReportSection.financial),
+                child: const Text('Relatório financeiro'),
+              )
+            else if (financeiro)
+              FilledButton(
+                onPressed: () => abrir(ReportSection.financial),
+                child: const Text('Relatório financeiro'),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -270,8 +336,8 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
               'aprender > Turmas: a turma fica ligada a esta escola. Aqui você '
               'cria as equipes de robótica.',
         _ =>
-          'Convide professores, estudantes e responsáveis. O mapa das turmas e '
-              'os relatórios da escola chegam nas próximas etapas.',
+          'Convide professores, estudantes e responsáveis. Em "Relatórios" '
+              'você acompanha o uso da escola e o mapa de erros, só com totais.',
       }, style: const TextStyle(color: MistakeMapDesign.content)),
     ],
   );

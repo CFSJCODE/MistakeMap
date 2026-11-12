@@ -59,3 +59,22 @@ Regras:
 - Professor sem convite começa no plano Grátis: `start_free_teacher` cria uma escola Grátis com ele como dono e professor (pelo mesmo caminho de convite). Turma nova de quem dá aula em uma escola só fica ligada a ela.
 - `guardian_consent_pending(user)`: estudante menor de 18 anos, sem papel de estudante numa escola, sem turma de escola e sem aceite ativo do responsável. As funções de IA (analyze-attempt, generate-practice, study-material, dissertativa do question-bank e process-batch) recusam enquanto for verdadeiro. Conta antiga sem data de nascimento não é bloqueada.
 - Conta sem perfil e sem papel vê "Quem é você?". Quem já tem papel (convite, planilha) pula a tela. Mais de um papel → seletor de perfil no topo.
+
+## Relatórios da escola (migration 20261112210000)
+
+`public.school_reports(p_school, p_months)` devolve, num jsonb, o relatório
+pedagógico (dono e coordenação) e o financeiro (dono e Financeiro/Compras).
+TI, professor, aluno e quem é de fora recebem 42501.
+
+- Pedagógico: uso por mês (alunos ativos, análises, práticas), turmas
+  (alunos, ativos em 28 dias, tarefas) e mapa de erros dos últimos 90 dias
+  (tipo de erro e conceito × tipo). O mapa só aparece com 5+ alunos com erro
+  e cada conceito com 3+ alunos. Nunca há id, nome ou e-mail de aluno.
+- Financeiro: custo de cada mês pelo uso (mesma fórmula da fatura), faturas
+  por mês (pago e em aberto), forma de pagamento, situação e as últimas
+  faturas (o app exporta em CSV).
+- `school_demo_report`: amostra fictícia só lida para escola com
+  `school_billing_settings.demo`, sempre marcada `sample = true` no app.
+
+Testes: `scripts/school_billing/reports_tests.sql` (roda em
+`scripts/verify-school-billing.sh`).
