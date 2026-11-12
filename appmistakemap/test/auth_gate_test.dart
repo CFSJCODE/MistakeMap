@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:appmistakemap/main.dart';
 import 'package:appmistakemap/study/study_repository.dart';
+import 'package:appmistakemap/school/entrada_perfil.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -28,6 +29,27 @@ GoTrueClient get _auth => Supabase.instance.client.auth;
 
 // Corpos enviados a /auth/v1/recover (link de redefinição de senha).
 final _pedidosRecuperacao = <Map<String, dynamic>>[];
+
+// Papéis de escola que o servidor devolve para a conta (school_members).
+var _papeisNoServidor = '[]';
+
+const _usuarioTeste = {
+  'id': '11111111-1111-4111-8111-111111111111',
+  'email': 'estudante@example.test',
+  'aud': 'authenticated',
+  'created_at': '2026-10-01T00:00:00Z',
+};
+
+Map<String, Object> _sessaoJson() => {
+  'access_token': 'token-de-teste',
+  'token_type': 'bearer',
+  'refresh_token': 'refresh-de-teste',
+  'expires_in': 3600,
+  'expires_at':
+      DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+      1000,
+  'user': _usuarioTeste,
+};
 
 class _AuthStudyStore implements StudyStore {
   final _values = <String, String>{};
@@ -68,9 +90,27 @@ Future<void> _renderApp(
   expect(tester.takeException(), isNull);
 }
 
+Future<void> _escolherPerfil(WidgetTester tester, String codigo) async {
+  final cartao = find.byKey(ValueKey('entrada-$codigo'));
+  await tester.ensureVisible(cartao);
+  await _settle(tester);
+  await tester.tap(cartao);
+  await _settle(tester);
+}
+
+Future<void> _entrar(WidgetTester tester) async {
+  await tester.enterText(find.byType(TextBox).at(0), 'estudante@example.test');
+  await tester.enterText(find.byType(TextBox).at(1), 'senha-de-teste');
+  await tester.tap(find.text('Entrar'));
+  await _settle(tester);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    _papeisNoServidor = '[]';
+  });
 
   setUpAll(() async {
     await Supabase.initialize(
@@ -86,6 +126,23 @@ void main() {
       httpClient: MockClient((request) async {
         // Nenhuma requisição deixa o processo de teste.
         expect(request.url.host, 'auth-gate-tests.invalid');
+        // Login com e-mail e senha.
+        if (request.url.path == '/auth/v1/token') {
+          return http.Response(
+            jsonEncode(_sessaoJson()),
+            200,
+            headers: {'content-type': 'application/json'},
+            request: request,
+          );
+        }
+        if (request.url.path == '/rest/v1/school_members') {
+          return http.Response(
+            _papeisNoServidor,
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+            request: request,
+          );
+        }
         if (request.url.path == '/auth/v1/logout') {
           return http.Response('', 204, request: request);
         }
@@ -151,6 +208,7 @@ void main() {
   ) async {
     expect(_auth.currentSession, isNull);
     await _renderApp(tester);
+    await _escolherPerfil(tester, 'student');
     expect(find.byType(TelaCadastro), findsOneWidget);
 
     _injetarErro(const AuthException('Falha no retorno do OAuth.'));
@@ -168,25 +226,6 @@ void main() {
   testWidgets('Falha de refresh por rede não derruba a sessão válida', (
     tester,
   ) async {
-    await _auth.setInitialSession(
-      jsonEncode({
-        'access_token': 'token-de-teste',
-        'token_type': 'bearer',
-        'refresh_token': 'refresh-de-teste',
-        'expires_in': 3600,
-        'expires_at':
-            DateTime.now()
-                .add(const Duration(hours: 1))
-                .millisecondsSinceEpoch ~/
-            1000,
-        'user': {
-          'id': '11111111-1111-4111-8111-111111111111',
-          'email': 'estudante@example.test',
-          'aud': 'authenticated',
-          'created_at': '2026-10-01T00:00:00Z',
-        },
-      }),
-    );
     addTearDown(_auth.signOut);
     // Auth lifecycle is exercised under FakeAsync. Supply the study service
     // through its public seam: FunctionsClient's JSON worker uses real
@@ -210,6 +249,8 @@ void main() {
     }, store: _AuthStudyStore());
     addTearDown(studyRepository.dispose);
     await _renderApp(tester, studyRepository: studyRepository);
+    await _escolherPerfil(tester, 'student');
+    await _entrar(tester);
     expect(find.byType(TelaNavegacao), findsOneWidget);
     expect(find.text('Seu estudo de hoje'), findsOneWidget);
     expect(find.text('Definir meu objetivo'), findsOneWidget);
@@ -231,6 +272,7 @@ void main() {
   ) async {
     _pedidosRecuperacao.clear();
     await _renderApp(tester);
+    await _escolherPerfil(tester, 'student');
     await tester.enterText(find.byType(TextBox).first, 'aluno@example.test');
     await tester.tap(find.byKey(const Key('login-esqueci-senha')));
     await _settle(tester);
@@ -254,10 +296,78 @@ void main() {
     tester,
   ) async {
     await _renderApp(tester);
+    await _escolherPerfil(tester, 'student');
     expect(find.byKey(const Key('login-esqueci-senha')), findsOneWidget);
     await tester.tap(find.text('Não tenho conta — Criar'));
     await _settle(tester);
     expect(find.byKey(const Key('login-esqueci-senha')), findsNothing);
+  });
+
+  testWidgets('Sessão salva no aparelho não pula a escolha de perfil', (
+    tester,
+  ) async {
+    await _auth.setInitialSession(jsonEncode(_sessaoJson()));
+    addTearDown(_auth.signOut);
+    await _renderApp(tester);
+    expect(find.byType(TelaEntradaPorPerfil), findsOneWidget);
+    expect(find.byType(TelaNavegacao), findsNothing);
+    // Depois do perfil vem o login, mesmo com a sessão salva.
+    await _escolherPerfil(tester, 'teacher');
+    expect(find.byType(TelaCadastro), findsOneWidget);
+    expect(find.text('Entrar como professor'), findsOneWidget);
+    // Voltar leva de novo à lista de perfis.
+    await tester.tap(find.byKey(const Key('login-voltar-perfis')));
+    await _settle(tester);
+    expect(find.byType(TelaEntradaPorPerfil), findsOneWidget);
+  });
+
+  testWidgets('Perfil que a conta não tem no servidor é recusado no login', (
+    tester,
+  ) async {
+    addTearDown(_auth.signOut);
+    await _renderApp(tester);
+    await _escolherPerfil(tester, 'coordinator');
+    await _entrar(tester);
+    expect(find.byType(TelaCadastro), findsOneWidget);
+    expect(find.byType(TelaNavegacao), findsNothing);
+    expect(
+      find.textContaining('Esta conta não tem o perfil "Coordenador"'),
+      findsOneWidget,
+    );
+    expect(_auth.currentSession, isNull);
+    await tester.pump(const Duration(seconds: 4));
+    await _settle(tester);
+  });
+
+  testWidgets('Depois do login, voltar ao início mostra os perfis de novo', (
+    tester,
+  ) async {
+    addTearDown(_auth.signOut);
+    final studyRepository = SupabaseStudyRepository.withTransport(
+      (userId, body) async => body['action'] == 'session'
+          ? {'session': null}
+          : {
+              'profile': null,
+              'due_count': 0,
+              'pending_diagnostics': 0,
+              'estimated_minutes': 0,
+              'reviewed_today': 0,
+              'progress': {'reviews': 0, 'period_days': 7},
+            },
+      store: _AuthStudyStore(),
+    );
+    addTearDown(studyRepository.dispose);
+    await _renderApp(tester, studyRepository: studyRepository);
+    await _escolherPerfil(tester, 'student');
+    await _entrar(tester);
+    expect(find.byType(TelaNavegacao), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('voltar-perfis')));
+    await _settle(tester);
+    expect(find.byType(TelaEntradaPorPerfil), findsOneWidget);
+    expect(find.byType(TelaNavegacao), findsNothing);
+    // Escolher de novo pede o login outra vez.
+    await _escolherPerfil(tester, 'student');
+    expect(find.byType(TelaCadastro), findsOneWidget);
   });
 
   test('Falha do perfil vira aviso amigável', () {
