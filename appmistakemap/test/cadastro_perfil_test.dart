@@ -110,6 +110,47 @@ Future<void> _digitar(WidgetTester tester, String rotulo, String texto) async {
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  group('perfil escolhido antes do login', () {
+    PapelEscola papel(String role, {bool ativo = true}) => PapelEscola(
+      escolaId: _escola,
+      escolaNome: 'Escola de Robótica',
+      papel: role,
+      ativo: ativo,
+    );
+
+    test('conta nova entra em qualquer perfil e vai ao cadastro', () {
+      for (final p in PerfilCadastro.values) {
+        expect(motivoPerfilRecusado(p, const ContextoPerfil()), isNull);
+      }
+    });
+
+    test('estudante vale para toda conta; coordenação e TI só com papel', () {
+      const professor = ContextoPerfil(perfil: PerfilCadastro.professor);
+      expect(motivoPerfilRecusado(PerfilCadastro.estudante, professor), isNull);
+      expect(motivoPerfilRecusado(PerfilCadastro.professor, professor), isNull);
+      expect(
+        motivoPerfilRecusado(PerfilCadastro.coordenador, professor),
+        contains('"Coordenador"'),
+      );
+      expect(motivoPerfilRecusado(PerfilCadastro.dono, professor), isNotNull);
+      final coord = ContextoPerfil(
+        perfil: PerfilCadastro.estudante,
+        papeis: [papel('coordinator'), papel('it_admin', ativo: false)],
+      );
+      expect(motivoPerfilRecusado(PerfilCadastro.coordenador, coord), isNull);
+      // Papel suspenso não libera.
+      expect(motivoPerfilRecusado(PerfilCadastro.ti, coord), isNotNull);
+    });
+
+    test('responsável com filho vinculado entra como responsável', () {
+      const pai = ContextoPerfil(
+        perfil: PerfilCadastro.estudante,
+        temFilhos: true,
+      );
+      expect(motivoPerfilRecusado(PerfilCadastro.responsavel, pai), isNull);
+    });
+  });
+
   group('regras do cadastro', () {
     final hoje = DateTime(2026, 11, 11);
 

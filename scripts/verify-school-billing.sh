@@ -38,6 +38,7 @@ run -f "$mig/20261111200000_class_map_assignments.sql"
 run -f "$mig/20261111210000_school_plans_quota.sql"
 run -f "$mig/20261111223000_signup_profiles.sql"
 run -f "$mig/20261112170000_school_billing.sql"
+run -f "$mig/20261112190000_school_billing_demo_guard.sql"
 run -o /dev/null -f "$here/tests.sql" 2>&1 | sed -e 's/^psql:[^ ]* //' -e 's/^NOTICE:  //'
 [ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
 # Edge Function de cobrança contra o mesmo banco (precisa de deno).

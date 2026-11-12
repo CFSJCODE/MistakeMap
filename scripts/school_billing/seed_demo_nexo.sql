@@ -7,7 +7,7 @@
 -- .demo = true faz o fechamento do mês e a Edge Function nunca cobrarem
 -- esta escola no Asaas.
 --
--- Uso (no banco do projeto, depois da migration 20261112170000):
+-- Uso (no banco do projeto, depois das migrations 20261112170000 e 20261112190000):
 --   psql "$DB_URL" -v owner_email=dono.demo@... -f scripts/school_billing/seed_demo_nexo.sql
 -- Idempotente: rodar de novo só atualiza os números.
 \set ON_ERROR_STOP on

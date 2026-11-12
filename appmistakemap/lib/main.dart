@@ -50,8 +50,10 @@ import 'sync/sobreposicao.dart';
 import 'study/study_today_panel.dart';
 import 'platform/platform_hub.dart';
 import 'exercicios/banco_questoes.dart';
-import 'school/escola_repositorio.dart' show PreferenciasPerfil;
-import 'school/perfil_modelos.dart' show PerfilCadastro;
+import 'school/entrada_perfil.dart';
+import 'school/escola_repositorio.dart'
+    show PreferenciasPerfil, RepositorioEscolaSupabase;
+import 'school/perfil_modelos.dart' show PerfilCadastro, motivoPerfilRecusado;
 import 'school/porta_perfil.dart';
 
 part 'caderno_erros.dart';
@@ -1040,9 +1042,11 @@ Future<void> _sairDaConta() async {
 }
 
 // ─── AuthGate ─────────────────────────────────────────────────────────────────
-// Redireciona para login ou app conforme o estado da sessão Supabase. O link
-// de recuperação de senha abre uma sessão temporária: enquanto ela durar, a
-// tela pede a nova senha antes de liberar o app.
+// Toda abertura do app (e todo voltar ao início) passa por: escolha do perfil
+// → login com e-mail e senha → conferência no servidor de que a conta tem
+// aquele perfil. Só então o app abre, já no perfil escolhido. Uma sessão
+// salva no aparelho não pula essas etapas. O link de recuperação de senha
+// abre uma sessão temporária: enquanto ela durar, a tela pede a nova senha.
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key, this.studyRepository});
   final StudyRepository? studyRepository;
@@ -1053,6 +1057,23 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   bool _recuperandoSenha = false;
+
+  /// Perfil escolhido na tela inicial desta abertura.
+  PerfilCadastro? _perfilEntrada;
+
+  /// Login feito e perfil conferido no servidor nesta abertura.
+  bool _entradaLiberada = false;
+
+  void _escolherPerfil(PerfilCadastro perfil) {
+    setState(() => _perfilEntrada = perfil);
+    // O "Quem é você?" e a porta de perfil leem o mesmo pedido.
+    unawaited(const PreferenciasPerfil().pedirPerfilNoLogin(perfil));
+  }
+
+  void _voltarAoInicio() => setState(() {
+    _entradaLiberada = false;
+    _perfilEntrada = null;
+  });
 
   @override
   void initState() {
@@ -1076,17 +1097,6 @@ class _AuthGateState extends State<AuthGate> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const _LoadingScaffold();
         }
-        // Entrou sem rede com a conta salva neste aparelho: o app funciona
-        // pelo cache e pela fila até a próxima entrada com internet.
-        if (_db.auth.currentSession == null) {
-          final offline = _sessaoOffline.value;
-          if (offline != null) {
-            return TelaNavegacao(
-              user: offline,
-              studyRepository: widget.studyRepository,
-            );
-          }
-        }
         final evento = snapshot.data?.event;
         if (evento == AuthChangeEvent.passwordRecovery) {
           _recuperandoSenha = true;
@@ -1097,15 +1107,46 @@ class _AuthGateState extends State<AuthGate> {
         // chega como erro sem data, mas a sessão continua válida e o usuário
         // não deve cair no login nem perder o estado das abas.
         final session = _db.auth.currentSession;
-        if (session == null) return TelaCadastro(erroAuth: snapshot.error);
-        if (_recuperandoSenha) {
+        final offline = session == null ? _sessaoOffline.value : null;
+        // Saiu da conta (Trocar de conta, conta recusada): volta ao início.
+        if (session == null && offline == null) _entradaLiberada = false;
+        if (session != null && _recuperandoSenha) {
           return TelaNovaSenha(
             onConcluido: () => setState(() => _recuperandoSenha = false),
           );
         }
+        if (!_entradaLiberada) {
+          final perfil = _perfilEntrada;
+          if (perfil == null) {
+            return TelaEntradaPorPerfil(
+              onEscolher: _escolherPerfil,
+              subtitulo: kTeamBuild
+                  ? 'Versão da equipe. Escolha o perfil e entre com a conta '
+                        'de desenvolvimento ou de administração.'
+                  : null,
+              rodape: const CartaoVersaoApp(),
+            );
+          }
+          return TelaCadastro(
+            erroAuth: snapshot.error,
+            perfilEntrada: perfil,
+            onVoltar: () => setState(() => _perfilEntrada = null),
+            onEntradaLiberada: () => setState(() => _entradaLiberada = true),
+          );
+        }
+        // Entrou sem rede com a conta salva neste aparelho: o app funciona
+        // pelo cache e pela fila até a próxima entrada com internet.
+        if (offline != null) {
+          return TelaNavegacao(
+            user: offline,
+            studyRepository: widget.studyRepository,
+          );
+        }
         return _CarregadorDePerfil(
-          supaUser: session.user,
+          supaUser: session!.user,
           studyRepository: widget.studyRepository,
+          perfilEntrada: _perfilEntrada,
+          onVoltarAoInicio: _voltarAoInicio,
         );
       },
     );
@@ -1129,7 +1170,14 @@ String? _avisoLoginPendente;
 class _CarregadorDePerfil extends StatefulWidget {
   final User supaUser;
   final StudyRepository? studyRepository;
-  const _CarregadorDePerfil({required this.supaUser, this.studyRepository});
+  final PerfilCadastro? perfilEntrada;
+  final VoidCallback? onVoltarAoInicio;
+  const _CarregadorDePerfil({
+    required this.supaUser,
+    this.studyRepository,
+    this.perfilEntrada,
+    this.onVoltarAoInicio,
+  });
 
   @override
   State<_CarregadorDePerfil> createState() => _CarregadorDePerfilState();
@@ -1205,6 +1253,8 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
     // "Quem é você?", seletor de perfil e consentimento do responsável.
     return PortaDePerfil(
       usuarioId: _appUser!.id,
+      perfilEntrada: widget.perfilEntrada,
+      onVoltarAoInicio: widget.onVoltarAoInicio,
       // No fim do "Quem é você?": versão instalada e atualizações.
       rodapeCadastro: const CartaoVersaoApp(),
       estudante: TelaNavegacao(
@@ -1502,7 +1552,24 @@ class TelaCadastro extends StatefulWidget {
   /// Atalhos da equipe; só existem em build de desenvolvimento (ver
   /// auth/team_login.dart). Testes passam a configuração direto.
   final TeamLoginConfig? equipe;
-  const TelaCadastro({super.key, this.erroAuth, this.equipe});
+
+  /// Perfil escolhido na tela inicial. Com ele, o login só libera o app
+  /// depois de o servidor confirmar que a conta tem esse perfil.
+  final PerfilCadastro? perfilEntrada;
+
+  /// Volta à escolha de perfil (seta e voltar do aparelho).
+  final VoidCallback? onVoltar;
+
+  /// Login feito e perfil confirmado.
+  final VoidCallback? onEntradaLiberada;
+  const TelaCadastro({
+    super.key,
+    this.erroAuth,
+    this.equipe,
+    this.perfilEntrada,
+    this.onVoltar,
+    this.onEntradaLiberada,
+  });
 
   @override
   State<TelaCadastro> createState() => _TelaCadastroState();
@@ -1528,6 +1595,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
   }
 
   Future<void> _lerPerfilPedido() async {
+    if (widget.perfilEntrada != null) return;
     final pedido = await const PreferenciasPerfil().perfilPedidoNoLogin();
     if (mounted && pedido != null) setState(() => _perfilPedido = pedido);
   }
@@ -1546,6 +1614,74 @@ class _TelaCadastroState extends State<TelaCadastro> {
         'Entre com a conta desse perfil. Depois do login o app abre nele.',
       ),
       onClose: _esquecerPerfilPedido,
+    ),
+  );
+
+  /// Confere no servidor se a conta que acabou de entrar tem o perfil
+  /// escolhido. Sem o perfil (ou sem resposta), sai da conta e avisa.
+  Future<void> _conferirEntrada(String uid) async {
+    final pedido = widget.perfilEntrada;
+    final liberar = widget.onEntradaLiberada;
+    if (pedido == null || liberar == null) return;
+    String? recusa;
+    try {
+      final ctx = await RepositorioEscolaSupabase(_db).contexto();
+      // A porta de perfil abre com este contexto, sem esperar outra consulta.
+      await const PreferenciasPerfil().guardarContexto(uid, ctx);
+      recusa = motivoPerfilRecusado(pedido, ctx);
+    } catch (_) {
+      recusa =
+          'Não foi possível conferir o perfil no servidor. Confira a conexão '
+          'e tente de novo.';
+    }
+    if (recusa != null) {
+      await _sairDaConta();
+      _snack(recusa, erro: true);
+      return;
+    }
+    liberar();
+  }
+
+  Widget _cabecalhoPerfil(PerfilCadastro perfil) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Row(
+      children: [
+        if (widget.onVoltar != null)
+          Tooltip(
+            message: 'Voltar aos perfis',
+            child: IconButton(
+              key: const Key('login-voltar-perfis'),
+              icon: const Icon(WindowsIcons.back, size: 18),
+              onPressed: _carregando ? null : widget.onVoltar,
+            ),
+          ),
+        const SizedBox(width: 8),
+        GlassIconTile(
+          icon: perfil.icone,
+          ink: perfil.tinta,
+          accent: perfil.acento,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Entrar como ${perfil.titulo.toLowerCase()}',
+                key: const Key('login-perfil-entrada'),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: MistakeMapDesign.primary,
+                ),
+              ),
+              const Text(
+                'Use o e-mail e a senha da conta desse perfil.',
+                style: TextStyle(color: MistakeMapDesign.content),
+              ),
+            ],
+          ),
+        ),
+      ],
     ),
   );
 
@@ -1607,6 +1743,10 @@ class _TelaCadastroState extends State<TelaCadastro> {
         if (res.user != null && res.session == null) {
           _snack('Verifique seu e-mail para confirmar o cadastro.');
         }
+        final novo = res.user;
+        if (novo != null && res.session != null) {
+          await _conferirEntrada(novo.id);
+        }
       } else {
         final res = await _db.auth.signInWithPassword(
           email: email,
@@ -1619,6 +1759,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
             email: user.email ?? email,
             senha: senha,
           );
+          await _conferirEntrada(user.id);
         }
       }
     } catch (e) {
@@ -1668,8 +1809,10 @@ class _TelaCadastroState extends State<TelaCadastro> {
         if (erro != null) {
           await _db.auth.signOut();
           _snack(erro, erro: true);
+          return;
         }
       }
+      await _conferirEntrada(user.id);
     } catch (e) {
       _snack(_mensagemErroAuth(e), erro: true);
     } finally {
@@ -1688,11 +1831,25 @@ class _TelaCadastroState extends State<TelaCadastro> {
       );
       return true;
     }
+    // Sem rede o servidor não confere papel de escola: offline só abre o
+    // modo estudante, que é de toda conta.
+    final pedido = widget.perfilEntrada;
+    if (pedido != null &&
+        pedido != PerfilCadastro.estudante &&
+        pedido != PerfilCadastro.estudanteEquipe) {
+      _snack(
+        'Sem conexão. O perfil "${pedido.titulo}" precisa do servidor para '
+        'conferir o acesso. Sem internet, só dá para entrar como estudante.',
+        erro: true,
+      );
+      return true;
+    }
     _sessaoOffline.value = AppUser(
       id: conta.id,
       email: conta.email,
       role: conta.papel,
     );
+    widget.onEntradaLiberada?.call();
     _snack(
       'Você entrou sem internet. O que fizer fica salvo no aparelho e é '
       'enviado quando a conexão voltar.',
@@ -1832,7 +1989,21 @@ class _TelaCadastroState extends State<TelaCadastro> {
 
   @override
   Widget build(BuildContext context) {
-    // Fora do shell: sem barra superior nem barra de abas.
+    // Fora do shell: sem barra superior nem barra de abas. O voltar do
+    // aparelho leva à escolha de perfil.
+    final voltar = widget.onVoltar;
+    final pagina = _pagina(context);
+    if (voltar == null) return pagina;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_carregando) voltar();
+      },
+      child: pagina,
+    );
+  }
+
+  Widget _pagina(BuildContext context) {
     return _PaginaAuth(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1927,7 +2098,9 @@ class _TelaCadastroState extends State<TelaCadastro> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_perfilPedido != null && !_modoCadastro)
+        if (widget.perfilEntrada != null)
+          _cabecalhoPerfil(widget.perfilEntrada!)
+        else if (_perfilPedido != null && !_modoCadastro)
           _avisoPerfilPedido(_perfilPedido!),
         // Campo de e-mail
         TextBox(
@@ -2148,8 +2321,10 @@ class _TelaCadastroState extends State<TelaCadastro> {
     ];
   }
 
+  // Na entrada por perfil o login é só por e-mail e senha.
   bool get _googleDisponivel =>
-      kIsWeb || defaultTargetPlatform == TargetPlatform.android;
+      widget.perfilEntrada == null &&
+      (kIsWeb || defaultTargetPlatform == TargetPlatform.android);
 
   Widget _termos(BuildContext context) {
     return Text.rich(

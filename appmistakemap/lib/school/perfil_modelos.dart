@@ -353,3 +353,34 @@ String dataIso(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-'
     '${d.month.toString().padLeft(2, '0')}-'
     '${d.day.toString().padLeft(2, '0')}';
+
+/// Confere o perfil escolhido na tela inicial (antes do login) com o que o
+/// servidor devolveu para a conta. Devolve null quando a conta pode entrar
+/// nele, ou a mensagem para mostrar no login.
+///
+/// O modo estudante é de toda conta. Conta nova (sem perfil e sem papel)
+/// entra e segue para o "Quem é você?". Coordenação, TI e Financeiro dependem do papel
+/// na escola (convite); professor, responsável e dono aceitam também o
+/// perfil do cadastro.
+String? motivoPerfilRecusado(PerfilCadastro pedido, ContextoPerfil ctx) {
+  if (ctx.precisaCadastro) return null;
+  bool temPapel(String papel) =>
+      ctx.papeis.any((p) => p.ativo && p.papel == papel);
+  final confere = switch (pedido) {
+    PerfilCadastro.estudante || PerfilCadastro.estudanteEquipe => true,
+    PerfilCadastro.professor =>
+      ctx.perfil == PerfilCadastro.professor || temPapel('teacher'),
+    PerfilCadastro.responsavel =>
+      ctx.perfil == PerfilCadastro.responsavel ||
+          ctx.temFilhos ||
+          temPapel('guardian'),
+    PerfilCadastro.dono =>
+      ctx.perfil == PerfilCadastro.dono || temPapel('owner'),
+    PerfilCadastro.coordenador => temPapel('coordinator'),
+    PerfilCadastro.ti => temPapel('it_admin'),
+    PerfilCadastro.financeiro => temPapel('finance'),
+  };
+  if (confere) return null;
+  return 'Esta conta não tem o perfil "${pedido.titulo}". Entre com a conta '
+      'desse perfil ou volte e escolha outro.';
+}

@@ -31,6 +31,8 @@ class PortaDePerfil extends StatefulWidget {
     this.sair,
     this.rodapeCadastro,
     this.modoEquipe = kTeamBuild,
+    this.perfilEntrada,
+    this.onVoltarAoInicio,
   });
 
   final String usuarioId;
@@ -51,6 +53,14 @@ class PortaDePerfil extends StatefulWidget {
   /// "Quem é você?" (nem o login por perfil). Abre direto, com o seletor dos
   /// papéis que a conta tiver nas escolas.
   final bool modoEquipe;
+
+  /// Perfil escolhido na tela inicial antes do login (já conferido no
+  /// servidor). Abre direto nele.
+  final PerfilCadastro? perfilEntrada;
+
+  /// Volta à tela inicial do app (escolha de perfil + login). Com ela, a
+  /// lista de perfis da conta não aparece: o voltar leva sempre ao início.
+  final VoidCallback? onVoltarAoInicio;
 
   @override
   State<PortaDePerfil> createState() => _PortaDePerfilState();
@@ -75,7 +85,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
 
   /// Tela inicial do seletor (lista de perfis): aparece a cada abertura do
   /// app (nos dois apps) e pelo voltar.
-  bool _naInicial = true;
+  late bool _naInicial = widget.onVoltarAoInicio == null;
 
   /// Perfil pedido no "Já tenho conta: entrar" antes deste login.
   PerfilCadastro? _pedido;
@@ -89,13 +99,17 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
   Future<void> _iniciar() async {
     final salvo = await widget.preferencias.contexto(widget.usuarioId);
     final chave = await widget.preferencias.perfilAtivo(widget.usuarioId);
-    _pedido = await widget.preferencias.perfilPedidoNoLogin();
+    _pedido =
+        widget.perfilEntrada ?? await widget.preferencias.perfilPedidoNoLogin();
     if (!mounted) return;
     setState(() {
       _chaveAtiva = chave;
       if (salvo != null) {
         _ctx = salvo;
         _carregado = true;
+        // O contexto salvo veio do servidor no login: já abre no perfil
+        // pedido, sem passar pelo último usado.
+        if (widget.perfilEntrada != null) _aplicarPedido(salvo);
       }
     });
     await _atualizar();
@@ -167,7 +181,14 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     );
   }
 
-  void _voltarAosPerfis() => setState(() => _naInicial = true);
+  void _voltarAosPerfis() {
+    final inicio = widget.onVoltarAoInicio;
+    if (inicio != null) {
+      inicio();
+      return;
+    }
+    setState(() => _naInicial = true);
+  }
 
   /// Sai para o login (no app da equipe, com os atalhos das contas).
   Future<void> _trocarConta() async {
@@ -192,8 +213,11 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     }
     final perfis = ctx.perfis;
     final ativo = ctx.perfilInicial(_chaveAtiva);
-    final variosPerfis = perfis.length >= 2;
-    if (variosPerfis && _naInicial) {
+    // Com o início do app (perfis antes do login), o voltar e a barra de
+    // perfil aparecem mesmo para quem tem um perfil só.
+    final comInicio = widget.onVoltarAoInicio != null;
+    final variosPerfis = perfis.length >= 2 || comInicio;
+    if (perfis.length >= 2 && _naInicial) {
       return TelaInicialPerfis(
         perfis: perfis,
         ativo: ativo,

@@ -533,10 +533,7 @@ begin
   loop
     update public.school_usage_months set closed_at = now(), updated_at = now()
       where school_id = r.school_id and month = v_month;
-    -- Escola de demonstração comercial: o uso fecha, mas nunca vira cobrança.
     if r.plan not in ('escola','plus')
-       or exists(select 1 from public.school_billing_settings b
-                 where b.school_id = r.school_id and b.demo)
        or exists(select 1 from public.school_invoices i
                  where i.school_id = r.school_id and i.reference_month = v_month and i.kind = 'monthly') then
       continue;

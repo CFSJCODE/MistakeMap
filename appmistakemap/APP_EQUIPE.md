@@ -71,9 +71,26 @@ CI, porque os Releases são públicos.
 
 ## Perfis
 
-O app da equipe nunca mostra o "Quem é você?": depois do login de dev ou
-admin, ele abre direto. O seletor "Perfil" no topo lista os papéis que a conta
-tem nas escolas, e cada um abre a tela daquele perfil sem outro login.
+Nos dois apps, toda abertura (depois da apresentação) e todo "voltar ao
+início" passam pela mesma ordem:
+
+1. "Como você vai entrar?": os 7 perfis (estudante, estudante + equipe,
+   professor, responsável, dono, coordenação, TI).
+2. Login com e-mail e senha da conta desse perfil. Uma sessão salva no
+   aparelho não pula esta etapa. Nessa entrada não há login com Google.
+3. O app consulta o servidor (user_signups, school_members, vínculos de
+   responsável, sob RLS) e só abre se a conta tiver o perfil escolhido
+   (`motivoPerfilRecusado` em `lib/school/perfil_modelos.dart`). Sem o perfil,
+   sai da conta e avisa. O modo estudante vale para toda conta; conta nova
+   segue para o "Quem é você?".
+
+Sem internet só dá para entrar como estudante, com a conta que já entrou no
+aparelho, porque o servidor não pode conferir papel de escola.
+
+O app da equipe nunca mostra o "Quem é você?". As contas dev.demo e
+admin.demo têm os 6 papéis da escola demo, então entram em qualquer perfil. O
+seletor "Perfil" no topo troca entre os papéis da conta sem outro login, e a
+seta ao lado dele volta ao início.
 
 ## Observação
 
