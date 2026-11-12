@@ -11,7 +11,11 @@ export const BILLING_ACTIONS = [
   "checkout",
   "invoice_status",
   "issue_invoice",
+  "test_charge",
 ] as const;
+
+/** Valor fixo da cobrança de teste (mínimo do Asaas para Pix e boleto). */
+export const TEST_CHARGE_BRL = 5;
 export type BillingAction = typeof BILLING_ACTIONS[number];
 
 export const PAID_PLANS = ["escola", "plus"] as const;
@@ -247,6 +251,10 @@ export function chargeDescription(invoice: {
   const month = new Date(invoice.reference_month);
   const ref = `${MONTHS[month.getUTCMonth()]}/${month.getUTCFullYear()}`;
   const plan = invoice.plan === "plus" ? "Escola Plus" : "Escola";
+  if (invoice.kind === "test") {
+    return `Cobrança de teste MistakeMap (R$ 5, sem plano) · ${invoice.school_name}`
+      .slice(0, 500);
+  }
   const what = invoice.kind === "checkout"
     ? `Contratação MistakeMap ${plan} ${
       invoice.cycle === "annual" ? "anual" : "mensal"

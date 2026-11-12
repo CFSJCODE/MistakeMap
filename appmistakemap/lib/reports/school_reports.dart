@@ -393,7 +393,7 @@ String invoicesCsv(FinancialReport report) {
     lines.add(
       [
         monthLabel(i.referenceMonth),
-        i.kind == 'checkout' ? 'Contratação' : 'Mensal',
+        invoiceKindLabel(i.kind),
         '${i.students}',
         paymentMethodLabels[i.method] ?? i.method,
         invoiceStatusLabels[i.status] ?? i.status,
@@ -447,3 +447,10 @@ String reportSummary(SchoolReport r) {
   }
   return b.toString();
 }
+
+/// Rótulo do tipo de fatura: contratação, mensal ou cobrança de teste.
+String invoiceKindLabel(String kind) => switch (kind) {
+  'checkout' => 'Contratação',
+  'test' => 'Teste',
+  _ => 'Mensal',
+};

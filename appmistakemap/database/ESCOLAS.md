@@ -78,3 +78,14 @@ TI, professor, aluno e quem é de fora recebem 42501.
 
 Testes: `scripts/school_billing/reports_tests.sql` (roda em
 `scripts/verify-school-billing.sh`).
+
+## Cobrança de teste (migration 20261112230000)
+
+- Ação `test_charge` da Edge Function `school-billing`: quem paga numa escola
+  **real** (sem `demo`) gera um Pix ou boleto de R$ 5 (`kind = 'test'`). Serve
+  para provar Asaas + webhook de ponta a ponta. Paga, não muda o plano, não
+  emite NFS-e e não vira crédito no fechamento do mês.
+- No app: botão "Cobrança de teste (R$ 5)" no cartão "Plano e cobrança".
+- A mesma migration cria "Escola Teste de Cobrança (real)" para
+  `dono.demo@mistakemap.dev`, com o CNPJ informado pelo Cláudio, sem a marca
+  demo. Para apagar depois, remova a escola (as faturas vão junto).
