@@ -92,7 +92,7 @@ já estão registradas, a publicação não os executa de novo.
 > **Atualização:** a função `health` passou a ser publicada pelo CD
 > (`supabase-functions-deploy.yml`) com `verify_jwt = false`, e o monitor
 > `worker-health-monitor` deixou de receber 404. Detalhes em
-> [`BACKEND.md`](../../BACKEND.md), seção 9.
+> [`docs/BACKEND.md`](../../docs/BACKEND.md), seção 9.
 
 O job `process-batch-every-minute` foi criado manualmente e não pertence a
 nenhuma migração. Ele guarda o segredo do cron em texto puro em `cron.job`;

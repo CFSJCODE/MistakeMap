@@ -6,7 +6,7 @@
 
 - [x] **Scout** — Mapear estrutura de pastas, frameworks, dependências e pontos de entrada
   - `appmistakemap/lib/` (Flutter/Dart)
-  - `worker/src/` (Rust — Tokio/Axum/SQLx)
+  - `archive/worker/src/` (Rust — Tokio/Axum/SQLx)
   - `appmistakemap/database/` (Supabase migrations)
   - Detectar integrações: Supabase Auth, Cloudflare R2, Edge Functions
 
@@ -16,7 +16,7 @@
 - [x] **Archaeologist** — Análise de administração, métricas e apresentação (`appmistakemap/lib/admin/`, `appmistakemap/lib/theme/`, `appmistakemap/lib/about/`)
 - [x] **Archaeologist** — Análise das Edge Functions, contratos de IA e testes (`supabase/functions/`)
 - [x] **Archaeologist** — Análise do schema, migrations e políticas PostgreSQL/RLS (`appmistakemap/database/supabase/`)
-- [x] **Archaeologist** — Análise do worker Rust arquivado e limites de reativação (`worker/src/`)
+- [x] **Archaeologist** — Análise do worker Rust arquivado e limites de reativação (`archive/worker/src/`)
 - [x] **Archaeologist** — Análise de CI/CD e deploy Web (`.github/workflows/`)
 
 - [x] **Detective** — Extrair conhecimento de negócio implícito

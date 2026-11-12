@@ -13,7 +13,7 @@ MistakeMap mapeia os padrões de erro do estudante.
 | Caderno de erros (offline + sincronizado) | `appmistakemap/lib/local/`, `lib/sync/caderno_sync.dart` | SQLite (`sqflite`, `ffi`, `ffi_web`) + `shared_preferences`, espelhado em `error_notes` — ver [BANCO_LOCAL.md](appmistakemap/BANCO_LOCAL.md) |
 | Banco, Auth, RLS | `appmistakemap/database/supabase/migrations/` | Supabase (Postgres) |
 | IA e uploads | `supabase/functions/` | Edge Functions (Deno) + Google Gemini (padrão), Claude Sonnet 5.5 e OpenRouter + Cloudflare R2 |
-| Worker OCR/LLM | `worker/` | Rust — **arquivado**, não evoluir |
+| Worker OCR/LLM | `archive/worker/` | Rust — **arquivado**, não evoluir |
 
 ## Regras não negociáveis
 

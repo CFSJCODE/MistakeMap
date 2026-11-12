@@ -454,32 +454,32 @@
     },
     {
       "name": "archived-rust-worker",
-      "path": "worker/src",
+      "path": "archive/worker/src",
       "purpose": "Implementação histórica em Rust de endpoints de saúde, URL de upload e processamento em lote; substituída pelo pipeline de Supabase Edge Functions.",
       "primary_files": [
-        "worker/src/main.rs",
-        "worker/src/config.rs",
-        "worker/src/db.rs",
-        "worker/src/attempts.rs",
-        "worker/src/pipeline.rs",
-        "worker/src/quota.rs",
-        "worker/src/storage.rs",
-        "worker/src/routes/health.rs",
-        "worker/src/routes/upload_url.rs",
-        "worker/src/routes/process_batch.rs",
-        "worker/Cargo.toml",
-        "worker/fly.toml",
-        "worker/Dockerfile",
-        "BACKEND.md"
+        "archive/worker/src/main.rs",
+        "archive/worker/src/config.rs",
+        "archive/worker/src/db.rs",
+        "archive/worker/src/attempts.rs",
+        "archive/worker/src/pipeline.rs",
+        "archive/worker/src/quota.rs",
+        "archive/worker/src/storage.rs",
+        "archive/worker/src/routes/health.rs",
+        "archive/worker/src/routes/upload_url.rs",
+        "archive/worker/src/routes/process_batch.rs",
+        "archive/worker/Cargo.toml",
+        "archive/worker/fly.toml",
+        "archive/worker/Dockerfile",
+        "docs/BACKEND.md"
       ],
       "functions": [
-        {"name": "main", "file": "worker/src/main.rs", "params": [], "returns": "Result<(), Box<dyn Error>>", "confidence": "confirmed"},
-        {"name": "fetch_jwks", "file": "worker/src/main.rs", "params": ["supabase_url: &str"], "returns": "Result<DecodingKey, Box<dyn Error>>", "confidence": "confirmed"},
-        {"name": "run_batch", "file": "worker/src/pipeline.rs", "params": ["PgPool", "S3 Client", "Config"], "returns": "Result<BatchSummary, sqlx::Error>", "confidence": "confirmed"},
-        {"name": "fetch_pending", "file": "worker/src/attempts.rs", "params": ["PgPool", "limit: i64"], "returns": "Result<Vec<AttemptRow>, sqlx::Error>", "confidence": "confirmed"},
-        {"name": "upload_url", "file": "worker/src/routes/upload_url.rs", "params": ["AppState", "HeaderMap", "UploadRequest"], "returns": "Result<Json<UploadResponse>, StatusCode>", "confidence": "confirmed"},
-        {"name": "process_batch", "file": "worker/src/routes/process_batch.rs", "params": ["AppState", "HeaderMap"], "returns": "Result<Json<BatchSummary>, StatusCode>", "confidence": "confirmed"},
-        {"name": "download_asset", "file": "worker/src/storage.rs", "params": ["S3 Client", "bucket", "object_path"], "returns": "Result<Bytes, StorageError>", "confidence": "confirmed"}
+        {"name": "main", "file": "archive/worker/src/main.rs", "params": [], "returns": "Result<(), Box<dyn Error>>", "confidence": "confirmed"},
+        {"name": "fetch_jwks", "file": "archive/worker/src/main.rs", "params": ["supabase_url: &str"], "returns": "Result<DecodingKey, Box<dyn Error>>", "confidence": "confirmed"},
+        {"name": "run_batch", "file": "archive/worker/src/pipeline.rs", "params": ["PgPool", "S3 Client", "Config"], "returns": "Result<BatchSummary, sqlx::Error>", "confidence": "confirmed"},
+        {"name": "fetch_pending", "file": "archive/worker/src/attempts.rs", "params": ["PgPool", "limit: i64"], "returns": "Result<Vec<AttemptRow>, sqlx::Error>", "confidence": "confirmed"},
+        {"name": "upload_url", "file": "archive/worker/src/routes/upload_url.rs", "params": ["AppState", "HeaderMap", "UploadRequest"], "returns": "Result<Json<UploadResponse>, StatusCode>", "confidence": "confirmed"},
+        {"name": "process_batch", "file": "archive/worker/src/routes/process_batch.rs", "params": ["AppState", "HeaderMap"], "returns": "Result<Json<BatchSummary>, StatusCode>", "confidence": "confirmed"},
+        {"name": "download_asset", "file": "archive/worker/src/storage.rs", "params": ["S3 Client", "bucket", "object_path"], "returns": "Result<Bytes, StorageError>", "confidence": "confirmed"}
       ],
       "entities": [
         {
@@ -514,11 +514,11 @@
         }
       ],
       "business_rules": [
-        {"description": "O worker é código de referência arquivado; as Edge Functions são o backend ativo desde 2026-09-28.", "location": "BACKEND.md:354", "confidence": "confirmed"},
-        {"description": "Cada lote Rust busca até cinco tentativas pending com FOR UPDATE SKIP LOCKED e atualiza status com controle otimista por version.", "location": "worker/src/pipeline.rs:13", "confidence": "confirmed"},
-        {"description": "A implementação atual do pipeline Rust baixa assets, mas OCR e LLM ainda são TODOs; em seguida marca a tentativa completed.", "location": "worker/src/pipeline.rs:109", "confidence": "confirmed"},
-        {"description": "Falhas ficam retryable_failed, porém a consulta de lote seleciona somente pending.", "location": "worker/src/attempts.rs:31", "confidence": "confirmed"},
-        {"description": "O endpoint legado aceita PDF, divergindo do contrato de upload e RLS ativos que só aceitam JPEG, PNG e WebP.", "location": "worker/src/routes/upload_url.rs:155", "confidence": "confirmed"}
+        {"description": "O worker é código de referência arquivado; as Edge Functions são o backend ativo desde 2026-09-28.", "location": "docs/BACKEND.md:354", "confidence": "confirmed"},
+        {"description": "Cada lote Rust busca até cinco tentativas pending com FOR UPDATE SKIP LOCKED e atualiza status com controle otimista por version.", "location": "archive/worker/src/pipeline.rs:13", "confidence": "confirmed"},
+        {"description": "A implementação atual do pipeline Rust baixa assets, mas OCR e LLM ainda são TODOs; em seguida marca a tentativa completed.", "location": "archive/worker/src/pipeline.rs:109", "confidence": "confirmed"},
+        {"description": "Falhas ficam retryable_failed, porém a consulta de lote seleciona somente pending.", "location": "archive/worker/src/attempts.rs:31", "confidence": "confirmed"},
+        {"description": "O endpoint legado aceita PDF, divergindo do contrato de upload e RLS ativos que só aceitam JPEG, PNG e WebP.", "location": "archive/worker/src/routes/upload_url.rs:155", "confidence": "confirmed"}
       ],
       "dependencies": ["Rust 2024", "Tokio", "Axum", "SQLx/PostgreSQL", "aws-sdk-s3", "jsonwebtoken", "reqwest", "Cloudflare R2", "Supabase JWKS"],
       "algorithms": [

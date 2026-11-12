@@ -1,4 +1,4 @@
-# ai/ — Portal Central de Inteligência Artificial
+# docs/ai/ — Portal Central de Inteligência Artificial
 
 > Ponto de entrada para entender, configurar e operar todos os recursos de IA instalados no MistakeMap.
 
@@ -8,21 +8,21 @@
 
 | Recurso | Localização real | Para que serve |
 |---|---|---|
-| **Claude Code** — entry file | [`/CLAUDE.md`](../CLAUDE.md) | Guia completo de agentes, loops e regras do projeto |
-| **Codex / OpenAI** — entry file | [`/AGENTS.md`](../AGENTS.md) | Entrada alternativa para agentes OpenAI |
-| **Gemini CLI** — entry file | [`/GEMINI.md`](../GEMINI.md) | Entrada para Gemini CLI |
-| **Harness** — configuração | [`ai/harness.yaml`](harness.yaml) | Limites de tokens, custo, ciclos e sandbox |
-| **Reversa** — estado | [`/.reversa/`](../.reversa/) | Estado, config e hooks do framework Reversa |
-| **Reversa** — skills Claude | [`/.claude/skills/`](../.claude/skills/) | 63 agentes para Claude Code |
-| **Reversa** — skills outros | [`/.agents/skills/`](../.agents/skills/) | 63 agentes para Codex e outros engines |
+| **Claude Code** — entry file | [`/CLAUDE.md`](../../CLAUDE.md) | Guia completo de agentes, loops e regras do projeto |
+| **Codex / OpenAI** — entry file | [`/AGENTS.md`](../../AGENTS.md) | Entrada alternativa para agentes OpenAI |
+| **Gemini CLI** — entry file | [`/GEMINI.md`](../../GEMINI.md) | Entrada para Gemini CLI |
+| **Harness** — configuração | [`/harness.yaml`](../../harness.yaml) | Limites de tokens, custo, ciclos e sandbox |
+| **Reversa** — estado | [`/.reversa/`](../../.reversa/) | Estado, config e hooks do framework Reversa |
+| **Reversa** — skills Claude | [`/.claude/skills/`](../../.claude/skills/) | 63 agentes para Claude Code |
+| **Reversa** — skills outros | [`/.agents/skills/`](../../.agents/skills/) | 63 agentes para Codex e outros engines |
 | **Artefatos Discovery** | `/_reversa_sdd/` | Especificações extraídas do código *(criada ao rodar `/reversa`)* |
-| **Artefatos Forward** | [`/_reversa_forward/`](../_reversa_forward/) | Requisitos, planos e verificações das features entregues |
-| **Artefatos Bugs** | [`/_reversa_bugs/`](../_reversa_bugs/) | Registro de defeitos |
+| **Artefatos Forward** | [`/_reversa_forward/`](../../_reversa_forward/) | Requisitos, planos e verificações das features entregues |
+| **Artefatos Bugs** | [`/_reversa_bugs/`](../../_reversa_bugs/) | Registro de defeitos |
 | **Artefatos Docs** | `/_reversa_docs/` | Mini-site de documentação visual *(criada ao rodar `/reversa-docs`)* |
 | **Artefatos Refactor** | `/_reversa_refactor/` | Oportunidades de melhoria *(criada ao rodar `/reversa-refactor`)* |
 
 > **Por que os arquivos funcionais não estão aqui?**  
-> Claude Code, Codex, Gemini CLI e o framework Reversa lêem seus arquivos em caminhos fixos e obrigatórios (raiz do projeto). Mover quebraria todas as ferramentas. Esta pasta é o portal de documentação e configuração — não substitui os caminhos de convenção.
+> Claude Code, Codex, Gemini CLI e o framework Reversa lêem seus arquivos em caminhos fixos e obrigatórios (raiz do projeto). Mover quebraria todas as ferramentas. Esta pasta é só o portal de documentação — não substitui os caminhos de convenção.
 
 ---
 
@@ -57,7 +57,7 @@ Ver catálogo de todos os agentes?    →  /reversa-agents-help
 
 ## Harness — Limites Ativos
 
-Arquivo: [`ai/harness.yaml`](harness.yaml)
+Arquivo: [`/harness.yaml`](../../harness.yaml)
 
 | Recurso | Limite |
 |---|---|
@@ -66,7 +66,7 @@ Arquivo: [`ai/harness.yaml`](harness.yaml)
 | Ciclos máximos | 10 |
 | Stall sem progresso | aborta em 3 ciclos |
 | Execução autônoma | habilitada, máx. 120 min |
-| Escrita permitida | `appmistakemap/`, `worker/src/`, `_reversa_*/`, `.reversa/` |
+| Escrita permitida | `appmistakemap/`, `archive/worker/src/`, `_reversa_*/`, `.reversa/` |
 
 ---
 

@@ -20,10 +20,10 @@ skills_path = ".claude/skills"
 include = [
   "appmistakemap/lib",
   "appmistakemap/test",
-  "worker/src",
+  "archive/worker/src",
 ]
 exclude = [
-  "worker/target",
+  "archive/worker/target",
   ".dart_tool",
   "build",
   ".reversa",

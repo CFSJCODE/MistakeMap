@@ -36,7 +36,7 @@ Flutter (cliente Android, Windows e Web)
 | **Google Gemini** | Google AI Studio (camada gratuita) | OCR multimodal, classificação de erros e geração de exercícios |
 
 > **Nota histórica:** o backend foi originalmente implementado como um worker Rust
-> rodando no Fly.io (ver `worker/`). Migrado para Supabase Edge Functions em
+> rodando no Fly.io (ver `archive/worker/`). Migrado para Supabase Edge Functions em
 > 2026-09-28 para eliminar dependência de VM e manter tudo no free tier sem
 > necessidade de cartão de crédito.
 
@@ -61,7 +61,7 @@ Flutter (cliente Android, Windows e Web)
 (chamadas HTTP externas para OCR e LLM) — não há trabalho CPU-bound que
 justifique uma VM. O cold start de ~500ms é aceitável para um job de cron.
 
-> **Nota sobre o worker Rust:** o código em `worker/` continua no repositório como
+> **Nota sobre o worker Rust:** o código em `archive/worker/` continua no repositório como
 > referência histórica e como fallback caso as Edge Functions se tornem
 > insuficientes (ex: timeout de 150s do Deno vs 300s do Cloud Run). Para
 > reativar, seguir as instruções da Seção 9 (Deploy histórico — Fly.io).
@@ -200,7 +200,7 @@ Cada `UPDATE` de status usa `WHERE id = $1 AND version = $2` — se outra instâ
 | Storage | 10 GB | ~9,5 GB |
 | Egress | ilimitado | — |
 
-### Implementação (`worker/src/quota.rs`)
+### Implementação (`archive/worker/src/quota.rs`)
 
 - Tabela `r2_quota_usage` no Supabase PostgreSQL — coluna `period CHAR(7)` formato `YYYY-MM`
 - `check_class_a()` — chamado **antes** de gerar URL presigned; retorna `503` se estourado
@@ -360,12 +360,12 @@ ALLOWED_ORIGINS                 # opcional; origens web publicadas (loopback é 
 
 ### Referência histórica — Worker Rust (arquivado)
 
-O código em `worker/` (Rust/axum/SQLx) implementa o mesmo contrato de API.
+O código em `archive/worker/` (Rust/axum/SQLx) implementa o mesmo contrato de API.
 Mantido como referência e fallback para o caso de as Edge Functions se tornarem
 insuficientes (timeout Deno 150s vs Cloud Run 300s por requisição).
 
 ```
-worker/
+archive/worker/
 ├── Cargo.toml          # axum, sqlx, aws-sdk-s3, jsonwebtoken, reqwest, chrono, tokio
 ├── fly.toml            # configuração Fly.io (plataforma anterior)
 └── src/
@@ -456,7 +456,7 @@ e agora está no diretório canônico.
 Até 30/09/2026 a função `health` não estava implantada, e o job recebia 404 a
 cada execução. Ela passa a ser publicada pelo CD com `verify_jwt = false`
 (`supabase/config.toml`), já que o pg_cron não envia JWT. Consulte
-[o procedimento de migrações](appmistakemap/database/README.md).
+[o procedimento de migrações](../appmistakemap/database/README.md).
 
 ---
 
@@ -466,7 +466,7 @@ cada execução. Ela passa a ser publicada pelo CD com `verify_jwt = false`
 > cada máquina após 5 minutos sem cartão. Esse path foi abandonado em favor
 > das Edge Functions.
 
-O código em `worker/` e o `fly.toml` permanecem no repositório como referência.
+O código em `archive/worker/` e o `fly.toml` permanecem no repositório como referência.
 Se precisar reativar (ex: timeout Deno 150s for insuficiente para OCR pesado):
 
 ```bash
@@ -491,7 +491,7 @@ Armadilhas documentadas do primeiro deploy estão preservadas no histórico git
 
 ### Credenciais de desenvolvimento
 
-- Todas as credenciais ficam **exclusivamente** em `worker/.env` (gitignored)
+- Todas as credenciais ficam **exclusivamente** em `archive/worker/.env` (gitignored)
 - Nunca commitadas no repositório
 
 ---

@@ -5,12 +5,12 @@
 $ErrorActionPreference = "Stop"
 
 # --------------------------------------------------------------------------
-# Configuracao R2 (mesmos valores do worker/.env)
+# Configuracao R2 (mesmos valores do archive/worker/.env)
 # --------------------------------------------------------------------------
-# Le as credenciais de worker/.env (gitignored). Elas NAO ficam neste arquivo,
+# Le as credenciais de archive/worker/.env (gitignored). Elas NAO ficam neste arquivo,
 # que e versionado num repositorio publico.
-$EnvFile = Join-Path $PSScriptRoot "..\worker\.env"
-if (-not (Test-Path $EnvFile)) { throw "worker/.env nao encontrado em: $EnvFile" }
+$EnvFile = Join-Path $PSScriptRoot "..\archive\worker\.env"
+if (-not (Test-Path $EnvFile)) { throw "archive/worker/.env nao encontrado em: $EnvFile" }
 
 $Cfg = @{}
 Get-Content $EnvFile | Where-Object { $_ -match '^\s*[^#\s].*=' } | ForEach-Object {

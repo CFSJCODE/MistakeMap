@@ -35,7 +35,7 @@ CLAUDE_CONFIG=harness.yaml claude /<comando> "<objetivo>"
 | Custo por execução | US$ 0,50 |
 | Ciclos máximos | 10 |
 | Stall (sem progresso) | aborta em 3 ciclos |
-| Escrita permitida | `appmistakemap/`, `worker/src/`, `_reversa_*/`, `.reversa/` |
+| Escrita permitida | `appmistakemap/`, `archive/worker/src/`, `_reversa_*/`, `.reversa/` |
 | Execução desacompanhada | habilitada, máx. 120 min |
 
 ---
@@ -303,14 +303,15 @@ MistakeMap/
 │   ├── test/
 │   └── database/            # Migrações canônicas do Supabase
 ├── supabase/                # Edge Functions (Deno) e config.toml
-├── worker/                  # Worker Rust (OCR + LLM) — arquivado
-│   └── src/
-├── ai/                      # Portal de documentação dos recursos de IA
+├── docs/                    # Documentação técnica
+│   ├── BACKEND.md           # Decisões de arquitetura do backend
+│   └── ai/                  # Portal de documentação dos recursos de IA
+├── archive/
+│   └── worker/src/          # Worker Rust (OCR + LLM) — arquivado
 ├── harness.yaml             # Harness de loops autônomos
 ├── CLAUDE.md                # Este arquivo
 ├── AGENTS.md                # Entrada para Codex e outros agentes
 ├── GEMINI.md                # Entrada para Gemini CLI
-├── BACKEND.md               # Decisões de arquitetura do backend
 ├── .reversa/                # Estado e configuração do Reversa
 │   ├── state.json           # Estado atual (fase, checkpoints, agentes)
 │   ├── config.toml          # Configuração do projeto

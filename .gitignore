@@ -2,11 +2,10 @@
 /Documentação/
 /documentação/
 /documentacao/
-/docs/
 /doc/
 
 # Rust
-worker/target/
+archive/worker/target/
 **/*.rs.bk
 *.pdb
 

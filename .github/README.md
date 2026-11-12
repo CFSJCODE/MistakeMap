@@ -376,7 +376,7 @@ As migrations ficam em [`appmistakemap/database/supabase/migrations/`](../appmis
 | **Auditoria** | `audit_log` *append-only* para mutações sensíveis |
 | **Dados educacionais** | Sem ranking público e sem exposição automática de fragilidades. O mapa pertence ao estudante; compartilhar deve ser explícito, granular e revogável |
 
-Decisões de backend e o histórico da migração do worker Rust para as Edge Functions estão em [`BACKEND.md`](../BACKEND.md).
+Decisões de backend e o histórico da migração do worker Rust para as Edge Functions estão em [`BACKEND.md`](../docs/BACKEND.md).
 
 ---
 
@@ -506,10 +506,12 @@ MistakeMap/
 │   └── config.toml
 ├── scripts/vercel-build.sh      # Build web usado pela Vercel
 ├── vercel.json                  # Build, rota SPA e cabeçalhos da versão web
-├── worker/                      # Worker Rust original (arquivado)
+├── docs/                        # Documentação técnica
+│   ├── BACKEND.md               # Decisões de arquitetura do backend
+│   └── ai/                      # Portal dos agentes de IA (Claude, Codex, Gemini, Reversa)
+├── archive/worker/              # Worker Rust original (arquivado)
 ├── .github/                     # README, CI/CD, licença, citação e políticas
-├── AGENTS.md · CLAUDE.md · GEMINI.md   # Regras e decisões para agentes de código
-└── BACKEND.md                   # Decisões de arquitetura do backend
+└── AGENTS.md · CLAUDE.md · GEMINI.md   # Regras e decisões para agentes de código
 ```
 
 ---
@@ -593,7 +595,7 @@ O código é distribuído sob a **[PolyForm Noncommercial License 1.0.0](LICENSE
 
 **O erro não é o fim da resolução. É um sinal.**
 
-[Experimentar o MistakeMap](https://mistakemap-tau.vercel.app/) · [Ver o código](https://github.com/CFSJCODE/MistakeMap) · [Decisões de backend](../BACKEND.md)
+[Experimentar o MistakeMap](https://mistakemap-tau.vercel.app/) · [Ver o código](https://github.com/CFSJCODE/MistakeMap) · [Decisões de backend](../docs/BACKEND.md)
 
 <sub>Flutter · Dart · Fluent 2 · Liquid Glass · Supabase · PostgreSQL · Realtime · SQLite · Edge Functions · Cloudflare R2 · Gemini · Claude · OpenRouter · Vercel</sub>
 
