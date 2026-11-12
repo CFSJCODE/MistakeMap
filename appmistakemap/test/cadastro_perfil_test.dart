@@ -291,6 +291,22 @@ void main() {
     expect(find.text('APP DO ESTUDANTE'), findsNothing);
   });
 
+  testWidgets('porta: no app da equipe, conta sem perfil abre direto', (
+    tester,
+  ) async {
+    await _render(
+      tester,
+      PortaDePerfil(
+        usuarioId: _uid,
+        repositorio: _RepoFalso(),
+        estudante: const Text('APP DO ESTUDANTE'),
+        modoEquipe: true,
+      ),
+    );
+    expect(find.text('Quem é você?'), findsNothing);
+    expect(find.text('APP DO ESTUDANTE'), findsOneWidget);
+  });
+
   testWidgets('porta: dono abre no painel e troca para estudante no seletor', (
     tester,
   ) async {
