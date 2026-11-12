@@ -62,8 +62,9 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
   String? _chaveAtiva;
   bool _consentimentoDispensado = false;
 
-  /// Tela inicial do seletor (lista de perfis) aberta pelo voltar.
-  bool _naInicial = false;
+  /// Tela inicial do seletor (lista de perfis): aparece a cada abertura do
+  /// app (nos dois apps) e pelo voltar.
+  bool _naInicial = true;
 
   /// Perfil pedido no "Já tenho conta: entrar" antes deste login.
   PerfilCadastro? _pedido;
@@ -103,6 +104,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     for (final p in ctx.perfis) {
       if (p.papel == papel) {
         _chaveAtiva = p.chave;
+        _naInicial = false;
         unawaited(
           widget.preferencias.guardarPerfilAtivo(widget.usuarioId, p.chave),
         );
@@ -156,6 +158,12 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
 
   void _voltarAosPerfis() => setState(() => _naInicial = true);
 
+  /// Sai para o login (no app da equipe, com os atalhos das contas).
+  Future<void> _trocarConta() async {
+    final sair = widget.sair ?? () => Supabase.instance.client.auth.signOut();
+    await sair();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_carregado) {
@@ -179,6 +187,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
         perfis: perfis,
         ativo: ativo,
         onEscolher: _trocar,
+        onTrocarConta: _trocarConta,
       );
     }
     Widget conteudo;
@@ -351,11 +360,15 @@ class TelaInicialPerfis extends StatelessWidget {
     required this.perfis,
     required this.ativo,
     required this.onEscolher,
+    this.onTrocarConta,
   });
 
   final List<PerfilAtivo> perfis;
   final PerfilAtivo ativo;
   final ValueChanged<PerfilAtivo> onEscolher;
+
+  /// Volta ao login para entrar com outra conta.
+  final Future<void> Function()? onTrocarConta;
 
   @override
   Widget build(BuildContext context) => AuroraBackground(
@@ -384,6 +397,18 @@ class TelaInicialPerfis extends StatelessWidget {
                   ],
                 ],
               ),
+              if (onTrocarConta != null)
+                CartaoEscola(
+                  titulo: 'Conta',
+                  subtitulo: 'Para entrar com outra conta, volte ao login.',
+                  children: [
+                    BotaoEscola(
+                      'Trocar de conta',
+                      key: const ValueKey('trocar-conta'),
+                      onPressed: () => onTrocarConta!(),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

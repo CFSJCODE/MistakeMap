@@ -330,6 +330,9 @@ void main() {
         estudante: const Text('APP DO ESTUDANTE'),
       ),
     );
+    // Cada abertura começa na tela de perfis.
+    expect(find.byType(TelaInicialPerfis), findsOneWidget);
+    await _tocar(tester, find.byKey(const ValueKey('perfil-owner:$_escola')));
     expect(find.byType(SeletorPerfil), findsOneWidget);
     expect(find.byType(TelaPainelEscola), findsOneWidget);
     expect(find.text('Painel do dono'), findsOneWidget);
@@ -475,6 +478,7 @@ void main() {
         estudante: const Text('APP DO ESTUDANTE'),
       ),
     );
+    await _tocar(tester, find.byKey(const ValueKey('perfil-owner:$_escola')));
     expect(find.text('Painel do dono'), findsOneWidget);
 
     // Voltar do aparelho no painel: abre a tela de perfis.
@@ -492,6 +496,36 @@ void main() {
     expect(find.byType(TelaInicialPerfis), findsOneWidget);
     await _tocar(tester, find.byKey(const ValueKey('perfil-owner:$_escola')));
     expect(find.text('Painel do dono'), findsOneWidget);
+  });
+
+  testWidgets('porta: app da equipe abre nos perfis e troca de conta', (
+    tester,
+  ) async {
+    var saiu = 0;
+    await _render(
+      tester,
+      PortaDePerfil(
+        usuarioId: _uid,
+        repositorio: _RepoFalso(
+          ctx: const ContextoPerfil(
+            papeis: [
+              PapelEscola(
+                escolaId: _escola,
+                escolaNome: 'Escola Demo',
+                papel: 'teacher',
+              ),
+            ],
+          ),
+        ),
+        estudante: const Text('APP DO ESTUDANTE'),
+        modoEquipe: true,
+        sair: () async => saiu++,
+      ),
+    );
+    expect(find.byType(TelaInicialPerfis), findsOneWidget);
+    expect(find.text('APP DO ESTUDANTE'), findsNothing);
+    await _tocar(tester, find.byKey(const ValueKey('trocar-conta')));
+    expect(saiu, 1);
   });
 
   testWidgets('Quem é você?: voltar do aparelho no formulário volta à lista', (
