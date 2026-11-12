@@ -10,7 +10,7 @@ hash: "sha256:<hash do corpo abaixo do front-matter>"
 
 # Target Domain Model
 
-> Modelo de domínio do sistema novo. Rastreabilidade explícita para o legado (em `_reversa_sdd/domain.md` ou equivalente).
+> Modelo de domínio do sistema novo. Rastreabilidade explícita para o legado (em `reversa/sdd/domain.md` ou equivalente).
 
 ## Aggregates
 

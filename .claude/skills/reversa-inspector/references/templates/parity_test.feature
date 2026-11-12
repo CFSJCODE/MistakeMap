@@ -5,7 +5,7 @@
 # language: pt
 # spec-id: PT-001
 # rastreabilidade:
-#   process_flows: <ref ao fluxo no _reversa_sdd>
+#   process_flows: <ref ao fluxo no reversa/sdd>
 #   target_architecture: <ref a componente no target_architecture.md>
 #   paradigma_alvo: <do paradigm_decision.md>
 

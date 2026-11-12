@@ -68,7 +68,7 @@ Use a ferramenta `codex:rescue` (ou equivalente disponível) para delegar a segu
 > 4. Afirmações frágeis, itens marcados como 🟢 CONFIRMADO que parecem inferência
 >
 > Para cada problema: indique a unit afetada, o arquivo, o trecho exato, o tipo do problema e uma sugestão de correção.
-> Salve o resultado em `_reversa_sdd/cross-review-result.md`.
+> Salve o resultado em `reversa/sdd/cross-review-result.md`.
 
 Aguarde o Codex concluir.
 
@@ -76,7 +76,7 @@ Aguarde o Codex concluir.
 
 Após o Codex concluir:
 
-1. Leia `_reversa_sdd/cross-review-result.md`
+1. Leia `reversa/sdd/cross-review-result.md`
 2. Para cada apontamento válido:
    - Atualize a spec correspondente
    - Reclassifique conforme necessário
@@ -108,7 +108,7 @@ Para cada unit em `<output_folder>/`:
 ### 4. Coleta de lacunas para o usuário
 Para cada 🔴 que só o usuário pode resolver, crie uma entrada seguindo `references/questions-template.md`.
 
-Agrupe todas as perguntas em `_reversa_sdd/questions.md`.
+Agrupe todas as perguntas em `reversa/sdd/questions.md`.
 
 ### 5. Interação com o usuário
 
@@ -119,15 +119,15 @@ Apresente as perguntas diretamente no chat, uma a uma ou em blocos temáticos:
 Processe cada resposta imediatamente, atualizando a spec e reclassificando.
 
 #### Se `answer_mode = "file"`
-Crie `_reversa_sdd/questions.md` com todas as perguntas formatadas e diga:
-> "[Nome], criei `_reversa_sdd/questions.md` com [N] perguntas que precisam da sua validação.
+Crie `reversa/sdd/questions.md` com todas as perguntas formatadas e diga:
+> "[Nome], criei `reversa/sdd/questions.md` com [N] perguntas que precisam da sua validação.
 > Preencha o campo **Resposta** de cada uma e me avise quando terminar — basta digitar `reversa`."
 
 Aguarde o usuário sinalizar conclusão. Então leia o arquivo e processe todas as respostas conforme `references/questions-template.md`.
 
 ### 6. Relatório de confiança final
 
-Após processar todas as respostas (ou se não houver lacunas), gere `_reversa_sdd/confidence-report.md` seguindo `references/confidence-report-template.md`.
+Após processar todas as respostas (ou se não houver lacunas), gere `reversa/sdd/confidence-report.md` seguindo `references/confidence-report-template.md`.
 
 Se houve revisão cruzada, inclua uma seção adicional no relatório:
 ```
@@ -140,12 +140,12 @@ Se houve revisão cruzada, inclua uma seção adicional no relatório:
 ## Saída
 
 **Sempre:**
-- `_reversa_sdd/confidence-report.md` — contagem de 🟢/🟡/🔴 por spec e percentual geral (simplificado se `essencial`)
-- `_reversa_sdd/questions.md` — se `essencial`: apenas lacunas 🔴 que bloqueiam reimplementação; se `completo`/`detalhado`: todos os 🔴
+- `reversa/sdd/confidence-report.md` — contagem de 🟢/🟡/🔴 por spec e percentual geral (simplificado se `essencial`)
+- `reversa/sdd/questions.md` — se `essencial`: apenas lacunas 🔴 que bloqueiam reimplementação; se `completo`/`detalhado`: todos os 🔴
 
 **Apenas se `doc_level` for `completo` ou `detalhado`:**
-- `_reversa_sdd/gaps.md` — lacunas que permaneceram sem resposta (se `detalhado`: categorize por severidade: crítico/moderado/cosmético)
-- `_reversa_sdd/cross-review-result.md` — apontamentos do Codex (se revisão cruzada realizada)
+- `reversa/sdd/gaps.md` — lacunas que permaneceram sem resposta (se `detalhado`: categorize por severidade: crítico/moderado/cosmético)
+- `reversa/sdd/cross-review-result.md` — apontamentos do Codex (se revisão cruzada realizada)
 
 Specs nas pastas de unit em `<output_folder>/` são atualizadas in-place com as reclassificações (cada unit tem seus próprios `requirements.md`, `design.md`, `tasks.md`).
 

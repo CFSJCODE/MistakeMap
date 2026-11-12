@@ -1,6 +1,6 @@
 ---
 name: reversa-forward
-description: 'Orquestrador do ciclo forward do Reversa: detecta o estágio da feature ativa em `_reversa_forward/` e roteia para o próximo agente (requirements, clarify, plan, to-do, audit, quality, coding, add, sync). Só roteia, não escreve artefatos. Use com "/reversa-forward", "iniciar evolução", "iniciar pipeline forward".'
+description: 'Orquestrador do ciclo forward do Reversa: detecta o estágio da feature ativa em `reversa/forward/` e roteia para o próximo agente (requirements, clarify, plan, to-do, audit, quality, coding, add, sync). Só roteia, não escreve artefatos. Use com "/reversa-forward", "iniciar evolução", "iniciar pipeline forward".'
 license: MIT
 compatibility: Claude Code, Codex, Cursor, Gemini CLI e demais agentes compatíveis com Agent Skills.
 metadata:
@@ -16,24 +16,24 @@ Você é o orquestrador do ciclo forward do Reversa. Sua missão é olhar o esta
 ## Antes de começar
 
 1. Leia `.reversa/state.json`
-   1.1. `output_folder` → pasta da extração reversa (padrão `_reversa_sdd`)
-   1.2. `forward_folder` → pasta das features forward (padrão `_reversa_forward`)
+   1.1. `output_folder` → pasta da extração reversa (padrão `reversa/sdd`)
+   1.2. `forward_folder` → pasta das features forward (padrão `reversa/forward`)
    1.3. `user_name` → nome para personalizar a saudação
-2. Quando o texto deste skill mencionar `_reversa_sdd/` ou `_reversa_forward/`, use os valores reais resolvidos do state.json
-3. Se `state.json` não existir, trate como `_reversa_sdd/` e `_reversa_forward/` literais e siga adiante
+2. Quando o texto deste skill mencionar `reversa/sdd/` ou `reversa/forward/`, use os valores reais resolvidos do state.json
+3. Se `state.json` não existir, trate como `reversa/sdd/` e `reversa/forward/` literais e siga adiante
 
 ## Contexto de extração reversa
 
 O pipeline forward funciona em dois cenários:
 
-1. **Evolução de legado:** existe `_reversa_sdd/` com artefatos da extração reversa. Os skills do pipeline (especialmente `/reversa-requirements` e `/reversa-plan`) vão ancorar decisões nesses artefatos.
-2. **Projeto novo (greenfield):** não existe `_reversa_sdd/` ainda. O pipeline forward continua valendo, só perde a ancoragem no legado.
+1. **Evolução de legado:** existe `reversa/sdd/` com artefatos da extração reversa. Os skills do pipeline (especialmente `/reversa-requirements` e `/reversa-plan`) vão ancorar decisões nesses artefatos.
+2. **Projeto novo (greenfield):** não existe `reversa/sdd/` ainda. O pipeline forward continua valendo, só perde a ancoragem no legado.
 
 NÃO bloqueie em nenhum caso. Verifique e prepare a estrutura seguindo as MESMAS regras de criação de pastas que o `/reversa` original aplica:
 
 1. Resolva os paths reais a partir de `.reversa/state.json`:
-   1.1. `output_folder` (padrão `_reversa_sdd`)
-   1.2. `forward_folder` (padrão `_reversa_forward`)
+   1.1. `output_folder` (padrão `reversa/sdd`)
+   1.2. `forward_folder` (padrão `reversa/forward`)
 2. Se a pasta `output_folder` existe e contém pelo menos um arquivo `.md`, registre internamente o cenário como **legado** e diga ao usuário: "Extração reversa detectada, o pipeline vai ancorar decisões em `<output_folder>/`."
 3. Se a pasta `output_folder` NÃO existe ou está vazia, registre internamente como **greenfield** e:
    3.1. Crie a pasta `<output_folder>/` (criação recursiva, equivalente a `mkdir -p`)
@@ -44,7 +44,7 @@ NÃO bloqueie em nenhum caso. Verifique e prepare a estrutura seguindo as MESMAS
 
 Princípios herdados do `/reversa` original (não viole):
 
-- Use sempre o valor real de `output_folder` e `forward_folder` do `state.json`, jamais o literal `_reversa_sdd` ou `_reversa_forward`
+- Use sempre o valor real de `output_folder` e `forward_folder` do `state.json`, jamais o literal `reversa/sdd` ou `reversa/forward`
 - Não toque em pasta ou arquivo do projeto fora de `.reversa/`, `<output_folder>/` e `<forward_folder>/`
 - Nunca sobrescreva: crie só se ausente
 
@@ -170,7 +170,7 @@ Aguarde a escolha. Não decida sozinho.
 `/reversa-audit` e `/reversa-quality` são opcionais e não fazem parte do caminho feliz do roteamento acima. Você só os sugere quando:
 
 1. O usuário pedir explicitamente
-2. Você detectar sinais de inconsistência ao ler os artefatos (por exemplo, `requirements.md` tem `[DÚVIDA]` mas `roadmap.md` já decidiu sobre o ponto duvidoso, ou `actions.md` referencia componentes ausentes em `_reversa_sdd/`)
+2. Você detectar sinais de inconsistência ao ler os artefatos (por exemplo, `requirements.md` tem `[DÚVIDA]` mas `roadmap.md` já decidiu sobre o ponto duvidoso, ou `actions.md` referencia componentes ausentes em `reversa/sdd/`)
 
 Quando aplicável, sugira como passo intermediário antes do próximo skill obrigatório, deixando a decisão com o usuário.
 
@@ -212,17 +212,17 @@ Se houver `paused-features` com entradas, em qualquer estado, acrescente uma lin
 
 ## Regra de não escrita
 
-O `/reversa-forward` NÃO escreve em `active-requirements.json`, NÃO cria `feature-dir`, NÃO modifica artefatos dentro de `_reversa_sdd/` nem de `_reversa_forward/`. Toda gravação de artefato de feature é responsabilidade do skill seguinte. Você apenas lê e roteia.
+O `/reversa-forward` NÃO escreve em `active-requirements.json`, NÃO cria `feature-dir`, NÃO modifica artefatos dentro de `reversa/sdd/` nem de `reversa/forward/`. Toda gravação de artefato de feature é responsabilidade do skill seguinte. Você apenas lê e roteia.
 
 Exceções permitidas, sempre criação de coisa que ainda não existe, jamais sobrescrita:
 
-1. Criar a pasta `_reversa_sdd/` (com `.gitkeep`) se ela estiver ausente, conforme a seção "Contexto de extração reversa".
+1. Criar a pasta `reversa/sdd/` (com `.gitkeep`) se ela estiver ausente, conforme a seção "Contexto de extração reversa".
 2. Atualizar `.reversa/state.json` apenas se for para preencher o nome do usuário ainda em branco. Não toque em outros campos.
 
 ## Regra absoluta
 
 **Nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto.**
-O Reversa escreve APENAS em `.reversa/`, `_reversa_sdd/` e `_reversa_forward/`. Este skill em particular nem nesses três escreve, ele só lê.
+O Reversa escreve APENAS em `.reversa/`, `reversa/sdd/` e `reversa/forward/`. Este skill em particular nem nesses três escreve, ele só lê.
 
 ## Saída final
 

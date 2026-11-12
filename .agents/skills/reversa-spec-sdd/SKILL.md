@@ -1,6 +1,6 @@
 ---
 name: reversa-spec-sdd
-description: 'Agente final do time Code New Project: decompõe um PRD em componentes e gera specs SDD por componente com score de qualidade (0 a 100) e análise de gaps, lendo `_reversa_sdd/prd.md`. Também avalia specs existentes. Faz handoff para /reversa-forward.'
+description: 'Agente final do time Code New Project: decompõe um PRD em componentes e gera specs SDD por componente com score de qualidade (0 a 100) e análise de gaps, lendo `reversa/sdd/prd.md`. Também avalia specs existentes. Faz handoff para /reversa-forward.'
 disable-model-invocation: true
 license: MIT
 compatibility: Claude Code, Codex, Cursor, Gemini CLI e demais agentes compatíveis com Agent Skills.
@@ -16,7 +16,7 @@ metadata:
 
 Esta skill conduz o processo completo de SDD dentro do pipeline Code New Project Agents: **decompor → redigir → avaliar → iterar** até cada spec estar pronta para o ciclo forward.
 
-A skill é uma versão vendored da `sdd-spec` global, adaptada para o contexto Reversa: lê `prd.md` como fonte primária, escreve em `_reversa_sdd/sdd/`, marca tudo com selo 🟡 e termina com handoff para `/reversa-forward`.
+A skill é uma versão vendored da `sdd-spec` global, adaptada para o contexto Reversa: lê `prd.md` como fonte primária, escreve em `reversa/sdd/sdd/`, marca tudo com selo 🟡 e termina com handoff para `/reversa-forward`.
 
 ## Por que SDD?
 
@@ -31,7 +31,7 @@ A metodologia aqui é **RFC Pragmático mais LLM-First**: estruturada como um RF
 
 ## Antes de começar
 
-1. Leia `.reversa/state.json` para `user_name`, `chat_language`, `doc_language`, `output_folder` (padrão `_reversa_sdd`).
+1. Leia `.reversa/state.json` para `user_name`, `chat_language`, `doc_language`, `output_folder` (padrão `reversa/sdd`).
 2. Verifique pré-condição: **`<output_folder>/prd.md` deve existir**. Se ausente, encerre com mensagem clara:
    > "Não encontrei `<output_folder>/prd.md`. Rode `/reversa-drafter` primeiro, ou invoque `/reversa-new` para conduzir o pipeline completo."
 3. Garanta que a pasta `<output_folder>/sdd/` existe. Crie se ausente.
@@ -44,7 +44,7 @@ Cada spec gerada vai para:
 <output_folder>/sdd/<componente-kebab-case>.md
 ```
 
-Por exemplo: `_reversa_sdd/sdd/user-authentication.md`, `_reversa_sdd/sdd/payment-checkout.md`.
+Por exemplo: `reversa/sdd/sdd/user-authentication.md`, `reversa/sdd/sdd/payment-checkout.md`.
 
 O componente é decomposto a partir do `prd.md` na primeira fase.
 

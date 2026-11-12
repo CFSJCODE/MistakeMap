@@ -15,7 +15,7 @@
 #   requirements          Exige feature-dir/requirements.md.
 #   roadmap               Exige feature-dir/roadmap.md.
 #   actions               Exige feature-dir/actions.md.
-#   sdd                   Exige _reversa_sdd/ presente.
+#   sdd                   Exige reversa/sdd/ presente.
 #   principles            Exige .reversa/principles.md.
 #
 # Códigos de saída:
@@ -28,8 +28,8 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REVERSA_DIR="$PROJECT_ROOT/.reversa"
-SDD_DIR="$PROJECT_ROOT/_reversa_sdd"
-FORWARD_DIR="$PROJECT_ROOT/_reversa_forward"
+SDD_DIR="$PROJECT_ROOT/reversa/sdd"
+FORWARD_DIR="$PROJECT_ROOT/reversa/forward"
 ACTIVE="$REVERSA_DIR/active-requirements.json"
 
 JSON_MODE=0

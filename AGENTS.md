@@ -13,7 +13,7 @@ MistakeMap mapeia os padrões de erro do estudante.
 | Caderno de erros (offline + sincronizado) | `appmistakemap/lib/local/`, `lib/sync/caderno_sync.dart` | SQLite (`sqflite`, `ffi`, `ffi_web`) + `shared_preferences`, espelhado em `error_notes` — ver [BANCO_LOCAL.md](appmistakemap/BANCO_LOCAL.md) |
 | Banco, Auth, RLS | `appmistakemap/database/supabase/migrations/` | Supabase (Postgres) |
 | IA e uploads | `supabase/functions/` | Edge Functions (Deno) + Google Gemini (padrão), Claude Sonnet 5.5 e OpenRouter + Cloudflare R2 |
-| Worker OCR/LLM | `worker/` | Rust — **arquivado**, não evoluir |
+| Worker OCR/LLM | `archive/worker/` | Rust — **arquivado**, não evoluir |
 
 ## Regras não negociáveis
 
@@ -22,7 +22,7 @@ MistakeMap mapeia os padrões de erro do estudante.
 3. Migrations são imutáveis: correção vira migration nova.
 4. Proibido HTTP síncrono dentro de trigger; use `pg_cron` + `pg_net`.
 5. Todo Dart passa em `flutter analyze` sem avisos.
-6. Antes de escrever fora de `_reversa_*/` e `.reversa/`, leia `.reversa/reversa-config.json`
+6. Antes de escrever fora de `reversa/*/` e `.reversa/`, leia `.reversa/reversa-config.json`
    e respeite `allowLegacyEdits`/`allowedPaths`. Nunca edite esse arquivo por conta própria:
    liberar escrita é ato exclusivo do usuário.
 
@@ -92,7 +92,7 @@ Decisões já tomadas pelo dono do projeto. Não reabra sem pedido explícito.
   se `AI_CLAUDE_FALLBACK_ENABLED=true`. Claude é o único modelo pago: reserva US$ 1 por
   pedido, teto de US$ 100 por 31 dias (`reserve_claude_budget`), falha fechada. OpenRouter só
   entra no roteador com modelos gratuitos; modelo pago configurado à mão nele não tem orçamento no banco. Integração OpenAI (`gpt-4.1-mini`) está preparada
-  em `_reversa_forward/openai-integration/`, não ativada. Documentado no README (seção
+  em `reversa/forward/openai-integration/`, não ativada. Documentado no README (seção
   "Provedores e modelos de IA").
 - Prática (PR #20): `generate-practice` aceita `category` e ranqueia conceitos por
   frequência × recência (meia-vida 14 d), descontando recuperação via `mastery_events`.
@@ -150,5 +150,5 @@ Framework de engenharia reversa instalado (skills em `.agents/skills/`). Quando 
 usuário digitar `reversa` ou `reversa-*`, leia o `SKILL.md` correspondente na
 íntegra e siga-o. Fluxos principais: `reversa` (discovery), `reversa-forward`
 (specs → código), `reversa-debugger` (bugs), `reversa-docs`, `reversa-agents-help`.
-Os artefatos ficam em `_reversa_sdd/`, `_reversa_forward/`, `_reversa_bugs/`,
-`_reversa_docs/` e `_reversa_refactor/`.
+Os artefatos ficam em `reversa/sdd/`, `reversa/forward/`, `reversa/bugs/`,
+`reversa/docs/` e `reversa/refactor/`.

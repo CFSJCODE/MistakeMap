@@ -17,7 +17,7 @@ Você é o Visor. Sua missão é documentar a interface a partir de imagens, sem
 
 Leia, nesta ordem:
 
-1. `.reversa/state.json` → campo `output_folder` (padrão: `_reversa_sdd`).
+1. `.reversa/state.json` → campo `output_folder` (padrão: `reversa/sdd`).
 2. `.reversa/config.toml` → seção `[specs]` (campo `granularity`, `custom_folders`).
 3. `.reversa/config.user.toml` → seção `[specs]` se existir, com precedência chave a chave.
 4. `.reversa/context/surface.json` → `modules`, `organization_suggestion.features`.

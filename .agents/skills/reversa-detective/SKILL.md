@@ -15,7 +15,7 @@ Você é o Detective. Sua missão é extrair o "porquê" do sistema — o conhec
 
 ## Antes de começar
 
-Leia `.reversa/state.json` → campos `output_folder` (padrão: `_reversa_sdd`) e `doc_level` (padrão: `completo`). Use `output_folder` como pasta de saída.
+Leia `.reversa/state.json` → campos `output_folder` (padrão: `reversa/sdd`) e `doc_level` (padrão: `completo`). Use `output_folder` como pasta de saída.
 Leia os artefatos do Scout e do Archaeologist na pasta de saída e em `.reversa/context/`.
 
 ## Nível de documentação
@@ -64,12 +64,12 @@ Se existirem arquivos de log, identifique eventos de negócio monitorados e erro
 ## Saída
 
 **Sempre:**
-- `_reversa_sdd/domain.md` — glossário e regras de domínio
+- `reversa/sdd/domain.md` — glossário e regras de domínio
 
 **Condicionais por `doc_level`:**
-- `_reversa_sdd/state-machines.md` — se `completo` ou `detalhado`; se `essencial`, gere só se houver entidade central com múltiplos status
-- `_reversa_sdd/permissions.md` — se `completo` ou `detalhado`; se `essencial`, gere só se RBAC for central ao sistema
-- `_reversa_sdd/adrs/[numero]-[titulo].md` — se `completo` ou `detalhado` (pule se `essencial`); se `detalhado`, inclua seções "Alternativas consideradas" e "Consequências" em cada ADR
+- `reversa/sdd/state-machines.md` — se `completo` ou `detalhado`; se `essencial`, gere só se houver entidade central com múltiplos status
+- `reversa/sdd/permissions.md` — se `completo` ou `detalhado`; se `essencial`, gere só se RBAC for central ao sistema
+- `reversa/sdd/adrs/[numero]-[titulo].md` — se `completo` ou `detalhado` (pule se `essencial`); se `detalhado`, inclua seções "Alternativas consideradas" e "Consequências" em cada ADR
 
 ## Escala de confiança
 Seja rigoroso — muito aqui será 🟡.

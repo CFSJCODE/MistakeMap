@@ -12,7 +12,7 @@
     { "name": "Flutter", "version": "3.47.2 (CI)", "source": ".github/workflows/ci.yml" },
     { "name": "Dart SDK", "version": "^3.13.2", "source": "appmistakemap/pubspec.yaml" },
     { "name": "Supabase Edge Functions", "version": "Deno 2.9.x (CI)", "source": ".github/workflows/ci.yml" },
-    { "name": "Axum", "version": "0.8.9 (worker arquivado)", "source": "worker/Cargo.toml" }
+    { "name": "Axum", "version": "0.8.9 (worker arquivado)", "source": "archive/worker/Cargo.toml" }
   ],
   "package_manager": "Flutter/Dart pub; Deno; Cargo (worker arquivado)",
   "entry_points": [
@@ -22,7 +22,7 @@
     { "path": "supabase/functions/process-batch/index.ts", "type": "edge_function" },
     { "path": "supabase/functions/upload-url/index.ts", "type": "edge_function" },
     { "path": "supabase/functions/health/index.ts", "type": "health_endpoint" },
-    { "path": "worker/src/main.rs", "type": "archived_worker_entry" }
+    { "path": "archive/worker/src/main.rs", "type": "archived_worker_entry" }
   ],
   "config_files": [
     "appmistakemap/pubspec.yaml",
@@ -30,8 +30,8 @@
     "supabase/functions/deno.lock",
     "supabase/config.toml",
     "appmistakemap/database/supabase/config.toml",
-    "worker/Cargo.toml",
-    "worker/Cargo.lock"
+    "archive/worker/Cargo.toml",
+    "archive/worker/Cargo.lock"
   ],
   "ci_cd": [
     ".github/workflows/ci.yml",

@@ -18,13 +18,13 @@ Você é o corretor. Sua missão é levar um bug registrado da triagem até o fe
 ## Antes de começar
 
 1. Leia `.reversa/state.json` (`output_folder`, `chat_language`, `doc_language`, `user_name`)
-2. Leia `_reversa_bugs/README.md` (closure policy, control_mode) e o schema em `references/../reversa-debugger/references/bug-schema.md` se disponível; senão siga o contrato descrito no README do registro
-3. Se `_reversa_bugs/` não existir, aborte: "Não há registro de bugs neste projeto. Rode `/reversa-debugger` primeiro."
+2. Leia `reversa/bugs/README.md` (closure policy, control_mode) e o schema em `references/../reversa-debugger/references/bug-schema.md` se disponível; senão siga o contrato descrito no README do registro
+3. Se `reversa/bugs/` não existir, aborte: "Não há registro de bugs neste projeto. Rode `/reversa-debugger` primeiro."
 
 ## Seleção do bug
 
 1. Com argumento (`/reversa-debugger-fix BUG-20260715-A7K3` ou `/reversa-debugger-fix BUG-007`): resolva por ID canônico ou `display_number`
-2. O bug vive em `_reversa_bugs/<contexto>/bugs/`: localize-o varrendo os catálogos de todos os contextos (`_reversa_bugs/*/generated/catalog.jsonl`, ou `_reversa_bugs/*/bugs/*/bug.md` na falta deles). Se o usuário falou da área em linguagem natural ("conserta o carrinho"), comece pelo contexto correspondente.
+2. O bug vive em `reversa/bugs/<contexto>/bugs/`: localize-o varrendo os catálogos de todos os contextos (`reversa/bugs/*/generated/catalog.jsonl`, ou `reversa/bugs/*/bugs/*/bug.md` na falta deles). Se o usuário falou da área em linguagem natural ("conserta o carrinho"), comece pelo contexto correspondente.
 3. Sem argumento: calcule o impact score sobre todos os contextos (só arestas `supported`/`confirmed`) e **sugira** o bug de maior impacto sistêmico entre os abertos, explicando o porquê e dizendo o contexto. A escolha é do usuário (menu com top 3 + "Outro").
 4. **Trava DONE**: se existir `DONE.md` na pasta do bug, o bug está encerrado e é SOMENTE LEITURA. Recuse-se a mexer nele e explique as duas saídas: o usuário remover a trava manualmente (reabertura consciente) ou registrar um bug NOVO com relação `regression-of` apontando para o travado. Nunca remova a trava você mesmo.
 5. Bug `resolved` sem trava, ou com `blocking` ativo: informe e pergunte como proceder.
@@ -128,7 +128,7 @@ Apresente o caminho do `plan.html`, peça para o usuário abrir e **aguarde a ap
 Compare o comportamento corrigido com a **spec efetiva** (original + adendos vigentes) e recomende com evidências. **A decisão é do usuário** (menu):
 
 1. `spec-correta`: a spec já definia o certo, o código divergiu. Nada muda na spec.
-2. `spec-desatualizada`: o comportamento correto mudou ou a spec descrevia errado. Gere adendo versionado e imutável `_reversa_sdd/addenda/bug-<ID>-vNNN.md` com: seção alvo, delta (trecho antes / como deve ser lido agora), vigência, evidências, aprovação registrada. A spec original NUNCA é editada. O adendo entra no change set como `kind: specification`.
+2. `spec-desatualizada`: o comportamento correto mudou ou a spec descrevia errado. Gere adendo versionado e imutável `reversa/sdd/addenda/bug-<ID>-vNNN.md` com: seção alvo, delta (trecho antes / como deve ser lido agora), vigência, evidências, aprovação registrada. A spec original NUNCA é editada. O adendo entra no change set como `kind: specification`.
 3. `spec-gap`: não havia spec. Gere adendo aditivo especificando o comportamento pela primeira vez (sem fingir que altera seção inexistente).
 
 Diff do código e diff/adendo da spec ficam registrados **JUNTOS** na Resolution.
@@ -142,7 +142,7 @@ Diff do código e diff/adendo da spec ficam registrados **JUNTOS** na Resolution
    - `production-service`: acrescente `delivery` e `post_fix_observation`; bug fica `active`/`observing` até a janela confirmar não recorrência (informe o usuário como encerrar a observação numa próxima chamada)
 3. Só marque `status: resolved` + `closure.satisfied: true` quando a política estiver satisfeita. `resolution_kind: fixed` exige causa `confirmed` + regressão + veredito.
 4. **Grave a trava**: satisfeita a closure policy, crie `DONE.md` na pasta do bug com data, `resolution_kind` e a frase "Este bug está encerrado. Nenhum agente deve modificar esta pasta. Reabertura: remova este arquivo conscientemente ou registre um bug novo com regression-of." A partir daí a pasta inteira é somente leitura para todos os comandos.
-5. Atualize as views do contexto do bug (`_reversa_bugs/<contexto>/generated/`) e o espelho `_reversa_sdd/traceability/bugs.md` pelo protocolo do `/reversa-debugger-graph`
+5. Atualize as views do contexto do bug (`reversa/bugs/<contexto>/generated/`) e o espelho `reversa/sdd/traceability/bugs.md` pelo protocolo do `/reversa-debugger-graph`
 
 ## Relatório final ao usuário
 
@@ -157,7 +157,7 @@ Termine com:
 ## Regra absoluta
 
 **Nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto sem gate aprovado.**
-Fora dos dois gates (e do reparo de dados aprovado), este skill escreve apenas em `_reversa_bugs/` e em `_reversa_sdd/addenda/` + `_reversa_sdd/traceability/`. Specs originais são somente leitura para sempre. Bug com `visibility: restricted`: nenhum detalhe explorável sai do registro.
+Fora dos dois gates (e do reparo de dados aprovado), este skill escreve apenas em `reversa/bugs/` e em `reversa/sdd/addenda/` + `reversa/sdd/traceability/`. Specs originais são somente leitura para sempre. Bug com `visibility: restricted`: nenhum detalhe explorável sai do registro.
 
 ## Política de edição do legado
 

@@ -18,15 +18,15 @@ Você é o inspetor profundo. Quando uma feature "vive dando problema", um bug p
 ## Antes de começar
 
 1. Leia `.reversa/state.json` (`output_folder`, `chat_language`, `doc_language`)
-2. Se `_reversa_bugs/` não existir, execute o bootstrap do registro descrito no `/reversa-debugger` (APENAS README com closure policy e taxonomy.yaml; nenhuma pasta vazia)
-2.1. Resolva o **contexto** (pasta agregadora da feature/módulo/caso de uso) como no `/reversa-debugger`: case a fala do usuário com as pastas de contexto existentes em `_reversa_bugs/` e com o taxonomy.yaml, confirme via menu, e só crie `_reversa_bugs/<contexto>/` quando a varredura de fato produzir artefatos
+2. Se `reversa/bugs/` não existir, execute o bootstrap do registro descrito no `/reversa-debugger` (APENAS README com closure policy e taxonomy.yaml; nenhuma pasta vazia)
+2.1. Resolva o **contexto** (pasta agregadora da feature/módulo/caso de uso) como no `/reversa-debugger`: case a fala do usuário com as pastas de contexto existentes em `reversa/bugs/` e com o taxonomy.yaml, confirme via menu, e só crie `reversa/bugs/<contexto>/` quando a varredura de fato produzir artefatos
 3. Pergunte a feature alvo se não veio no argumento, oferecendo as features conhecidas do `taxonomy.yaml` como opções + "Outro"
 
 ## Etapa 1: mapa da feature
 
 Monte e apresente o mapa antes de varrer:
 
-1. **Specs**: seções de `_reversa_sdd/` que definem a feature (spec efetiva: original + adendos vigentes)
+1. **Specs**: seções de `reversa/sdd/` que definem a feature (spec efetiva: original + adendos vigentes)
 2. **Código**: arquivos e símbolos que a implementam (siga imports e chamadas a partir dos pontos de entrada)
 3. **Testes**: o que já cobre a feature
 4. **Dados**: tabelas, caches, filas e contratos externos tocados
@@ -70,18 +70,18 @@ Depois que TODAS as lentes terminarem:
 1. **Merge e dedupe** dos achados entre lentes e contra os bugs já registrados (mesma spec, mesmos arquivos, mesmo sintoma)
 2. **Critério de confirmação**: vira bug apenas o achado com desvio observável entre esperado e real, OU prova estática com caminho causal completo e fonte clara do comportamento esperado. Dívida técnica, suspeita e cobertura baixa ficam no relatório com `promoted_to: null`.
 3. Apresente a lista de candidatos ao usuário (menu multiescolha: registrar todos os confirmados, escolher quais, ou "Outro") antes de criar
-4. Registre os aceitos EM SÉRIE seguindo o protocolo do `/reversa-debugger`, dentro de `_reversa_bugs/<contexto>/bugs/` (IDs merge-safe atribuídos um a um, `origin.type: inspection`, rastreabilidade e relações preenchidas). Achado com sinal de segurança segue o fluxo restrito.
+4. Registre os aceitos EM SÉRIE seguindo o protocolo do `/reversa-debugger`, dentro de `reversa/bugs/<contexto>/bugs/` (IDs merge-safe atribuídos um a um, `origin.type: inspection`, rastreabilidade e relações preenchidas). Achado com sinal de segurança segue o fluxo restrito.
 
 ## Etapa 4: relatório
 
-Escreva `_reversa_bugs/<contexto>/inspections/<varredura>/report.md` (crie `inspections/` do contexto agora, na primeira varredura):
+Escreva `reversa/bugs/<contexto>/inspections/<varredura>/report.md` (crie `inspections/` do contexto agora, na primeira varredura):
 
 1. Mapa da feature (specs, código, testes, dados)
 2. Achados por lente, com confiança e evidência, cada um com `promoted_to: BUG-... | null`
 3. Clusters: achados convergindo no mesmo componente ou na mesma cadeia de specs (indício de causa estrutural comum)
 4. O que NÃO foi coberto (lentes condicionais não ativadas, áreas sem acesso), sem truncamento silencioso
 
-Atualize as views do contexto (`_reversa_bugs/<contexto>/generated/`, incluindo o `graph.html`) pelo protocolo do `/reversa-debugger-graph`.
+Atualize as views do contexto (`reversa/bugs/<contexto>/generated/`, incluindo o `graph.html`) pelo protocolo do `/reversa-debugger-graph`.
 
 ## Relatório final ao usuário
 
@@ -96,4 +96,4 @@ Termine com:
 ## Regra absoluta
 
 **Nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto.**
-Este skill escreve APENAS em `_reversa_bugs/` (bugs novos, relatório e views). Nenhuma correção, refatoração ou "melhoria de passagem" é permitida, mesmo que o defeito pareça trivial.
+Este skill escreve APENAS em `reversa/bugs/` (bugs novos, relatório e views). Nenhuma correção, refatoração ou "melhoria de passagem" é permitida, mesmo que o defeito pareça trivial.

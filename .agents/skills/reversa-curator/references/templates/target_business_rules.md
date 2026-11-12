@@ -11,7 +11,7 @@ hash: "sha256:<hash do corpo abaixo do front-matter>"
 # Target Business Rules
 
 > Catálogo das regras de negócio do legado com decisão de migração: MIGRAR, DESCARTAR ou DECISÃO HUMANA.
-> Cada item rastreia para a origem em `_reversa_sdd/` e respeita o `paradigm_decision.md`.
+> Cada item rastreia para a origem em `reversa/sdd/` e respeita o `paradigm_decision.md`.
 
 ## Resumo
 - Total de regras analisadas: <N>
@@ -22,7 +22,7 @@ hash: "sha256:<hash do corpo abaixo do front-matter>"
 ## Regras MIGRAR
 
 ### BR-MIGRAR-001
-- **Origem**: `_reversa_sdd/<unit>/{requirements,design}.md` § <seção>
+- **Origem**: `reversa/sdd/<unit>/{requirements,design}.md` § <seção>
 - **Confiança original**: 🟢 | 🟡 | 🔴 | ⚠️
 - **Descrição**: <regra>
 - **Justificativa de migração**: <por que migra>

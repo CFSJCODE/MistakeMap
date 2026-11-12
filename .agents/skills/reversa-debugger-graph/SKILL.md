@@ -18,12 +18,12 @@ Você é o cartógrafo dos defeitos. Os `bug.md` são a única fonte de verdade;
 ## Antes de começar
 
 1. Leia `.reversa/state.json` (`output_folder`, `doc_language`)
-2. Os bugs vivem agrupados por contexto: `_reversa_bugs/<contexto>/bugs/`. Se nenhuma pasta de contexto existir, informe que não há bugs registrados e aponte `/reversa-debugger`
+2. Os bugs vivem agrupados por contexto: `reversa/bugs/<contexto>/bugs/`. Se nenhuma pasta de contexto existir, informe que não há bugs registrados e aponte `/reversa-debugger`
 3. Escopo: com argumento (`/reversa-debugger-graph carrinho-de-compras`), regenere só aquele contexto; sem argumento, regenere TODOS os contextos encontrados, um a um
 
 ## Etapa 1: varredura e validação
 
-1. Leia o front matter de TODOS os `_reversa_bugs/*/bugs/*/bug.md` (só o front matter; corpo apenas quando precisar de detalhe). A validação de invariantes é sempre GLOBAL, cruzando contextos (ID duplicado entre contextos é erro)
+1. Leia o front matter de TODOS os `reversa/bugs/*/bugs/*/bug.md` (só o front matter; corpo apenas quando precisar de detalhe). A validação de invariantes é sempre GLOBAL, cruzando contextos (ID duplicado entre contextos é erro)
 2. Valide as invariantes. Divergência é ERRO EXPLÍCITO, nunca conserto silencioso:
    - ID duplicado (pode acontecer via merge de branches)
    - `schema_version` desconhecida
@@ -35,7 +35,7 @@ Você é o cartógrafo dos defeitos. Os `bug.md` são a única fonte de verdade;
 
 ## Etapa 2: views em `<contexto>/generated/`
 
-Cada contexto tem as próprias views em `_reversa_bugs/<contexto>/generated/`, cobrindo só os bugs daquele contexto (relações que cruzam contextos aparecem com o contexto do alvo indicado). Todas com cabeçalho `<!-- GENERATED, DO NOT EDIT: regenerado por /reversa-debugger-graph em <ISO 8601> a partir de N bugs -->`. Escrita atômica. Crie `generated/` do contexto se ainda não existir.
+Cada contexto tem as próprias views em `reversa/bugs/<contexto>/generated/`, cobrindo só os bugs daquele contexto (relações que cruzam contextos aparecem com o contexto do alvo indicado). Todas com cabeçalho `<!-- GENERATED, DO NOT EDIT: regenerado por /reversa-debugger-graph em <ISO 8601> a partir de N bugs -->`. Escrita atômica. Crie `generated/` do contexto se ainda não existir.
 
 ### catalog.jsonl
 Uma linha JSON por bug: front matter normalizado + `path` calculado. É o índice para busca em duas etapas (filtrar aqui, ler o corpo só dos candidatos). Nunca é source of truth.
@@ -71,12 +71,12 @@ Matriz BUG ↔ SPEC pela `traceability.specs`: linhas por seção de spec, colun
 
 ## Etapa 3: espelho do lado da spec
 
-Gere `_reversa_sdd/traceability/bugs.md` (crie a pasta `traceability/` se não existir):
+Gere `reversa/sdd/traceability/bugs.md` (crie a pasta `traceability/` se não existir):
 
 1. Cabeçalho GENERATED
 2. Uma seção por artefato de spec, listando os bugs que a atingem: `- <ID> (status/resolution_kind, priority): título`, com o caminho da pasta do bug
 3. Bugs `restricted` ficam fora do espelho
-4. Nenhum outro arquivo de `_reversa_sdd/` é tocado. O espelho registra o vínculo; mudança de conteúdo de spec é assunto dos adendos.
+4. Nenhum outro arquivo de `reversa/sdd/` é tocado. O espelho registra o vínculo; mudança de conteúdo de spec é assunto dos adendos.
 
 ## Relatório final ao usuário
 
@@ -91,4 +91,4 @@ Termine com:
 ## Regra absoluta
 
 **Nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto.**
-Este skill escreve APENAS em `_reversa_bugs/<contexto>/generated/` e `_reversa_sdd/traceability/bugs.md` (ambos views regeneráveis). Os `bug.md` são somente leitura aqui: inconsistência se reporta, não se conserta.
+Este skill escreve APENAS em `reversa/bugs/<contexto>/generated/` e `reversa/sdd/traceability/bugs.md` (ambos views regeneráveis). Os `bug.md` são somente leitura aqui: inconsistência se reporta, não se conserta.

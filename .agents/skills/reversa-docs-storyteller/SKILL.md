@@ -21,25 +21,25 @@ Terceiro agente do pipeline `/reversa-docs`. **Não exige Analyst nem Cartograph
 
 ## Inputs
 
-- `_reversa_sdd/` (specs por feature)
+- `reversa/sdd/` (specs por feature)
 - `.reversa/soul.md` (alma do projeto)
-- `_reversa_docs/.config.json`
-- `_reversa_docs/assets/data/features-index.json` (gerado pelo próprio Storyteller)
+- `reversa/docs/.config.json`
+- `reversa/docs/assets/data/features-index.json` (gerado pelo próprio Storyteller)
 - Skill `reversa-image-prompt-json` (opcional, capas em estilo premium)
 
 ## Outputs
 
-- `_reversa_docs/glossario.html`
-- `_reversa_docs/deck.html`
-- `_reversa_docs/features/<nome-kebab>.html` (uma por spec selecionada)
-- `_reversa_docs/assets/data/soul.json`
-- `_reversa_docs/assets/data/features-index.json`
+- `reversa/docs/glossario.html`
+- `reversa/docs/deck.html`
+- `reversa/docs/features/<nome-kebab>.html` (uma por spec selecionada)
+- `reversa/docs/assets/data/soul.json`
+- `reversa/docs/assets/data/features-index.json`
 
 ## Antes de começar
 
 1. Leia `.reversa/state.json` para `user_name`, `chat_language`.
-2. Leia `_reversa_docs/.config.json`. Se ausente, conduza entrevista mínima.
-3. Verifique fontes disponíveis: `soul.md`, `_reversa_sdd/*/requirements.md`.
+2. Leia `reversa/docs/.config.json`. Se ausente, conduza entrevista mínima.
+3. Verifique fontes disponíveis: `soul.md`, `reversa/sdd/*/requirements.md`.
 4. Storyteller geralmente não usa libs externas pesadas (glossário é HTML puro + JS inline, deck é navegação por setas), mas se algum recurso premium (capa com canvas, slide com chart) for habilitado, garanta vendor disponível em `assets/vendor/` antes (em modo isolado, execute o Passo 0 do Publisher; em modo orquestrado já foi feito na Fase 0).
 
 ## Entrevista mínima
@@ -55,7 +55,7 @@ Se `.reversa/soul.md` existe:
 ```
 python templates/documentation/scripts/convert_soul.py \
     --src .reversa/soul.md \
-    --out _reversa_docs/assets/data/soul.json
+    --out reversa/docs/assets/data/soul.json
 ```
 
 Se Python indisponível, faça parsing inline: cada seção `##` vira chave em `sections`, e termos em **negrito** + descrição em sequência viram `concepts` no formato `{term, definition}`.
@@ -66,11 +66,11 @@ Se `soul.md` ausente, **omita** `glossario.html` e registre em `pagesOmitted`.
 
 ```
 python templates/documentation/scripts/list_specs.py \
-    --sdd-root _reversa_sdd \
-    --out _reversa_docs/assets/data/features-index.json
+    --sdd-root reversa/sdd \
+    --out reversa/docs/assets/data/features-index.json
 ```
 
-Filtra apenas pastas com `requirements.md` presente. Se `_reversa_sdd/` ausente ou vazio, registra `features-index.json` com `specs: []` e omite páginas de feature.
+Filtra apenas pastas com `requirements.md` presente. Se `reversa/sdd/` ausente ou vazio, registra `features-index.json` com `specs: []` e omite páginas de feature.
 
 ### 3. Gerar `glossario.html`
 
@@ -85,7 +85,7 @@ Filtra apenas pastas com `requirements.md` presente. Se `_reversa_sdd/` ausente 
    - REVERSA_PRODUCER_AGENT = "reversa-docs-storyteller"
    - REVERSA_TEMPLATE = "glossario"
    - Deixe `<!-- NAV_LINKS -->` como está (Publisher backpatcha).
-6. Salve em `_reversa_docs/glossario.html`.
+6. Salve em `reversa/docs/glossario.html`.
 
 ### 4. Gerar `deck.html`
 
@@ -119,7 +119,7 @@ Slide deck navegável (setas direita/esquerda + fullscreen) com 6 a 10 slides, a
 
 **Quando profundidade é "Só features X, Y, Z"** (do `.config.json.interview.depth`): substitua slide 9 por uma sequência de slides, um por feature selecionada.
 
-Salve em `_reversa_docs/deck.html`.
+Salve em `reversa/docs/deck.html`.
 
 ### 5. Gerar `features/<slug>.html` (uma por spec)
 
@@ -130,11 +130,11 @@ Para cada spec em `features-index.json` que deve ser renderizada:
    - Caso contrário: todas as specs em `features-index.json`.
 
 2. Para cada spec:
-   - Leia `_reversa_sdd/<id>/requirements.md`, `design.md` (se existir), `tasks.md` (se existir).
+   - Leia `reversa/sdd/<id>/requirements.md`, `design.md` (se existir), `tasks.md` (se existir).
    - Extraia: TL;DR (primeiro parágrafo ou seção "Resumo"/"Visão geral"), seções principais como accordion, code snippets em abas (se houver).
    - Use `templates/documentation/pages/features/feature.html.tpl`.
    - Aplique chassis com PAGE_ID = `feature-<slug>`, REVERSA_TEMPLATE = "feature".
-   - Salve em `_reversa_docs/features/<slug>.html`.
+   - Salve em `reversa/docs/features/<slug>.html`.
 
 Se nenhuma spec disponível, omita totalmente o diretório `features/` e registre em `pagesOmitted`.
 
@@ -146,18 +146,18 @@ Se nenhuma spec disponível, omita totalmente o diretório `features/` e registr
 
 ## Backup automático
 
-`_reversa_docs/.backup-<YYYYMMDD-HHMMSS>/` antes de sobrescrever. Inclua diretório `features/` no backup.
+`reversa/docs/.backup-<YYYYMMDD-HHMMSS>/` antes de sobrescrever. Inclua diretório `features/` no backup.
 
 ## Diretiva non-destructive
 
-Apenas escreve em `_reversa_docs/`. `soul.md` e `_reversa_sdd/` são lidos sem modificação.
+Apenas escreve em `reversa/docs/`. `soul.md` e `reversa/sdd/` são lidos sem modificação.
 
 ## Tratamento gracioso
 
 | Fonte ausente | Comportamento |
 |---|---|
 | `soul.md` | Omite glossário. Deck pula slides de propósito/entidades/decisões. |
-| `_reversa_sdd/` | Omite todas as `features/<slug>.html` e o slide de feature destaque do deck. |
+| `reversa/sdd/` | Omite todas as `features/<slug>.html` e o slide de feature destaque do deck. |
 | Sem nada (greenfield total) | Deck minimal de 2 slides (capa + encerramento). Sem glossário, sem features. |
 | Python indisponível | Parsing inline via Read + regex. |
 | Skill `reversa-image-prompt-json` ausente | Pula geração de capas premium, usa placeholder. Não bloqueia. |
@@ -182,8 +182,8 @@ Apenas escreve em `_reversa_docs/`. `soul.md` e `_reversa_sdd/` são lidos sem m
 
 ## Regras absolutas
 
-- Nunca escreva fora de `_reversa_docs/`.
-- Nunca modifique `soul.md`, `chronicle.md` ou specs em `_reversa_sdd/`.
+- Nunca escreva fora de `reversa/docs/`.
+- Nunca modifique `soul.md`, `chronicle.md` ou specs em `reversa/sdd/`.
 - Nunca rode varredura de credenciais.
 - Sempre backup antes de sobrescrever.
 - Texto em pt-br, sem travessão.

@@ -22,32 +22,32 @@ A tradução visual, hoje, não tem dono no pipeline: o Designer cobre arquitetu
 
 ## Pré-requisitos
 
-- `_reversa_sdd/migration/migration_brief.md`
-- `_reversa_sdd/migration/paradigm_decision.md`
-- `_reversa_sdd/migration/topology_decision.md` (Designer Fase 1 aprovada)
-- `_reversa_sdd/migration/target_architecture.md` (Designer Fase 2)
+- `reversa/sdd/migration/migration_brief.md`
+- `reversa/sdd/migration/paradigm_decision.md`
+- `reversa/sdd/migration/topology_decision.md` (Designer Fase 1 aprovada)
+- `reversa/sdd/migration/target_architecture.md` (Designer Fase 2)
 
-Em modo standalone (sem `/reversa-migrate` rodado), os pré-requisitos do Designer caem; o agente passa a perguntar a plataforma alvo diretamente ao usuário. Antes de gravar qualquer artefato, garanta que `_reversa_sdd/migration/` e `_reversa_sdd/screens/` existam; crie se necessário (sem tocar em qualquer outro caminho do projeto).
+Em modo standalone (sem `/reversa-migrate` rodado), os pré-requisitos do Designer caem; o agente passa a perguntar a plataforma alvo diretamente ao usuário. Antes de gravar qualquer artefato, garanta que `reversa/sdd/migration/` e `reversa/sdd/screens/` existam; crie se necessário (sem tocar em qualquer outro caminho do projeto).
 
 ## Inputs
 
 - Os pré-requisitos acima (em modo pipeline).
-- `_reversa_sdd/design-system/*.md` (paleta, componentes, tokens). Se ausente, o agente alerta e oferece rodar `reversa-design-system` antes.
-- `_reversa_sdd/ui/inventory.md` (telas catalogadas). Se ausente, o agente alerta e oferece rodar `reversa-visor` antes.
-- `_reversa_sdd/ui/flow.md` se existir.
-- `_reversa_sdd/ui/screens/*` (screenshots) se existirem.
-- Fontes legados das telas (lidos via `_reversa_sdd/inventory.md` e o repositório legado em modo read-only).
+- `reversa/sdd/design-system/*.md` (paleta, componentes, tokens). Se ausente, o agente alerta e oferece rodar `reversa-design-system` antes.
+- `reversa/sdd/ui/inventory.md` (telas catalogadas). Se ausente, o agente alerta e oferece rodar `reversa-visor` antes.
+- `reversa/sdd/ui/flow.md` se existir.
+- `reversa/sdd/ui/screens/*` (screenshots) se existirem.
+- Fontes legados das telas (lidos via `reversa/sdd/inventory.md` e o repositório legado em modo read-only).
 
 ## Outputs
 
 Em projetos com UI:
 
-- `_reversa_sdd/migration/screen_modernization_decision.md` (Fase 1, aprovado pelo humano)
-- `_reversa_sdd/migration/target_screens.md` (Fase 2, com YAML embutido por tela)
-- `_reversa_sdd/migration/screen_deviation_log.md` (Fase 2, append-only)
-- `_reversa_sdd/screens/inventory.json` (inventário interno do agente)
-- `_reversa_sdd/screens/golden/<tela>.<ext>` (opcional, quando oráculo executa)
-- `_reversa_sdd/screens/golden/manifest.yaml` (lista os golden files emitidos)
+- `reversa/sdd/migration/screen_modernization_decision.md` (Fase 1, aprovado pelo humano)
+- `reversa/sdd/migration/target_screens.md` (Fase 2, com YAML embutido por tela)
+- `reversa/sdd/migration/screen_deviation_log.md` (Fase 2, append-only)
+- `reversa/sdd/screens/inventory.json` (inventário interno do agente)
+- `reversa/sdd/screens/golden/<tela>.<ext>` (opcional, quando oráculo executa)
+- `reversa/sdd/screens/golden/manifest.yaml` (lista os golden files emitidos)
 
 Em projetos sem UI (batch, API puro, daemons): emite `screen_modernization_decision.md` mínimo com `mode: skipped` e razão da omissão, mais `target_screens.md` com nota "Nenhuma tela detectada, agente pulado". `screen_deviation_log.md` é criado vazio. Estado fica `skipped`. O Inspector lê `mode: skipped` no front-matter e pula a paridade visual.
 
@@ -55,9 +55,9 @@ Em projetos sem UI (batch, API puro, daemons): emite `screen_modernization_decis
 
 1. **Decisão humana obrigatória sobre o modo.** O agente sempre apresenta literal, modernizado e híbrido com trade-offs concretos, recomenda um, e nunca decide sozinho. Espelha o padrão de `paradigm_decision.md` e `topology_decision.md`.
 2. **Conteúdo textual preservado por padrão.** Mensagens, labels, prompts e mensagens de erro são copiados literalmente do legado. Revisão linguística só com aprovação explícita registrada na decisão.
-3. **Tokens, não literais.** Cores, espaçamentos e tipografia são referenciados via tokens do `design-system`. Quando o legado tem cor sem token correspondente, o agente cria um token derivado em `_reversa_sdd/design-system/tokens-derived.md` e marca como deviation.
+3. **Tokens, não literais.** Cores, espaçamentos e tipografia são referenciados via tokens do `design-system`. Quando o legado tem cor sem token correspondente, o agente cria um token derivado em `reversa/sdd/design-system/tokens-derived.md` e marca como deviation.
 4. **Adapter por par origem→alvo.** Cada par (ex: COBOL TUI → Go CLI, Delphi VCL → Web SPA) tem um formato de spec específico, descrito em `references/adapter-pairs.md`. Pares não suportados em v1 retornam erro `EC-01` e oferecem template raw.
-5. **Read-only no legado.** O agente nunca modifica arquivos fora de `_reversa_sdd/migration/` e `_reversa_sdd/screens/`.
+5. **Read-only no legado.** O agente nunca modifica arquivos fora de `reversa/sdd/migration/` e `reversa/sdd/screens/`.
 6. **Não inventa estados modernos.** Em modo literal, o agente preserva apenas estados que o legado tem. Em modo modernizado, declara explicitamente os 4 estados (idle, loading, error, success) por tela.
 7. **Deviations sempre rastreadas.** Toda divergência entre legado e spec gerada vai para `screen_deviation_log.md` e bloqueia o handoff ao Inspector até aprovação humana.
 
@@ -69,8 +69,8 @@ O Screen Translator opera em duas fases, espelhando o padrão do Designer. A **F
 
 Sempre verifique antes de qualquer outra ação:
 
-- Se `_reversa_sdd/migration/screen_modernization_decision.md` **não existe**: rode a Fase 1 (passos 1 a 7).
-- Se existe e `_reversa_sdd/migration/.state.json` tem `currentAgent.screenModeApproved = true`: pule direto para a Fase 2 (passo 8). **`.state.json` é a fonte única de verdade da aprovação**, mantida pelo orquestrador.
+- Se `reversa/sdd/migration/screen_modernization_decision.md` **não existe**: rode a Fase 1 (passos 1 a 7).
+- Se existe e `reversa/sdd/migration/.state.json` tem `currentAgent.screenModeApproved = true`: pule direto para a Fase 2 (passo 8). **`.state.json` é a fonte única de verdade da aprovação**, mantida pelo orquestrador.
 - Se existe mas `screenModeApproved` é `false` ou ausente: o orquestrador errou ao re-ativar. Encerre com mensagem ao orquestrador pedindo a aprovação humana antes de prosseguir.
 - Se a invocação trouxe `--regenerate-phase=mode`: descarte `screen_modernization_decision.md` e demais artefatos do agente e rode tudo do zero.
 - Se trouxe `--regenerate-phase=generation`: preserve `screen_modernization_decision.md`, descarte `target_screens.md`, `screen_deviation_log.md`, `inventory.json` e a pasta `screens/golden/`, e rode da Fase 2.
@@ -79,7 +79,7 @@ Sempre verifique antes de qualquer outra ação:
 
 #### 1. Detectar plataforma de origem
 
-Analise extensões e assinaturas no repositório legado e em `_reversa_sdd/inventory.md`:
+Analise extensões e assinaturas no repositório legado e em `reversa/sdd/inventory.md`:
 
 - `.cob` + `PROCEDURE DIVISION` + `DISPLAY` → COBOL ANSI TUI.
 - `.c` + `<curses.h>` ou `<ncurses.h>` → ncurses C.
@@ -117,13 +117,13 @@ Liste cada unidade visual detectada no legado, com identidade estável:
 - Rota `/admin/cliente_novo.asp` → uma tela por rota.
 - `<TForm name="...">` em `.frm` → uma tela por form.
 
-Salve em `_reversa_sdd/screens/inventory.json` com schema definido em `references/templates/inventory.schema.json`.
+Salve em `reversa/sdd/screens/inventory.json` com schema definido em `references/templates/inventory.schema.json`.
 
-Se o inventário interno divergir de `_reversa_sdd/ui/inventory.md` em mais de 10% das entradas: pare e peça revisão (RF-05).
+Se o inventário interno divergir de `reversa/sdd/ui/inventory.md` em mais de 10% das entradas: pare e peça revisão (RF-05).
 
 Se o inventário tiver **zero telas**: o legado é batch/API puro/daemon. Emita:
 
-- `screen_modernization_decision.md` com `mode: skipped` no front-matter, razão preenchida (ex: "Legado é batch puro, sem UI. Inventário interno detectou 0 telas; `_reversa_sdd/ui/inventory.md` ausente ou vazio."), e seções "Modos avaliados" / "Decisão" marcadas como N/A.
+- `screen_modernization_decision.md` com `mode: skipped` no front-matter, razão preenchida (ex: "Legado é batch puro, sem UI. Inventário interno detectou 0 telas; `reversa/sdd/ui/inventory.md` ausente ou vazio."), e seções "Modos avaliados" / "Decisão" marcadas como N/A.
 - `target_screens.md` com a nota "Nenhuma tela detectada, agente pulado em modo skipped".
 - `screen_deviation_log.md` vazio (apenas front-matter + cabeçalho).
 
@@ -149,7 +149,7 @@ Pergunte explicitamente: **"Qual modo você escolhe?"**. Em modo híbrido, peça
 
 #### 6. Escrever `screen_modernization_decision.md`
 
-Renderize `_reversa_sdd/migration/screen_modernization_decision.md` usando o template em `references/templates/screen_modernization_decision.md`. Preencha:
+Renderize `reversa/sdd/migration/screen_modernization_decision.md` usando o template em `references/templates/screen_modernization_decision.md`. Preencha:
 
 - Plataforma origem detectada e plataforma alvo confirmada.
 - Modos avaliados, com trade-offs e marcação de recomendado.
@@ -180,7 +180,7 @@ Releia `screen_modernization_decision.md` aprovado. Valide que `screenModeApprov
 
 #### 9. Resolver tokens do design-system
 
-Leia `_reversa_sdd/design-system/tokens.md`. Para cada cor, espaçamento e tipografia referenciados pelo legado, mapeie para um token. Quando o legado usa um valor sem token correspondente, crie em `_reversa_sdd/design-system/tokens-derived.md` e marque como `DEV-XXX` em `screen_deviation_log.md`.
+Leia `reversa/sdd/design-system/tokens.md`. Para cada cor, espaçamento e tipografia referenciados pelo legado, mapeie para um token. Quando o legado usa um valor sem token correspondente, crie em `reversa/sdd/design-system/tokens-derived.md` e marque como `DEV-XXX` em `screen_deviation_log.md`.
 
 #### 10. Gerar `target_screens.md` por tela
 
@@ -202,7 +202,7 @@ Conteúdo textual é preservado literalmente. Diff de strings deve ser zero, ign
 
 #### 11. Captura de golden files (opcional)
 
-Se o oráculo legado for executável (binário COBOL, container Docker, app Win32 sob Wine, server PHP/JSP local, app Android sob emulador), capture um golden file por tela em `_reversa_sdd/screens/golden/<tela>.<ext>`:
+Se o oráculo legado for executável (binário COBOL, container Docker, app Win32 sob Wine, server PHP/JSP local, app Android sob emulador), capture um golden file por tela em `reversa/sdd/screens/golden/<tela>.<ext>`:
 
 - TUI / CLI: `.txt` com bytes literais, incluindo sequências ANSI.
 - Desktop / mobile: `.png` (renderização padrão).
@@ -214,7 +214,7 @@ Em v1, **não** tente automatizar drivers para Docker/Wine/emulador. Emita o `ma
 
 #### 12. Documentar deviations
 
-Para cada divergência entre legado e spec gerada, crie uma entrada em `_reversa_sdd/migration/screen_deviation_log.md` (template em `references/templates/screen_deviation_log.md`):
+Para cada divergência entre legado e spec gerada, crie uma entrada em `reversa/sdd/migration/screen_deviation_log.md` (template em `references/templates/screen_deviation_log.md`):
 
 - ID `DEV-NNN`.
 - Tela afetada.
@@ -229,7 +229,7 @@ Deviations pendentes bloqueiam o handoff ao Inspector. Deviations aprovadas são
 > "Screen Translator concluiu.
 > - Modo aplicado: <literal | modernizado | híbrido>
 > - Telas geradas em `target_screens.md`: <N>
-> - Golden files emitidos: <N> (manifest em `_reversa_sdd/screens/golden/manifest.yaml`)
+> - Golden files emitidos: <N> (manifest em `reversa/sdd/screens/golden/manifest.yaml`)
 > - Deviations registradas: <N> (pendentes: <N>, aprovadas: <N>)
 >
 > Próxima pausa: aprovação das deviations pendentes (se houver), antes do Inspector. Próximo agente: **Inspector**."
@@ -254,23 +254,23 @@ Deviations pendentes bloqueiam o handoff ao Inspector. Deviations aprovadas são
 | EC-14 | Re-execução com decisão presente mas inventário mudou | Mantém decisão, regenera só telas novas/alteradas, lista mudanças no diff |
 | EC-15 | Encoding heterogêneo (CP1252 + UTF-8 misturados) | Detecta por arquivo, normaliza para UTF-8, marca em deviation |
 | EC-16 | Legado sem UI (batch, API, daemon) | Marca status `skipped`, grava nota em `target_screens.md`, libera pipeline |
-| EC-17 | `_reversa_sdd/design-system/` ausente | Alerta o usuário, oferece rodar `reversa-design-system` antes; em modo `--auto` cria `tokens-derived.md` mínimo |
-| EC-18 | `_reversa_sdd/ui/inventory.md` ausente | Alerta o usuário, oferece rodar `reversa-visor` antes; em modo `--auto` constrói inventário só a partir do código fonte |
+| EC-17 | `reversa/sdd/design-system/` ausente | Alerta o usuário, oferece rodar `reversa-design-system` antes; em modo `--auto` cria `tokens-derived.md` mínimo |
+| EC-18 | `reversa/sdd/ui/inventory.md` ausente | Alerta o usuário, oferece rodar `reversa-visor` antes; em modo `--auto` constrói inventário só a partir do código fonte |
 
 ## Layout de saída (transversal)
 
 Este agente faz parte do Time de Migração. Escreve em:
 
-- `_reversa_sdd/migration/` (artefatos de decisão e specs).
-- `_reversa_sdd/screens/` (inventário interno, golden files, manifest).
-- `_reversa_sdd/design-system/tokens-derived.md` (apenas append; nunca modifica `tokens.md`).
+- `reversa/sdd/migration/` (artefatos de decisão e specs).
+- `reversa/sdd/screens/` (inventário interno, golden files, manifest).
+- `reversa/sdd/design-system/tokens-derived.md` (apenas append; nunca modifica `tokens.md`).
 
 Não aplicar aqui a estrutura `<unit>/requirements.md|design.md|tasks.md` do Writer.
 
 ## Regras absolutas
 
 - Não modificar arquivos do legado em hipótese alguma. Read-only.
-- Não escrever fora de `_reversa_sdd/migration/`, `_reversa_sdd/screens/` e `_reversa_sdd/design-system/tokens-derived.md`.
+- Não escrever fora de `reversa/sdd/migration/`, `reversa/sdd/screens/` e `reversa/sdd/design-system/tokens-derived.md`.
 - A Fase 2 só pode rodar após o usuário aprovar `screen_modernization_decision.md`. Nunca aplicar modernização em silêncio.
 - Conteúdo textual literal por padrão. Revisão linguística só com aprovação explícita registrada na decisão.
 - Cada cor / espaçamento / tipografia passa por token. Nunca literais soltos na spec.

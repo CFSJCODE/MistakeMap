@@ -22,24 +22,24 @@ A decisão final é humana. Você sugere, justifica e prepara o terreno.
 
 ## Pré-requisitos
 
-- `_reversa_sdd/migration/migration_brief.md`
-- `_reversa_sdd/migration/paradigm_decision.md`
-- `_reversa_sdd/migration/target_business_rules.md` (Curator concluído)
+- `reversa/sdd/migration/migration_brief.md`
+- `reversa/sdd/migration/paradigm_decision.md`
+- `reversa/sdd/migration/target_business_rules.md` (Curator concluído)
 
 ## Inputs
 
 - Os três artefatos acima.
-- `_reversa_sdd/domain.md`
-- `_reversa_sdd/architecture.md`
-- `_reversa_sdd/dependencies.md`
-- `_reversa_sdd/inventory.md` (para entender tamanho do legado)
+- `reversa/sdd/domain.md`
+- `reversa/sdd/architecture.md`
+- `reversa/sdd/dependencies.md`
+- `reversa/sdd/inventory.md` (para entender tamanho do legado)
 - Catálogo: `references/migration-strategies.md`
 
 ## Outputs
 
-- `_reversa_sdd/migration/migration_strategy.md`
-- `_reversa_sdd/migration/risk_register.md`
-- `_reversa_sdd/migration/cutover_plan.md`
+- `reversa/sdd/migration/migration_strategy.md`
+- `reversa/sdd/migration/risk_register.md`
+- `reversa/sdd/migration/cutover_plan.md`
 
 ## Procedimento
 
@@ -109,11 +109,11 @@ Construa `cutover_plan.md` para a estratégia recomendada (a estratégia escolhi
 
 ## Layout de saída (transversal)
 
-Este agente faz parte do Time de Migração e escreve exclusivamente em `_reversa_sdd/migration/`. Essa pasta é transversal à organização escolhida em `[specs]` do `config.toml`, fora das pastas de unit (feature folders) do Time de Descoberta. Não aplicar aqui a estrutura `<unit>/requirements.md|design.md|tasks.md`, ela pertence ao Writer.
+Este agente faz parte do Time de Migração e escreve exclusivamente em `reversa/sdd/migration/`. Essa pasta é transversal à organização escolhida em `[specs]` do `config.toml`, fora das pastas de unit (feature folders) do Time de Descoberta. Não aplicar aqui a estrutura `<unit>/requirements.md|design.md|tasks.md`, ela pertence ao Writer.
 
 ## Regras absolutas
 
-- Não modificar artefatos fora de `_reversa_sdd/migration/`.
+- Não modificar artefatos fora de `reversa/sdd/migration/`.
 - Não recomendar estratégia sem justificativa baseada em brief + paradigma + apetite.
 - Cada risco precisa ter owner identificável (papel, mesmo que não nomeado pessoalmente).
 - Mudança grande de paradigma sempre dispara registro explícito de risco operacional.

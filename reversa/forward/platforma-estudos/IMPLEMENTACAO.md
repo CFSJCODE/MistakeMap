@@ -67,7 +67,7 @@ Esta entrega não aplicou migrations nem fez chamadas a R2/Auth de produção. A
 - Edge Functions: os 9 pontos de entrada passaram em `deno check --frozen`; 93 testes passaram em `deno test --frozen --allow-env`.
 - O build Web completo foi gerado localmente; a compilação não fez deploy.
 - PostgreSQL embarcado/PGlite: `verify-study-review.mjs`, `verify-platform.mjs`, `verify-student-analysis-view.mjs`, `verify-study-milestones.mjs` e `verify-account-lifecycle.mjs` exercitam SQL real e RLS, sem usar o banco publicado. Os scripts exigem uma instalação isolada do módulo indicada por `PGLITE_MODULE`; nenhuma dependência foi adicionada ao aplicativo.
-- Prévia opcional: `flutter test --no-pub --dart-define=GENERATE_PLATFORM_PREVIEWS=true test/platform_previews_test.dart` passou e gerou [Hoje no celular](../../_reversa_docs/platforma-estudos/screenshots/hoje-mobile.png) e [biblioteca no desktop](../../_reversa_docs/platforma-estudos/screenshots/biblioteca-desktop.png), com dados ilustrativos e a interface real. As imagens não demonstram conexão com produção.
+- Prévia opcional: `flutter test --no-pub --dart-define=GENERATE_PLATFORM_PREVIEWS=true test/platform_previews_test.dart` passou e gerou [Hoje no celular](../../docs/platforma-estudos/screenshots/hoje-mobile.png) e [biblioteca no desktop](../../docs/platforma-estudos/screenshots/biblioteca-desktop.png), com dados ilustrativos e a interface real. As imagens não demonstram conexão com produção.
 
 ## Frentes que continuam dependendo de trabalho ou recursos externos
 

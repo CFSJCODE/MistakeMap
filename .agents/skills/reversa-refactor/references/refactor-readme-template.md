@@ -20,7 +20,7 @@ Nenhuma transformação altera comportamento observável. O que não prova prese
 ## Estrutura
 
 ```
-_reversa_refactor/
+reversa/refactor/
   README.md                         (este arquivo)
   <contexto>/                        (feature, módulo ou caso de uso)
     opportunities/                   (oportunidades detectadas, uma por arquivo)

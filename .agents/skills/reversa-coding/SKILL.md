@@ -1,6 +1,6 @@
 ---
 name: reversa-coding
-description: 'Executa o actions.md em código: marca checkboxes [X], escreve progress.jsonl e gera legacy-impact.md e regression-watch.md. Funciona ancorado no legado (`_reversa_sdd/`) ou greenfield (`/reversa-new`). Último passo do ciclo forward.'
+description: 'Executa o actions.md em código: marca checkboxes [X], escreve progress.jsonl e gera legacy-impact.md e regression-watch.md. Funciona ancorado no legado (`reversa/sdd/`) ou greenfield (`/reversa-new`). Último passo do ciclo forward.'
 disable-model-invocation: true
 license: MIT
 compatibility: Claude Code, Codex, Cursor, Gemini CLI e demais agentes compatíveis com Agent Skills.
@@ -17,14 +17,14 @@ Você é o executor. Sua missão é transformar `actions.md` em código real, fa
 ## Antes de começar
 
 1. Leia `.reversa/state.json` para resolver `output_folder` e `forward_folder`
-2. Use os valores reais nos lugares onde o texto mencionar `_reversa_sdd/` ou `_reversa_forward/`
+2. Use os valores reais nos lugares onde o texto mencionar `reversa/sdd/` ou `reversa/forward/`
 
 ## Âncora de contexto: legado ou greenfield
 
-Esse skill **EXIGE** uma âncora de contexto em `_reversa_sdd/`, senão os dois artefatos centrais (`legacy-impact.md` e `regression-watch.md`) perdem o valor e o ciclo forward vira um framework genérico qualquer. Duas âncoras são válidas:
+Esse skill **EXIGE** uma âncora de contexto em `reversa/sdd/`, senão os dois artefatos centrais (`legacy-impact.md` e `regression-watch.md`) perdem o valor e o ciclo forward vira um framework genérico qualquer. Duas âncoras são válidas:
 
-1. **Legado:** `_reversa_sdd/` contém `architecture.md` E `domain.md` (extração do Time de Descoberta via `/reversa`). Comportamento clássico.
-2. **Greenfield:** `_reversa_sdd/` contém `prd.md` E pelo menos uma spec em `_reversa_sdd/sdd/` (artefatos do `/reversa-new`). Projeto novo é caso válido, o pipeline não bloqueia por ausência da extração. Os artefatos do skill se adaptam conforme descrito nas seções de geração.
+1. **Legado:** `reversa/sdd/` contém `architecture.md` E `domain.md` (extração do Time de Descoberta via `/reversa`). Comportamento clássico.
+2. **Greenfield:** `reversa/sdd/` contém `prd.md` E pelo menos uma spec em `reversa/sdd/sdd/` (artefatos do `/reversa-new`). Projeto novo é caso válido, o pipeline não bloqueia por ausência da extração. Os artefatos do skill se adaptam conforme descrito nas seções de geração.
 
 Se existirem as duas âncoras (projeto que rodou `/reversa` e `/reversa-new`), use a de legado como principal e as specs SDD como complemento.
 
@@ -37,11 +37,11 @@ A verificação continua estrita quando NENHUMA âncora existe: o skill aborta c
 2. Verifique a existência de `feature-dir/actions.md`
    2.1. Se ausente, aborte com mensagem apontando `/reversa-to-do`
 3. Verifique a âncora de contexto:
-   3.1. **Âncora de legado:** `_reversa_sdd/` existe E contém `architecture.md` E `domain.md`. Se satisfeita, registre internamente o cenário como **legado** e siga para o passo 4.
-   3.2. **Âncora greenfield:** `_reversa_sdd/` existe E contém `prd.md` E pelo menos um arquivo `.md` em `_reversa_sdd/sdd/`. Se satisfeita (e a de legado não), registre o cenário como **greenfield**, informe ao usuário ("Sem extração de legado, vou ancorar nos artefatos do `/reversa-new`: `prd.md` e specs SDD.") e siga para o passo 4.
+   3.1. **Âncora de legado:** `reversa/sdd/` existe E contém `architecture.md` E `domain.md`. Se satisfeita, registre internamente o cenário como **legado** e siga para o passo 4.
+   3.2. **Âncora greenfield:** `reversa/sdd/` existe E contém `prd.md` E pelo menos um arquivo `.md` em `reversa/sdd/sdd/`. Se satisfeita (e a de legado não), registre o cenário como **greenfield**, informe ao usuário ("Sem extração de legado, vou ancorar nos artefatos do `/reversa-new`: `prd.md` e specs SDD.") e siga para o passo 4.
    3.3. Se NENHUMA das duas âncoras estiver satisfeita, aborte com a mensagem:
 
-       > 🛑 `/reversa-coding` exige uma âncora de contexto em `_reversa_sdd/` e não encontrei nenhuma:
+       > 🛑 `/reversa-coding` exige uma âncora de contexto em `reversa/sdd/` e não encontrei nenhuma:
        >
        > - **Legado:** `architecture.md` + `domain.md` (gere com `/reversa`)
        > - **Greenfield:** `prd.md` + specs em `sdd/` (gere com `/reversa-new`)
@@ -55,7 +55,7 @@ A verificação continua estrita quando NENHUMA âncora existe: o skill aborta c
 
 ## Política de edição do legado
 
-Executar `actions.md` quase sempre exige criar ou editar arquivos do projeto. Antes da PRIMEIRA escrita fora das pastas próprias do Reversa (`.reversa/`, `<output_folder>/`, `_reversa_docs/`, `<forward_folder>/`), leia `.reversa/reversa-config.json` e obedeça:
+Executar `actions.md` quase sempre exige criar ou editar arquivos do projeto. Antes da PRIMEIRA escrita fora das pastas próprias do Reversa (`.reversa/`, `<output_folder>/`, `reversa/docs/`, `<forward_folder>/`), leia `.reversa/reversa-config.json` e obedeça:
 
 1. **Arquivo ausente, JSON inválido ou `allowLegacyEdits` com tipo errado**: política bloqueada (falha segura). Pare antes de escrever, mostre o estado atual (incluindo o erro de parse, se houver) e o snippet que o usuário deve salvar em `.reversa/reversa-config.json` para liberar, já preenchido com os globs dos caminhos que o plano precisa tocar:
 
@@ -99,14 +99,14 @@ Para cada fase, na ordem Preparação, Testes, Núcleo, Integração, Polimento:
 
 Após executar (mesmo que parcialmente):
 
-**Cenário greenfield:** não há legado para impactar. Gere o arquivo mesmo assim, com adaptações: mapeie cada arquivo criado ao componente correspondente das specs em `_reversa_sdd/sdd/` (em vez de `architecture.md`), use o tipo de impacto `componente-novo` para tudo, e registre no cabeçalho: "Feature greenfield, sem legado pré-existente. Âncora: prd.md + specs SDD." As seções "Preservadas" e "Modificadas" ficam vazias com essa nota. Pule os passos 4 e 5 abaixo.
+**Cenário greenfield:** não há legado para impactar. Gere o arquivo mesmo assim, com adaptações: mapeie cada arquivo criado ao componente correspondente das specs em `reversa/sdd/sdd/` (em vez de `architecture.md`), use o tipo de impacto `componente-novo` para tudo, e registre no cabeçalho: "Feature greenfield, sem legado pré-existente. Âncora: prd.md + specs SDD." As seções "Preservadas" e "Modificadas" ficam vazias com essa nota. Pule os passos 4 e 5 abaixo.
 
 **Cenário legado:**
 
-1. Para cada arquivo do projeto tocado, mapeie ao componente correspondente em `_reversa_sdd/architecture.md` quando possível
+1. Para cada arquivo do projeto tocado, mapeie ao componente correspondente em `reversa/sdd/architecture.md` quando possível
 2. Para cada componente afetado, classifique o tipo de impacto: `regra-alterada`, `regra-removida`, `regra-nova`, `componente-novo`, `componente-extinto`, `delta-de-dados`, `delta-de-contrato-externo`
 3. Atribua severidade alinhada com `/reversa-audit` (CRITICAL, HIGH, MEDIUM, LOW)
-4. Liste regras 🟢 do `_reversa_sdd/domain.md` que continuam intactas (vão para a seção "Preservadas")
+4. Liste regras 🟢 do `reversa/sdd/domain.md` que continuam intactas (vão para a seção "Preservadas")
 5. Liste regras 🟢 que foram alteradas ou removidas (vão para a seção "Modificadas")
 
 Estrutura do arquivo:
@@ -162,7 +162,7 @@ Aplique `after-coding` da forma padrão.
 2. Quantas falharam (se houver)
 3. Caminho absoluto de `actions.md`, `progress.jsonl`, `legacy-impact.md`, `regression-watch.md`
 4. Quantos watch items foram criados nessa rodada
-5. Aviso explícito: rode `/reversa-sync` para converger a entrega em `_reversa_sdd/addenda/`. NÃO é preciso re-rodar `/reversa` a cada entrega: o adendo mantém a extração válida, e a re-extração completa fica para de vez em quando, acumuladas algumas features
+5. Aviso explícito: rode `/reversa-sync` para converger a entrega em `reversa/sdd/addenda/`. NÃO é preciso re-rodar `/reversa` a cada entrega: o adendo mantém a extração válida, e a re-extração completa fica para de vez em quando, acumuladas algumas features
 6. Se a execução foi parcial, indique a próxima fase ou ação pendente
 
 NUNCA dispare a re-extração sozinho, isso é decisão do usuário.

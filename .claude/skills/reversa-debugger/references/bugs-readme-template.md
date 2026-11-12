@@ -23,7 +23,7 @@ control_mode: gated                  # supervised | gated | autonomous
 Os bugs são agrupados por **contexto** (feature, módulo ou caso de uso, na linguagem de quem reporta). Cada contexto é uma pasta agregadora com TUDO daquela área: bugs, inspeções e views. A pasta nasce sob demanda, quando o primeiro problema da área é reportado; nada é criado vazio.
 
 ```text
-_reversa_bugs/
+reversa/bugs/
 ├── README.md                    este contrato
 ├── taxonomy.yaml                vocabulário controlado de area/module/feature
 └── <contexto>/                  ex.: sistema-de-credito/, carrinho-de-compras/

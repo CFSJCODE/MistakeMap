@@ -2,12 +2,12 @@
 # HTMLs encontrados precisam ter <meta name="reversa-category" content="..."> para serem indexados.
 
 scan_roots:
-  - path: "_reversa_sdd/"
+  - path: "reversa/sdd/"
     description: "Specs SDD e outputs dos agentes de Descoberta e Migração."
   - path: ".reversa/"
     description: "Artefatos transversais do core."
     exclude:
-      - "_reversa_docs/"
+      - "reversa/docs/"
       - ".reversa/_config/"
       - ".reversa/context/"
 

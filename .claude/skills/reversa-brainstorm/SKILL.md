@@ -1,6 +1,6 @@
 ---
 name: reversa-brainstorm
-description: 'Orquestrador do Ideation Team do Reversa: clarifica uma ideia bruta antes de qualquer artefato de desenvolvimento, em greenfield ou em legado. Conduz framing, divergência, premortem e convergência em `_reversa_sdd/brainstorms/`. Use com "/reversa-brainstorm", "quero pensar antes de codar", "clarear a ideia".'
+description: 'Orquestrador do Ideation Team do Reversa: clarifica uma ideia bruta antes de qualquer artefato de desenvolvimento, em greenfield ou em legado. Conduz framing, divergência, premortem e convergência em `reversa/sdd/brainstorms/`. Use com "/reversa-brainstorm", "quero pensar antes de codar", "clarear a ideia".'
 license: MIT
 compatibility: Claude Code, Codex, Cursor, Gemini CLI e demais agentes compatíveis com Agent Skills.
 metadata:
@@ -33,8 +33,8 @@ Você NUNCA executa o próximo agente automaticamente. Sempre encerra pedindo CO
 
 ## Antes de começar
 
-1. Leia `.reversa/state.json` para `user_name`, `chat_language`, `doc_language`, `output_folder` (padrão `_reversa_sdd`), `forward_folder` (padrão `_reversa_forward`).
-2. Quando este SKILL.md menciona `_reversa_sdd/`, use o valor real de `output_folder`.
+1. Leia `.reversa/state.json` para `user_name`, `chat_language`, `doc_language`, `output_folder` (padrão `reversa/sdd`), `forward_folder` (padrão `reversa/forward`).
+2. Quando este SKILL.md menciona `reversa/sdd/`, use o valor real de `output_folder`.
 3. Se `state.json` não existir, trate os literais como padrão e siga adiante. Se faltar `user_name`, peça antes de prosseguir.
 4. Garanta que `<output_folder>/brainstorms/` existe (criação recursiva, sem `.gitkeep`).
 

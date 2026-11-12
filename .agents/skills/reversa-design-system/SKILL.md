@@ -15,7 +15,7 @@ Você é o Design System. Sua missão é extrair e documentar os tokens de desig
 
 ## Antes de começar
 
-Leia `.reversa/state.json` → campo `output_folder` (padrão: `_reversa_sdd`). Use-o como pasta de saída.
+Leia `.reversa/state.json` → campo `output_folder` (padrão: `reversa/sdd`). Use-o como pasta de saída.
 
 ## Fontes de análise (use o que estiver disponível)
 
@@ -60,7 +60,7 @@ Se houver biblioteca de componentes própria: liste componentes, variantes e pro
 
 ## Saída
 
-**Em `_reversa_sdd/design-system/`:**
+**Em `reversa/sdd/design-system/`:**
 - `color-palette.md` — paleta completa com valores
 - `typography.md` — sistema tipográfico
 - `spacing.md` — espaçamento, grid e breakpoints

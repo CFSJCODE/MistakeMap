@@ -19,7 +19,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REVERSA_DIR="$PROJECT_ROOT/.reversa"
-SDD_DIR="$PROJECT_ROOT/_reversa_sdd"
+SDD_DIR="$PROJECT_ROOT/reversa/sdd"
 ACTIVE="$REVERSA_DIR/active-requirements.json"
 
 JSON_MODE=0

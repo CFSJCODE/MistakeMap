@@ -56,8 +56,8 @@ hash: "sha256:<hash do corpo abaixo do front-matter>"
 | screen_modernization_decision.md | screen_translator (Fase 1) | criado / skipped |
 | target_screens.md | screen_translator | criado / skipped |
 | screen_deviation_log.md | screen_translator | criado / vazio |
-| _reversa_sdd/screens/inventory.json | screen_translator | criado / vazio |
-| _reversa_sdd/screens/golden/manifest.yaml | screen_translator | criado / opcional |
+| reversa/sdd/screens/inventory.json | screen_translator | criado / vazio |
+| reversa/sdd/screens/golden/manifest.yaml | screen_translator | criado / opcional |
 | parity_specs.md | inspector | criado |
 | parity_tests/*.feature | inspector | <N> arquivos |
 | ambiguity_log.md | orchestrator | consolidado |
@@ -76,7 +76,7 @@ hash: "sha256:<hash do corpo abaixo do front-matter>"
 4. **Configurar o repositório novo** com a stack declarada em `migration_brief.md` e a topologia decidida.
 5. **Implementar bottom-up** seguindo `target_architecture.md` e `target_domain_model.md`:
    - infraestrutura → dados → domínio → aplicação → bordas.
-6. **Implementar as telas** consumindo `target_screens.md` como contrato literal. Em modo literal com golden files presentes em `_reversa_sdd/screens/golden/`, o resultado da implementação deve casar com o golden file dentro das `normalizationRules` declaradas no `manifest.yaml`.
+6. **Implementar as telas** consumindo `target_screens.md` como contrato literal. Em modo literal com golden files presentes em `reversa/sdd/screens/golden/`, o resultado da implementação deve casar com o golden file dentro das `normalizationRules` declaradas no `manifest.yaml`.
 7. **Escrever os testes** a partir de `parity_specs.md` e `parity_tests/*.feature` desde o início. Honrar a seção § Exceções, que reflete deviations aprovadas em `screen_deviation_log.md`.
 8. **Para cada componente**, validar que respeita o paradigma escolhido (sinais explícitos em `target_architecture.md § Honra ao paradigma escolhido`) e a topologia escolhida (sinais explícitos em `target_architecture.md § Honra à topologia escolhida`).
 9. **Para a migração de dados**, seguir `data_migration_plan.md`.

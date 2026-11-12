@@ -6,7 +6,7 @@ REGRAS DE PREENCHIMENTO:
 - Mantenha a ordem das seções obrigatórias.
 - Não apague seções marcadas como obrigatórias, mesmo quando vazias (use "n/a" se necessário).
 - Comentários inline (entre <!-- -->) só devem ser removidos quando a seção correspondente estiver totalmente preenchida.
-- Use 🟢 / 🟡 / 🔴 conforme a confidência da fonte do _reversa_sdd/ que sustenta a afirmação.
+- Use 🟢 / 🟡 / 🔴 conforme a confidência da fonte do reversa/sdd/ que sustenta a afirmação.
 - Marque com [DÚVIDA] qualquer ponto onde a informação faltar; máximo de três marcadores no documento inicial.
 -->
 
@@ -14,7 +14,7 @@ REGRAS DE PREENCHIMENTO:
 
 > Identificador: `<NNN>-<short-name>`
 > Data: `YYYY-MM-DD`
-> Pasta da extração reversa: `_reversa_sdd/`
+> Pasta da extração reversa: `reversa/sdd/`
 > Confidência: 🟢 CONFIRMADO, 🟡 INFERIDO, 🔴 LACUNA / DÚVIDA
 
 ## 1. Resumo executivo
@@ -28,15 +28,15 @@ NÃO descreva como será implementada.
 
 <!--
 Liste os artefatos da pipeline reversa que sustentam essa feature.
-Cada citação no formato _reversa_sdd/<arquivo>#<seção>.
+Cada citação no formato reversa/sdd/<arquivo>#<seção>.
 Use confidência herdada da fonte original.
 -->
 
 | Fonte | Trecho relevante | Confidência |
 |-------|------------------|-------------|
-| `_reversa_sdd/architecture.md#<seção>` | <resumo> | 🟢 |
-| `_reversa_sdd/domain.md#<seção>` | <resumo> | 🟢 |
-| `_reversa_sdd/code-analysis.md#<componente>` | <resumo> | 🟡 |
+| `reversa/sdd/architecture.md#<seção>` | <resumo> | 🟢 |
+| `reversa/sdd/domain.md#<seção>` | <resumo> | 🟢 |
+| `reversa/sdd/code-analysis.md#<componente>` | <resumo> | 🟡 |
 
 ## 3. Personas e cenários de uso
 
@@ -50,12 +50,12 @@ Use confidência herdada da fonte original.
 
 <!--
 Cada regra como item numerado. Para regras que ALTERAM regra confirmada do legado,
-referencie a regra original via `_reversa_sdd/domain.md#<id>`.
+referencie a regra original via `reversa/sdd/domain.md#<id>`.
 Marque cada regra com 🟢 / 🟡 / 🔴.
 -->
 
 1. **RN-01:** <descrição> 🟢
-   - Origem no legado: `_reversa_sdd/domain.md#<id>` (se aplicável)
+   - Origem no legado: `reversa/sdd/domain.md#<id>` (se aplicável)
    - Tipo: nova | alterada | removida
 2. **RN-02:** ...
 

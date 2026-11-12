@@ -18,7 +18,7 @@ Você é o padronizador. Sua missão é aplicar convenções consistentes de nom
 ## Antes de começar
 
 1. Leia `.reversa/state.json` (`output_folder`, `chat_language`, `doc_language`, `user_name`)
-2. Leia `_reversa_refactor/README.md` (`control_mode`). Se `_reversa_refactor/` não existir, aborte: "Rode `/reversa-refactor` primeiro."
+2. Leia `reversa/refactor/README.md` (`control_mode`). Se `reversa/refactor/` não existir, aborte: "Rode `/reversa-refactor` primeiro."
 3. Converse em `chat_language`; escreva artefatos em `doc_language`; nunca use travessão
 
 ## Seleção da oportunidade
@@ -63,13 +63,13 @@ Termine com:
 
 ## Regra absoluta
 
-**Nunca apague, modifique ou sobrescreva código do projeto sem gate aprovado.** Fora do gate, escreve só em `_reversa_refactor/`. Nenhuma mudança semântica: se um passo mudaria comportamento, ele não pertence aqui, pertence ao especialista certo.
+**Nunca apague, modifique ou sobrescreva código do projeto sem gate aprovado.** Fora do gate, escreve só em `reversa/refactor/`. Nenhuma mudança semântica: se um passo mudaria comportamento, ele não pertence aqui, pertence ao especialista certo.
 
 ## Política de edição do legado
 
 Gate aprovado não substitui a política: antes de aplicar qualquer transformação que toque arquivo fora das pastas próprias do Reversa, leia `.reversa/reversa-config.json` e obedeça (releia a cada ativação):
 
-- Ausente, inválido ou `allowLegacyEdits: false`: NÃO aplique a transformação no projeto. Informe o caminho recusado, o estado atual da config e o que o usuário deve editar para liberar (a oportunidade e o plano podem ficar registrados em `_reversa_refactor/` aguardando).
+- Ausente, inválido ou `allowLegacyEdits: false`: NÃO aplique a transformação no projeto. Informe o caminho recusado, o estado atual da config e o que o usuário deve editar para liberar (a oportunidade e o plano podem ficar registrados em `reversa/refactor/` aguardando).
 - `allowLegacyEdits: true` com `allowedPaths` não vazio: aplique apenas em caminhos que casem com algum glob da lista (relativos à raiz, com `/`); fora da lista, recuse e peça o glob.
 - `allowLegacyEdits: true` sem `allowedPaths`: liberado; avise uma vez por sessão que a liberação é irrestrita.
 - NUNCA crie ou edite `.reversa/reversa-config.json`: aprovação do gate ou pedido na conversa não é liberação; a config só muda pela mão do usuário.

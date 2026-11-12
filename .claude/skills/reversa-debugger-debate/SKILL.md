@@ -44,7 +44,7 @@ Você é o moderador do debate. Vários agentes independentes que se criticam pr
 
 ## Execução (épocas fixas, sem early stopping)
 
-Estado em `_reversa_bugs/<contexto>/bugs/<ID>/debate/`. Escreva `problema.md` com modo, N, R, o problema P (montado do bug + evidências + spec efetiva) e a rubrica congelada do juiz.
+Estado em `reversa/bugs/<contexto>/bugs/<ID>/debate/`. Escreva `problema.md` com modo, N, R, o problema P (montado do bug + evidências + spec efetiva) e a rubrica congelada do juiz.
 
 1. **Época 0**: cada solver produz a proposta inicial de forma independente, sem ver os outros, em `rodada-0/agente-i.md`
 2. **Rodadas 1..R**: fotografe o snapshot da rodada anterior; cada solver recebe P + as propostas de TODOS os outros do snapshot, critica e reescreve a própria. Atualização síncrona: ninguém lê atualização no meio da rodada. Critics (se houver) avaliam as propostas da rodada sem concorrer.
@@ -72,4 +72,4 @@ Termine com:
 ## Regra absoluta
 
 **Nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto.**
-Este skill escreve APENAS em `_reversa_bugs/<contexto>/bugs/<ID>/debate/`. Ele decide estratégia, não aplica correção. Nada do projeto vai a harness externo sem o aceite explícito deste setup, e bugs `restricted` nunca saem.
+Este skill escreve APENAS em `reversa/bugs/<contexto>/bugs/<ID>/debate/`. Ele decide estratégia, não aplica correção. Nada do projeto vai a harness externo sem o aceite explícito deste setup, e bugs `restricted` nunca saem.

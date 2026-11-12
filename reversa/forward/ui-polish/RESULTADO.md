@@ -36,8 +36,8 @@ Corrigido o fechamento do menu móvel antes de abrir as telas de análise ou Sob
 
 A política atual .reversa/reversa-config.json permite alterações somente em appmistakemap/lib/** e appmistakemap/test/**. Nenhum pubspec ou arquivo canônico do backend foi modificado nesta etapa.
 
-O adaptador nativo de Wi-Fi/dados móveis continua preparado em _reversa_forward/admin-monitoring/staged-native/network_source_native.dart, mas sua integração depende da liberação de appmistakemap/pubspec.yaml e appmistakemap/pubspec.lock para a dependência de conectividade. Quando o tipo de conexão é desconhecido, o painel mantém atualização de hora em hora. O fluxo Wi-Fi em dispositivo real não foi validado.
+O adaptador nativo de Wi-Fi/dados móveis continua preparado em reversa/forward/admin-monitoring/staged-native/network_source_native.dart, mas sua integração depende da liberação de appmistakemap/pubspec.yaml e appmistakemap/pubspec.lock para a dependência de conectividade. Quando o tipo de conexão é desconhecido, o painel mantém atualização de hora em hora. O fluxo Wi-Fi em dispositivo real não foi validado.
 
-As versões instrumentadas de IA publicadas na etapa anterior estão preservadas em _reversa_forward/admin-monitoring/staged/functions/. A sincronização com os caminhos canônicos supabase/functions/** e appmistakemap/database/supabase/migrations/** continua pendente de liberação desses caminhos; as cópias canônicas antigas não devem substituir a telemetria publicada.
+As versões instrumentadas de IA publicadas na etapa anterior estão preservadas em reversa/forward/admin-monitoring/staged/functions/. A sincronização com os caminhos canônicos supabase/functions/** e appmistakemap/database/supabase/migrations/** continua pendente de liberação desses caminhos; as cópias canônicas antigas não devem substituir a telemetria publicada.
 
 Não houve novo deploy, alteração de faturamento, mudança de autenticação, commit ou push nesta etapa. A sincronização do resumo pelo hook global não foi verificada.

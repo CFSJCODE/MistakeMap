@@ -100,7 +100,7 @@ void main() {
         final image = await boundary.toImage(pixelRatio: 1);
         final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
         final folder = Directory(
-          '../_reversa_docs/platforma-estudos/screenshots',
+          '../reversa/docs/platforma-estudos/screenshots',
         );
         await folder.create(recursive: true);
         await File(

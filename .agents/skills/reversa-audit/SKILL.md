@@ -23,7 +23,7 @@ A única escrita permitida é `feature-dir/audit/cross-check.md`.
 ## Antes de começar
 
 1. Leia `.reversa/state.json` para resolver `output_folder` e `forward_folder`
-2. Use os valores reais nos lugares onde o texto mencionar `_reversa_sdd/` ou `_reversa_forward/`
+2. Use os valores reais nos lugares onde o texto mencionar `reversa/sdd/` ou `reversa/forward/`
 
 ## Verificações Iniciais
 
@@ -46,8 +46,8 @@ Verifique cada par de artefatos quanto a:
    2.2. Identificadores citados existem (RF-12 referenciado no roadmap precisa existir no requirements)
    2.3. Contratos descritos em `interfaces/` aparecem no roadmap
 3. Coerência com o legado
-   3.1. Decisões do roadmap não contradizem regras 🟢 do `_reversa_sdd/domain.md`
-   3.2. Componentes do `_reversa_sdd/architecture.md` citados existem mesmo
+   3.1. Decisões do roadmap não contradizem regras 🟢 do `reversa/sdd/domain.md`
+   3.2. Componentes do `reversa/sdd/architecture.md` citados existem mesmo
 4. Sanidade do actions
    4.1. Dependências apontam para IDs existentes
    4.2. Tarefas marcadas `[//]` não compartilham arquivo alvo

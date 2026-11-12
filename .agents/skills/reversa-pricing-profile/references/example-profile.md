@@ -43,4 +43,4 @@
 
 ## Disclaimer
 
-O fator de imposto registrado e uma reserva aproximada para orcamento, nao uma aliquota legal exata. Validacao tributaria real e responsabilidade do contador do usuario. Este arquivo contem dados financeiros sensiveis. Recomenda-se adicionar `_reversa_sdd/_pricing/profile.json` e `_reversa_sdd/_pricing/profile.md` ao `.gitignore` antes de commitar.
+O fator de imposto registrado e uma reserva aproximada para orcamento, nao uma aliquota legal exata. Validacao tributaria real e responsabilidade do contador do usuario. Este arquivo contem dados financeiros sensiveis. Recomenda-se adicionar `reversa/sdd/_pricing/profile.json` e `reversa/sdd/_pricing/profile.md` ao `.gitignore` antes de commitar.

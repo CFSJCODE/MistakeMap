@@ -17,7 +17,7 @@ hash: "sha256:<hash do corpo abaixo do front-matter>"
 - **Padrão organizacional**: <package-by-layer | package-by-feature | feature-sliced | módulos por domínio | DDD com bounded contexts | monorepo | monolito sem fronteiras claras | híbrido: ...>
 - **Confiança**: 🟢 CONFIRMADO | 🟡 INFERIDO | 🔴 LACUNA | ⚠️ AMBÍGUO
 - **Evidências**:
-  - <evidência 1, com referência a artefato do `_reversa_sdd/` (architecture.md, inventory.md, dependencies.md)>
+  - <evidência 1, com referência a artefato do `reversa/sdd/` (architecture.md, inventory.md, dependencies.md)>
   - <evidência 2>
 - **Mapa da árvore legada** (resumido):
   ```

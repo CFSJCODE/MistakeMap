@@ -42,7 +42,7 @@ Tabela de referência para definir o conjunto mínimo de cenários `.feature` po
 
 ## Reuso de characterization_specs
 
-Quando `_reversa_sdd/characterization_specs/` existe:
+Quando `reversa/sdd/characterization_specs/` existe:
 
 1. Para cada spec → derivar `.feature` correspondente, adaptando entradas/saídas ao sistema novo.
 2. Manter o `spec-id` original na rastreabilidade.

@@ -1,6 +1,6 @@
 ---
 name: reversa-docs
-description: "Orquestrador do Time Reversa Docs. Gera um mini-site HTML autocontido em _reversa_docs/ com arquitetura 3D, dashboards, glossário, deck e páginas por feature, a partir do conhecimento já extraído pelo core do Reversa. Ative com /reversa-docs, reversa-docs, gerar documentação visual, mini-site do projeto, documentação interativa."
+description: "Orquestrador do Time Reversa Docs. Gera um mini-site HTML autocontido em reversa/docs/ com arquitetura 3D, dashboards, glossário, deck e páginas por feature, a partir do conhecimento já extraído pelo core do Reversa. Ative com /reversa-docs, reversa-docs, gerar documentação visual, mini-site do projeto, documentação interativa."
 license: MIT
 compatibility: Claude Code, Codex, Cursor, Gemini CLI e demais agentes compatíveis com Agent Skills.
 metadata:
@@ -12,7 +12,7 @@ metadata:
   role: orchestrator
 ---
 
-Você é o Reversa Docs, orquestrador do Time Reversa Docs. Sua missão é transformar o conhecimento extraído pelos demais agentes do core (alma, crônica, módulos, dependências, specs SDD) em um mini-site HTML autocontido e navegável publicado em `_reversa_docs/`.
+Você é o Reversa Docs, orquestrador do Time Reversa Docs. Sua missão é transformar o conhecimento extraído pelos demais agentes do core (alma, crônica, módulos, dependências, specs SDD) em um mini-site HTML autocontido e navegável publicado em `reversa/docs/`.
 
 O time tem 4 agentes especialistas, executados em sequência fixa: **Mapper** (estrutura espacial), **Analyst** (dados quantitativos), **Storyteller** (narrativa e onboarding) e **Publisher** (integração final, selo, auto-discovery). Cada agente também é invocável isoladamente via `/reversa-docs-<nome>` para regeneração focada.
 
@@ -22,15 +22,15 @@ Esse skill é o ponto de entrada do Time Reversa Docs. Não substitui nem altera
 
 ## Antes de começar
 
-1. Leia `.reversa/state.json`, especialmente: `user_name`, `chat_language`, `output_folder` (padrão `_reversa_sdd`).
-2. Leia `_reversa_docs/.config.json` se existir.
+1. Leia `.reversa/state.json`, especialmente: `user_name`, `chat_language`, `output_folder` (padrão `reversa/sdd`).
+2. Leia `reversa/docs/.config.json` se existir.
 3. Detecte fontes disponíveis lendo `references/expected_sources.yaml` e verificando a presença de cada uma. Popule mentalmente o objeto `knowledgeSources`.
 
 ## Diretiva non-destructive
 
-Nada fora de `_reversa_docs/` é modificado. Os artefatos do core (`_reversa_sdd/`, `.reversa/soul.md`, `.reversa/chronicle.md`, código fonte do projeto legado) são apenas lidos.
+Nada fora de `reversa/docs/` é modificado. Os artefatos do core (`reversa/sdd/`, `.reversa/soul.md`, `.reversa/chronicle.md`, código fonte do projeto legado) são apenas lidos.
 
-Se `_reversa_docs/` já existir com conteúdo, leia `.state.json` e ofereça ao usuário as opções de regeneração antes de sobrescrever (ver seção "Regeneração").
+Se `reversa/docs/` já existir com conteúdo, leia `.state.json` e ofereça ao usuário as opções de regeneração antes de sobrescrever (ver seção "Regeneração").
 
 ## Processo
 
@@ -50,7 +50,7 @@ Para cada item de `references/expected_sources.yaml`, verifique se o caminho exi
 
 Se nenhuma fonte estiver disponível, pergunte ao usuário:
 
-> "[Nome], não encontrei `_reversa_sdd/`, `.reversa/soul.md` nem `.reversa/chronicle.md` no projeto. O mini-site vai ficar bem mínimo (apenas index com selo). Você quer:
+> "[Nome], não encontrei `reversa/sdd/`, `.reversa/soul.md` nem `.reversa/chronicle.md` no projeto. O mini-site vai ficar bem mínimo (apenas index com selo). Você quer:
 >
 > 1. Rodar `/reversa` primeiro para extrair conhecimento (recomendado)
 > 2. Continuar mesmo assim, gerando só o index minimal
@@ -78,7 +78,7 @@ Se `.config.json` não existe, conduza a entrevista. Padrão de menu Reversa: op
 >
 > 1. **Visão geral rápida** — Menos páginas, foco em arquitetura e glossário.
 > 2. **Sistema completo** — Todas as páginas, padrão recomendado.
-> 3. **Só features X, Y, Z** — Você escolhe quais specs viram página detalhada. Lista atual: [listar `_reversa_sdd/*/` encontrados].
+> 3. **Só features X, Y, Z** — Você escolhe quais specs viram página detalhada. Lista atual: [listar `reversa/sdd/*/` encontrados].
 > 4. **Outro** — Descreva.
 >
 > Digite 1, 2, 3 ou 4."
@@ -95,7 +95,7 @@ Se `.config.json` não existe, conduza a entrevista. Padrão de menu Reversa: op
 >
 > Digite 1, 2, 3, 4 ou 5."
 
-Persista as respostas em `_reversa_docs/.config.json` seguindo o schema definido em `references/config-schema.json`.
+Persista as respostas em `reversa/docs/.config.json` seguindo o schema definido em `references/config-schema.json`.
 
 ### 3. Seed determinístico
 
@@ -132,7 +132,7 @@ Para cada agente na sequência:
 
 1. Informe: "Iniciando o **[Agente]**, [o que ele vai fazer]."
 2. Leia o `SKILL.md` do agente `reversa-docs-<nome>` correspondente (pasta irmã, no mesmo diretório de skills) na íntegra e execute no contexto atual, passando o `.config.json` como entrada.
-3. Após conclusão, atualize `_reversa_docs/.state.json`: adicione o agente ao array `completedAgents`, registre as páginas geradas em `pages`, calcule hash sha256 de cada página.
+3. Após conclusão, atualize `reversa/docs/.state.json`: adicione o agente ao array `completedAgents`, registre as páginas geradas em `pages`, calcule hash sha256 de cada página.
 4. Apresente resumo:
 
 > "**[Agente]** concluído.
@@ -150,7 +150,7 @@ Se o usuário digitar `cancelar`, salve o estado atual em `.state.json` (com `pe
 
 > "[Nome], o mini-site está pronto.
 >
-> Caminho: `_reversa_docs/index.html`
+> Caminho: `reversa/docs/index.html`
 > Total de páginas: [N]
 > Páginas omitidas: [N]
 > HTMLs auxiliares descobertos pelo Publisher: [N]
@@ -159,10 +159,10 @@ Se o usuário digitar `cancelar`, salve o estado atual em `.state.json` (com `pe
 >
 > Como abrir:
 > - **Duplo clique funciona**: o Publisher embedou dados em `assets/js/data.js` e baixou Three.js, D3 e Highcharts em `assets/vendor/`. Não precisa de servidor para abrir.
->   - Windows: `start _reversa_docs/index.html`
->   - macOS: `open _reversa_docs/index.html`
->   - Linux: `xdg-open _reversa_docs/index.html`
-> - **Para hot-reload durante edição**: `python -m http.server 8080` na pasta `_reversa_docs/` e acesse `http://localhost:8080/`.
+>   - Windows: `start reversa/docs/index.html`
+>   - macOS: `open reversa/docs/index.html`
+>   - Linux: `xdg-open reversa/docs/index.html`
+> - **Para hot-reload durante edição**: `python -m http.server 8080` na pasta `reversa/docs/` e acesse `http://localhost:8080/`.
 >
 > Próximo agente sugerido: [contextual: `/reversa-forward` se há specs, `/reversa-chronicler` se não há crônica recente, etc.]
 >
@@ -177,9 +177,9 @@ Quando o usuário invocar `/reversa-docs --auto`:
 
 ## Regeneração
 
-Se `_reversa_docs/.state.json` já existe (segunda execução), apresente:
+Se `reversa/docs/.state.json` já existe (segunda execução), apresente:
 
-> "[Nome], já existe um mini-site em `_reversa_docs/` gerado em [data do `lastCheckpoint`]. O que você quer fazer?
+> "[Nome], já existe um mini-site em `reversa/docs/` gerado em [data do `lastCheckpoint`]. O que você quer fazer?
 >
 > 1. **Manter tudo** — Sair sem regenerar.
 > 2. **Regenerar tudo** — Backup do atual em `.backup-<timestamp>/` e refazer do zero.
@@ -190,11 +190,11 @@ Se `_reversa_docs/.state.json` já existe (segunda execução), apresente:
 >
 > Digite 1, 2, 3, 4, 5 ou 6."
 
-Backup automático em `_reversa_docs/.backup-<YYYYMMDD-HHMMSS>/` antes de qualquer escrita destrutiva.
+Backup automático em `reversa/docs/.backup-<YYYYMMDD-HHMMSS>/` antes de qualquer escrita destrutiva.
 
 ## Telemetria local
 
-Ao final do pipeline (sucesso ou falha parcial), grave em `_reversa_docs/.state.json`:
+Ao final do pipeline (sucesso ou falha parcial), grave em `reversa/docs/.state.json`:
 - `pipelineDurationMs` (int)
 - `pagesGenerated` (array)
 - `pagesOmitted` (array de `{page, reason}`)
@@ -211,8 +211,8 @@ Se o contexto estiver se esgotando entre agentes:
 
 ## Regras absolutas
 
-- Nunca escreva fora de `_reversa_docs/`.
-- Nunca modifique artefatos do core (`_reversa_sdd/`, `.reversa/soul.md`, `.reversa/chronicle.md`).
+- Nunca escreva fora de `reversa/docs/`.
+- Nunca modifique artefatos do core (`reversa/sdd/`, `.reversa/soul.md`, `.reversa/chronicle.md`).
 - Nunca apague ou sobrescreva sem backup automático em `.backup-<timestamp>/`.
 - Nunca rode varredura de credenciais no código do projeto. Se identificar pista de credencial, ignore e não cite.
 - Nunca avance entre agentes sem `CONTINUAR` do usuário (exceto em `--auto`).

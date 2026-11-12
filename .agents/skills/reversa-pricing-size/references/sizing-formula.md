@@ -7,7 +7,7 @@ Documenta o calculo deterministico que o agente `reversa-pricing-size` aplica pa
 
 ## Fonte e criterio
 
-O Reversa v1 precisa de uma medida compreensivel para usuario leigo, multi-engine e derivada dos arquivos ja produzidos em `_reversa_sdd/forward/<feature>/`.
+O Reversa v1 precisa de uma medida compreensivel para usuario leigo, multi-engine e derivada dos arquivos ja produzidos em `reversa/sdd/forward/<feature>/`.
 
 Function Points (IFPUG, ISO/IEC 20926) e COSMIC (ISO/IEC 19761) sao padroes formais de medicao funcional, mas exigem classificacao especializada. Para a UX do Reversa, a melhor base e estimativa agil aproximada, inspirada em Story Points e T-shirt sizing. Mike Cohn, em *Agile Estimating and Planning* (Addison-Wesley, 2005), descreve estimativas relativas e tamanhos aproximados como praticas de planejamento agil.
 

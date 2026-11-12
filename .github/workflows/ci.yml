@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: worker
+        working-directory: archive/worker
     steps:
       - uses: actions/checkout@v5
 
@@ -86,7 +86,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: worker
+          workspaces: archive/worker
 
       - name: AC3 — cargo check
         run: cargo check --all-targets

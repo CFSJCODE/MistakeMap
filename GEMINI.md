@@ -23,7 +23,7 @@ Quando o usuário digitar `/reversa` ou a palavra `reversa` sozinha em uma mensa
 ## Regra não-negociável
 
 Por padrão, nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto legado:
-o Reversa escreve apenas em `.reversa/`, `_reversa_sdd/`, `_reversa_docs/`, `_reversa_forward/`, `_reversa_bugs/` e `_reversa_refactor/`.
+o Reversa escreve apenas em `.reversa/`, `reversa/sdd/`, `reversa/docs/`, `reversa/forward/`, `reversa/bugs/` e `reversa/refactor/`.
 A única exceção é a política configurável abaixo, controlada exclusivamente pelo usuário.
 
 Antes de criar, modificar ou apagar qualquer arquivo fora das pastas próprias do Reversa, leia `.reversa/reversa-config.json` e obedeça ao resultado:
