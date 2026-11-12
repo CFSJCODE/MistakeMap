@@ -46,4 +46,17 @@ if command -v deno >/dev/null; then
     deno run --config "$root/supabase/functions/deno.json" --allow-env --allow-net \
     "$root/scripts/school_billing/service_test.ts"
 fi
+# Escola de demonstração: o seed roda duas vezes (idempotente) e nunca cobra.
+run -o /dev/null -v owner_email=dono@b.dev -f "$here/seed_demo_nexo.sql"
+run -o /dev/null -v owner_email=dono@b.dev -f "$here/seed_demo_nexo.sql"
+run -At <<'SQL' | grep -qx 't'
+select count(*) = 13
+   and max(active_students) = 1935
+   and not exists (select 1 from public.school_invoices i where i.school_id = s.id)
+   and (select demo from public.school_billing_settings b where b.school_id = s.id)
+from public.schools s join public.school_usage_months u on u.school_id = s.id
+where s.name like 'Colégio Nexo — Unidade Vale do Ferro%'
+group by s.id
+SQL
+echo "ok: seed da escola de demonstração (13 meses, sem fatura)"
 echo "verify-school-billing: todos os testes passaram"

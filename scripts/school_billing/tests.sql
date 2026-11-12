@@ -184,3 +184,16 @@ select public.school_close_month((public.school_usage_month() - interval '2 mont
 select pg_temp.ok((select method from public.school_invoices where kind = 'monthly'
   and reference_month = (public.school_usage_month() - interval '2 month')::date) = 'pix',
   'cartão sem token: fatura do mês sai em Pix');
+
+-- --------------------------------------------- 7. escola de demonstração
+-- Uso agregado de demonstração fecha o mês, mas nunca vira cobrança.
+insert into public.schools(id, name, plan, billing_cycle, status)
+  values ('d1000000-0000-4000-8000-000000000001', 'Colégio Demonstração (teste)', 'escola', 'annual', 'active');
+insert into public.school_billing_settings(school_id, demo) values ('d1000000-0000-4000-8000-000000000001', true);
+insert into public.school_usage_months(school_id, month, plan, active_students)
+values ('d1000000-0000-4000-8000-000000000001', (public.school_usage_month() - interval '3 month')::date, 'escola', 1935);
+select public.school_close_month((public.school_usage_month() - interval '3 month')::date);
+select pg_temp.ok(not exists(select 1 from public.school_invoices
+  where school_id = 'd1000000-0000-4000-8000-000000000001'), 'escola demo não gera fatura');
+select pg_temp.ok((select closed_at is not null from public.school_usage_months
+  where school_id = 'd1000000-0000-4000-8000-000000000001'), 'uso da escola demo fecha o mês');

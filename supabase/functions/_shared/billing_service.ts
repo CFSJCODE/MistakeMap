@@ -275,6 +275,17 @@ export async function issueInvoice(
   if (!inv) throw new PublicError(404, "not_found", "Fatura não encontrada.");
   if (inv.status !== "pending") return await reload(sql, invoiceId);
   const school = await settingsOf(sql, inv.school_id);
+  if (school.demo || inv.demo) {
+    // Escola de demonstração nunca gera cobrança no Asaas.
+    await sql`UPDATE public.school_invoices SET status = 'canceled',
+        failure_reason = 'Escola de demonstração: sem cobrança.'
+      WHERE id = ${inv.id} AND status = 'pending'`;
+    throw new PublicError(
+      409,
+      "demo_school",
+      "Escola de demonstração: nenhuma cobrança é gerada.",
+    );
+  }
   const isCard = inv.method === "credit_card";
   try {
     const provider = providers();
@@ -530,6 +541,13 @@ export async function billingOperation(
       const card = chosenMethod === "credit_card" ? cardInput(input) : null;
       await requirePayer(sql, user, school);
       const settings = await settingsOf(sql, school);
+      if (settings.demo) {
+        throw new PublicError(
+          409,
+          "demo_school",
+          "Escola de demonstração: nenhuma cobrança é gerada.",
+        );
+      }
       // Cobrança de contratação anterior ainda em aberto deixa de valer.
       await sql`UPDATE public.school_invoices SET status = 'canceled',
           failure_reason = 'Substituída por nova contratação.'
