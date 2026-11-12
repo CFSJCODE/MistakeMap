@@ -4,6 +4,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/team_login.dart' show kTeamBuild;
+import '../billing/billing_repository.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'escola_repositorio.dart';
@@ -25,6 +26,7 @@ class PortaDePerfil extends StatefulWidget {
     required this.usuarioId,
     required this.estudante,
     this.repositorio,
+    this.cobranca,
     this.preferencias = const PreferenciasPerfil(),
     this.sair,
     this.rodapeCadastro,
@@ -38,6 +40,7 @@ class PortaDePerfil extends StatefulWidget {
   /// O app de sempre (navegação do estudante).
   final Widget estudante;
   final RepositorioEscola? repositorio;
+  final BillingRepository? cobranca;
   final PreferenciasPerfil preferencias;
 
   /// Sai da conta (testes trocam). Padrão: signOut do Supabase.
@@ -66,6 +69,14 @@ class PortaDePerfil extends StatefulWidget {
 class _PortaDePerfilState extends State<PortaDePerfil> {
   late final RepositorioEscola _repo =
       widget.repositorio ?? RepositorioEscolaSupabase(Supabase.instance.client);
+
+  /// Cobrança da escola. Testes que trocam o repositório também trocam (ou
+  /// dispensam) a cobrança.
+  late final BillingRepository? _cobranca =
+      widget.cobranca ??
+      (widget.repositorio == null
+          ? SupabaseBillingRepository(Supabase.instance.client)
+          : null);
 
   ContextoPerfil? _ctx;
   bool _carregado = false;
@@ -236,6 +247,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
         key: ValueKey(ativo.chave),
         perfil: ativo,
         repositorio: _repo,
+        cobranca: _cobranca,
       );
     }
     final noEstudante = identical(conteudo, widget.estudante);

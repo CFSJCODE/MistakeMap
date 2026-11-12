@@ -7,7 +7,7 @@ import '../theme/design_tokens.dart';
 // servidor (convite validado na Edge Function school-admin e no banco). Aqui
 // ficam os modelos e as regras de exibição; nenhuma regra de acesso.
 
-/// Os 7 perfis da primeira tela do cadastro.
+/// Os 8 perfis da primeira tela do cadastro.
 enum PerfilCadastro {
   estudante(
     'student',
@@ -69,6 +69,15 @@ enum PerfilCadastro {
     WindowsIcons.admin,
     MistakeMapDesign.deep,
     MistakeMapDesign.steel,
+  ),
+  financeiro(
+    'finance',
+    'Financeiro / Compras',
+    'Contrato e pago o MistakeMap pela escola ou rede: pedido de compra, '
+        'boleto e nota fiscal. Preciso do convite do dono.',
+    WindowsIcons.payment_card,
+    MistakeMapDesign.azureInk,
+    MistakeMapDesign.azure,
   );
 
   const PerfilCadastro(
@@ -87,9 +96,10 @@ enum PerfilCadastro {
   final Color tinta;
   final Color acento;
 
-  /// Coordenador e TI só ganham o papel com convite. O professor da escola
-  /// também, mas ele tem a saída do plano Grátis.
-  bool get soComConvite => this == coordenador || this == ti;
+  /// Coordenação, TI e Financeiro só ganham o papel com convite. O professor
+  /// da escola também, mas ele tem a saída do plano Grátis.
+  bool get soComConvite =>
+      this == coordenador || this == ti || this == financeiro;
 
   bool get pedeNascimento => this == estudante || this == estudanteEquipe;
 
@@ -124,6 +134,7 @@ const nomesPapel = {
   'owner': 'Dono da escola',
   'coordinator': 'Coordenação',
   'it_admin': 'TI da escola',
+  'finance': 'Financeiro/Compras',
   'teacher': 'Professor',
   'student': 'Estudante',
   'guardian': 'Responsável',
@@ -348,7 +359,7 @@ String dataIso(DateTime d) =>
 /// nele, ou a mensagem para mostrar no login.
 ///
 /// O modo estudante é de toda conta. Conta nova (sem perfil e sem papel)
-/// entra e segue para o "Quem é você?". Coordenação e TI dependem do papel
+/// entra e segue para o "Quem é você?". Coordenação, TI e Financeiro dependem do papel
 /// na escola (convite); professor, responsável e dono aceitam também o
 /// perfil do cadastro.
 String? motivoPerfilRecusado(PerfilCadastro pedido, ContextoPerfil ctx) {
@@ -367,6 +378,7 @@ String? motivoPerfilRecusado(PerfilCadastro pedido, ContextoPerfil ctx) {
       ctx.perfil == PerfilCadastro.dono || temPapel('owner'),
     PerfilCadastro.coordenador => temPapel('coordinator'),
     PerfilCadastro.ti => temPapel('it_admin'),
+    PerfilCadastro.financeiro => temPapel('finance'),
   };
   if (confere) return null;
   return 'Esta conta não tem o perfil "${pedido.titulo}". Entre com a conta '

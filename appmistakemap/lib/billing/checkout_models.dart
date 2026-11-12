@@ -1,16 +1,35 @@
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 /// Modelos do checkout da escola (plano → confirmação → cobrança → recibo).
 ///
-/// As telas falam só com [CheckoutGateway]. Hoje o app usa
-/// [SimulatedCheckoutGateway], que inventa a cobrança localmente para a
-/// prévia. A cobrança de verdade (item D da onda 1) vai trocar o gateway por
-/// um que pede o orçamento, o Pix/boleto e o recibo à Edge Function, que
-/// calcula o valor e fala com o Asaas. Nenhum valor daqui vale como cobrança.
+/// As telas falam só com [CheckoutGateway]. No app, o gateway é o
+/// [ServerCheckoutGateway] (billing_repository.dart): o valor que vale é o
+/// calculado no banco (school_billing_quote) e a cobrança é criada no Asaas
+/// pela Edge Function school-billing. Aqui só há a estimativa mostrada
+/// enquanto a escola ajusta alunos, ciclo e forma de pagamento.
 
-enum CheckoutCycle { monthly, annual }
+enum CheckoutCycle {
+  monthly('monthly'),
+  annual('annual');
 
-enum CheckoutMethod { pix, boleto }
+  const CheckoutCycle(this.wire);
+  final String wire;
+}
+
+enum CheckoutMethod {
+  pix('pix', 'Pix'),
+  boleto('boleto', 'Boleto'),
+  creditCard('credit_card', 'Cartão');
+
+  const CheckoutMethod(this.wire, this.label);
+  final String wire;
+  final String label;
+
+  static CheckoutMethod fromWire(Object? value) => CheckoutMethod.values
+      .firstWhere((m) => m.wire == value, orElse: () => CheckoutMethod.pix);
+}
 
 /// Plano exibido no carrossel.
 class CheckoutPlan {
@@ -49,7 +68,7 @@ class CheckoutPlan {
   }
 }
 
-/// Planos da proposta comercial (valores de exemplo, por aluno ativo).
+/// Planos da tabela school_plan_prices (por aluno ativo).
 const checkoutPlans = <CheckoutPlan>[
   CheckoutPlan(
     id: 'free',
@@ -95,11 +114,30 @@ const checkoutPlans = <CheckoutPlan>[
   ),
 ];
 
+CheckoutPlan checkoutPlan(String id) =>
+    checkoutPlans.firstWhere((p) => p.id == id, orElse: () => checkoutPlans[1]);
+
 /// Alunos que o Grátis libera (1 professor + 4 alunos).
 const freePlanStudents = 4;
 
 /// Mínimo mensal dos planos pagos.
 const paidPlanMinimum = 99.0;
+
+/// Maior número de alunos numa contratação (mesmo limite do servidor).
+const maxCheckoutStudents = 20000;
+
+/// Desconto por volume (school_volume_discounts): a partir de N alunos.
+const volumeDiscounts = <({int minStudents, int percent})>[
+  (minStudents: 301, percent: 20),
+  (minStudents: 101, percent: 10),
+];
+
+int volumeDiscountFor(int students) {
+  for (final d in volumeDiscounts) {
+    if (students >= d.minStudents) return d.percent;
+  }
+  return 0;
+}
 
 /// Orçamento da assinatura mostrado na confirmação.
 class CheckoutQuote {
@@ -110,39 +148,182 @@ class CheckoutQuote {
     required this.method,
     required this.pricePerStudent,
     required this.total,
+    this.gross = 0,
+    this.volumeDiscountPercent = 0,
+    this.discount = 0,
+    this.minimumApplied = false,
   });
+
+  /// Mesma conta de public.school_billing_quote, para a estimativa na tela.
+  factory CheckoutQuote.estimate({
+    required CheckoutPlan plan,
+    required int students,
+    required CheckoutCycle cycle,
+    required CheckoutMethod method,
+  }) {
+    final price = plan.pricePerStudent(cycle);
+    final gross = _cents(price * students);
+    final pct = plan.isFree ? 0 : volumeDiscountFor(students);
+    final discount = _cents(gross * pct / 100);
+    var net = gross - discount;
+    var minimum = false;
+    if (!plan.isFree && net < paidPlanMinimum) {
+      net = paidPlanMinimum;
+      minimum = true;
+    }
+    return CheckoutQuote(
+      plan: plan,
+      students: students,
+      cycle: cycle,
+      method: method,
+      pricePerStudent: price,
+      gross: gross,
+      volumeDiscountPercent: pct,
+      discount: discount,
+      minimumApplied: minimum,
+      total: _cents(net),
+    );
+  }
 
   final CheckoutPlan plan;
   final int students;
   final CheckoutCycle cycle;
   final CheckoutMethod method;
   final double pricePerStudent;
+  final double gross;
+  final int volumeDiscountPercent;
+  final double discount;
+  final bool minimumApplied;
   final double total;
 
   /// O total foi elevado ao mínimo mensal.
-  bool get atMinimum => !plan.isFree && total == paidPlanMinimum;
+  bool get atMinimum => minimumApplied;
 
   int get releasedStudents => plan.isFree ? freePlanStudents : students;
 
   int get analysesQuota => plan.analysesPerStudent * releasedStudents;
+
+  static double _cents(double value) => (value * 100).roundToDouble() / 100;
 }
 
-/// Cobrança gerada (Pix copia e cola ou linha digitável do boleto).
+/// Cartão digitado na confirmação. Vai direto para a Edge Function, que o
+/// repassa ao Asaas; o app não guarda nada disso.
+class CheckoutCard {
+  const CheckoutCard({
+    required this.holderName,
+    required this.number,
+    required this.expiryMonth,
+    required this.expiryYear,
+    required this.ccv,
+  });
+
+  final String holderName;
+  final String number;
+  final String expiryMonth;
+  final String expiryYear;
+  final String ccv;
+
+  String get digits => number.replaceAll(RegExp(r'\D'), '');
+
+  String get last4 =>
+      digits.length >= 4 ? digits.substring(digits.length - 4) : digits;
+
+  Map<String, String> toJson() => {
+    'holder_name': holderName.trim(),
+    'number': digits,
+    'expiry_month': expiryMonth.trim(),
+    'expiry_year': expiryYear.trim(),
+    'ccv': ccv.trim(),
+  };
+
+  /// Conferência local (o servidor confere de novo): Luhn, validade e CVV.
+  /// Devolve a mensagem do primeiro problema, ou null.
+  String? problem(DateTime now) {
+    if (holderName.trim().length < 2) {
+      return 'Informe o nome impresso no cartão.';
+    }
+    if (digits.length < 13 || digits.length > 19 || !luhnValid(digits)) {
+      return 'Confira o número do cartão.';
+    }
+    final month = int.tryParse(expiryMonth.trim());
+    var year = int.tryParse(expiryYear.trim());
+    if (year != null && year < 100) year += 2000;
+    if (month == null || month < 1 || month > 12 || year == null) {
+      return 'Confira a validade (MM/AA).';
+    }
+    if (year < now.year || (year == now.year && month < now.month)) {
+      return 'O cartão está vencido.';
+    }
+    if (!RegExp(r'^\d{3,4}$').hasMatch(ccv.trim())) {
+      return 'Confira o código de segurança.';
+    }
+    return null;
+  }
+
+  /// Bandeira pelo prefixo, só para o desenho do cartão.
+  String get brand {
+    final d = digits;
+    if (d.startsWith('4')) return 'VISA';
+    if (RegExp(r'^(5[1-5]|2[2-7])').hasMatch(d)) return 'MASTERCARD';
+    if (RegExp(r'^3[47]').hasMatch(d)) return 'AMEX';
+    if (RegExp(r'^(636368|438935|504175|451416|636297|5067|4576|4011|506699)')
+        .hasMatch(d)) {
+      return 'ELO';
+    }
+    if (d.startsWith('606282') || d.startsWith('3841')) return 'HIPERCARD';
+    return '';
+  }
+}
+
+bool luhnValid(String digits) {
+  if (digits.isEmpty) return false;
+  var sum = 0;
+  for (var i = 0; i < digits.length; i++) {
+    var d = int.parse(digits[digits.length - 1 - i]);
+    if (i.isOdd) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+  }
+  return sum % 10 == 0;
+}
+
+/// Cobrança criada no Asaas: Pix (QR + copia e cola), boleto (linha
+/// digitável) ou cartão (já aprovado ou recusado na hora).
 class CheckoutCharge {
   const CheckoutCharge({
     required this.quote,
     required this.code,
     required this.expiresIn,
+    this.invoiceId = '',
+    this.qrImage,
+    this.invoiceUrl,
+    this.bankSlipUrl,
+    this.paid = false,
+    this.cardLast4,
   });
 
   final CheckoutQuote quote;
+  final String invoiceId;
+
+  /// Pix copia e cola ou linha digitável do boleto.
   final String code;
+
+  /// PNG do QR do Pix devolvido pelo Asaas.
+  final Uint8List? qrImage;
+  final String? invoiceUrl;
+  final String? bankSlipUrl;
 
   /// Validade do Pix. O boleto vence em dias, não em minutos.
   final Duration expiresIn;
+
+  /// Cartão aprovado na hora.
+  final bool paid;
+  final String? cardLast4;
 }
 
-/// Recibo do pagamento confirmado.
+/// Recibo do pagamento confirmado pelo Asaas.
 class CheckoutReceipt {
   const CheckoutReceipt({
     required this.quote,
@@ -153,16 +334,28 @@ class CheckoutReceipt {
     required this.periodEnd,
     required this.nextInvoice,
     required this.transactionId,
+    this.cardLast4,
   });
 
   final CheckoutQuote quote;
   final String number;
+
+  /// Número da NFS-e; vazio enquanto a prefeitura não autoriza.
   final String invoiceNumber;
   final DateTime paidAt;
   final DateTime periodStart;
   final DateTime periodEnd;
   final DateTime nextInvoice;
   final String transactionId;
+  final String? cardLast4;
+}
+
+/// Falha com mensagem para mostrar à escola.
+class CheckoutFailure implements Exception {
+  const CheckoutFailure(this.message);
+  final String message;
+  @override
+  String toString() => message;
 }
 
 /// O que as telas do checkout precisam do backend.
@@ -177,83 +370,117 @@ abstract interface class CheckoutGateway {
     required CheckoutMethod method,
   });
 
-  Future<CheckoutCharge> createCharge(CheckoutQuote quote);
+  /// Cria a cobrança no Asaas. Cartão recusado vira [CheckoutFailure].
+  Future<CheckoutCharge> createCharge(
+    CheckoutQuote quote, {
+    CheckoutCard? card,
+  });
 
-  /// Espera a confirmação do pagamento (webhook do gateway).
-  Future<CheckoutReceipt> confirm(CheckoutCharge charge);
+  /// Consulta a cobrança: o recibo quando o Asaas confirmou o pagamento,
+  /// null enquanto aguarda. Cobrança cancelada vira [CheckoutFailure].
+  Future<CheckoutReceipt?> check(CheckoutCharge charge);
 }
 
-/// Gateway da prévia: calcula e confirma localmente, sem cobrar ninguém.
-class SimulatedCheckoutGateway implements CheckoutGateway {
-  SimulatedCheckoutGateway({
-    DateTime Function()? clock,
-    this.latency = const Duration(milliseconds: 1200),
-  }) : _clock = clock ?? DateTime.now;
+/// Monta o recibo a partir da fatura paga devolvida pela Edge Function.
+CheckoutReceipt receiptFromInvoice(
+  Map<String, dynamic> invoice,
+  CheckoutQuote fallback,
+) {
+  final quote = quoteFromInvoice(invoice, fallback);
+  final paidAt =
+      DateTime.tryParse('${invoice['paid_at']}')?.toLocal() ?? DateTime.now();
+  final month =
+      DateTime.tryParse('${invoice['reference_month']}') ??
+      DateTime(paidAt.year, paidAt.month);
+  final start = DateTime(month.year, month.month);
+  final months = quote.cycle == CheckoutCycle.annual ? 12 : 1;
+  final end = DateTime(start.year, start.month + months);
+  return CheckoutReceipt(
+    quote: quote,
+    number: '${invoice['receipt_number'] ?? ''}',
+    invoiceNumber: '${invoice['nfse_number'] ?? ''}',
+    paidAt: paidAt,
+    periodStart: start,
+    periodEnd: end.subtract(const Duration(days: 1)),
+    // A fatura do uso real sai no fechamento do mês seguinte.
+    nextInvoice: DateTime(start.year, start.month + 1),
+    transactionId: '${invoice['transaction_id'] ?? invoice['id'] ?? ''}',
+    cardLast4: invoice['card_last4'] as String?,
+  );
+}
 
-  final DateTime Function() _clock;
-  final Duration latency;
+/// Valores que o servidor gravou na fatura (o que vale de verdade).
+CheckoutQuote quoteFromInvoice(
+  Map<String, dynamic> invoice,
+  CheckoutQuote fallback,
+) {
+  double money(Object? v, double alt) => v is num ? v.toDouble() : alt;
+  final plan = invoice['plan'] is String
+      ? checkoutPlan(invoice['plan'] as String)
+      : fallback.plan;
+  return CheckoutQuote(
+    plan: plan,
+    students: invoice['students'] is int
+        ? invoice['students'] as int
+        : fallback.students,
+    cycle: invoice['cycle'] == 'monthly'
+        ? CheckoutCycle.monthly
+        : invoice['cycle'] == 'annual'
+        ? CheckoutCycle.annual
+        : fallback.cycle,
+    method: invoice['method'] == null
+        ? fallback.method
+        : CheckoutMethod.fromWire(invoice['method']),
+    pricePerStudent: money(
+      invoice['price_per_student'],
+      fallback.pricePerStudent,
+    ),
+    gross: money(invoice['gross'], fallback.gross),
+    volumeDiscountPercent: invoice['volume_discount_percent'] is int
+        ? invoice['volume_discount_percent'] as int
+        : fallback.volumeDiscountPercent,
+    discount: money(invoice['discount'], fallback.discount),
+    minimumApplied: invoice['minimum_applied'] == true,
+    total: money(invoice['total'], fallback.total),
+  );
+}
 
-  @override
-  CheckoutQuote quote({
-    required CheckoutPlan plan,
-    required int students,
-    required CheckoutCycle cycle,
-    required CheckoutMethod method,
-  }) {
-    final price = plan.pricePerStudent(cycle);
-    final total = plan.isFree
-        ? 0.0
-        : math.max(paidPlanMinimum, _cents(price * students));
-    return CheckoutQuote(
-      plan: plan,
-      students: students,
-      cycle: cycle,
-      method: method,
-      pricePerStudent: price,
-      total: total,
-    );
+/// Cobrança a partir da fatura recém-criada.
+CheckoutCharge chargeFromInvoice(
+  Map<String, dynamic> invoice,
+  CheckoutQuote fallback,
+) {
+  final quote = quoteFromInvoice(invoice, fallback);
+  final pix = quote.method == CheckoutMethod.pix;
+  Uint8List? qr;
+  final image = invoice['pix_qr_image'];
+  if (image is String && image.isNotEmpty) {
+    try {
+      qr = base64Decode(image);
+    } catch (_) {
+      qr = null;
+    }
   }
-
-  @override
-  Future<CheckoutCharge> createCharge(CheckoutQuote quote) async {
-    await Future<void>.delayed(latency);
-    final cents = (quote.total * 100).round();
-    final code = quote.method == CheckoutMethod.pix
-        ? '00020126580014br.gov.bcb.pix0136mistakemap-previa-'
-              '${quote.plan.id}-${quote.students}5204000053039865406'
-              '${(cents / 100).toStringAsFixed(2)}5802BR6304PREV'
-        : '34191.79001 01043.510047 91020.150008 1 '
-              '${cents.toString().padLeft(10, '0')}';
-    return CheckoutCharge(
-      quote: quote,
-      code: code,
-      expiresIn: quote.method == CheckoutMethod.pix
-          ? const Duration(minutes: 30)
-          : const Duration(days: 3),
-    );
-  }
-
-  @override
-  Future<CheckoutReceipt> confirm(CheckoutCharge charge) async {
-    final now = _clock();
-    final start = DateTime(now.year, now.month);
-    final next = DateTime(now.year, now.month + 1);
-    final seq = (now.millisecondsSinceEpoch ~/ 1000 % 1000000)
-        .toString()
-        .padLeft(6, '0');
-    return CheckoutReceipt(
-      quote: charge.quote,
-      number: 'MM-${now.year}-$seq',
-      invoiceNumber: '${now.year}/$seq',
-      paidAt: now,
-      periodStart: start,
-      periodEnd: next.subtract(const Duration(days: 1)),
-      nextInvoice: next,
-      transactionId: 'E2E-PREVIA-${now.year}$seq',
-    );
-  }
-
-  static double _cents(double value) => (value * 100).roundToDouble() / 100;
+  final expires = DateTime.tryParse('${invoice['pix_expires_at']}');
+  final due = DateTime.tryParse('${invoice['due_date']}');
+  final now = DateTime.now();
+  return CheckoutCharge(
+    quote: quote,
+    invoiceId: '${invoice['id']}',
+    code: pix
+        ? '${invoice['pix_payload'] ?? ''}'
+        : '${invoice['boleto_line'] ?? ''}',
+    qrImage: qr,
+    invoiceUrl: invoice['invoice_url'] as String?,
+    bankSlipUrl: invoice['bank_slip_url'] as String?,
+    expiresIn: pix
+        ? (expires != null && expires.isAfter(now)
+              ? expires.difference(now)
+              : const Duration(hours: 24))
+        : Duration(days: math.max(1, due?.difference(now).inDays ?? 3)),
+    paid: invoice['status'] == 'paid',
+    cardLast4: invoice['card_last4'] as String?,
+  );
 }
 
 /// R$ 1.234,56 sem depender do pacote intl.

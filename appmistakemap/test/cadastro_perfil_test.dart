@@ -217,7 +217,7 @@ void main() {
     });
   });
 
-  testWidgets('Quem é você? mostra os 7 perfis e marca os só com convite', (
+  testWidgets('Quem é você? mostra os 8 perfis e marca os só com convite', (
     tester,
   ) async {
     await _render(
@@ -228,7 +228,7 @@ void main() {
     for (final p in PerfilCadastro.values) {
       expect(find.text(p.titulo), findsOneWidget);
     }
-    expect(find.text('Só com convite'), findsNWidgets(2));
+    expect(find.text('Só com convite'), findsNWidgets(3));
     expect(tester.takeException(), isNull);
   });
 
@@ -400,7 +400,7 @@ void main() {
           rodapeCadastro: const Text('ATUALIZAÇÕES'),
         ),
       );
-      expect(find.text('Já tenho conta: entrar'), findsNWidgets(7));
+      expect(find.text('Já tenho conta: entrar'), findsNWidgets(8));
       expect(find.text('ATUALIZAÇÕES'), findsOneWidget);
 
       await _tocar(tester, find.byKey(const ValueKey('entrar-teacher')));

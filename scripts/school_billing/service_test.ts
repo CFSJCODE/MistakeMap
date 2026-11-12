@@ -262,6 +262,15 @@ try {
     FROM public.school_invoices WHERE school_id = ${rede} AND kind = 'monthly'`;
   ok(monthly.status === "awaiting_payment" && monthly.method === "boleto" && monthly.days === 30, "fatura mensal em boleto com 30 dias");
   ok(monthly.total === Math.round(16 * 1940 * 0.8 * 100) / 100 + 18, "valor do fechamento: ativos × preço − 20% + extras");
+  // Escola de demonstração nunca gera cobrança no Asaas.
+  await sql`UPDATE public.school_billing_settings SET demo = true WHERE school_id = ${small}`;
+  const before = fake.requests.length;
+  await rejects(
+    op(OWNER2, { action: "checkout", school_id: small, plan: "escola", cycle: "monthly", students: 30, method: "pix" }),
+    409,
+    "escola de demonstração não contrata",
+  );
+  ok(fake.requests.length === before, "nada foi enviado ao Asaas pela escola demo");
   console.log("service_test: todos os testes passaram");
 } finally {
   await sql.end({ timeout: 2 });

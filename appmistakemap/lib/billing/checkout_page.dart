@@ -10,41 +10,57 @@ import '../theme/glass_surface.dart';
 import 'checkout_models.dart';
 
 /// Assinatura da escola, do plano ao recibo (protótipo "Checkout
-/// MistakeMap"): escolha do plano em carrossel 3D, confirmação, Pix ou
-/// boleto, plano ativado e recibo impresso com o carimbo de pago.
+/// MistakeMap"): escolha do plano em carrossel 3D, confirmação, Pix, boleto
+/// ou cartão, plano ativado e recibo impresso com o carimbo de pago.
 ///
-/// Os dados vêm de [CheckoutGateway]. Sem gateway, a tela usa o simulado e
-/// avisa que é uma prévia: nada é cobrado.
+/// A cobrança é real: [CheckoutGateway] cria a cobrança no Asaas pela Edge
+/// Function e a tela só mostra "pago" depois que o Asaas confirma.
 class SchoolCheckoutPage extends StatefulWidget {
   const SchoolCheckoutPage({
     super.key,
-    this.schoolName = 'Escola Exemplo de Robótica',
-    this.gateway,
+    required this.schoolName,
+    required this.gateway,
+    this.savedCardLast4,
+    this.initialStudents = 30,
+    this.pollEvery = const Duration(seconds: 5),
   });
 
   final String schoolName;
-  final CheckoutGateway? gateway;
+  final CheckoutGateway gateway;
+
+  /// Final do cartão já salvo no Asaas (só o token fica no servidor).
+  final String? savedCardLast4;
+  final int initialStudents;
+
+  /// Intervalo da consulta enquanto o Pix ou o boleto aguardam pagamento.
+  final Duration pollEvery;
 
   @override
   State<SchoolCheckoutPage> createState() => _SchoolCheckoutPageState();
 }
 
 class _SchoolCheckoutPageState extends State<SchoolCheckoutPage> {
-  late final CheckoutGateway _gateway =
-      widget.gateway ?? SimulatedCheckoutGateway();
-  late final bool _preview = widget.gateway == null;
+  CheckoutGateway get _gateway => widget.gateway;
 
   int _step = 0;
   bool _forward = true;
   int _planIndex = 1;
-  int _students = 30;
+  late int _students = widget.initialStudents.clamp(5, maxCheckoutStudents);
   CheckoutCycle _cycle = CheckoutCycle.annual;
   CheckoutMethod _method = CheckoutMethod.pix;
+  late bool _useSavedCard = widget.savedCardLast4 != null;
   bool _busy = false;
   bool _paid = false;
+  bool _checking = false;
   CheckoutCharge? _charge;
   CheckoutReceipt? _receipt;
   String? _error;
+  Timer? _poll;
+
+  final _cardName = TextEditingController();
+  final _cardNumber = TextEditingController();
+  final _cardExpiry = TextEditingController();
+  final _cardCcv = TextEditingController();
 
   CheckoutPlan get _plan => checkoutPlans[_planIndex];
 
@@ -55,10 +71,20 @@ class _SchoolCheckoutPageState extends State<SchoolCheckoutPage> {
     method: _method,
   );
 
+  @override
+  void dispose() {
+    _poll?.cancel();
+    for (final c in [_cardName, _cardNumber, _cardExpiry, _cardCcv]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
   void _go(int step) => setState(() {
     _forward = step > _step;
     _step = step;
     _error = null;
+    if (step != 2) _poll?.cancel();
   });
 
   void _back() {
@@ -70,49 +96,106 @@ class _SchoolCheckoutPageState extends State<SchoolCheckoutPage> {
     _go(_step - 1);
   }
 
+  CheckoutCard _typedCard() {
+    final expiry = _cardExpiry.text.replaceAll(RegExp(r'[^0-9]'), '');
+    return CheckoutCard(
+      holderName: _cardName.text,
+      number: _cardNumber.text,
+      expiryMonth: expiry.length >= 2 ? expiry.substring(0, 2) : expiry,
+      expiryYear: expiry.length > 2 ? expiry.substring(2) : '',
+      ccv: _cardCcv.text,
+    );
+  }
+
+  /// Número e código do cartão não ficam na tela depois da tentativa.
+  void _forgetCard() {
+    _cardNumber.clear();
+    _cardCcv.clear();
+  }
+
   Future<void> _generate() async {
+    if (_plan.isFree) {
+      Navigator.maybePop(context);
+      return;
+    }
+    CheckoutCard? card;
+    if (_method == CheckoutMethod.creditCard && !_useSavedCard) {
+      card = _typedCard();
+      final problem = card.problem(DateTime.now());
+      if (problem != null) {
+        setState(() => _error = problem);
+        return;
+      }
+    }
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      final charge = await _gateway.createCharge(_quote);
+      final charge = await _gateway.createCharge(_quote, card: card);
       if (!mounted) return;
       _charge = charge;
       _paid = false;
-      if (charge.quote.plan.isFree) {
-        _receipt = await _gateway.confirm(charge);
+      if (charge.paid) {
+        final receipt = await _gateway.check(charge);
         if (!mounted) return;
-        _go(3);
-      } else {
-        _go(2);
+        if (receipt != null) {
+          _receipt = receipt;
+          _go(3);
+          return;
+        }
       }
+      _go(2);
+      _poll?.cancel();
+      _poll = Timer.periodic(widget.pollEvery, (_) => _check());
+    } on CheckoutFailure catch (failure) {
+      if (mounted) setState(() => _error = failure.message);
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Não deu para gerar a cobrança agora.');
       }
     } finally {
+      if (card != null) _forgetCard();
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _confirm() async {
+  /// Consulta o Asaas pelo servidor. Só mostra "pago" com a confirmação.
+  Future<void> _check({bool manual = false}) async {
     final charge = _charge;
-    if (charge == null || _paid) return;
-    setState(() => _paid = true);
+    if (charge == null || _paid || _checking) return;
+    _checking = true;
     try {
-      final receipt = await _gateway.confirm(charge);
+      final receipt = await _gateway.check(charge);
       if (!mounted) return;
+      if (receipt == null) {
+        if (manual) {
+          setState(
+            () => _error =
+                'O Asaas ainda não recebeu o pagamento. Pix costuma cair em '
+                'segundos; boleto, em até 1 dia útil.',
+          );
+        }
+        return;
+      }
+      _poll?.cancel();
       _receipt = receipt;
+      setState(() {
+        _paid = true;
+        _error = null;
+      });
       await Future<void>.delayed(const Duration(milliseconds: 1300));
       if (mounted && _step == 2) _go(3);
+    } on CheckoutFailure catch (failure) {
+      _poll?.cancel();
+      if (mounted) setState(() => _error = failure.message);
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _paid = false;
-          _error = 'O pagamento ainda não foi confirmado.';
-        });
+      // Sem rede agora: a próxima consulta tenta de novo.
+      if (manual && mounted) {
+        setState(() => _error = 'Sem conexão para conferir agora.');
       }
+    } finally {
+      _checking = false;
     }
   }
 
@@ -169,7 +252,6 @@ class _SchoolCheckoutPageState extends State<SchoolCheckoutPage> {
   Widget _screen() => switch (_step) {
     0 => _PlanStep(
       schoolName: widget.schoolName,
-      preview: _preview,
       index: _planIndex,
       onIndex: (i) => setState(() => _planIndex = i),
       onBack: _back,
@@ -182,16 +264,25 @@ class _SchoolCheckoutPageState extends State<SchoolCheckoutPage> {
       onBack: _back,
       onStudents: (n) => setState(() => _students = n),
       onCycle: (c) => setState(() => _cycle = c),
-      onMethod: (m) => setState(() => _method = m),
+      onMethod: (m) => setState(() {
+        _method = m;
+        _error = null;
+      }),
+      savedCardLast4: widget.savedCardLast4,
+      useSavedCard: _useSavedCard,
+      onUseSavedCard: (v) => setState(() => _useSavedCard = v),
+      cardName: _cardName,
+      cardNumber: _cardNumber,
+      cardExpiry: _cardExpiry,
+      cardCcv: _cardCcv,
       onPay: _generate,
     ),
     2 => _ChargeStep(
       charge: _charge!,
       paid: _paid,
-      preview: _preview,
       error: _error,
       onBack: _back,
-      onSimulate: _confirm,
+      onCheck: () => _check(manual: true),
     ),
     3 => _ActivatedStep(
       receipt: _receipt!,
@@ -201,7 +292,6 @@ class _SchoolCheckoutPageState extends State<SchoolCheckoutPage> {
     _ => _ReceiptStep(
       receipt: _receipt!,
       schoolName: widget.schoolName,
-      preview: _preview,
       onBack: _back,
       onDone: () => Navigator.maybePop(context),
     ),
@@ -797,7 +887,6 @@ class _PlanCard extends StatelessWidget {
 class _PlanStep extends StatefulWidget {
   const _PlanStep({
     required this.schoolName,
-    required this.preview,
     required this.index,
     required this.onIndex,
     required this.onBack,
@@ -805,7 +894,6 @@ class _PlanStep extends StatefulWidget {
   });
 
   final String schoolName;
-  final bool preview;
   final int index;
   final ValueChanged<int> onIndex;
   final VoidCallback onBack;
@@ -843,18 +931,11 @@ class _PlanStepState extends State<_PlanStep> {
       onBack: widget.onBack,
       topLabel: Padding(
         padding: const EdgeInsets.only(left: 52),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                widget.schoolName.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: _eyebrow,
-              ),
-            ),
-            if (widget.preview) const _PreviewTag(),
-          ],
+        child: Text(
+          widget.schoolName.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: _eyebrow,
         ),
       ),
       actions: [
@@ -953,30 +1034,6 @@ class _PlanStepState extends State<_PlanStep> {
   }
 }
 
-class _PreviewTag extends StatelessWidget {
-  const _PreviewTag();
-
-  @override
-  Widget build(BuildContext context) => Tooltip(
-    message: 'Prévia: nenhum pagamento é feito.',
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: MistakeMapDesign.amber.withValues(alpha: .22),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: const Text(
-        'Prévia',
-        style: TextStyle(
-          color: MistakeMapDesign.amberInk,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    ),
-  );
-}
-
 class _PlanLabels extends StatelessWidget {
   const _PlanLabels({required this.index});
 
@@ -1048,6 +1105,13 @@ class _ConfirmStep extends StatelessWidget {
     required this.onStudents,
     required this.onCycle,
     required this.onMethod,
+    required this.savedCardLast4,
+    required this.useSavedCard,
+    required this.onUseSavedCard,
+    required this.cardName,
+    required this.cardNumber,
+    required this.cardExpiry,
+    required this.cardCcv,
     required this.onPay,
   });
 
@@ -1058,45 +1122,78 @@ class _ConfirmStep extends StatelessWidget {
   final ValueChanged<int> onStudents;
   final ValueChanged<CheckoutCycle> onCycle;
   final ValueChanged<CheckoutMethod> onMethod;
+  final String? savedCardLast4;
+  final bool useSavedCard;
+  final ValueChanged<bool> onUseSavedCard;
+  final TextEditingController cardName;
+  final TextEditingController cardNumber;
+  final TextEditingController cardExpiry;
+  final TextEditingController cardCcv;
   final VoidCallback onPay;
 
   @override
   Widget build(BuildContext context) {
     final plan = quote.plan;
+    final card = quote.method == CheckoutMethod.creditCard;
     final payLabel = plan.isFree
-        ? 'Ativar plano Grátis'
-        : '${quote.method == CheckoutMethod.pix ? 'Gerar Pix' : 'Gerar boleto'}'
-              ' · ${formatBrl(quote.total)}';
+        ? 'Continuar no Grátis'
+        : '${switch (quote.method) {
+            CheckoutMethod.pix => 'Gerar Pix',
+            CheckoutMethod.boleto => 'Gerar boleto',
+            CheckoutMethod.creditCard => 'Pagar',
+          }} · ${formatBrl(quote.total)}';
     return _StepFrame(
       onBack: busy ? null : onBack,
       actions: [
         _Cta(
           key: const Key('checkout-pay'),
           label: payLabel,
-          kind: _CtaKind.accent,
+          kind: _CtaKind.dark,
           busy: busy,
           onPressed: onPay,
         ),
         const SizedBox(height: 8),
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 6,
-          children: [
-            Icon(FluentIcons.lock, size: 12, color: MistakeMapDesign.steel),
-            Flexible(
-              child: Text(
-                'Nota fiscal emitida junto com o pagamento',
-                style: TextStyle(fontSize: 11.5, color: MistakeMapDesign.steel),
+        AnimatedSwitcher(
+          duration: _d(context, 250),
+          child: Row(
+            key: ValueKey(busy),
+            mainAxisAlignment: MainAxisAlignment.center,
+            spacing: 6,
+            children: [
+              const Icon(
+                FluentIcons.lock,
+                size: 12,
+                color: MistakeMapDesign.steel,
               ),
-            ),
-          ],
+              Flexible(
+                child: Text(
+                  busy
+                      ? (card
+                            ? 'Confirmando seu pagamento…'
+                            : 'Gerando a cobrança no Asaas…')
+                      : 'Pagamento processado pelo Asaas. Nota fiscal '
+                            'emitida após a confirmação.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: MistakeMapDesign.steel,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
       children: [
         const SizedBox(height: 6),
         const Text('Confirmar assinatura', style: _display),
         const SizedBox(height: 4),
-        const Text('Confira antes de gerar a cobrança.', style: _sub),
+        Text(
+          plan.isFree
+              ? 'A escola já começa no Grátis. Nada é cobrado.'
+              : 'Revise antes de pagar.',
+          style: _sub,
+        ),
         const SizedBox(height: 14),
         SizedBox(height: 118, child: _PlanCard(plan: plan, compact: true)),
         const SizedBox(height: 12),
@@ -1110,29 +1207,30 @@ class _ConfirmStep extends StatelessWidget {
                 onChanged: onStudents,
               ),
             ),
-            _Row(
-              'Ciclo',
-              GlassSegmented<CheckoutCycle>(
-                accent: MistakeMapDesign.aqua,
-                ink: MistakeMapDesign.aquaInk,
-                selected: quote.cycle,
-                onSelected: busy ? (_) {} : onCycle,
-                segments: const [
-                  (
-                    value: CheckoutCycle.monthly,
-                    label: Text('Mensal'),
-                    icon: null,
-                    key: Key('checkout-monthly'),
-                  ),
-                  (
-                    value: CheckoutCycle.annual,
-                    label: Text('Anual'),
-                    icon: null,
-                    key: Key('checkout-annual'),
-                  ),
-                ],
+            if (!plan.isFree)
+              _Row(
+                'Ciclo',
+                GlassSegmented<CheckoutCycle>(
+                  accent: MistakeMapDesign.aqua,
+                  ink: MistakeMapDesign.aquaInk,
+                  selected: quote.cycle,
+                  onSelected: busy ? (_) {} : onCycle,
+                  segments: const [
+                    (
+                      value: CheckoutCycle.monthly,
+                      label: Text('Mensal'),
+                      icon: null,
+                      key: Key('checkout-monthly'),
+                    ),
+                    (
+                      value: CheckoutCycle.annual,
+                      label: Text('Anual'),
+                      icon: null,
+                      key: Key('checkout-annual'),
+                    ),
+                  ],
+                ),
               ),
-            ),
             _Row(
               'Preço por aluno',
               Row(
@@ -1151,31 +1249,50 @@ class _ConfirmStep extends StatelessWidget {
                 ],
               ),
             ),
-            _Row(
-              'Pagamento',
-              GlassSegmented<CheckoutMethod>(
-                accent: MistakeMapDesign.aqua,
-                ink: MistakeMapDesign.aquaInk,
-                selected: quote.method,
-                onSelected: busy ? (_) {} : onMethod,
-                segments: const [
-                  (
-                    value: CheckoutMethod.pix,
-                    label: Text('Pix'),
-                    icon: null,
-                    key: Key('checkout-pix'),
-                  ),
-                  (
-                    value: CheckoutMethod.boleto,
-                    label: Text('Boleto'),
-                    icon: null,
-                    key: Key('checkout-boleto'),
-                  ),
-                ],
+            if (quote.volumeDiscountPercent > 0)
+              _Row(
+                'Desconto por volume',
+                Text(
+                  '−${quote.volumeDiscountPercent}% · '
+                  '−${formatBrl(quote.discount)}',
+                  key: const Key('checkout-volume'),
+                  style: const TextStyle(color: MistakeMapDesign.mintInk),
+                ),
               ),
-            ),
+            if (!plan.isFree)
+              _Row(
+                'Pagamento',
+                GlassSegmented<CheckoutMethod>(
+                  accent: MistakeMapDesign.aqua,
+                  ink: MistakeMapDesign.aquaInk,
+                  selected: quote.method,
+                  onSelected: busy ? (_) {} : onMethod,
+                  segments: const [
+                    (
+                      value: CheckoutMethod.pix,
+                      label: Text('Pix'),
+                      icon: null,
+                      key: Key('checkout-pix'),
+                    ),
+                    (
+                      value: CheckoutMethod.boleto,
+                      label: Text('Boleto'),
+                      icon: null,
+                      key: Key('checkout-boleto'),
+                    ),
+                    (
+                      value: CheckoutMethod.creditCard,
+                      label: Text('Cartão'),
+                      icon: null,
+                      key: Key('checkout-card'),
+                    ),
+                  ],
+                ),
+              ),
             _Row(
-              'Total por mês',
+              quote.cycle == CheckoutCycle.annual && !plan.isFree
+                  ? 'Total hoje (por mês, plano anual)'
+                  : 'Total hoje',
               Text(
                 '${formatBrl(quote.total)}${quote.atMinimum ? ' (mínimo)' : ''}',
                 key: const Key('checkout-total'),
@@ -1184,13 +1301,293 @@ class _ConfirmStep extends StatelessWidget {
             ),
           ],
         ),
+        if (card && !plan.isFree) ...[
+          const SizedBox(height: 14),
+          _CardForm(
+            enabled: !busy,
+            savedLast4: savedCardLast4,
+            useSaved: useSavedCard,
+            onUseSaved: onUseSavedCard,
+            name: cardName,
+            number: cardNumber,
+            expiry: cardExpiry,
+            ccv: cardCcv,
+          ),
+        ],
         if (error != null) _Notice(error!),
       ],
     );
   }
 }
 
-class _Stepper extends StatelessWidget {
+/// Dados do cartão. Vão direto ao servidor, que repassa ao Asaas; o app não
+/// guarda nada e limpa número e código depois da tentativa.
+class _CardForm extends StatelessWidget {
+  const _CardForm({
+    required this.enabled,
+    required this.savedLast4,
+    required this.useSaved,
+    required this.onUseSaved,
+    required this.name,
+    required this.number,
+    required this.expiry,
+    required this.ccv,
+  });
+
+  final bool enabled;
+  final String? savedLast4;
+  final bool useSaved;
+  final ValueChanged<bool> onUseSaved;
+  final TextEditingController name;
+  final TextEditingController number;
+  final TextEditingController expiry;
+  final TextEditingController ccv;
+
+  @override
+  Widget build(BuildContext context) {
+    final saved = savedLast4 != null && useSaved;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 10,
+      children: [
+        ListenableBuilder(
+          listenable: Listenable.merge([name, number, expiry]),
+          builder: (context, _) => _CardFace(
+            holder: saved ? '' : name.text,
+            number: saved ? '•••• •••• •••• $savedLast4' : number.text,
+            expiry: saved ? '' : expiry.text,
+          ),
+        ),
+        if (savedLast4 != null)
+          Checkbox(
+            key: const Key('checkout-saved-card'),
+            checked: useSaved,
+            onChanged: enabled ? (v) => onUseSaved(v ?? false) : null,
+            content: Text('Usar o cartão salvo final $savedLast4'),
+          ),
+        if (!saved)
+          GlassSurface(
+            radius: 18,
+            blur: true,
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 10,
+              children: [
+                InfoLabel(
+                  label: 'Nome impresso no cartão',
+                  child: TextBox(
+                    key: const Key('checkout-card-name'),
+                    controller: name,
+                    enabled: enabled,
+                    textCapitalization: TextCapitalization.characters,
+                    autofillHints: const [AutofillHints.creditCardName],
+                  ),
+                ),
+                InfoLabel(
+                  label: 'Número do cartão',
+                  child: TextBox(
+                    key: const Key('checkout-card-number'),
+                    controller: number,
+                    enabled: enabled,
+                    keyboardType: TextInputType.number,
+                    autofillHints: const [AutofillHints.creditCardNumber],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9 ]')),
+                      LengthLimitingTextInputFormatter(23),
+                    ],
+                  ),
+                ),
+                Row(
+                  spacing: 10,
+                  children: [
+                    Expanded(
+                      child: InfoLabel(
+                        label: 'Validade (MM/AA)',
+                        child: TextBox(
+                          key: const Key('checkout-card-expiry'),
+                          controller: expiry,
+                          enabled: enabled,
+                          placeholder: 'MM/AA',
+                          keyboardType: TextInputType.number,
+                          autofillHints: const [
+                            AutofillHints.creditCardExpirationDate,
+                          ],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9/]'),
+                            ),
+                            LengthLimitingTextInputFormatter(7),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: InfoLabel(
+                        label: 'Código (CVV)',
+                        child: TextBox(
+                          key: const Key('checkout-card-ccv'),
+                          controller: ccv,
+                          enabled: enabled,
+                          obscureText: true,
+                          keyboardType: TextInputType.number,
+                          autofillHints: const [
+                            AutofillHints.creditCardSecurityCode,
+                          ],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(4),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Text(
+                  'O titular da cobrança é a escola (CNPJ, e-mail, CEP e '
+                  'telefone dos dados de cobrança). O MistakeMap guarda só '
+                  'um token do Asaas para as próximas faturas.',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: MistakeMapDesign.steel,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Cartão físico desenhado (filosofia do protótipo: dinheiro com tato).
+class _CardFace extends StatelessWidget {
+  const _CardFace({
+    required this.holder,
+    required this.number,
+    required this.expiry,
+  });
+
+  final String holder;
+  final String number;
+  final String expiry;
+
+  @override
+  Widget build(BuildContext context) {
+    final digits = number.replaceAll(RegExp(r'[^0-9•]'), '');
+    final shown = StringBuffer();
+    for (var i = 0; i < 16; i++) {
+      if (i > 0 && i % 4 == 0) shown.write(' ');
+      shown.write(i < digits.length ? digits[i] : '•');
+    }
+    final brand = CheckoutCard(
+      holderName: '',
+      number: number,
+      expiryMonth: '',
+      expiryYear: '',
+      ccv: '',
+    ).brand;
+    const ink = MistakeMapDesign.white;
+    return Semantics(
+      label: 'Cartão',
+      child: AspectRatio(
+        aspectRatio: 1.586,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: const LinearGradient(
+              begin: Alignment(-1, -1),
+              end: Alignment(1, 1),
+              colors: [
+                Color(0xFF253745),
+                MistakeMapDesign.abyss,
+                Color(0xFF1B2A35),
+              ],
+              stops: [0, .55, 1],
+            ),
+            boxShadow: _cardShadow,
+          ),
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(color: ink),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const _MapMark(
+                      color: ink,
+                      width: 28,
+                      colors: [
+                        MistakeMapDesign.aqua,
+                        MistakeMapDesign.azure,
+                        MistakeMapDesign.violet,
+                        MistakeMapDesign.amber,
+                      ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      brand,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Container(
+                  width: 34,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(5),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE9D9A6), Color(0xFFBFA45E)],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  shown.toString(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    letterSpacing: 1.6,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        holder.isEmpty
+                            ? 'NOME NO CARTÃO'
+                            : holder.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          letterSpacing: .8,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      expiry.isEmpty ? 'MM/AA' : expiry,
+                      style: const TextStyle(fontSize: 11.5),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Stepper extends StatefulWidget {
   const _Stepper({
     required this.value,
     required this.enabled,
@@ -1201,8 +1598,55 @@ class _Stepper extends StatelessWidget {
   final bool enabled;
   final ValueChanged<int> onChanged;
 
+  @override
+  State<_Stepper> createState() => _StepperState();
+}
+
+class _StepperState extends State<_Stepper> {
+  late final _field = TextEditingController(text: '${widget.value}');
+  final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() {
+      if (!_focus.hasFocus) _commit();
+    });
+  }
+
+  @override
+  void didUpdateWidget(_Stepper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_focus.hasFocus && _field.text != '${widget.value}') {
+      _field.text = '${widget.value}';
+    }
+  }
+
+  @override
+  void dispose() {
+    _field.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _commit() {
+    final typed = int.tryParse(_field.text) ?? widget.value;
+    final next = typed.clamp(5, maxCheckoutStudents);
+    _field.text = '$next';
+    if (next != widget.value) widget.onChanged(next);
+  }
+
+  /// Passo cresce com a escola: 5 até 100, 50 até 1.000 e 100 acima.
+  int get _step => widget.value < 100
+      ? 5
+      : widget.value < 1000
+      ? 50
+      : 100;
+
   Widget _button(String glyph, String label, int next) => HoverButton(
-    onPressed: enabled && next != value ? () => onChanged(next) : null,
+    onPressed: widget.enabled && next != widget.value
+        ? () => widget.onChanged(next)
+        : null,
     semanticLabel: label,
     builder: (context, states) => Container(
       width: 32,
@@ -1223,29 +1667,46 @@ class _Stepper extends StatelessWidget {
         glyph,
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: enabled ? MistakeMapDesign.abyss : MistakeMapDesign.mist,
+          color: widget.enabled
+              ? MistakeMapDesign.abyss
+              : MistakeMapDesign.mist,
         ),
       ),
     ),
   );
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    spacing: 8,
-    children: [
-      _button('−', 'Menos 5 alunos', math.max(5, value - 5)),
-      SizedBox(
-        width: 32,
-        child: Text(
-          '$value',
-          key: const Key('checkout-students'),
-          textAlign: TextAlign.center,
+  Widget build(BuildContext context) {
+    final down = widget.value <= 100 ? 5 : (widget.value <= 1000 ? 50 : 100);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 6,
+      children: [
+        _button('−', 'Menos $down alunos', math.max(5, widget.value - down)),
+        SizedBox(
+          width: 64,
+          child: TextBox(
+            key: const Key('checkout-students'),
+            controller: _field,
+            focusNode: _focus,
+            enabled: widget.enabled,
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(5),
+            ],
+            onSubmitted: (_) => _commit(),
+          ),
         ),
-      ),
-      _button('+', 'Mais 5 alunos', math.min(500, value + 5)),
-    ],
-  );
+        _button(
+          '+',
+          'Mais $_step alunos',
+          math.min(maxCheckoutStudents, widget.value + _step),
+        ),
+      ],
+    );
+  }
 }
 
 // ─── 3. Pix ou boleto ───────────────────────────────────────────────────────
@@ -1254,18 +1715,16 @@ class _ChargeStep extends StatefulWidget {
   const _ChargeStep({
     required this.charge,
     required this.paid,
-    required this.preview,
     required this.error,
     required this.onBack,
-    required this.onSimulate,
+    required this.onCheck,
   });
 
   final CheckoutCharge charge;
   final bool paid;
-  final bool preview;
   final String? error;
   final VoidCallback onBack;
-  final VoidCallback onSimulate;
+  final VoidCallback onCheck;
 
   @override
   State<_ChargeStep> createState() => _ChargeStepState();
@@ -1340,6 +1799,9 @@ class _ChargeStepState extends State<_ChargeStep>
 
   String get _expiry {
     if (!_pix) return 'Vence em ${widget.charge.expiresIn.inDays} dias';
+    if (_left.inHours > 0) {
+      return 'Expira em ${_left.inHours}h${(_left.inMinutes % 60).toString().padLeft(2, '0')}';
+    }
     final m = _left.inMinutes.toString().padLeft(2, '0');
     final s = (_left.inSeconds % 60).toString().padLeft(2, '0');
     return 'Expira em $m:$s';
@@ -1348,17 +1810,25 @@ class _ChargeStepState extends State<_ChargeStep>
   @override
   Widget build(BuildContext context) {
     final paid = widget.paid;
-    final simulateLabel = paid
-        ? (widget.preview ? 'Pagamento simulado' : 'Confirmado pelo webhook')
-        : (widget.preview ? 'Simular pagamento' : 'Já paguei');
+    final qr = widget.charge.qrImage;
     return _StepFrame(
       onBack: paid ? null : widget.onBack,
       actions: [
         _Cta(
-          key: const Key('checkout-simulate'),
-          label: simulateLabel,
+          key: const Key('checkout-check'),
+          label: paid
+              ? 'Pagamento confirmado pelo Asaas'
+              : 'Já paguei, conferir',
           kind: _CtaKind.ghost,
-          onPressed: paid ? null : widget.onSimulate,
+          onPressed: paid ? null : widget.onCheck,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          paid
+              ? 'Liberando o plano…'
+              : 'A tela confere sozinha a cada poucos segundos.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 11.5, color: MistakeMapDesign.steel),
         ),
       ],
       children: [
@@ -1385,16 +1855,54 @@ class _ChargeStepState extends State<_ChargeStep>
               alignment: Alignment.center,
               children: [
                 Semantics(
-                  label: _pix
-                      ? 'QR Code ilustrativo do Pix'
-                      : 'Código de barras ilustrativo do boleto',
-                  child: AnimatedBuilder(
-                    animation: _draw,
-                    builder: (context, _) => CustomPaint(
-                      size: const Size.square(196),
-                      painter: _QrPainter(progress: _draw.value),
-                    ),
-                  ),
+                  label: _pix ? 'QR Code do Pix' : 'Código de barras do boleto',
+                  child: _pix && qr != null
+                      ? FadeTransition(
+                          opacity: _draw,
+                          child: Image.memory(
+                            qr,
+                            key: const Key('checkout-qr'),
+                            width: 204,
+                            height: 204,
+                            filterQuality: FilterQuality.none,
+                            gaplessPlayback: true,
+                          ),
+                        )
+                      : _pix
+                      ? const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Text(
+                            'Use o Pix copia e cola abaixo no app do banco.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: MistakeMapDesign.steel),
+                          ),
+                        )
+                      : FadeTransition(
+                          opacity: _draw,
+                          child: const Padding(
+                            padding: EdgeInsets.all(26),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              spacing: 10,
+                              children: [
+                                SizedBox(
+                                  height: 90,
+                                  child: CustomPaint(
+                                    size: Size(170, 90),
+                                    painter: _BarcodePainter(),
+                                  ),
+                                ),
+                                Text(
+                                  'Boleto registrado no Asaas',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: MistakeMapDesign.steel,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                 ),
                 IgnorePointer(
                   child: AnimatedOpacity(
@@ -1498,12 +2006,15 @@ class _ChargeStepState extends State<_ChargeStep>
             ],
           ),
         ),
-        if (widget.preview) ...[
+        if (!_pix && widget.charge.bankSlipUrl != null) ...[
           const SizedBox(height: 10),
-          const Text(
-            'Prévia: o código é ilustrativo e nenhum pagamento é feito.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11.5, color: MistakeMapDesign.steel),
+          Center(
+            child: HyperlinkButton(
+              onPressed: () => Clipboard.setData(
+                ClipboardData(text: widget.charge.bankSlipUrl!),
+              ),
+              child: const Text('Copiar link do PDF do boleto'),
+            ),
           ),
         ],
         if (widget.error != null) _Notice(widget.error!),
@@ -1617,64 +2128,6 @@ class _StatusPillState extends State<_StatusPill>
 
 /// QR ilustrativo (37 × 37): os módulos surgem aos poucos e os três
 /// localizadores e o centro Aqua entram no fim.
-class _QrPainter extends CustomPainter {
-  _QrPainter({required this.progress});
-
-  final double progress;
-
-  static const _n = 37;
-  static final List<(int, int)> _cells = () {
-    var seed = 20261111;
-    double next() {
-      seed = (seed * 1103515245 + 12345) % 2147483648;
-      return seed / 2147483648;
-    }
-
-    bool finder(int i, int j) =>
-        (i < 8 && j < 8) || (i < 8 && j > _n - 9) || (i > _n - 9 && j < 8);
-    return [
-      for (var i = 0; i < _n; i++)
-        for (var j = 0; j < _n; j++)
-          if (!finder(i, j) && next() > .52) (i, j),
-    ];
-  }();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final m = size.width / _n;
-    final ink = Paint()..color = MistakeMapDesign.abyss;
-    final white = Paint()..color = MistakeMapDesign.white;
-    Rect cell(num x, num y, num w) => Rect.fromLTWH(x * m, y * m, w * m, w * m);
-    void finder(int x, int y) {
-      canvas
-        ..drawRect(cell(x, y, 7), ink)
-        ..drawRect(cell(x + 1, y + 1, 5), white)
-        ..drawRect(cell(x + 2, y + 2, 3), ink);
-    }
-
-    finder(0, 0);
-    finder(_n - 7, 0);
-    finder(0, _n - 7);
-    final shown = (_cells.length * progress).round();
-    for (var k = 0; k < shown; k++) {
-      final (i, j) = _cells[k];
-      // Um pouco maior que o módulo para não deixar fios entre vizinhos.
-      canvas.drawRect(Rect.fromLTWH(j * m, i * m, m + .4, m + .4), ink);
-    }
-    if (progress >= 1) {
-      canvas
-        ..drawRect(cell(16, 16, 5), Paint()..color = MistakeMapDesign.aqua)
-        ..drawRect(cell(17, 17, 3), white)
-        ..drawRect(cell(18, 18, 1), ink);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_QrPainter oldDelegate) =>
-      oldDelegate.progress != progress;
-}
-
-/// Círculo Mint que se fecha e o visto que se desenha por cima.
 class _CheckPainter extends CustomPainter {
   const _CheckPainter(this.t);
 
@@ -1763,131 +2216,273 @@ class _ActivatedStepState extends State<_ActivatedStep>
     super.dispose();
   }
 
-  static const _sparkColors = [
-    MistakeMapDesign.aqua,
-    MistakeMapDesign.azure,
-    MistakeMapDesign.violet,
-    MistakeMapDesign.amber,
-    MistakeMapDesign.mint,
-  ];
-
   @override
   Widget build(BuildContext context) {
     final quote = widget.receipt.quote;
-    final badge = CurvedAnimation(
-      parent: _intro,
-      curve: const Interval(0, .58, curve: Cubic(.2, 1.4, .3, 1)),
-    );
-    final sparks = CurvedAnimation(
-      parent: _intro,
-      curve: const Interval(.25, 1, curve: Curves.easeOut),
-    );
+    final card = widget.receipt.cardLast4;
     return _StepFrame(
       actions: [
         _Cta(
           key: const Key('checkout-receipt'),
-          label: 'Ver recibo e nota fiscal',
+          label: 'Ver recibo',
           kind: _CtaKind.ghost,
           onPressed: widget.onReceipt,
         ),
         const SizedBox(height: 10),
-        _Cta(label: 'Ir para o painel da escola', onPressed: widget.onDone),
+        _Cta(label: 'Concluir', onPressed: widget.onDone),
       ],
       children: [
         SizedBox(
           height: 230,
-          child: AnimatedBuilder(
-            animation: _intro,
-            builder: (context, _) => Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                if (sparks.value > 0 && sparks.value < 1)
-                  for (var i = 0; i < 14; i++)
-                    Builder(
-                      builder: (context) {
-                        final a = i / 14 * 2 * math.pi;
-                        final t = sparks.value;
-                        return Transform.translate(
-                          offset: Offset(
-                            math.cos(a) * 120 * t,
-                            math.sin(a) * 100 * t,
-                          ),
-                          child: Transform.scale(
-                            scale: 1 - .6 * t,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: _sparkColors[i % 5].withValues(
-                                  alpha: 1 - t,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                Opacity(
-                  opacity: _intro.value.clamp(0.0, .3) / .3,
-                  child: Transform.rotate(
-                    angle: -8 * math.pi / 180,
-                    child: Transform.scale(
-                      scale: .6 + .4 * badge.value,
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(40),
-                          gradient: _planLook('escola').fill,
-                          boxShadow: _cardShadow,
-                        ),
-                        child: const _MapMark(
-                          color: MistakeMapDesign.abyss,
-                          width: 96,
-                          colors: [
-                            MistakeMapDesign.white,
-                            MistakeMapDesign.white,
-                            MistakeMapDesign.white,
-                            MistakeMapDesign.white,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          child: Semantics(
+            label: 'Maquininha com o pagamento aprovado',
+            child: AnimatedBuilder(
+              animation: _intro,
+              builder: (context, _) => CustomPaint(
+                painter: _TerminalPainter(_intro.value),
+                size: const Size(300, 230),
+              ),
             ),
           ),
         ),
-        Text(
-          'Plano ${quote.plan.name} ativo',
-          textAlign: TextAlign.center,
-          style: _display,
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Os alunos já podem entrar pelo código da turma. A nota fiscal foi '
-          'enviada para o e-mail do financeiro.',
-          textAlign: TextAlign.center,
-          style: _sub,
-        ),
-        const SizedBox(height: 14),
-        _Panel(
-          rows: [
-            _Row('Pago', Text(formatBrl(quote.total))),
-            _Row('Alunos liberados', Text('${quote.releasedStudents}')),
-            _Row(
-              'Próxima fatura',
-              Text(formatDate(widget.receipt.nextInvoice)),
-            ),
-          ],
+        FadeTransition(
+          opacity: CurvedAnimation(
+            parent: _intro,
+            curve: const Interval(.45, 1, curve: Curves.easeOut),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Pagamento confirmado',
+                textAlign: TextAlign.center,
+                style: _display,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Plano ${quote.plan.name} ativo. Os alunos já podem entrar '
+                'pelo código da turma. A nota fiscal sai pelo Asaas para o '
+                'e-mail de cobrança.',
+                textAlign: TextAlign.center,
+                style: _sub,
+              ),
+              const SizedBox(height: 14),
+              _Panel(
+                rows: [
+                  _Row('Pago', Text(formatBrl(quote.total))),
+                  _Row(
+                    'Forma',
+                    Text(
+                      card == null
+                          ? quote.method.label
+                          : '${quote.method.label} final $card',
+                    ),
+                  ),
+                  _Row(
+                    'Válido até',
+                    Text(formatDate(widget.receipt.periodEnd)),
+                  ),
+                  _Row(
+                    'Próxima fatura',
+                    Text(formatDate(widget.receipt.nextInvoice)),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
+}
+
+/// Maquininha isométrica em traço (protótipo de referência): o cartão
+/// entra, a tela acende o check verde e o comprovante sai por trás.
+class _TerminalPainter extends CustomPainter {
+  const _TerminalPainter(this.t);
+
+  final double t;
+
+  static const _c = 0.866; // cos 30°
+  static const _line = MistakeMapDesign.abyss;
+
+  Offset _iso(Size size, double x, double y, double z) => Offset(
+    size.width / 2 + (x - y) * _c,
+    size.height * .62 + (x + y) * .5 - z,
+  );
+
+  Path _poly(Size size, List<(double, double, double)> pts) {
+    final path = Path();
+    for (var i = 0; i < pts.length; i++) {
+      final (x, y, z) = pts[i];
+      final o = _iso(size, x, y, z);
+      i == 0 ? path.moveTo(o.dx, o.dy) : path.lineTo(o.dx, o.dy);
+    }
+    return path..close();
+  }
+
+  void _face(Canvas canvas, Path path, Color fill) {
+    canvas
+      ..drawPath(path, Paint()..color = fill)
+      ..drawPath(
+        path,
+        Paint()
+          ..color = _line
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.6
+          ..strokeJoin = StrokeJoin.round,
+      );
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cardIn = Curves.easeOutCubic.transform((t / .4).clamp(0.0, 1.0));
+    final paper = Curves.easeOut.transform(((t - .55) / .45).clamp(0.0, 1.0));
+    final check = ((t - .3) / .4).clamp(0.0, 1.0);
+
+    // Sombra no chão.
+    canvas.drawPath(
+      _poly(size, [
+        (-62, -40, 0),
+        (62, -40, 0),
+        (62, 40, 0),
+        (-62, 40, 0),
+      ]).shift(const Offset(0, 10)),
+      Paint()
+        ..color = const Color(0x2211212D)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+    );
+
+    // Comprovante saindo por trás (antes do corpo, para ficar atrás).
+    if (paper > 0) {
+      final h = 70 * paper;
+      _face(
+        canvas,
+        _poly(size, [
+          (-30, -34, 22),
+          (30, -34, 22),
+          (30, -34, 22 + h),
+          (-30, -34, 22 + h),
+        ]),
+        MistakeMapDesign.white,
+      );
+      final lines = Paint()
+        ..color = MistakeMapDesign.mist
+        ..strokeWidth = 1.2;
+      for (var k = 1; k <= 4; k++) {
+        final z = 22 + h - k * 12;
+        if (z <= 26) break;
+        canvas.drawLine(
+          _iso(size, -22, -34, z),
+          _iso(size, k.isEven ? 10 : 20, -34, z),
+          lines,
+        );
+      }
+    }
+
+    // Corpo: laterais e topo.
+    const w = 60.0, d = 38.0, h = 22.0;
+    _face(
+      canvas,
+      _poly(size, [(-w, d, 0), (w, d, 0), (w, d, h), (-w, d, h)]),
+      const Color(0xFFDDE3E5),
+    );
+    _face(
+      canvas,
+      _poly(size, [(w, -d, 0), (w, d, 0), (w, d, h), (w, -d, h)]),
+      const Color(0xFFC9D1D4),
+    );
+    _face(
+      canvas,
+      _poly(size, [(-w, -d, h), (w, -d, h), (w, d, h), (-w, d, h)]),
+      MistakeMapDesign.white,
+    );
+
+    // Tela.
+    _face(
+      canvas,
+      _poly(size, [(-48, -30, h), (8, -30, h), (8, 4, h), (-48, 4, h)]),
+      check > 0 ? const Color(0xFF0F2A22) : MistakeMapDesign.deep,
+    );
+    if (check > 0) {
+      final center = _iso(size, -20, -13, h);
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.scale(1, .58);
+      canvas.drawCircle(
+        Offset.zero,
+        18 * Curves.easeOutBack.transform(check),
+        Paint()..color = MistakeMapDesign.mint,
+      );
+      if (check > .5) {
+        final tick = ((check - .5) / .5).clamp(0.0, 1.0);
+        final path = Path()
+          ..moveTo(-8, 0)
+          ..lineTo(-2, 6)
+          ..lineTo(9, -6);
+        final metric = path.computeMetrics().first;
+        canvas.drawPath(
+          metric.extractPath(0, metric.length * tick),
+          Paint()
+            ..color = MistakeMapDesign.white
+            ..strokeWidth = 3.4
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round
+            ..style = PaintingStyle.stroke,
+        );
+      }
+      canvas.restore();
+    }
+
+    // Teclado 3 × 3.
+    for (var r = 0; r < 3; r++) {
+      for (var col = 0; col < 3; col++) {
+        final x = 18.0 + col * 12, y = -26.0 + r * 11;
+        _face(
+          canvas,
+          _poly(size, [
+            (x, y, h),
+            (x + 8, y, h),
+            (x + 8, y + 7, h),
+            (x, y + 7, h),
+          ]),
+          r == 2 && col == 2 ? MistakeMapDesign.mint : MistakeMapDesign.canvas,
+        );
+      }
+    }
+
+    // Cartão entrando pela frente.
+    final slide = 70 * (1 - cardIn);
+    _face(
+      canvas,
+      _poly(size, [
+        (-34, d + 4 + slide, 14),
+        (34, d + 4 + slide, 14),
+        (34, d + 4 + slide + 46, 14),
+        (-34, d + 4 + slide + 46, 14),
+      ]),
+      MistakeMapDesign.aqua,
+    );
+    canvas.drawLine(
+      _iso(size, -26, d + 14 + slide, 14),
+      _iso(size, 10, d + 14 + slide, 14),
+      Paint()
+        ..color = MistakeMapDesign.abyss
+        ..strokeWidth = 3,
+    );
+    // Fenda por cima do cartão.
+    canvas.drawLine(
+      _iso(size, -38, d, 14),
+      _iso(size, 38, d, 14),
+      Paint()
+        ..color = _line
+        ..strokeWidth = 2.4
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_TerminalPainter oldDelegate) => oldDelegate.t != t;
 }
 
 // ─── 5. Recibo ──────────────────────────────────────────────────────────────
@@ -1896,14 +2491,12 @@ class _ReceiptStep extends StatefulWidget {
   const _ReceiptStep({
     required this.receipt,
     required this.schoolName,
-    required this.preview,
     required this.onBack,
     required this.onDone,
   });
 
   final CheckoutReceipt receipt;
   final String schoolName;
-  final bool preview;
   final VoidCallback onBack;
   final VoidCallback onDone;
 
@@ -1961,9 +2554,7 @@ class _ReceiptStepState extends State<_ReceiptStep>
           builder: (context, _) => Semantics(
             liveRegion: true,
             child: Text(
-              _print.value >= .889
-                  ? 'Recibo e NFS-e prontos'
-                  : 'Imprimindo o recibo…',
+              _print.value >= .889 ? 'Recibo pronto' : 'Imprimindo seu recibo…',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 12,
@@ -1991,99 +2582,114 @@ class _ReceiptStepState extends State<_ReceiptStep>
       ],
       children: [
         const SizedBox(height: 4),
-        Center(
-          child: Container(
-            width: 280,
-            height: 44,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [MistakeMapDesign.white, Color(0xFFE4E9EB)],
-              ),
-              border: Border.all(color: MistakeMapDesign.edge),
-              boxShadow: _cardShadow,
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  left: 18,
-                  right: 18,
-                  bottom: 12,
-                  child: Container(
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: MistakeMapDesign.deep,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 16,
-                  top: 10,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: MistakeMapDesign.aqua,
-                      boxShadow: [
-                        BoxShadow(color: MistakeMapDesign.aqua, blurRadius: 8),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        // Única área escura do fluxo, como no protótipo: o recibo é o
+        // objeto em destaque.
+        Container(
+          padding: const EdgeInsets.fromLTRB(12, 20, 12, 8),
+          decoration: BoxDecoration(
+            color: MistakeMapDesign.abyss,
+            borderRadius: BorderRadius.circular(28),
           ),
-        ),
-        Transform.translate(
-          offset: const Offset(0, -14),
-          child: Center(
-            child: SizedBox(
-              width: 246,
-              child: AnimatedBuilder(
-                animation: _print,
-                builder: (context, child) => ClipRect(
-                  child: Align(
-                    // O papel sai pela fenda: aparece primeiro o rodapé.
-                    alignment: Alignment.bottomCenter,
-                    heightFactor: paper.value,
-                    child: child,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    _Paper(
-                      receipt: receipt,
-                      schoolName: widget.schoolName,
-                      preview: widget.preview,
-                      planLine:
-                          'Plano ${plan.name} ${quote.cycle == CheckoutCycle.annual ? 'anual' : 'mensal'}',
+          child: Column(
+            children: [
+              Center(
+                child: Container(
+                  width: 280,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [MistakeMapDesign.white, Color(0xFFE4E9EB)],
                     ),
-                    Positioned(
-                      right: 14,
-                      bottom: 58,
-                      child: AnimatedBuilder(
-                        animation: stamp,
-                        builder: (context, child) => Opacity(
-                          opacity: _print.value < .889 ? 0 : .92,
-                          child: Transform.rotate(
-                            angle: -16 * math.pi / 180,
-                            child: Transform.scale(
-                              scale: 2.2 - 1.2 * stamp.value,
-                              child: child,
-                            ),
+                    border: Border.all(color: MistakeMapDesign.edge),
+                    boxShadow: _cardShadow,
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: 18,
+                        right: 18,
+                        bottom: 12,
+                        child: Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: MistakeMapDesign.deep,
+                            borderRadius: BorderRadius.circular(3),
                           ),
                         ),
-                        child: const _Stamp(),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        right: 16,
+                        top: 10,
+                        child: Container(
+                          width: 7,
+                          height: 7,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: MistakeMapDesign.aqua,
+                            boxShadow: [
+                              BoxShadow(
+                                color: MistakeMapDesign.aqua,
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+              Transform.translate(
+                offset: const Offset(0, -14),
+                child: Center(
+                  child: SizedBox(
+                    width: 246,
+                    child: AnimatedBuilder(
+                      animation: _print,
+                      builder: (context, child) => ClipRect(
+                        child: Align(
+                          // O papel sai pela fenda: aparece primeiro o rodapé.
+                          alignment: Alignment.bottomCenter,
+                          heightFactor: paper.value,
+                          child: child,
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          _Paper(
+                            receipt: receipt,
+                            schoolName: widget.schoolName,
+                            planLine:
+                                'Plano ${plan.name} ${quote.cycle == CheckoutCycle.annual ? 'anual' : 'mensal'}',
+                          ),
+                          Positioned(
+                            right: 14,
+                            bottom: 58,
+                            child: AnimatedBuilder(
+                              animation: stamp,
+                              builder: (context, child) => Opacity(
+                                opacity: _print.value < .889 ? 0 : .92,
+                                child: Transform.rotate(
+                                  angle: -16 * math.pi / 180,
+                                  child: Transform.scale(
+                                    scale: 2.2 - 1.2 * stamp.value,
+                                    child: child,
+                                  ),
+                                ),
+                              ),
+                              child: const _Stamp(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -2095,13 +2701,11 @@ class _Paper extends StatelessWidget {
   const _Paper({
     required this.receipt,
     required this.schoolName,
-    required this.preview,
     required this.planLine,
   });
 
   final CheckoutReceipt receipt;
   final String schoolName;
-  final bool preview;
   final String planLine;
 
   @override
@@ -2183,12 +2787,6 @@ class _Paper extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: caption,
                   ),
-                  if (preview)
-                    Text(
-                      'PRÉVIA · SEM VALOR FISCAL',
-                      textAlign: TextAlign.center,
-                      style: caption.copyWith(color: MistakeMapDesign.amberInk),
-                    ),
                   const _Dashed(),
                   line('Recibo', receipt.number),
                   line('Data', formatDateTime(receipt.paidAt)),
@@ -2200,6 +2798,11 @@ class _Paper extends StatelessWidget {
                         ? '—'
                         : '${quote.students} × ${formatBrl(quote.pricePerStudent)}',
                   ),
+                  if (quote.volumeDiscountPercent > 0)
+                    line(
+                      'Desconto volume −${quote.volumeDiscountPercent}%',
+                      '−${formatBrl(quote.discount)}',
+                    ),
                   line(
                     'Período',
                     '${formatDate(receipt.periodStart).substring(0, 5)} a '
@@ -2216,10 +2819,17 @@ class _Paper extends StatelessWidget {
                     child: line('TOTAL', formatBrl(quote.total)),
                   ),
                   line(
-                    quote.method == CheckoutMethod.pix ? 'Pix' : 'Boleto',
+                    receipt.cardLast4 == null
+                        ? quote.method.label
+                        : '${quote.method.label} •••• ${receipt.cardLast4}',
                     'via Asaas',
                   ),
-                  line('NFS-e', 'nº ${receipt.invoiceNumber}'),
+                  line(
+                    'NFS-e',
+                    receipt.invoiceNumber.isEmpty
+                        ? 'em emissão'
+                        : 'nº ${receipt.invoiceNumber}',
+                  ),
                   const SizedBox(height: 8),
                   const SizedBox(
                     height: 34,
