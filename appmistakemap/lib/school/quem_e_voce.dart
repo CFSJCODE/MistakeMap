@@ -218,7 +218,7 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
             for (final p in PerfilCadastro.values)
               SizedBox(
                 width: largura,
-                child: _CartaoPerfil(
+                child: CartaoPerfil(
                   perfil: p,
                   onTap: () => _escolher(p),
                   onEntrar: widget.onEntrarComConta == null
@@ -423,8 +423,9 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
   }
 }
 
-class _CartaoPerfil extends StatelessWidget {
-  const _CartaoPerfil({
+class CartaoPerfil extends StatelessWidget {
+  const CartaoPerfil({
+    super.key,
     required this.perfil,
     required this.onTap,
     this.onEntrar,
