@@ -1,5 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
+import '../billing/billing_panel.dart';
+import '../billing/billing_repository.dart';
 import '../platform/platform_forms.dart' show PlatformCheck;
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
@@ -8,14 +10,22 @@ import 'escola_ui.dart';
 import 'perfil_modelos.dart';
 
 // ─── Tela inicial dos perfis de escola ───────────────────────────────────────
-// Dono, coordenação, TI e professor: escola, convites e equipes. Os painéis
-// completos (alunos ativos, fatura, uso de IA, auditoria) chegam no item F.
+// Dono, Financeiro/Compras, coordenação, TI e professor: escola, convites,
+// equipes e a cobrança (plano, quem paga, faturas). Os relatórios completos
+// (uso pedagógico e financeiro, auditoria) chegam no item F.
 // Responsável: filhos acompanhados e o código de consentimento.
 // Nada aqui mostra resposta, caderno ou mapa individual de aluno.
 
 /// Papéis que cada perfil de gestão pode convidar (o servidor confere de novo).
 const papeisConvidaveis = {
-  'owner': ['coordinator', 'it_admin', 'teacher', 'student', 'guardian'],
+  'owner': [
+    'coordinator',
+    'it_admin',
+    'finance',
+    'teacher',
+    'student',
+    'guardian',
+  ],
   'coordinator': ['teacher', 'student', 'guardian'],
   'it_admin': ['teacher', 'student', 'guardian'],
 };
@@ -25,10 +35,14 @@ class TelaPainelEscola extends StatefulWidget {
     super.key,
     required this.perfil,
     required this.repositorio,
+    this.cobranca,
   });
 
   final PerfilAtivo perfil;
   final RepositorioEscola repositorio;
+
+  /// Cobrança (Edge Function school-billing). Sem ela, o cartão não aparece.
+  final BillingRepository? cobranca;
 
   @override
   State<TelaPainelEscola> createState() => _TelaPainelEscolaState();
@@ -113,6 +127,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
     final gestao = const {
       'coordinator',
       'it_admin',
+      'finance',
       'owner',
     }.contains(_papelConvite);
     final usos = gestao ? 1 : int.tryParse(_usos.text.trim()) ?? 1;
@@ -193,6 +208,16 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
           )
         else ...[
           _proximaEtapa(papel),
+          if (widget.cobranca != null &&
+              widget.perfil.escolaId != null &&
+              const {'owner', 'finance', 'coordinator'}.contains(papel))
+            CartaoCobranca(
+              escolaId: widget.perfil.escolaId!,
+              escolaNome:
+                  '${escola['name'] ?? widget.perfil.escolaNome ?? 'Escola'}',
+              papel: papel,
+              repositorio: widget.cobranca!,
+            ),
           if (membros.isNotEmpty && papel != 'teacher')
             CartaoEscola(
               titulo: 'Pessoas na escola',
@@ -221,15 +246,21 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
     titulo: switch (papel) {
       'owner' => 'Painel do dono',
       'it_admin' => 'Painel de TI',
+      'finance' => 'Painel do Financeiro/Compras',
       'teacher' => 'Suas turmas',
       _ => 'Painel da escola',
     },
     children: [
       Text(switch (papel) {
         'owner' =>
-          'Convide a coordenação, a TI e os professores abaixo. Alunos ativos, '
-              'fatura prevista e consumo de IA aparecem aqui nas próximas '
-              'etapas, junto com a escolha do plano e o contrato.',
+          'Escolha o plano e quem paga em "Plano e cobrança". Numa rede, '
+              'convide o Financeiro/Compras: ele paga (Pix, boleto ou cartão) '
+              'e você acompanha as faturas. Convide também a coordenação, a '
+              'TI e os professores.',
+        'finance' =>
+          'Você contrata e paga o MistakeMap pela escola: plano, pedido de '
+              'compra, centro de custo, boleto ou Pix e nota fiscal. Não vê '
+              'respostas nem o mapa de nenhum aluno.',
         'it_admin' =>
           'Convide professores, estudantes e responsáveis. Busca de usuários, '
               'importação por planilha e uso dos aparelhos chegam nas próximas '
@@ -247,7 +278,11 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
 
   Widget _cartaoConvites(String papel, List<DadosEscola> convites) {
     final papeis = papeisConvidaveis[papel]!;
-    final gestao = const {'coordinator', 'it_admin'}.contains(_papelConvite);
+    final gestao = const {
+      'coordinator',
+      'it_admin',
+      'finance',
+    }.contains(_papelConvite);
     return CartaoEscola(
       titulo: 'Convites',
       subtitulo:

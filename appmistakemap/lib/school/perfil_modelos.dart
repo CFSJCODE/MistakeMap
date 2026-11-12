@@ -7,7 +7,7 @@ import '../theme/design_tokens.dart';
 // servidor (convite validado na Edge Function school-admin e no banco). Aqui
 // ficam os modelos e as regras de exibição; nenhuma regra de acesso.
 
-/// Os 7 perfis da primeira tela do cadastro.
+/// Os 8 perfis da primeira tela do cadastro.
 enum PerfilCadastro {
   estudante(
     'student',
@@ -69,6 +69,15 @@ enum PerfilCadastro {
     WindowsIcons.admin,
     MistakeMapDesign.deep,
     MistakeMapDesign.steel,
+  ),
+  financeiro(
+    'finance',
+    'Financeiro / Compras',
+    'Contrato e pago o MistakeMap pela escola ou rede: pedido de compra, '
+        'boleto e nota fiscal. Preciso do convite do dono.',
+    WindowsIcons.payment_card,
+    MistakeMapDesign.azureInk,
+    MistakeMapDesign.azure,
   );
 
   const PerfilCadastro(
@@ -87,9 +96,10 @@ enum PerfilCadastro {
   final Color tinta;
   final Color acento;
 
-  /// Coordenador e TI só ganham o papel com convite. O professor da escola
-  /// também, mas ele tem a saída do plano Grátis.
-  bool get soComConvite => this == coordenador || this == ti;
+  /// Coordenação, TI e Financeiro só ganham o papel com convite. O professor
+  /// da escola também, mas ele tem a saída do plano Grátis.
+  bool get soComConvite =>
+      this == coordenador || this == ti || this == financeiro;
 
   bool get pedeNascimento => this == estudante || this == estudanteEquipe;
 
@@ -124,6 +134,7 @@ const nomesPapel = {
   'owner': 'Dono da escola',
   'coordinator': 'Coordenação',
   'it_admin': 'TI da escola',
+  'finance': 'Financeiro/Compras',
   'teacher': 'Professor',
   'student': 'Estudante',
   'guardian': 'Responsável',

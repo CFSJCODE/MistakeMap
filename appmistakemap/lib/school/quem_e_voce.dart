@@ -97,7 +97,9 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
         'Confirme o termo do responsável para continuar.',
       PerfilCadastro.dono when _nome.text.trim().length < 2 =>
         'Informe o nome da escola.',
-      PerfilCadastro.coordenador || PerfilCadastro.ti when codigo.isEmpty =>
+      PerfilCadastro.coordenador ||
+      PerfilCadastro.ti ||
+      PerfilCadastro.financeiro when codigo.isEmpty =>
         'Informe o código do convite enviado pelo dono da escola.',
       _ => null,
     };
@@ -145,7 +147,9 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
             'name': _nome.text.trim(),
             if (_cnpj.text.trim().isNotEmpty) 'cnpj': _cnpj.text.trim(),
           });
-        case PerfilCadastro.coordenador || PerfilCadastro.ti:
+        case PerfilCadastro.coordenador ||
+            PerfilCadastro.ti ||
+            PerfilCadastro.financeiro:
           await repo.executar('redeem_invite', {
             'code': codigo,
             'persona': perfil.codigo,
@@ -294,7 +298,9 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
     PerfilCadastro.professor => 'Convite da escola ou plano Grátis',
     PerfilCadastro.responsavel => 'Código do seu filho ou da escola',
     PerfilCadastro.dono => 'Sua escola',
-    PerfilCadastro.coordenador || PerfilCadastro.ti => 'Convite do dono',
+    PerfilCadastro.coordenador ||
+    PerfilCadastro.ti ||
+    PerfilCadastro.financeiro => 'Convite do dono',
   };
 
   String _explicacao(PerfilCadastro p) => switch (p) {
@@ -312,9 +318,12 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
           'escola enviou. Você acompanha a evolução, sem ver respostas nem o '
           'caderno.',
     PerfilCadastro.dono =>
-      'A escola começa no plano Grátis. O plano, o contrato e a cobrança vêm '
-          'nas próximas etapas, no painel do dono.',
-    PerfilCadastro.coordenador || PerfilCadastro.ti =>
+      'A escola começa no plano Grátis. No painel do dono você escolhe o '
+          'plano, paga por Pix, boleto ou cartão e define quem paga: você ou o '
+          'Financeiro/Compras.',
+    PerfilCadastro.coordenador ||
+    PerfilCadastro.ti ||
+    PerfilCadastro.financeiro =>
       'Este perfil só é liberado com o convite pessoal que o dono da escola '
           'criou para o seu e-mail.',
   };
@@ -417,7 +426,9 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
             formatos: [FilteringTextInputFormatter.allow(RegExp(r'[0-9./-]'))],
           ),
         ];
-      case PerfilCadastro.coordenador || PerfilCadastro.ti:
+      case PerfilCadastro.coordenador ||
+          PerfilCadastro.ti ||
+          PerfilCadastro.financeiro:
         return [codigoConvite];
     }
   }
