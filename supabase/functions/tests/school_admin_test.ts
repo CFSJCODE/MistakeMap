@@ -62,10 +62,11 @@ Deno.test("school-admin recusa corpo inválido e ação desconhecida", async () 
   assert.equal(calls.length, 0);
 });
 
-Deno.test("perfil escolhido: só os 7 perfis do cadastro", () => {
+Deno.test("perfil escolhido: só os 8 perfis do cadastro", () => {
   assert.equal(persona({ persona: "student_team" }), "student_team");
   assert.throws(() => persona({ persona: "admin" }), PublicError);
   assert.deepEqual(INVITE_ROLES_BY_PERSONA.coordinator, ["coordinator"]);
+  assert.deepEqual(INVITE_ROLES_BY_PERSONA.finance, ["finance"]);
   assert.deepEqual(INVITE_ROLES_BY_PERSONA.student_team, ["student"]);
   assert.deepEqual(expectedRoles({ expected_roles: ["teacher", "teacher"] }), [
     "teacher",
