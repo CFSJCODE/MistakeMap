@@ -51,3 +51,11 @@ verify_jwt = false
 # Cadastro por perfil e escola: o POST verifica o JWT no handler antes do banco.
 [functions.school-admin]
 verify_jwt = false
+
+# Cobrança da escola: o POST verifica o JWT no handler antes do banco.
+[functions.school-billing]
+verify_jwt = false
+
+# Webhook do Asaas e pg_cron: autenticados por segredo próprio, sem JWT.
+[functions.billing-webhook]
+verify_jwt = false

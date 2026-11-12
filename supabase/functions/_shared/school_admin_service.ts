@@ -63,6 +63,7 @@ const ROLE_LABELS: Record<string, string> = {
   owner: "dono da escola",
   coordinator: "coordenação",
   it_admin: "TI da escola",
+  finance: "Financeiro/Compras",
   teacher: "professor",
   student: "estudante",
   guardian: "responsável",
@@ -235,7 +236,8 @@ export async function schoolAdminOperation(
       const school = id(input, "school_id");
       const role = schoolRole(input);
       const email = optionalEmail(input);
-      const management = ["owner", "coordinator", "it_admin"].includes(role);
+      const management = ["owner", "coordinator", "it_admin", "finance"]
+        .includes(role);
       const uses = management
         ? 1
         : boundedInteger(input, "max_uses", 1, 1000, 1);

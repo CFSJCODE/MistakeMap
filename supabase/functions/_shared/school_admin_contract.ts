@@ -30,6 +30,7 @@ export const PERSONAS = [
   "owner",
   "coordinator",
   "it_admin",
+  "finance",
 ] as const;
 export type Persona = typeof PERSONAS[number];
 
@@ -37,6 +38,7 @@ export const SCHOOL_ROLES = [
   "owner",
   "coordinator",
   "it_admin",
+  "finance",
   "teacher",
   "student",
   "guardian",
@@ -67,6 +69,7 @@ export const INVITE_ROLES_BY_PERSONA: Record<Persona, readonly SchoolRole[]> = {
   owner: ["owner"],
   coordinator: ["coordinator"],
   it_admin: ["it_admin"],
+  finance: ["finance"],
 };
 
 const invalid = (field: string) =>
@@ -108,7 +111,7 @@ export function expectedRoles(input: Input): SchoolRole[] | null {
   const value = input.expected_roles;
   if (value == null) return null;
   if (
-    !Array.isArray(value) || value.length < 1 || value.length > 6 ||
+    !Array.isArray(value) || value.length < 1 || value.length > 7 ||
     value.some((role) => !SCHOOL_ROLES.includes(role as SchoolRole))
   ) throw invalid("expected_roles");
   return [...new Set(value as SchoolRole[])];
@@ -248,6 +251,12 @@ const MESSAGES: Record<string, string> = {
   birth_date_required: "Informe a data de nascimento.",
   invalid_birth_date: "Confira a data de nascimento.",
   class_teacher_not_in_school: "Você não dá aula nesta escola.",
+  payer_owner_only: "Só o dono da escola troca quem paga.",
+  finance_member_required:
+    "Convide primeiro o Financeiro/Compras da escola; depois escolha quem paga.",
+  invoice_canceled: "Esta fatura foi cancelada.",
+  invalid_students: "Confira o número de alunos.",
+  invalid_plan: "Escolha um plano válido.",
 };
 
 /** Converte erro do Postgres (SQLSTATE MMxxx das funções) em erro público. */
