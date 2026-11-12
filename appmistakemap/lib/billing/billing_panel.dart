@@ -186,6 +186,34 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
     if (mounted) await _carregar();
   }
 
+  /// Cobrança de teste de R\$ 5 (Pix) numa escola real: prova o Asaas e o
+  /// webhook sem contratar plano. Paga, não muda o plano nem gera nota.
+  Future<void> _cobrancaTeste() async {
+    if (_salvando) return;
+    setState(() {
+      _salvando = true;
+      _erro = null;
+      _aviso = null;
+    });
+    try {
+      await widget.repositorio.run('test_charge', {
+        'school_id': widget.escolaId,
+        'method': 'pix',
+      });
+      if (!mounted) return;
+      setState(
+        () => _aviso =
+            'Cobrança de teste de R\$ 5 gerada. Copie o Pix na fatura abaixo, '
+            'pague e toque em Atualizar: ela deve aparecer como Paga.',
+      );
+      await _carregar();
+    } on CheckoutFailure catch (f) {
+      if (mounted) setState(() => _erro = f.message);
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
+  }
+
   Future<void> _reemitir(BillingData fatura, {String? forma}) async {
     setState(() => _erro = null);
     try {
@@ -221,6 +249,7 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
     final pagante = '${s['payer_role'] ?? 'owner'}';
     final ativo = _dados['provider'] == 'asaas';
     final verValores = dono || _papeis.contains('finance');
+    final demo = s['demo'] == true;
     return CartaoEscola(
       titulo: 'Plano e cobrança',
       subtitulo:
@@ -284,8 +313,28 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
                 _editando ? 'Fechar dados de cobrança' : 'Dados de cobrança',
                 onPressed: () => setState(() => _editando = !_editando),
               ),
+              if (paga && !demo)
+                BotaoEscola(
+                  r'Cobrança de teste (R$ 5)',
+                  onPressed: ativo && !_salvando ? _cobrancaTeste : null,
+                ),
+              if (faturas.isNotEmpty)
+                BotaoEscola(
+                  'Atualizar',
+                  onPressed: _carregando ? null : _carregar,
+                ),
             ],
           ),
+          if (paga && !demo)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                r'A cobrança de teste gera um Pix real de R$ 5 para conferir '
+                'o pagamento de ponta a ponta. Não muda o plano e não emite '
+                'nota fiscal.',
+                style: TextStyle(color: MistakeMapDesign.steel),
+              ),
+            ),
           if (!paga)
             const Padding(
               padding: EdgeInsets.only(top: 8),
@@ -458,9 +507,12 @@ class _LinhaFatura extends StatelessWidget {
       'awaiting_payment' || 'pending' => MistakeMapDesign.amberInk,
       _ => MistakeMapDesign.steel,
     };
-    final titulo = fatura['kind'] == 'checkout'
-        ? 'Contratação ${checkoutPlan('${fatura['plan']}').name}'
-        : 'Fechamento ${mes == null ? '' : '${mes.month.toString().padLeft(2, '0')}/${mes.year}'}';
+    final titulo = switch (fatura['kind']) {
+      'checkout' => 'Contratação ${checkoutPlan('${fatura['plan']}').name}',
+      'test' => 'Cobrança de teste',
+      _ =>
+        'Fechamento ${mes == null ? '' : '${mes.month.toString().padLeft(2, '0')}/${mes.year}'}',
+    };
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),

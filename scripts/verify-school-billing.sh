@@ -44,6 +44,33 @@ run -o /dev/null -f "$here/tests.sql" 2>&1 | sed -e 's/^psql:[^ ]* //' -e 's/^NO
 [ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
 run -o /dev/null -f "$here/reports_tests.sql" 2>&1 | sed -e 's/^psql:[^ ]* //' -e 's/^NOTICE:  //'
 [ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
+# Cobrança de teste (kind 'test') e escola de teste real do dono demo.
+run -c "insert into auth.users(id, email) values ('d0000000-0000-4000-8000-0000000000aa', 'dono.demo@mistakemap.dev')"
+run -f "$mig/20261112230000_school_billing_test_school.sql"
+run -f "$mig/20261112230000_school_billing_test_school.sql"
+run -At <<'SQL' | grep -qx 't'
+with s as (select id from public.schools where cnpj = '54497959000103'),
+inv as (
+  insert into public.school_invoices(school_id, kind, reference_month, plan, cycle,
+    students, price_per_student, gross, total, method, due_date)
+  select id, 'test', date_trunc('month', now())::date, 'escola', 'monthly', 0, 0, 5, 5,
+    'pix', current_date + 1 from s
+  returning id)
+select (select count(*) from s) = 1
+   and exists (select 1 from public.school_members m, s
+               where m.school_id = s.id and m.role = 'owner'
+                 and m.user_id = 'd0000000-0000-4000-8000-0000000000aa')
+   and (select count(*) from inv) = 1
+SQL
+run -At <<'SQL' | grep -qx 't'
+select public.school_invoice_paid(i.id) is not null from public.school_invoices i
+where i.kind = 'test';
+select s.plan = 'free'
+   and not coalesce((select demo from public.school_billing_settings b where b.school_id = s.id), false)
+   and (select status from public.school_invoices i where i.school_id = s.id and i.kind = 'test') = 'paid'
+from public.schools s where s.cnpj = '54497959000103'
+SQL
+echo "ok: escola de teste real (sem demo) e cobrança de teste paga sem mudar o plano"
 # Edge Function de cobrança contra o mesmo banco (precisa de deno).
 if command -v deno >/dev/null; then
   SUPABASE_DB_URL="postgres://postgres@127.0.0.1:$port/postgres" \

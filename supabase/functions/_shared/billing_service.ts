@@ -25,6 +25,7 @@ import {
   optionalText,
   paidPlan,
   students,
+  TEST_CHARGE_BRL,
 } from "./billing_contract.ts";
 import {
   type ChargeRequest,
@@ -164,7 +165,9 @@ export async function scheduleNfse(
     LEFT JOIN public.school_billing_settings b ON b.school_id = i.school_id
     WHERE i.id = ${invoiceId}`;
   if (
-    !inv || inv.status !== "paid" || inv.nfse_status != null ||
+    // A cobrança de teste não gera nota fiscal.
+    !inv || inv.kind === "test" || inv.status !== "paid" ||
+    inv.nfse_status != null ||
     !inv.provider_payment_id || Number(inv.total) <= 0
   ) return;
   let provider: PaymentProvider;
@@ -571,6 +574,44 @@ export async function billingOperation(
         RETURNING id`;
       const invoice = await issueInvoice(sql, created.id, providers, {
         card,
+        remoteIp: context.remoteIp,
+      });
+      return { invoice, provider: providerMode() };
+    }
+    case "test_charge": {
+      // R$ 5 sem plano, só para provar Pix/boleto + webhook numa escola real.
+      // Pago não muda o plano nem gera NFS-e; não entra no fechamento do mês.
+      const school = id(input, "school_id");
+      const chosenMethod = method(input);
+      if (chosenMethod === "credit_card") {
+        throw new PublicError(
+          400,
+          "invalid_method",
+          "A cobrança de teste é só por Pix ou boleto.",
+        );
+      }
+      await requirePayer(sql, user, school);
+      const settings = await settingsOf(sql, school);
+      if (settings.demo) {
+        throw new PublicError(
+          409,
+          "demo_school",
+          "Escola de demonstração: nenhuma cobrança é gerada.",
+        );
+      }
+      await sql`UPDATE public.school_invoices SET status = 'canceled',
+          failure_reason = 'Substituída por nova cobrança de teste.'
+        WHERE school_id = ${school} AND kind = 'test'
+          AND status IN ('pending','awaiting_payment')`;
+      const days = chosenMethod === "boleto" ? 3 : 1;
+      const [created] = await sql`INSERT INTO public.school_invoices(
+          school_id, kind, reference_month, plan, cycle, students, price_per_student,
+          gross, total, method, due_date, provider, demo, created_by)
+        VALUES (${school}, 'test', public.school_usage_month(), 'escola', 'monthly',
+          0, 0, ${TEST_CHARGE_BRL}, ${TEST_CHARGE_BRL}, ${chosenMethod},
+          ${dueDate(days)}::date, 'asaas', false, ${user})
+        RETURNING id`;
+      const invoice = await issueInvoice(sql, created.id, providers, {
         remoteIp: context.remoteIp,
       });
       return { invoice, provider: providerMode() };

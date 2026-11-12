@@ -752,7 +752,7 @@ class _InvoiceRow extends StatelessWidget {
             children: [
               Text(
                 '${monthLabel(i.referenceMonth)} · '
-                '${i.kind == 'checkout' ? 'Contratação' : 'Mensal'} · '
+                '${invoiceKindLabel(i.kind)} · '
                 '${formatInt(i.students)} alunos',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
