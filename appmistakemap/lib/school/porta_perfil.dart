@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../auth/team_login.dart' show kTeamBuild;
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'escola_repositorio.dart';
@@ -27,6 +28,7 @@ class PortaDePerfil extends StatefulWidget {
     this.preferencias = const PreferenciasPerfil(),
     this.sair,
     this.rodapeCadastro,
+    this.modoEquipe = kTeamBuild,
   });
 
   final String usuarioId;
@@ -41,6 +43,11 @@ class PortaDePerfil extends StatefulWidget {
 
   /// Fica no fim do "Quem é você?" (o app passa o cartão de atualização).
   final Widget? rodapeCadastro;
+
+  /// App da equipe: quem entra já é dev ou admin, então nunca vê o
+  /// "Quem é você?" (nem o login por perfil). Abre direto, com o seletor dos
+  /// papéis que a conta tiver nas escolas.
+  final bool modoEquipe;
 
   @override
   State<PortaDePerfil> createState() => _PortaDePerfilState();
@@ -148,7 +155,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     }
     final ctx = _ctx;
     if (ctx == null) return widget.estudante;
-    if (ctx.precisaCadastro) {
+    if (ctx.precisaCadastro && !widget.modoEquipe) {
       return TelaQuemEVoce(
         repositorio: _repo,
         onConcluido: _concluiuCadastro,

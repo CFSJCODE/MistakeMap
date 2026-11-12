@@ -69,6 +69,12 @@ e-mail das contas demo (`dev.demo@mistakemap.dev` e `admin.demo@mistakemap.dev`)
 o atalho preenche o e-mail e você digita a senha. Senha nunca entra no build de
 CI, porque os Releases são públicos.
 
+## Perfis
+
+O app da equipe nunca mostra o "Quem é você?": depois do login de dev ou
+admin, ele abre direto. O seletor "Perfil" no topo lista os papéis que a conta
+tem nas escolas, e cada um abre a tela daquele perfil sem outro login.
+
 ## Observação
 
 O login com Google volta pelo esquema `io.supabase.mistakemap://`. Num celular
