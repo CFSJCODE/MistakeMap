@@ -53,6 +53,7 @@ import 'exercicios/banco_questoes.dart';
 import 'school/escola_repositorio.dart' show PreferenciasPerfil;
 import 'school/perfil_modelos.dart' show PerfilCadastro;
 import 'school/porta_perfil.dart';
+import 'school/voltar_perfil.dart';
 
 part 'caderno_erros.dart';
 part 'learning_platform.dart';
@@ -1421,14 +1422,19 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   }
 
   /// Voltar do sistema: primeiro desempilha o que estiver aberto dentro do
-  /// Mapa; numa aba que não é o Início, volta ao Início; no Início, sai.
-  void _voltar() {
+  /// Mapa; numa aba que não é o Início, volta ao Início; no Início, abre a
+  /// escolha de perfil (com a porta de perfil) ou sai do app.
+  void _voltar(EscopoVoltarPerfil? escopo) {
     if (_indiceAtual == _mapa) {
       final pilha = _mapaNavegador.currentState;
       if (pilha != null && pilha.canPop()) {
         pilha.maybePop();
         return;
       }
+    }
+    if (_indiceAtual == 0) {
+      escopo?.voltar();
+      return;
     }
     _selecionar(0);
   }
@@ -1464,6 +1470,10 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
 
   @override
   Widget build(BuildContext context) {
+    // Com a porta de perfil, o voltar no Início abre a escolha de perfil; com
+    // outro perfil na tela, este app (vivo por baixo) não trata o voltar.
+    final escopo = EscopoVoltarPerfil.maybeOf(context);
+    final trataVoltar = escopo == null || escopo.estudanteAtivo;
     return AppNavigationShell(
       selectedIndex: _indiceAtual,
       studySelected: _indiceAtual == _mapa && _mapaControle.studyOpen.value,
@@ -1474,9 +1484,9 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       onSignOut: _sair,
       onAbout: _abrirSobre,
       child: PopScope(
-        canPop: _indiceAtual == 0,
+        canPop: escopo == null ? _indiceAtual == 0 : !trataVoltar,
         onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) _voltar();
+          if (!didPop && trataVoltar) _voltar(escopo);
         },
         child: NavigationPages(
           index: _indiceAtual,

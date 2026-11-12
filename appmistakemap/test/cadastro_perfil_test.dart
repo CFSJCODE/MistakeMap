@@ -342,6 +342,85 @@ void main() {
     expect(prefs.getString('perfil_ativo_$_uid'), 'student');
   });
 
+  ContextoPerfil donoEEstudante() => const ContextoPerfil(
+    perfil: PerfilCadastro.dono,
+    papeis: [
+      PapelEscola(
+        escolaId: _escola,
+        escolaNome: 'Escola de Robótica',
+        papel: 'owner',
+      ),
+    ],
+  );
+
+  testWidgets('porta: botão voltar abre a escolha de perfil e volta a um '
+      'perfil da conta', (tester) async {
+    await _render(
+      tester,
+      PortaDePerfil(
+        usuarioId: _uid,
+        repositorio: _RepoFalso(ctx: donoEEstudante()),
+        estudante: const Text('APP DO ESTUDANTE'),
+      ),
+    );
+    expect(find.text('Painel do dono'), findsOneWidget);
+
+    await _tocar(tester, find.byKey(const Key('perfil-voltar')));
+    expect(find.text('Quem é você?'), findsOneWidget);
+    expect(find.text('Seus perfis'), findsOneWidget);
+    expect(find.text('Aberto antes de voltar'), findsOneWidget);
+    expect(find.text('Adicionar outro perfil'), findsOneWidget);
+
+    await _tocar(tester, find.byKey(const ValueKey('perfil-atual-student')));
+    expect(find.text('APP DO ESTUDANTE'), findsOneWidget);
+    expect(find.text('Quem é você?'), findsNothing);
+  });
+
+  testWidgets('porta: voltar do sistema leva até a escolha de perfil e o '
+      'voltar dela retorna ao perfil', (tester) async {
+    await _render(
+      tester,
+      PortaDePerfil(
+        usuarioId: _uid,
+        repositorio: _RepoFalso(ctx: donoEEstudante()),
+        estudante: const Text('APP DO ESTUDANTE'),
+      ),
+    );
+    expect(find.text('Painel do dono'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Seus perfis'), findsOneWidget);
+
+    // Dentro da escolha, abrir um perfil novo e voltar: formulário → lista.
+    await _tocar(tester, find.text(PerfilCadastro.professor.titulo));
+    expect(find.text('Convite da escola ou plano Grátis'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Seus perfis'), findsOneWidget);
+
+    // Da lista, o voltar retorna ao perfil que estava aberto.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Painel do dono'), findsOneWidget);
+    expect(find.text('Seus perfis'), findsNothing);
+  });
+
+  testWidgets('porta: app da equipe não tem o voltar para a escolha', (
+    tester,
+  ) async {
+    await _render(
+      tester,
+      PortaDePerfil(
+        usuarioId: _uid,
+        repositorio: _RepoFalso(ctx: donoEEstudante()),
+        estudante: const Text('APP DO ESTUDANTE'),
+        modoEquipe: true,
+      ),
+    );
+    expect(find.byKey(const Key('perfil-voltar')), findsNothing);
+  });
+
   testWidgets(
     'porta: "Já tenho conta: entrar" guarda o perfil e sai; rodapé no fim',
     (tester) async {

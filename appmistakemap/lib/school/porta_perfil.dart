@@ -11,6 +11,7 @@ import 'escola_ui.dart';
 import 'painel_escola.dart';
 import 'perfil_modelos.dart';
 import 'quem_e_voce.dart';
+import 'voltar_perfil.dart';
 
 // ─── Porta de perfil ─────────────────────────────────────────────────────────
 // Fica entre o login e o app. Conta sem perfil vê "Quem é você?"; quem tem
@@ -61,6 +62,9 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
   bool _carregado = false;
   String? _chaveAtiva;
   bool _consentimentoDispensado = false;
+
+  /// A escolha de perfil está aberta por cima do perfil atual (voltar).
+  bool _escolhendo = false;
 
   /// Perfil pedido no "Já tenho conta: entrar" antes deste login.
   PerfilCadastro? _pedido;
@@ -135,6 +139,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     setState(() {
       _ctx = ctx;
       _chaveAtiva = null;
+      _escolhendo = false;
     });
     unawaited(widget.preferencias.guardarContexto(widget.usuarioId, ctx));
     // Confere com o servidor (papéis recém-criados, consentimento).
@@ -142,11 +147,23 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
   }
 
   void _trocar(PerfilAtivo perfil) {
-    setState(() => _chaveAtiva = perfil.chave);
+    setState(() {
+      _chaveAtiva = perfil.chave;
+      _escolhendo = false;
+    });
     unawaited(
       widget.preferencias.guardarPerfilAtivo(widget.usuarioId, perfil.chave),
     );
   }
+
+  /// Voltar até a escolha de perfil, sem fechar o app. O app da equipe não
+  /// tem essa tela (abre direto).
+  void _abrirEscolha() {
+    if (widget.modoEquipe || _escolhendo) return;
+    setState(() => _escolhendo = true);
+  }
+
+  void _fecharEscolha() => setState(() => _escolhendo = false);
 
   @override
   Widget build(BuildContext context) {
@@ -189,43 +206,96 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
         repositorio: _repo,
       );
     }
-    // O app de estudante fica vivo (IndexedStack) ao trocar de perfil, para
-    // não perder abas, rascunhos e a fila de sincronização.
+    final ehEstudante = identical(conteudo, widget.estudante);
+    final escolhendo = _escolhendo && !widget.modoEquipe;
+    // O app de estudante fica vivo (IndexedStack) ao trocar de perfil e ao
+    // abrir a escolha de perfil, para não perder abas, rascunhos e a fila de
+    // sincronização.
     final pilha = IndexedStack(
-      index: identical(conteudo, widget.estudante) ? 0 : 1,
+      index: escolhendo ? 2 : (ehEstudante ? 0 : 1),
       children: [
         widget.estudante,
-        identical(conteudo, widget.estudante) ? const SizedBox() : conteudo,
+        ehEstudante ? const SizedBox() : conteudo,
+        if (escolhendo)
+          TelaQuemEVoce(
+            repositorio: _repo,
+            onConcluido: _concluiuCadastro,
+            onEntrarComConta: _entrarComOutraConta,
+            rodape: widget.rodapeCadastro,
+            perfisAtuais: perfis,
+            perfilAberto: ativo.chave,
+            onAbrirPerfil: _trocar,
+            onVoltar: _fecharEscolha,
+          )
+        else
+          const SizedBox(),
       ],
     );
-    if (perfis.length < 2) return pilha;
-    return Column(
-      children: [
+    // App da equipe: sem escolha de perfil, só o seletor de papéis.
+    if (widget.modoEquipe) {
+      if (perfis.length < 2) return pilha;
+      return _comBarra(
         SeletorPerfil(perfis: perfis, ativo: ativo, onTrocar: _trocar),
-        Expanded(
-          child: MediaQuery.removePadding(
-            context: context,
-            removeTop: true,
-            child: pilha,
-          ),
-        ),
-      ],
+        pilha,
+      );
+    }
+    final comVoltar = EscopoVoltarPerfil(
+      voltar: _abrirEscolha,
+      estudanteAtivo: ehEstudante && !escolhendo,
+      // Voltar do sistema: o app do estudante e a escolha de perfil tratam o
+      // próprio voltar; nos outros perfis, ele abre a escolha de perfil.
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop || escolhendo || ehEstudante) return;
+          _abrirEscolha();
+        },
+        child: pilha,
+      ),
+    );
+    if (escolhendo) return comVoltar;
+    return _comBarra(
+      SeletorPerfil(
+        perfis: perfis,
+        ativo: ativo,
+        onTrocar: _trocar,
+        onVoltar: _abrirEscolha,
+      ),
+      comVoltar,
     );
   }
+
+  Widget _comBarra(Widget barra, Widget conteudo) => Column(
+    children: [
+      barra,
+      Expanded(
+        child: MediaQuery.removePadding(
+          context: context,
+          removeTop: true,
+          child: conteudo,
+        ),
+      ),
+    ],
+  );
 }
 
-/// Seletor de perfil no topo, para quem tem mais de um papel.
+/// Barra de perfil no topo: voltar à escolha de perfil e, para quem tem mais
+/// de um papel, o seletor.
 class SeletorPerfil extends StatelessWidget {
   const SeletorPerfil({
     super.key,
     required this.perfis,
     required this.ativo,
     required this.onTrocar,
+    this.onVoltar,
   });
 
   final List<PerfilAtivo> perfis;
   final PerfilAtivo ativo;
   final ValueChanged<PerfilAtivo> onTrocar;
+
+  /// Volta à escolha de perfil. Sem ele, o botão não aparece.
+  final VoidCallback? onVoltar;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -241,6 +311,18 @@ class SeletorPerfil extends StatelessWidget {
     ),
     child: Row(
       children: [
+        if (onVoltar != null) ...[
+          // Mesmo botão de voltar do formulário do "Quem é você?".
+          Tooltip(
+            message: 'Voltar à escolha de perfil',
+            child: IconButton(
+              key: const Key('perfil-voltar'),
+              icon: const Icon(WindowsIcons.back, size: 18),
+              onPressed: onVoltar,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
         const Text(
           'Perfil',
           style: TextStyle(
@@ -249,27 +331,36 @@ class SeletorPerfil extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Flexible(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420, minHeight: 40),
-            child: ComboBox<String>(
-              isExpanded: true,
-              value: ativo.chave,
-              items: [
-                for (final p in perfis)
-                  ComboBoxItem(
-                    value: p.chave,
-                    child: Text(p.rotulo, overflow: TextOverflow.ellipsis),
-                  ),
-              ],
-              onChanged: (chave) {
-                for (final p in perfis) {
-                  if (p.chave == chave) onTrocar(p);
-                }
-              },
+        if (perfis.length < 2)
+          Flexible(
+            child: Text(
+              ativo.rotulo,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: MistakeMapDesign.primary),
+            ),
+          )
+        else
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420, minHeight: 40),
+              child: ComboBox<String>(
+                isExpanded: true,
+                value: ativo.chave,
+                items: [
+                  for (final p in perfis)
+                    ComboBoxItem(
+                      value: p.chave,
+                      child: Text(p.rotulo, overflow: TextOverflow.ellipsis),
+                    ),
+                ],
+                onChanged: (chave) {
+                  for (final p in perfis) {
+                    if (p.chave == chave) onTrocar(p);
+                  }
+                },
+              ),
             ),
           ),
-        ),
       ],
     ),
   );

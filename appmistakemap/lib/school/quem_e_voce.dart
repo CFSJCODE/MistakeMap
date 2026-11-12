@@ -21,7 +21,23 @@ class TelaQuemEVoce extends StatefulWidget {
     this.onEntrarComConta,
     this.rodape,
     this.hoje,
+    this.perfisAtuais = const [],
+    this.perfilAberto,
+    this.onAbrirPerfil,
+    this.onVoltar,
   });
+
+  /// Perfis que a conta já tem, quando a tela é aberta pelo "voltar" de um
+  /// perfil. Cada um volta direto para ele.
+  final List<PerfilAtivo> perfisAtuais;
+
+  /// Chave do perfil que estava aberto (marcado na lista).
+  final String? perfilAberto;
+  final ValueChanged<PerfilAtivo>? onAbrirPerfil;
+
+  /// Volta ao perfil que estava aberto. Sem ele (conta nova), o voltar do
+  /// sistema na lista sai do app, como antes.
+  final VoidCallback? onVoltar;
 
   final RepositorioEscola repositorio;
   final ValueChanged<ContextoPerfil> onConcluido;
@@ -168,16 +184,41 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
     }
   }
 
+  /// Voltar do sistema: do formulário volta à lista; da lista volta ao perfil
+  /// aberto (quando veio dele).
+  void _voltar() {
+    if (_perfil != null) {
+      if (!_enviando) _escolher(null);
+      return;
+    }
+    widget.onVoltar?.call();
+  }
+
+  Widget _botaoVoltar(VoidCallback? onPressed) => Tooltip(
+    message: 'Voltar',
+    child: IconButton(
+      key: const Key('quem-e-voce-voltar'),
+      icon: const Icon(WindowsIcons.back, size: 18),
+      onPressed: onPressed,
+    ),
+  );
+
   @override
-  Widget build(BuildContext context) => AuroraBackground(
-    child: SafeArea(
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 880),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
-            children: _perfil == null ? _escolha() : _formulario(_perfil!),
+  Widget build(BuildContext context) => PopScope(
+    canPop: _perfil == null && widget.onVoltar == null,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _voltar();
+    },
+    child: AuroraBackground(
+      child: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 880),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+              children: _perfil == null ? _escolha() : _formulario(_perfil!),
+            ),
           ),
         ),
       ),
@@ -185,21 +226,63 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
   );
 
   List<Widget> _escolha() => [
-    const Text(
-      'Quem é você?',
-      style: TextStyle(
-        fontSize: 30,
-        fontWeight: FontWeight.w700,
-        color: MistakeMapDesign.primary,
-      ),
+    Row(
+      children: [
+        if (widget.onVoltar != null) ...[
+          _botaoVoltar(widget.onVoltar),
+          const SizedBox(width: 8),
+        ],
+        const Expanded(
+          child: Text(
+            'Quem é você?',
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w700,
+              color: MistakeMapDesign.primary,
+            ),
+          ),
+        ),
+      ],
     ),
     const SizedBox(height: 8),
-    const Text(
-      'Escolha como você vai usar o MistakeMap. Dá para ter mais de um perfil '
-      'depois: o app mostra um seletor no topo.',
-      style: TextStyle(fontSize: 16, color: MistakeMapDesign.content),
+    Text(
+      widget.perfisAtuais.isEmpty
+          ? 'Escolha como você vai usar o MistakeMap. Dá para ter mais de um '
+                'perfil depois: o app mostra um seletor no topo.'
+          : 'Volte para um dos seus perfis ou adicione outro.',
+      style: const TextStyle(fontSize: 16, color: MistakeMapDesign.content),
     ),
     const SizedBox(height: 24),
+    if (widget.perfisAtuais.isNotEmpty) ...[
+      const Text(
+        'Seus perfis',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: MistakeMapDesign.primary,
+        ),
+      ),
+      const SizedBox(height: 12),
+      for (final p in widget.perfisAtuais)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _CartaoPerfilAtual(
+            perfil: p,
+            aberto: p.chave == widget.perfilAberto,
+            onTap: () => widget.onAbrirPerfil?.call(p),
+          ),
+        ),
+      const SizedBox(height: 12),
+      const Text(
+        'Adicionar outro perfil',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: MistakeMapDesign.primary,
+        ),
+      ),
+      const SizedBox(height: 12),
+    ],
     LayoutBuilder(
       builder: (context, caixa) {
         final colunas = caixa.maxWidth >= 640 ? 2 : 1;
@@ -229,13 +312,7 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
   List<Widget> _formulario(PerfilCadastro perfil) => [
     Row(
       children: [
-        Tooltip(
-          message: 'Voltar',
-          child: IconButton(
-            icon: const Icon(WindowsIcons.back, size: 18),
-            onPressed: _enviando ? null : () => _escolher(null),
-          ),
-        ),
+        _botaoVoltar(_enviando ? null : () => _escolher(null)),
         const SizedBox(width: 8),
         GlassIconTile(
           icon: perfil.icone,
@@ -413,6 +490,85 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
       case PerfilCadastro.coordenador || PerfilCadastro.ti:
         return [codigoConvite];
     }
+  }
+}
+
+/// Um perfil que a conta já tem, na escolha aberta pelo "voltar".
+class _CartaoPerfilAtual extends StatelessWidget {
+  const _CartaoPerfilAtual({
+    required this.perfil,
+    required this.aberto,
+    required this.onTap,
+  });
+
+  final PerfilAtivo perfil;
+  final bool aberto;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final visual =
+        PerfilCadastro.doCodigo(perfil.papel) ?? PerfilCadastro.estudante;
+    return Semantics(
+      button: true,
+      label: perfil.rotulo,
+      child: HoverButton(
+        key: ValueKey('perfil-atual-${perfil.chave}'),
+        onPressed: onTap,
+        builder: (context, estados) => AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: estados.isHovered
+                ? MistakeMapDesign.hover
+                : MistakeMapDesign.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: estados.isHovered || aberto
+                  ? MistakeMapDesign.highlight
+                  : MistakeMapDesign.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              GlassIconTile(
+                icon: visual.icone,
+                ink: visual.tinta,
+                accent: visual.acento,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      perfil.rotulo,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: MistakeMapDesign.primary,
+                      ),
+                    ),
+                    if (aberto) ...[
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Aberto antes de voltar',
+                        style: TextStyle(color: MistakeMapDesign.steel),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Icon(
+                WindowsIcons.chevron_right,
+                size: 14,
+                color: MistakeMapDesign.steel,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

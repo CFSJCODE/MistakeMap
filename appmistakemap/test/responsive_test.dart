@@ -7,6 +7,7 @@ import 'package:appmistakemap/ai/insights_view.dart'
 import 'package:appmistakemap/layout/navigation_shell.dart';
 import 'package:appmistakemap/auth/team_login.dart';
 import 'package:appmistakemap/main.dart';
+import 'package:appmistakemap/school/voltar_perfil.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' show FloatingActionButton;
 import 'package:flutter_test/flutter_test.dart';
@@ -326,6 +327,57 @@ void main() {
     await _voltar(tester);
     expect(find.text('O que fazer agora'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Voltar no Início abre a escolha de perfil, sem fechar o app', (
+    tester,
+  ) async {
+    var escolhas = 0;
+    await _render(
+      tester,
+      EscopoVoltarPerfil(
+        voltar: () => escolhas++,
+        estudanteAtivo: true,
+        child: TelaNavegacao(user: _user, analysisRepository: FakeRepository()),
+      ),
+      size: const Size(390, 900),
+    );
+    // Fora do Início, o voltar primeiro leva ao Início.
+    tester
+        .widget<AppNavigationShell>(find.byType(AppNavigationShell))
+        .onSelected(2);
+    await _settle(tester);
+    await _voltar(tester);
+    expect(find.text('O que fazer agora'), findsOneWidget);
+    expect(escolhas, 0);
+    // No Início, o voltar abre a escolha de perfil.
+    await _voltar(tester);
+    expect(escolhas, 1);
+    expect(find.text('O que fazer agora'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Com outro perfil na tela, o app do estudante ignora o voltar', (
+    tester,
+  ) async {
+    var escolhas = 0;
+    await _render(
+      tester,
+      EscopoVoltarPerfil(
+        voltar: () => escolhas++,
+        estudanteAtivo: false,
+        child: TelaNavegacao(user: _user, analysisRepository: FakeRepository()),
+      ),
+      size: const Size(390, 900),
+    );
+    tester
+        .widget<AppNavigationShell>(find.byType(AppNavigationShell))
+        .onSelected(2);
+    await _settle(tester);
+    await _voltar(tester);
+    // A aba (Mapa) não muda e a escolha não é aberta por este app.
+    expect(find.byType(ErrorMapView), findsOneWidget);
+    expect(escolhas, 0);
   });
 
   for (final width in [390.0, 1280.0]) {
