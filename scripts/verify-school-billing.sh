@@ -39,7 +39,10 @@ run -f "$mig/20261111210000_school_plans_quota.sql"
 run -f "$mig/20261111223000_signup_profiles.sql"
 run -f "$mig/20261112170000_school_billing.sql"
 run -f "$mig/20261112190000_school_billing_demo_guard.sql"
+run -f "$mig/20261112210000_school_reports.sql"
 run -o /dev/null -f "$here/tests.sql" 2>&1 | sed -e 's/^psql:[^ ]* //' -e 's/^NOTICE:  //'
+[ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
+run -o /dev/null -f "$here/reports_tests.sql" 2>&1 | sed -e 's/^psql:[^ ]* //' -e 's/^NOTICE:  //'
 [ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
 # Edge Function de cobrança contra o mesmo banco (precisa de deno).
 if command -v deno >/dev/null; then
@@ -60,4 +63,18 @@ where s.name like 'Colégio Nexo — Unidade Vale do Ferro%'
 group by s.id
 SQL
 echo "ok: seed da escola de demonstração (13 meses, sem fatura)"
+# Relatório da escola demo: uso real do seed + amostra marcada (sample).
+run -At <<'SQL' | grep -qx 't'
+select set_config('request.jwt.claim.sub', (select id::text from auth.users where email = 'dono@b.dev'), false);
+set role authenticated;
+select (r#>>'{school,demo}')::boolean
+   and (r#>>'{pedagogical,sample}')::boolean
+   and (r#>>'{financial,sample}')::boolean
+   and jsonb_array_length(r#>'{pedagogical,usage}') = 12
+   and jsonb_array_length(r#>'{pedagogical,concepts}') > 0
+   and jsonb_array_length(r#>'{financial,by_method}') = 3
+from (select public.school_reports(id) as r from public.schools
+      where name like 'Colégio Nexo — Unidade Vale do Ferro%') x;
+SQL
+echo "ok: relatório da escola demo com amostra marcada"
 echo "verify-school-billing: todos os testes passaram"
