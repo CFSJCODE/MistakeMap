@@ -10,9 +10,13 @@
 # impressas na tela.
 #   (-AppDir aponta a pasta appmistakemap onde ficam os .env locais; padrão:
 #   a do próprio clone.)
+#   -SomenteNovas: cria só as contas que ainda não existem e acrescenta as
+#   senhas delas ao .env.contas-demo.local; as contas que já existem mantêm a
+#   senha e só têm nome e cargo atualizados.
 param(
   [string]$ProjectRef = 'bmdjicshcjpknuaywaph',
-  [string]$AppDir = (Join-Path $PSScriptRoot '..\..\appmistakemap')
+  [string]$AppDir = (Join-Path $PSScriptRoot '..\..\appmistakemap'),
+  [switch]$SomenteNovas
 )
 $ErrorActionPreference = 'Stop'
 $AppDir = (Resolve-Path $AppDir).Path
@@ -40,12 +44,18 @@ do {
   $pagina++
 } while ($r.users.Count -eq 200)
 
-$linhas = @(
-  '# Contas de demonstração do MistakeMap (Oficina Volt, Rede Nexo, equipe e individual).',
-  "# Gerado por scripts/demo_escolas/criar_contas.ps1 em $(Get-Date -Format 'yyyy-MM-dd HH:mm'). NÃO versionar.",
-  ''
-)
 $destino = Join-Path $AppDir '.env.contas-demo.local'
+if ($SomenteNovas -and (Test-Path $destino)) {
+  $linhas = @(Get-Content $destino -Encoding UTF8)
+  $linhas += "# Contas novas acrescentadas em $(Get-Date -Format 'yyyy-MM-dd HH:mm'):"
+  $linhas += ''
+} else {
+  $linhas = @(
+    '# Contas de demonstração do MistakeMap (Oficina Volt, Rede Nexo, equipe e individual).',
+    "# Gerado por scripts/demo_escolas/criar_contas.ps1 em $(Get-Date -Format 'yyyy-MM-dd HH:mm'). NÃO versionar.",
+    ''
+  )
+}
 if (Test-Path $destino) {
   Copy-Item $destino "$destino.bak-$(Get-Date -Format 'yyyyMMdd-HHmm')"
 }
@@ -58,7 +68,14 @@ foreach ($c in $contas) {
   $senha = New-SenhaDemo
   $tipo = if ($c.chave -eq 'INDIVIDUAL') { 'dev_test' } else { 'demo_comercial' }
   $meta = @{ account_type = $tipo; full_name = $c.nome }
+  if ($c.cargo) { $meta.job_title = $c.cargo }
   $email = $c.email.ToLower()
+  if ($SomenteNovas -and $existentes.ContainsKey($email)) {
+    $corpo = @{ user_metadata = $meta } | ConvertTo-Json -Depth 4
+    Invoke-RestMethod -Method Put -Uri "$base/users/$($existentes[$email])" -Headers $h -Body ([Text.Encoding]::UTF8.GetBytes($corpo)) | Out-Null
+    Write-Output "mantida (cargo atualizado): $email"
+    continue
+  }
   if ($existentes.ContainsKey($email)) {
     $corpo = @{ password = $senha; email_confirm = $true; user_metadata = $meta } | ConvertTo-Json -Depth 4
     Invoke-RestMethod -Method Put -Uri "$base/users/$($existentes[$email])" -Headers $h -Body ([Text.Encoding]::UTF8.GetBytes($corpo)) | Out-Null
@@ -69,7 +86,8 @@ foreach ($c in $contas) {
     Write-Output "criada: $email"
   }
   if ($c.chave -eq 'INDIVIDUAL') { $senhaIndividual = $senha }
-  $linhas += "# $($c.nome) ($($c.escola)): $($c.demonstra)"
+  $titulo = if ($c.cargo) { "$($c.nome), $($c.cargo)" } else { $c.nome }
+  $linhas += "# $titulo ($($c.escola)): $($c.demonstra)"
   $linhas += "DEMO_$($c.chave)_EMAIL=$email"
   $linhas += "DEMO_$($c.chave)_SENHA=$senha"
   $linhas += ''

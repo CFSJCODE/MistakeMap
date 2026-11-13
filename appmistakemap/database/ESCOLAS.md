@@ -118,3 +118,14 @@ Regras de permissão:
 - Sessões e senha (ações na conta inteira) só quando todos os papéis da pessoa na escola são administráveis por quem pede, ela não tem papel de gestão em outra escola e não é da equipe MistakeMap (`profiles.role` admin/developer).
 
 `school_audit_log` é gravada por triggers em `school_members` (entrou, suspenso, reativado, removido) e `school_invites` (criado, revogado) e pelas funções acima (lote, renovação, sessões, senha). O app só lê (RLS: dono e TI da escola).
+
+## Cargo e área (organograma)
+
+Migration `20261113200000_school_member_titles.sql`. `school_members.job_title` e `department` são só rótulos do organograma (ex.: "Diretora Regional", "Sede — Diretoria Regional"); o acesso continua vindo do papel.
+
+| Função | O que faz |
+|---|---|
+| `set_school_member_title(school, user, cargo, area)` | dono, coordenação e TI definem cargo e área de quem é da escola (todas as linhas da pessoa) |
+| `school_staff(school)` | quem trabalha na escola (sem alunos e responsáveis), com nome, e-mail, papéis, cargo e área; só devolve linhas para dono, coordenação, TI e financeiro |
+
+O app mostra o cargo no seletor de perfil (só nos papéis de gestão) e no cartão "Equipe e cargos" do painel, agrupado por área (`school-admin` → `school_overview.staff`).

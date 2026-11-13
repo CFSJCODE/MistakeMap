@@ -9,10 +9,14 @@
 --    coordenação e professor da turma de sábado; paga por Pix; plano Escola
 --    mensal; 1 professora auxiliar, 5 alunos, 1 responsável, equipe FLL.
 -- 2. Rede Nexo de Educação Tecnológica — rede grande no modo de operação de
---    SESI/SENAI/FIEMG e redes confessionais: diretoria regional dona de duas
---    unidades, coordenação, TI e Financeiro/Compras separados; quem paga é o
---    Financeiro, por boleto em 30 dias com pedido de compra, centro de custo e
---    NFS-e; contrato anual.
+--    SESI/SENAI/FIEMG e redes confessionais. Departamento Regional (sede):
+--    Diretoria Regional, Superintendência de Educação, Gerência de TI,
+--    Finanças e Controle e Suprimentos, com papel nas duas unidades. Cada
+--    unidade: direção/gerência, coordenação pedagógica, núcleo
+--    administrativo-financeiro e secretaria escolar (Vale do Ferro também tem
+--    orientação educacional), como nos regimentos escolares de SENAI e
+--    colégios maristas. Quem paga é o Financeiro da sede, por boleto em 30
+--    dias com pedido de compra, centro de custo e NFS-e; contrato anual.
 --    * Unidade Vale do Ferro: unidade grande já contratada (~1.900 alunos
 --      ativos, só números agregados e relatório de amostra).
 --    * Unidade Centro: piloto de 30 dias do plano Plus com 2 turmas reais
@@ -36,12 +40,23 @@ insert into demo_contas values
   ('VOLT_ALUNO4','aluno4.volt.demo@mistakemap.dev'),
   ('VOLT_ALUNO5','aluno5.volt.demo@mistakemap.dev'),
   ('VOLT_RESPONSAVEL','responsavel.volt.demo@mistakemap.dev'),
+  ('VOLT_SECRETARIA','secretaria.volt.demo@mistakemap.dev'),
   ('NEXO_DIRETORIA','diretoria.nexo.demo@mistakemap.dev'),
   ('NEXO_COORDENACAO','coordenacao.nexo.demo@mistakemap.dev'),
   ('NEXO_TI','ti.nexo.demo@mistakemap.dev'),
   ('NEXO_FINANCEIRO','financeiro.nexo.demo@mistakemap.dev'),
   ('NEXO_PROF_ELETRONICA','prof.eletronica.nexo.demo@mistakemap.dev'),
   ('NEXO_PROF_ROBOTICA','prof.robotica.nexo.demo@mistakemap.dev'),
+  ('NEXO_SUPERINTENDENCIA','superintendencia.nexo.demo@mistakemap.dev'),
+  ('NEXO_SUPRIMENTOS','suprimentos.nexo.demo@mistakemap.dev'),
+  ('NEXO_VF_DIRETOR','diretor.valedoferro.nexo.demo@mistakemap.dev'),
+  ('NEXO_VF_COORDENACAO','coordenacao.valedoferro.nexo.demo@mistakemap.dev'),
+  ('NEXO_VF_ORIENTACAO','orientacao.valedoferro.nexo.demo@mistakemap.dev'),
+  ('NEXO_VF_ADMINISTRATIVO','administrativo.valedoferro.nexo.demo@mistakemap.dev'),
+  ('NEXO_VF_SECRETARIA','secretaria.valedoferro.nexo.demo@mistakemap.dev'),
+  ('NEXO_CENTRO_GERENTE','gerencia.centro.nexo.demo@mistakemap.dev'),
+  ('NEXO_CENTRO_ADMINISTRATIVO','administrativo.centro.nexo.demo@mistakemap.dev'),
+  ('NEXO_CENTRO_SECRETARIA','secretaria.centro.nexo.demo@mistakemap.dev'),
   ('NEXO_ALUNO01','aluno01.nexo.demo@mistakemap.dev'),
   ('NEXO_ALUNO02','aluno02.nexo.demo@mistakemap.dev'),
   ('NEXO_ALUNO03','aluno03.nexo.demo@mistakemap.dev'),
@@ -295,8 +310,11 @@ do $seed$
 declare
   volt uuid; vf uuid; centro uuid; t uuid;
   r record; k integer;
-  staff text[] := array['VOLT_DONO','VOLT_PROFESSORA','VOLT_RESPONSAVEL','NEXO_DIRETORIA','NEXO_COORDENACAO',
-                        'NEXO_TI','NEXO_FINANCEIRO','NEXO_PROF_ELETRONICA','NEXO_PROF_ROBOTICA','NEXO_RESPONSAVEL'];
+  staff text[] := array['VOLT_DONO','VOLT_PROFESSORA','VOLT_RESPONSAVEL','VOLT_SECRETARIA','NEXO_DIRETORIA',
+                        'NEXO_COORDENACAO','NEXO_TI','NEXO_FINANCEIRO','NEXO_PROF_ELETRONICA','NEXO_PROF_ROBOTICA',
+                        'NEXO_RESPONSAVEL','NEXO_SUPERINTENDENCIA','NEXO_SUPRIMENTOS','NEXO_VF_DIRETOR',
+                        'NEXO_VF_COORDENACAO','NEXO_VF_ORIENTACAO','NEXO_VF_ADMINISTRATIVO','NEXO_VF_SECRETARIA',
+                        'NEXO_CENTRO_GERENTE','NEXO_CENTRO_ADMINISTRATIVO','NEXO_CENTRO_SECRETARIA'];
   nascimentos jsonb := '{
     "VOLT_ALUNO1":"2012-03-18","VOLT_ALUNO2":"2011-08-02","VOLT_ALUNO3":"2010-11-25","VOLT_ALUNO4":"2011-01-14",
     "VOLT_ALUNO5":"2009-06-30","NEXO_ALUNO01":"2010-04-09","NEXO_ALUNO02":"2009-12-01","NEXO_ALUNO03":"2009-07-21",
@@ -307,7 +325,11 @@ declare
     "NEXO_COORDENACAO":"coordinator","NEXO_TI":"it_admin","NEXO_FINANCEIRO":"finance",
     "NEXO_PROF_ELETRONICA":"teacher","NEXO_PROF_ROBOTICA":"teacher","NEXO_RESPONSAVEL":"guardian",
     "VOLT_ALUNO2":"student_team","VOLT_ALUNO4":"student_team","NEXO_ALUNO03":"student_team",
-    "NEXO_ALUNO06":"student_team","NEXO_ALUNO07":"student_team","NEXO_ALUNO09":"student_team"}';
+    "NEXO_ALUNO06":"student_team","NEXO_ALUNO07":"student_team","NEXO_ALUNO09":"student_team",
+    "VOLT_SECRETARIA":"it_admin","NEXO_SUPERINTENDENCIA":"coordinator","NEXO_SUPRIMENTOS":"finance",
+    "NEXO_VF_DIRETOR":"owner","NEXO_VF_COORDENACAO":"coordinator","NEXO_VF_ORIENTACAO":"coordinator",
+    "NEXO_VF_ADMINISTRATIVO":"finance","NEXO_VF_SECRETARIA":"it_admin","NEXO_CENTRO_GERENTE":"owner",
+    "NEXO_CENTRO_ADMINISTRATIVO":"finance","NEXO_CENTRO_SECRETARIA":"it_admin"}';
 begin
   if exists(select 1 from demo_contas c where pg_temp.u(c.chave) is null) then
     raise exception 'faltam contas: %', (select string_agg(email, ', ') from demo_contas c where pg_temp.u(c.chave) is null);
@@ -370,17 +392,36 @@ begin
     perform pg_temp.papel(volt, pg_temp.u('VOLT_DONO'), pg_temp.u('VOLT_ALUNO' || k), 'student');
   end loop;
   perform pg_temp.papel(volt, pg_temp.u('VOLT_DONO'), pg_temp.u('VOLT_RESPONSAVEL'), 'guardian');
+  perform pg_temp.papel(volt, pg_temp.u('VOLT_DONO'), pg_temp.u('VOLT_SECRETARIA'), 'it_admin');
 
-  -- ── Papéis: Rede Nexo (gestão nas duas unidades; sala de aula no Centro) ──
+  -- ── Papéis: Rede Nexo, como no organograma de uma rede tipo SESI/SENAI ──
+  -- Departamento Regional (sede): Diretoria Regional, Superintendência de
+  -- Educação, Gerência de TI, Finanças e Suprimentos atuam nas duas unidades.
+  -- Cada unidade tem direção/gerência própria, coordenação pedagógica,
+  -- núcleo administrativo-financeiro e secretaria escolar.
   foreach t in array array[vf, centro] loop
-    perform pg_temp.papel(t, pg_temp.u('NEXO_DIRETORIA'), pg_temp.u('NEXO_COORDENACAO'), 'coordinator');
+    perform pg_temp.papel(t, pg_temp.u('NEXO_DIRETORIA'), pg_temp.u('NEXO_SUPERINTENDENCIA'), 'coordinator');
     perform pg_temp.papel(t, pg_temp.u('NEXO_DIRETORIA'), pg_temp.u('NEXO_TI'), 'it_admin');
     perform pg_temp.papel(t, pg_temp.u('NEXO_DIRETORIA'), pg_temp.u('NEXO_FINANCEIRO'), 'finance');
+    perform pg_temp.papel(t, pg_temp.u('NEXO_DIRETORIA'), pg_temp.u('NEXO_SUPRIMENTOS'), 'finance');
   end loop;
+  perform pg_temp.papel(vf, pg_temp.u('NEXO_DIRETORIA'), pg_temp.u('NEXO_VF_DIRETOR'), 'owner');
+  perform pg_temp.papel(vf, pg_temp.u('NEXO_VF_DIRETOR'), pg_temp.u('NEXO_VF_COORDENACAO'), 'coordinator');
+  perform pg_temp.papel(vf, pg_temp.u('NEXO_VF_DIRETOR'), pg_temp.u('NEXO_VF_ORIENTACAO'), 'coordinator');
+  perform pg_temp.papel(vf, pg_temp.u('NEXO_VF_DIRETOR'), pg_temp.u('NEXO_VF_ADMINISTRATIVO'), 'finance');
+  perform pg_temp.papel(vf, pg_temp.u('NEXO_VF_DIRETOR'), pg_temp.u('NEXO_VF_SECRETARIA'), 'it_admin');
+  perform pg_temp.papel(centro, pg_temp.u('NEXO_DIRETORIA'), pg_temp.u('NEXO_CENTRO_GERENTE'), 'owner');
+  perform pg_temp.papel(centro, pg_temp.u('NEXO_CENTRO_GERENTE'), pg_temp.u('NEXO_COORDENACAO'), 'coordinator');
+  perform pg_temp.papel(centro, pg_temp.u('NEXO_CENTRO_GERENTE'), pg_temp.u('NEXO_CENTRO_ADMINISTRATIVO'), 'finance');
+  perform pg_temp.papel(centro, pg_temp.u('NEXO_CENTRO_GERENTE'), pg_temp.u('NEXO_CENTRO_SECRETARIA'), 'it_admin');
+  -- O coordenador do Centro não responde pela Vale do Ferro (versão anterior
+  -- do seed o colocava nas duas unidades).
+  delete from public.school_members
+   where school_id = vf and user_id = pg_temp.u('NEXO_COORDENACAO') and role = 'coordinator';
   perform pg_temp.papel(centro, pg_temp.u('NEXO_COORDENACAO'), pg_temp.u('NEXO_PROF_ELETRONICA'), 'teacher');
   perform pg_temp.papel(centro, pg_temp.u('NEXO_COORDENACAO'), pg_temp.u('NEXO_PROF_ROBOTICA'), 'teacher');
   for k in 1..10 loop
-    perform pg_temp.papel(centro, pg_temp.u('NEXO_TI'), pg_temp.u('NEXO_ALUNO' || lpad(k::text, 2, '0')), 'student');
+    perform pg_temp.papel(centro, pg_temp.u('NEXO_CENTRO_GERENTE'), pg_temp.u('NEXO_ALUNO' || lpad(k::text, 2, '0')), 'student');
   end loop;
   perform pg_temp.papel(centro, pg_temp.u('NEXO_COORDENACAO'), pg_temp.u('NEXO_RESPONSAVEL'), 'guardian');
   -- Na rede, quem paga é o Financeiro/Compras.
@@ -557,6 +598,42 @@ begin
   on conflict (school_id) do update set payload = excluded.payload, updated_at = now();
 end
 $seed2$;
+
+-- Cargo e área de cada pessoa (migration 20261113200000): o organograma que
+-- aparece no app em "Equipe e cargos". Vale para todas as linhas da pessoa na
+-- escola. Quem não está na lista (alunos, responsáveis) fica sem cargo.
+update public.school_members m
+   set job_title = c.cargo, department = c.area
+  from (values
+    ('Oficina Volt — Robótica e Eletrônica (demonstração)', 'VOLT_DONO', 'Diretor e proprietário', 'Direção'),
+    ('Oficina Volt — Robótica e Eletrônica (demonstração)', 'VOLT_PROFESSORA', 'Professora auxiliar', 'Ensino'),
+    ('Oficina Volt — Robótica e Eletrônica (demonstração)', 'VOLT_SECRETARIA', 'Secretária e atendimento', 'Secretaria'),
+    ('*nexo', 'NEXO_DIRETORIA', 'Diretora Regional', 'Sede — Diretoria Regional'),
+    ('*nexo', 'NEXO_SUPERINTENDENCIA', 'Superintendente de Educação', 'Sede — Superintendência de Educação'),
+    ('*nexo', 'NEXO_TI', 'Gerente Geral de Tecnologia da Informação', 'Sede — Tecnologia da Informação'),
+    ('*nexo', 'NEXO_FINANCEIRO', 'Gerente de Finanças e Controle', 'Sede — Finanças e Controle'),
+    ('*nexo', 'NEXO_SUPRIMENTOS', 'Analista de Suprimentos, Compras e Contratos', 'Sede — Finanças e Controle'),
+    ('Colégio Nexo — Unidade Vale do Ferro (demonstração)', 'NEXO_VF_DIRETOR', 'Diretor da Unidade', 'Direção da Unidade'),
+    ('Colégio Nexo — Unidade Vale do Ferro (demonstração)', 'NEXO_VF_COORDENACAO', 'Coordenadora Pedagógica', 'Coordenação Pedagógica'),
+    ('Colégio Nexo — Unidade Vale do Ferro (demonstração)', 'NEXO_VF_ORIENTACAO', 'Orientadora Educacional', 'Coordenação Pedagógica'),
+    ('Colégio Nexo — Unidade Vale do Ferro (demonstração)', 'NEXO_VF_ADMINISTRATIVO', 'Coordenador Administrativo-Financeiro', 'Núcleo Administrativo-Financeiro'),
+    ('Colégio Nexo — Unidade Vale do Ferro (demonstração)', 'NEXO_VF_SECRETARIA', 'Secretário Escolar', 'Secretaria Escolar'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_CENTRO_GERENTE', 'Gerente da Unidade', 'Direção da Unidade'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_COORDENACAO', 'Coordenador de Educação', 'Coordenação Pedagógica'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_CENTRO_ADMINISTRATIVO', 'Coordenador Administrativo-Financeiro', 'Núcleo Administrativo-Financeiro'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_CENTRO_SECRETARIA', 'Secretária Acadêmica', 'Secretaria Escolar'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_PROF_ELETRONICA', 'Instrutora de Eletrônica', 'Corpo Docente'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_PROF_ROBOTICA', 'Instrutor de Robótica e técnico da equipe OBR', 'Corpo Docente'),
+    ('*todas', 'EQUIPE_ADMIN', 'Equipe MistakeMap — Administração', 'Suporte MistakeMap'),
+    ('*todas', 'EQUIPE_DEV', 'Equipe MistakeMap — Desenvolvimento', 'Suporte MistakeMap')
+  ) as c(escola, chave, cargo, area)
+  join public.schools s on s.name = c.escola
+    or (c.escola = '*nexo' and s.name like 'Colégio Nexo — Unidade % (demonstração)')
+    or (c.escola = '*todas' and s.name in ('Oficina Volt — Robótica e Eletrônica (demonstração)',
+                                         'Colégio Nexo — Unidade Vale do Ferro (demonstração)',
+                                         'Colégio Nexo — Unidade Centro (demonstração)'))
+ where m.school_id = s.id and m.user_id = pg_temp.u(c.chave)
+   and (m.job_title is distinct from c.cargo or m.department is distinct from c.area);
 
 -- Resumo para conferência.
 select s.name, s.plan, s.billing_cycle, s.status,

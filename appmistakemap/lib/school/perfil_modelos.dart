@@ -140,6 +140,15 @@ const nomesPapel = {
   'guardian': 'Responsável',
 };
 
+/// Papéis de gestão, em que o cargo aparece junto do papel.
+const papeisGestao = {'owner', 'coordinator', 'it_admin', 'finance'};
+
+/// Texto sem espaços nas pontas, ou null quando vazio.
+String? textoOuNulo(Object? valor) {
+  final texto = '${valor ?? ''}'.trim();
+  return texto.isEmpty ? null : texto;
+}
+
 const nomesPlano = {
   'free': 'Grátis',
   'escola': 'Escola',
@@ -154,6 +163,8 @@ class PapelEscola {
     required this.papel,
     this.plano,
     this.ativo = true,
+    this.cargo,
+    this.area,
   });
 
   final String escolaId;
@@ -161,6 +172,11 @@ class PapelEscola {
   final String papel;
   final String? plano;
   final bool ativo;
+
+  /// Cargo e área no organograma da escola (ex.: "Diretora Regional",
+  /// "Departamento Regional"). Só rótulo: quem dá acesso é o [papel].
+  final String? cargo;
+  final String? area;
 
   factory PapelEscola.deJson(Map<String, dynamic> j) {
     final escola = j['schools'] is Map
@@ -172,6 +188,8 @@ class PapelEscola {
       papel: '${j['role'] ?? ''}',
       plano: (escola['plan'] ?? j['plan']) as String?,
       ativo: (j['status'] ?? 'active') == 'active',
+      cargo: textoOuNulo(j['job_title']),
+      area: textoOuNulo(j['department']),
     );
   }
 
@@ -181,6 +199,8 @@ class PapelEscola {
     'role': papel,
     'plan': plano,
     'status': ativo ? 'active' : 'suspended',
+    'job_title': cargo,
+    'department': area,
   };
 }
 
@@ -214,7 +234,13 @@ class EquipeDoUsuario {
 
 /// Perfil que a pessoa pode usar agora (o seletor no topo troca entre eles).
 class PerfilAtivo {
-  const PerfilAtivo(this.papel, {this.escolaId, this.escolaNome, this.plano});
+  const PerfilAtivo(
+    this.papel, {
+    this.escolaId,
+    this.escolaNome,
+    this.plano,
+    this.cargo,
+  });
 
   /// `student` (o app de sempre) ou um papel de escola.
   final String papel;
@@ -224,11 +250,19 @@ class PerfilAtivo {
   /// Plano da escola conhecido no login; o painel o mostra até carregar.
   final String? plano;
 
+  /// Cargo da pessoa na escola, quando a gestão definiu.
+  final String? cargo;
+
   String get chave => escolaId == null ? papel : '$papel:$escolaId';
   bool get ehEstudante => papel == 'student';
 
   String get rotulo {
-    final nome = nomesPapel[papel] ?? papel;
+    final base = nomesPapel[papel] ?? papel;
+    // O cargo só distingue papéis de gestão (dois donos em níveis diferentes
+    // da rede, por exemplo); em aula o papel já diz tudo.
+    final nome = cargo != null && papeisGestao.contains(papel)
+        ? '$base ($cargo)'
+        : base;
     return escolaNome == null ? nome : '$nome · $escolaNome';
   }
 }
@@ -266,6 +300,7 @@ class ContextoPerfil {
         escolaId: p.escolaId,
         escolaNome: p.escolaNome,
         plano: p.plano,
+        cargo: p.cargo,
       );
       if (vistos.add(perfil.chave)) lista.add(perfil);
     }

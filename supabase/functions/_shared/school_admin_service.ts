@@ -107,7 +107,7 @@ async function context(sql: Database, user: string) {
     const [signup] = await tx`SELECT persona, birth_date::text AS birth_date
       FROM public.user_signups WHERE user_id=${user}`;
     const roles = await tx`SELECT m.school_id, s.name AS school_name, s.plan,
-        s.status AS school_status, m.role, m.status
+        s.status AS school_status, m.role, m.status, m.job_title, m.department
       FROM public.school_members m
       LEFT JOIN public.schools s ON s.id = m.school_id
       WHERE m.user_id=${user} ORDER BY m.joined_at`;
@@ -157,12 +157,17 @@ async function schoolOverview(sql: Database, user: string, school: string) {
     const teams = await tx`SELECT id, name, competition, created_at
       FROM public.school_teams WHERE school_id=${school} AND archived_at IS NULL
       ORDER BY created_at DESC LIMIT 50`;
+    // Equipe com cargo e área: a função só devolve linhas para gestão e
+    // financeiro; para os outros papéis volta vazia.
+    const staff = await tx`SELECT user_id, full_name, email, roles, job_title,
+        department FROM public.school_staff(${school})`;
     return {
       school: row,
       my_roles: mine?.roles ?? [],
       members,
       invites,
       teams,
+      staff,
     };
   });
 }

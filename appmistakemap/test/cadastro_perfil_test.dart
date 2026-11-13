@@ -60,6 +60,24 @@ class _RepoFalso implements RepositorioEscola {
           ],
           'invites': [],
           'teams': [],
+          'staff': [
+            {
+              'user_id': _uid,
+              'full_name': 'Helena Vasconcelos',
+              'email': 'diretoria@exemplo.dev',
+              'roles': ['owner'],
+              'job_title': 'Diretora Regional',
+              'department': 'Sede — Diretoria Regional',
+            },
+            {
+              'user_id': _escola,
+              'full_name': null,
+              'email': 'secretaria@exemplo.dev',
+              'roles': ['it_admin'],
+              'job_title': null,
+              'department': null,
+            },
+          ],
         };
       case 'create_invite':
         return {'code': 'K7P2M9QRT4WX', 'role': dados['role']};
@@ -603,5 +621,69 @@ void main() {
     expect(convite.$2['role'], 'coordinator');
     expect(convite.$2['max_uses'], 1);
     expect(find.text('K7P2M9QRT4WX'), findsOneWidget);
+  });
+
+  test('cargo vem do servidor e aparece só nos papéis de gestão', () {
+    final ctx = ContextoPerfil.deJson({
+      'roles': [
+        {
+          'school_id': _escola,
+          'school_name': 'Unidade Centro',
+          'role': 'owner',
+          'status': 'active',
+          'job_title': ' Gerente da Unidade ',
+          'department': 'Direção da Unidade',
+        },
+        {
+          'school_id': _escola,
+          'school_name': 'Unidade Centro',
+          'role': 'teacher',
+          'status': 'active',
+          'job_title': 'Gerente da Unidade',
+        },
+        {
+          'school_id': _escola,
+          'school_name': 'Unidade Centro',
+          'role': 'coordinator',
+          'status': 'active',
+          'job_title': '',
+        },
+      ],
+    });
+    final dono = ctx.perfis.firstWhere((p) => p.papel == 'owner');
+    expect(dono.rotulo, 'Dono da escola (Gerente da Unidade) · Unidade Centro');
+    expect(
+      ctx.perfis.firstWhere((p) => p.papel == 'teacher').rotulo,
+      'Professor · Unidade Centro',
+    );
+    expect(
+      ctx.perfis.firstWhere((p) => p.papel == 'coordinator').rotulo,
+      'Coordenação · Unidade Centro',
+    );
+    final salvo = ContextoPerfil.deJson(ctx.paraJson());
+    expect(salvo.papeis.first.cargo, 'Gerente da Unidade');
+    expect(salvo.papeis.first.area, 'Direção da Unidade');
+  });
+
+  testWidgets('painel mostra a equipe por área com cargo', (tester) async {
+    await _render(
+      tester,
+      TelaPainelEscola(
+        perfil: const PerfilAtivo(
+          'owner',
+          escolaId: _escola,
+          escolaNome: 'Escola de Robótica',
+          cargo: 'Diretora Regional',
+        ),
+        repositorio: _RepoFalso(),
+      ),
+    );
+    expect(find.text('Equipe e cargos'), findsOneWidget);
+    expect(find.text('Sede — Diretoria Regional'), findsOneWidget);
+    expect(find.text('Helena Vasconcelos'), findsOneWidget);
+    expect(find.text('Diretora Regional · Dono da escola'), findsOneWidget);
+    expect(find.text('Sem área definida'), findsOneWidget);
+    expect(find.text('secretaria@exemplo.dev'), findsOneWidget);
+    expect(find.text('TI da escola'), findsOneWidget);
   });
 }
