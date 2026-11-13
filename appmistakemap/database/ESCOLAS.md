@@ -37,7 +37,7 @@ Erros: `MM401` sem login, `MM403` sem permissão ou sem convite, `MM404` convite
 
 ## O que ainda não tem
 
-Contrato, cobrança e auditoria ficam nas próximas etapas (itens D, E e F da onda 1). Planos, cota coletiva e aluno ativo estão em [PLANOS_E_COTA.md](PLANOS_E_COTA.md).
+Contrato e cobrança: itens D, E e F da onda 1. Auditoria: seção "Painel de TI" abaixo. Planos, cota coletiva e aluno ativo estão em [PLANOS_E_COTA.md](PLANOS_E_COTA.md).
 
 ## Cadastro por perfil (item B)
 
@@ -90,6 +90,35 @@ Testes: `scripts/school_billing/reports_tests.sql` (roda em
   `dono.demo@mistakemap.dev`, com o CNPJ informado pelo Cláudio, sem a marca
   demo. Para apagar depois, remova a escola (as faturas vão junto).
 
+## Painel de TI (migration 20261113180000)
+
+Migration: `supabase/migrations/20261113180000_school_it_admin.sql`.
+Testes: `scripts/verify-school-it.sh` (Postgres local + Edge Function).
+Demonstração: `scripts/school_it/seed_demo_ti.sql` (Unidade Centro da Rede Nexo; idempotente; não manda e-mail nem mexe em sessão).
+Telas: `lib/school/painel_ti.dart` e `lib/school/ti_modelos.dart`.
+
+A TI cuida de contas e acessos. Nunca vê respostas, mapa, caderno nem valores em reais.
+
+| Função (ação da `school-admin`) | Quem | O que faz |
+|---|---|---|
+| `school_it_licenses` (`it_licenses`) | dono, coordenação, TI, Financeiro | usuários ativos × limite do plano, suspensos, turmas, convites em aberto, alunos ativos e pote de IA do mês (sem R$) |
+| `school_it_directory` (`it_directory`) | dono, TI | pessoas da escola: e-mail, nome, papéis e situação, entrada, último acesso, nº de aparelhos |
+| `school_member_sessions` (`it_member_sessions`) | dono, TI | aparelhos conectados (tipo de aparelho e metade do IP) |
+| `revoke_school_member_sessions` (`it_revoke_sessions`) | dono, TI | encerra as sessões da conta em todos os aparelhos |
+| `school_member_password_reset` (`it_reset_password`) | dono, TI | a Edge Function pede ao Auth o e-mail do "Esqueci minha senha"; 1 por pessoa a cada 10 min; a TI nunca vê nem define senha |
+| `set_school_member_status` (`it_set_status`) | dono, TI | suspende ou reativa um papel (reativar respeita o limite do plano) |
+| `remove_school_member` (`it_remove_member`) | dono, TI | tira o papel da escola (a conta continua) |
+| `create_school_invites_batch` (`it_import_invites`) | dono, TI | até 500 convites pessoais (professor, estudante, responsável) de uma planilha colada; devolve o código ou o motivo por linha |
+| `renew_school_invite` (`it_renew_invite`) | quem pode revogar o convite | revoga e gera um código novo igual |
+| `school_audit` (`it_audit`) | dono, TI | registro de auditoria paginado |
+
+Regras de permissão:
+
+- TI administra professor, estudante e responsável. Coordenação, TI e Financeiro só o dono administra; o papel de dono não é suspenso nem removido por aqui; ninguém age sobre si mesmo.
+- Sessões e senha (ações na conta inteira) só quando todos os papéis da pessoa na escola são administráveis por quem pede, ela não tem papel de gestão em outra escola e não é da equipe MistakeMap (`profiles.role` admin/developer).
+
+`school_audit_log` é gravada por triggers em `school_members` (entrou, suspenso, reativado, removido) e `school_invites` (criado, revogado) e pelas funções acima (lote, renovação, sessões, senha). O app só lê (RLS: dono e TI da escola).
+
 ## Cargo e área (organograma)
 
 Migration `20261113200000_school_member_titles.sql`. `school_members.job_title` e `department` são só rótulos do organograma (ex.: "Diretora Regional", "Sede — Diretoria Regional"); o acesso continua vindo do papel.
@@ -100,4 +129,3 @@ Migration `20261113200000_school_member_titles.sql`. `school_members.job_title` 
 | `school_staff(school)` | quem trabalha na escola (sem alunos e responsáveis), com nome, e-mail, papéis, cargo e área; só devolve linhas para dono, coordenação, TI e financeiro |
 
 O app mostra o cargo no seletor de perfil (só nos papéis de gestão) e no cartão "Equipe e cargos" do painel, agrupado por área (`school-admin` → `school_overview.staff`).
-
