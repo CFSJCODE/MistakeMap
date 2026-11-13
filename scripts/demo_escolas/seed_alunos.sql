@@ -1,0 +1,219 @@
+-- Seed de demonstração (mmdemo), formato compacto: dados em jsonb, SQL genérico.
+-- Gerado por gerar_compacto.py (scripts/demo_escolas). Ids = md5(conta || chave)::uuid.
+-- Contas por e-mail; idempotente (pula conta já semeada).
+do $seed$
+declare
+  d constant jsonb := $d${"subjects":[{"k":"ELE","name":"Eletrônica"},{"k":"ROB","name":"Robótica"},{"k":"RED","name":"Redes de computadores"},{"k":"PRG","name":"Programação"}],"concepts":[{"k":"ohm","s":"ELE","name":"Lei de Ohm","imp":1.5},{"k":"div","s":"ELE","name":"Divisor de tensão","imp":1.2},{"k":"pot","s":"ELE","name":"Potência elétrica","imp":1.0},{"k":"pid","s":"ROB","name":"Controle PID","imp":1.5},{"k":"odo","s":"ROB","name":"Odometria","imp":1.0},{"k":"pwm","s":"ROB","name":"PWM de motores","imp":1.0},{"k":"cin","s":"ROB","name":"Cinemática diferencial","imp":1.0},{"k":"sub","s":"RED","name":"Sub-redes IPv4","imp":1.2},{"k":"tcp","s":"RED","name":"TCP x UDP","imp":1.0},{"k":"dhcp","s":"RED","name":"DNS e DHCP","imp":1.0},{"k":"int","s":"PRG","name":"Tipos inteiros e overflow","imp":1.0},{"k":"isr","s":"PRG","name":"Interrupções (ISR)","imp":1.2},{"k":"deb","s":"PRG","name":"Debounce de botão","imp":1.0}],"edges":[["ohm","div","pre_requisito"],["ohm","pot","pre_requisito"],["pwm","pid","relacionado"],["odo","cin","pre_requisito"],["int","isr","relacionado"],["isr","deb","relacionado"]],"mark":"Histórico de demonstração (mmdemo)","exercises":[{"k":"E1","s":"ELE","diff":"facil","prompt":"O LED de status de um ESP32 precisa de 15 mA. O pino entrega 3,3 V e o LED tem queda de 2,0 V. Qual resistor deve ficar em série com o LED?","gab":"R ≈ 87 Ω (use o comercial de 100 Ω)","expl":"O resistor recebe 3,3 − 2,0 = 1,3 V. R = 1,3 V ÷ 0,015 A ≈ 87 Ω; o valor comercial acima é 100 Ω.","concs":["ohm"],"h":628},{"k":"E2","s":"ELE","diff":"media","prompt":"O sensor NTC de temperatura de uma estufa automatizada forma um divisor com R1 = 10 kΩ (em cima) e o NTC embaixo, alimentados em 5 V; o ADC do Arduino lê a tensão sobre o NTC. Quanto o ADC lê quando o NTC vale 4,7 kΩ?","gab":"Vout ≈ 1,60 V","expl":"Vout = 5 V × 4,7 ÷ (10 + 4,7) = 5 × 0,32 ≈ 1,60 V. A saída é a tensão sobre o resistor de baixo (o NTC).","concs":["div","ohm"],"h":484},{"k":"E3","s":"ELE","diff":"media","prompt":"A placa de controle de um robô consome 2 A em 7,4 V, entregues por um regulador com 80% de eficiência. Qual potência a placa consome e quanto a bateria precisa fornecer?","gab":"Placa: 14,8 W; bateria: 18,5 W","expl":"P = 7,4 V × 2 A = 14,8 W. Com 80% de eficiência, a bateria fornece 14,8 ÷ 0,8 = 18,5 W.","concs":["pot"],"h":412},{"k":"E4","s":"ELE","diff":"facil","prompt":"A bobina do motor de passo de uma impressora 3D tem 2,8 Ω e o driver está ajustado para 1200 mA. Qual a tensão sobre a bobina?","gab":"V = 3,36 V","expl":"1200 mA = 1,2 A. V = R × I = 2,8 Ω × 1,2 A = 3,36 V.","concs":["ohm"],"h":220},{"k":"E5","s":"ROB","diff":"media","prompt":"O robô seguidor de linha usa PID com Kp = 2,0, Ki = 0,5 e Kd = 0 e oscila em torno da linha com amplitude crescente. O que ajustar primeiro?","gab":"Reduzir Kp e acrescentar um pouco de Kd","expl":"Kp alto causa overshoot e o integral acumula erro e piora a oscilação. O derivativo reage à velocidade do erro e amortece.","concs":["pid"],"h":556},{"k":"E6","s":"ROB","diff":"media","prompt":"A roda do robô explorador tem 6,5 cm de diâmetro e o encoder gera 360 pulsos por volta. Quantos pulsos o robô conta para andar 1 m?","gab":"≈ 1763 pulsos","expl":"Circunferência = π × 6,5 cm ≈ 20,42 cm. 100 ÷ 20,42 ≈ 4,90 voltas × 360 ≈ 1763 pulsos.","concs":["odo"],"h":364},{"k":"E7","s":"ROB","diff":"facil","prompt":"O driver L298N do robô recebe PWM de 8 bits do Arduino (0 a 255) e a bateria é de 12 V. Qual duty cycle dá cerca de 6 V médios no motor e que valor vai no analogWrite?","gab":"50%, analogWrite(128)","expl":"6 V é metade de 12 V, logo 50% de duty. Em 8 bits, 50% de 255 ≈ 128.","concs":["pwm"],"h":268},{"k":"E8","s":"ROB","diff":"media","prompt":"Um robô de tração diferencial tem 12 cm entre as rodas. A roda esquerda anda a 0,20 m/s e a direita a 0,30 m/s. Qual a velocidade angular do robô?","gab":"ω ≈ +0,83 rad/s (gira no sentido anti-horário)","expl":"ω = (vD − vE) ÷ L = (0,30 − 0,20) ÷ 0,12 ≈ 0,83 rad/s. Com a roda direita mais rápida, o robô vira para a esquerda (anti-horário, ω positivo).","concs":["cin"],"h":172},{"k":"E9","s":"RED","diff":"media","prompt":"A rede do laboratório de robótica é 192.168.10.0/26 e precisa atender 50 sensores IoT. Quantos hosts utilizáveis a sub-rede tem e qual é o endereço de broadcast?","gab":"62 hosts; broadcast 192.168.10.63","expl":"/26 deixa 6 bits de host: 2⁶ = 64 endereços, menos rede e broadcast = 62. O bloco vai de .0 a .63, então o broadcast é .63.","concs":["sub"],"h":460},{"k":"E10","s":"RED","diff":"facil","prompt":"Um drone transmite vídeo ao vivo para a estação de solo. TCP ou UDP é mais adequado para esse fluxo? Por quê?","gab":"UDP","expl":"No vídeo ao vivo um quadro atrasado já não serve. O TCP retransmite e segura os seguintes (latência); o UDP entrega o que chega e o codec tolera perdas.","concs":["tcp"],"h":316},{"k":"E11","s":"RED","diff":"facil","prompt":"A câmera IP do robô de inspeção recebe o endereço 169.254.37.12 ao ligar e ninguém consegue acessá-la. Qual serviço falhou?","gab":"DHCP (a câmera caiu no APIPA)","expl":"169.254.0.0/16 é o endereço automático (APIPA) que o dispositivo se dá quando nenhum servidor DHCP responde. DNS só traduz nomes.","concs":["dhcp"],"h":148},{"k":"E12","s":"PRG","diff":"facil","prompt":"No firmware de um ESP32, um contador uint8_t soma os pulsos do encoder. Depois de 300 pulsos, que valor ele mostra?","gab":"44","expl":"uint8_t vai de 0 a 255 e volta a 0 ao estourar: 300 mod 256 = 44.","concs":["int"],"h":244},{"k":"E13","s":"PRG","diff":"media","prompt":"O botão de parada de emergência de um braço robótico às vezes registra três toques em um só aperto. Por que isso acontece e como corrigir no firmware?","gab":"Repique mecânico (bounce); aplicar debounce de 20 a 50 ms","expl":"O contato metálico quica por alguns milissegundos. Ignore mudanças por 20 a 50 ms após a primeira borda (ou use filtro RC).","concs":["deb"],"h":98},{"k":"E14","s":"PRG","diff":"dificil","prompt":"A rotina de interrupção (ISR) do sensor de fim de curso do braço robótico chama delay(100) e Serial.print. Qual o problema e como reescrever?","gab":"A ISR deve ser curta: só marcar uma flag volatile e tratar no loop","expl":"Dentro da ISR delay() não avança e Serial pode travar. Marque uma variável volatile e faça o trabalho pesado no loop principal.","concs":["isr"],"h":388}],"attempts":[{"k":"A1","e":"E1","h":626,"ans":"R = 1,3 ÷ 15 = 0,087 Ω","ok":false,"errs":[{"cat":"unidade","c":"ohm","ev":"Dividiu 1,3 V por 15 em vez de 0,015 A: a corrente ficou em mA e não em ampères.","cf":0.9,"st":"confirmed"}],"opt":true},{"k":"A2","e":"E1","h":290,"ans":"R = 1,3 ÷ 0,015 ≈ 87 Ω, uso 100 Ω","ok":true,"errs":[],"opt":true},{"k":"A3","e":"E2","h":482,"ans":"Vout = 5 × 10 ÷ 14,7 = 3,40 V","ok":false,"errs":[{"cat":"conceito","c":"div","ev":"Colocou R1 (o resistor de cima) no numerador; a saída lida pelo ADC é a tensão sobre o NTC.","cf":0.85,"st":"confirmed"}],"opt":false},{"k":"A4","e":"E2","h":50,"ans":"Vout = 2,5 V porque os resistores são iguais","ok":false,"errs":[{"cat":"interpretacao","c":"div","ev":"Ignorou que o NTC passou a valer 4,7 kΩ e usou os 10 kΩ nominais.","cf":0.7,"st":"pending"}],"opt":true},{"k":"A5","e":"E3","h":410,"ans":"P = 14,8 × 0,8 = 11,84 W","ok":false,"errs":[{"cat":"procedimento","c":"pot","ev":"Multiplicou pela eficiência; para achar o que a bateria fornece é preciso dividir por 0,8.","cf":0.8,"st":"confirmed"}],"opt":false},{"k":"A6","e":"E3","h":122,"ans":"Placa 14,8 W; bateria 14,8 ÷ 0,8 = 18,5 W","ok":true,"errs":[],"opt":true},{"k":"A7","e":"E4","h":218,"ans":"V = 2,8 × 1200 = 3360 V","ok":false,"errs":[{"cat":"unidade","c":"ohm","ev":"Usou 1200 mA como se fossem 1200 A; o resultado de 3360 V não faz sentido para um driver de impressora.","cf":0.9,"st":"confirmed"}],"opt":false},{"k":"A8","e":"E4","h":6,"ans":"V = 2,8 × 0,12 = 0,336 V","ok":false,"errs":[{"cat":"unidade","c":"ohm","ev":"Converteu 1200 mA para 0,12 A; o certo é 1,2 A.","cf":0.8,"st":"pending"}],"opt":true},{"k":"A9","e":"E5","h":554,"ans":"Aumentar o Ki para corrigir mais rápido","ok":false,"errs":[{"cat":"conceito","c":"pid","ev":"Atribuiu ao termo integral a função de amortecer; o integral acumula erro e aumenta a oscilação.","cf":0.85,"st":"confirmed"}],"opt":true},{"k":"A10","e":"E5","h":194,"ans":"Aumentar o Kp para o robô voltar mais forte à linha","ok":false,"errs":[{"cat":"conceito","c":"pid","ev":"Aumentar Kp aumenta o overshoot; a oscilação crescente pede menos Kp e algum Kd.","cf":0.8,"st":"confirmed"}],"opt":false},{"k":"A11","e":"E5","h":26,"ans":"Diminuir Kp e colocar um pouco de Kd para amortecer","ok":true,"errs":[],"opt":true},{"k":"A12","e":"E6","h":362,"ans":"2π × 6,5 = 40,8 cm por volta; 100 ÷ 40,8 × 360 ≈ 882 pulsos","ok":false,"errs":[{"cat":"conceito","c":"odo","ev":"Usou o diâmetro como raio em 2πr; a volta mede π × d = 20,4 cm.","cf":0.8,"st":"confirmed"}],"opt":false},{"k":"A13","e":"E6","h":98,"ans":"π × 6,5 = 20,42 cm; 4,9 voltas × 360 ≈ 1763 pulsos","ok":true,"errs":[],"opt":true},{"k":"A14","e":"E7","h":266,"ans":"analogWrite(6)","ok":false,"errs":[{"cat":"interpretacao","c":"pwm","ev":"Escreveu a tensão desejada (6) em vez do valor de 0 a 255 do PWM.","cf":0.9,"st":"confirmed"}],"opt":false},{"k":"A15","e":"E7","h":74,"ans":"50% de duty, analogWrite(128)","ok":true,"errs":[],"opt":true},{"k":"A16","e":"E8","h":170,"ans":"ω = (0,20 − 0,30) ÷ 0,12 = −0,83 rad/s, gira no sentido horário","ok":false,"errs":[{"cat":"sinal","c":"cin","ev":"Inverteu a ordem vD − vE; com a roda direita mais rápida o robô gira no sentido anti-horário (ω positivo).","cf":0.75,"st":"confirmed"}],"opt":false},{"k":"A17","e":"E9","h":458,"ans":"64 hosts; broadcast 192.168.10.64","ok":false,"errs":[{"cat":"calculo","c":"sub","ev":"Não descontou os endereços de rede e de broadcast, e .64 já é a próxima sub-rede; o broadcast é .63.","cf":0.85,"st":"confirmed"}],"opt":false},{"k":"A18","e":"E9","h":46,"ans":"62 hosts; broadcast 192.168.10.255","ok":false,"errs":[{"cat":"calculo","c":"sub","ev":"Usou o broadcast da /24 inteira; na /26 o bloco termina em .63.","cf":0.8,"st":"pending"}],"opt":true},{"k":"A19","e":"E10","h":314,"ans":"TCP, porque garante que todos os quadros cheguem","ok":false,"errs":[{"cat":"conceito","c":"tcp","ev":"Retransmitir quadros atrasados aumenta a latência; vídeo ao vivo prioriza tempo, não entrega garantida.","cf":0.8,"st":"confirmed"}],"opt":false},{"k":"A20","e":"E11","h":146,"ans":"O DNS da rede está fora do ar","ok":false,"errs":[{"cat":"conceito","c":"dhcp","ev":"169.254.x.x é APIPA, sinal de que o DHCP não respondeu; o DNS não atribui endereço.","cf":0.85,"st":"confirmed"}],"opt":false},{"k":"A21","e":"E12","h":242,"ans":"300","ok":false,"errs":[{"cat":"conceito","c":"int","ev":"uint8_t vai só até 255; o contador estoura e mostra 300 mod 256 = 44.","cf":0.9,"st":"confirmed"}],"opt":false},{"k":"A22","e":"E12","h":12,"ans":"44, porque o uint8_t volta a zero depois de 255","ok":true,"errs":[],"opt":true},{"k":"A23","e":"E13","h":96,"ans":"Aumentar a frequência do loop para ler o botão mais vezes","ok":false,"errs":[{"cat":"conceito","c":"deb","ev":"Ler mais rápido captura ainda mais repiques; é preciso ignorar as bordas por alguns milissegundos.","cf":0.75,"st":"pending"}],"opt":true},{"k":"A24","e":"E14","h":386,"ans":"Não tem problema, a ISR pode fazer qualquer coisa","ok":false,"errs":[{"cat":"conceito","c":"isr","ev":"Ignorou que delay() não avança dentro da ISR e que a rotina precisa ser curta.","cf":0.85,"st":"confirmed"}],"opt":false},{"k":"A25","e":"E10","h":2,"ans":"UDP, porque um quadro atrasado já não serve","ok":true,"errs":[],"opt":true}],"sessions":[{"k":"sess:S1","h":212,"min":15,"items":[{"item":"ri:ohm:unidade","pos":0,"rt":"good","ah":211.97,"next_h":187.97,"att":"A7","ev":"ee:A7:0","e":"E4","evidence":"Usou 1200 mA como se fossem 1200 A; o resultado de 3360 V não faz sentido para um driver de impressora.","cat":"unidade","el":40},{"item":"ri:div:conceito","pos":1,"rt":"again","ah":211.94,"next_h":187.94,"att":"A3","ev":"ee:A3:0","e":"E2","evidence":"Colocou R1 (o resistor de cima) no numerador; a saída lida pelo ADC é a tensão sobre o NTC.","cat":"conceito","el":57},{"item":"ri:pot:procedimento","pos":2,"rt":"good","ah":211.91,"next_h":187.91,"att":"A5","ev":"ee:A5:0","e":"E3","evidence":"Multiplicou pela eficiência; para achar o que a bateria fornece é preciso dividir por 0,8.","cat":"procedimento","el":74}]},{"k":"sess:S2","h":120,"min":20,"items":[{"item":"ri:sub:calculo","pos":0,"rt":"hard","ah":119.97,"next_h":95.97,"att":"A17","ev":"ee:A17:0","e":"E9","evidence":"Não descontou os endereços de rede e de broadcast, e .64 já é a próxima sub-rede; o broadcast é .63.","cat":"calculo","el":40},{"item":"ri:pid:conceito","pos":1,"rt":"again","ah":119.94,"next_h":95.94,"att":"A10","ev":"ee:A10:0","e":"E5","evidence":"Aumentar Kp aumenta o overshoot; a oscilação crescente pede menos Kp e algum Kd.","cat":"conceito","el":57},{"item":"ri:odo:conceito","pos":2,"rt":"good","ah":119.91,"next_h":95.91,"att":"A12","ev":"ee:A12:0","e":"E6","evidence":"Usou o diâmetro como raio em 2πr; a volta mede π × d = 20,4 cm.","cat":"conceito","el":74},{"item":"ri:tcp:conceito","pos":3,"rt":"good","ah":119.88,"next_h":95.88,"att":"A19","ev":"ee:A19:0","e":"E10","evidence":"Retransmitir quadros atrasados aumenta a latência; vídeo ao vivo prioriza tempo, não entrega garantida.","cat":"conceito","el":91}]},{"k":"sess:S3","h":28,"min":20,"items":[{"item":"ri:pid:conceito","pos":0,"rt":"good","ah":27.97,"next_h":-20.03,"att":"A10","ev":"ee:A10:0","e":"E5","evidence":"Aumentar Kp aumenta o overshoot; a oscilação crescente pede menos Kp e algum Kd.","cat":"conceito","el":40},{"item":"ri:div:conceito","pos":1,"rt":"good","ah":27.94,"next_h":-20.06,"att":"A3","ev":"ee:A3:0","e":"E2","evidence":"Colocou R1 (o resistor de cima) no numerador; a saída lida pelo ADC é a tensão sobre o NTC.","cat":"conceito","el":57},{"item":"ri:int:conceito","pos":2,"rt":"easy","ah":27.91,"next_h":-44.09,"att":"A21","ev":"ee:A21:0","e":"E12","evidence":"uint8_t vai só até 255; o contador estoura e mostra 300 mod 256 = 44.","cat":"conceito","el":74},{"item":"ri:pwm:interpretacao","pos":3,"rt":"good","ah":27.88,"next_h":3.88,"att":"A14","ev":"ee:A14:0","e":"E7","evidence":"Escreveu a tensão desejada (6) em vez do valor de 0 a 255 do PWM.","cat":"interpretacao","el":91}]}],"items":[{"k":"ri:ohm:unidade","c":"ohm","cat":"unidade","ev":"ee:A7:0","att":"A7","prompt_e":"E4","evidence":"Usou 1200 mA como se fossem 1200 A; o resultado de 3360 V não faz sentido para um driver de impressora.","created_h":623,"interval":1,"reps":1,"lapses":0,"last_h":211.97,"due_h":187.97},{"k":"ri:div:conceito","c":"div","cat":"conceito","ev":"ee:A3:0","att":"A3","prompt_e":"E2","evidence":"Colocou R1 (o resistor de cima) no numerador; a saída lida pelo ADC é a tensão sobre o NTC.","created_h":479,"interval":2,"reps":2,"lapses":1,"last_h":27.94,"due_h":-20.06},{"k":"ri:pot:procedimento","c":"pot","cat":"procedimento","ev":"ee:A5:0","att":"A5","prompt_e":"E3","evidence":"Multiplicou pela eficiência; para achar o que a bateria fornece é preciso dividir por 0,8.","created_h":407,"interval":1,"reps":1,"lapses":0,"last_h":211.91,"due_h":187.91},{"k":"ri:pid:conceito","c":"pid","cat":"conceito","ev":"ee:A10:0","att":"A10","prompt_e":"E5","evidence":"Aumentar Kp aumenta o overshoot; a oscilação crescente pede menos Kp e algum Kd.","created_h":551,"interval":2,"reps":2,"lapses":1,"last_h":27.97,"due_h":-20.03},{"k":"ri:odo:conceito","c":"odo","cat":"conceito","ev":"ee:A12:0","att":"A12","prompt_e":"E6","evidence":"Usou o diâmetro como raio em 2πr; a volta mede π × d = 20,4 cm.","created_h":359,"interval":1,"reps":1,"lapses":0,"last_h":119.91,"due_h":95.91},{"k":"ri:pwm:interpretacao","c":"pwm","cat":"interpretacao","ev":"ee:A14:0","att":"A14","prompt_e":"E7","evidence":"Escreveu a tensão desejada (6) em vez do valor de 0 a 255 do PWM.","created_h":263,"interval":1,"reps":1,"lapses":0,"last_h":27.88,"due_h":3.88},{"k":"ri:cin:sinal","c":"cin","cat":"sinal","ev":"ee:A16:0","att":"A16","prompt_e":"E8","evidence":"Inverteu a ordem vD − vE; com a roda direita mais rápida o robô gira no sentido anti-horário (ω positivo).","created_h":167,"interval":0,"reps":0,"lapses":0,"last_h":null,"due_h":167},{"k":"ri:sub:calculo","c":"sub","cat":"calculo","ev":"ee:A17:0","att":"A17","prompt_e":"E9","evidence":"Não descontou os endereços de rede e de broadcast, e .64 já é a próxima sub-rede; o broadcast é .63.","created_h":455,"interval":1,"reps":1,"lapses":0,"last_h":119.97,"due_h":95.97},{"k":"ri:tcp:conceito","c":"tcp","cat":"conceito","ev":"ee:A19:0","att":"A19","prompt_e":"E10","evidence":"Retransmitir quadros atrasados aumenta a latência; vídeo ao vivo prioriza tempo, não entrega garantida.","created_h":311,"interval":1,"reps":1,"lapses":0,"last_h":119.88,"due_h":95.88},{"k":"ri:dhcp:conceito","c":"dhcp","cat":"conceito","ev":"ee:A20:0","att":"A20","prompt_e":"E11","evidence":"169.254.x.x é APIPA, sinal de que o DHCP não respondeu; o DNS não atribui endereço.","created_h":143,"interval":0,"reps":0,"lapses":0,"last_h":null,"due_h":143},{"k":"ri:int:conceito","c":"int","cat":"conceito","ev":"ee:A21:0","att":"A21","prompt_e":"E12","evidence":"uint8_t vai só até 255; o contador estoura e mostra 300 mod 256 = 44.","created_h":239,"interval":3,"reps":1,"lapses":0,"last_h":27.91,"due_h":-44.09},{"k":"ri:isr:conceito","c":"isr","cat":"conceito","ev":"ee:A24:0","att":"A24","prompt_e":"E14","evidence":"Ignorou que delay() não avança dentro da ISR e que a rotina precisa ser curta.","created_h":383,"interval":0,"reps":0,"lapses":0,"last_h":null,"due_h":383}],"notes":[{"k":"note:0","h":600,"s":"Eletrônica","t":"Corrente em mA na Lei de Ohm","r":"Antes de dividir, passo mA para A: 15 mA = 0,015 A. Se o resistor der menos de 1 Ω para um LED, a unidade está errada.","type":"calculo","rev":true},{"k":"note:1","h":470,"s":"Eletrônica","t":"Divisor de tensão invertido","r":"A saída é a tensão sobre o resistor de BAIXO: Vout = Vin × Rbaixo ÷ (Rcima + Rbaixo). Desenho o circuito e marco onde o ADC está ligado.","type":"conceitual","rev":true},{"k":"note:2","h":540,"s":"Robótica","t":"Ki não amortece oscilação","r":"Oscilação crescente: primeiro baixo o Kp, depois coloco Kd. O Ki só corrige erro que sobra parado (regime).","type":"conceitual","rev":false},{"k":"note:3","h":350,"s":"Robótica","t":"Diâmetro x raio na odometria","r":"Distância por volta = π × diâmetro (ou 2π × raio). Confiro se o número que o enunciado dá é diâmetro ou raio.","type":"atencao","rev":true},{"k":"note:4","h":440,"s":"Redes de computadores","t":"Broadcast e hosts na /26","r":"Hosts = 2^(32 − prefixo) − 2. O broadcast é o último endereço do bloco (.63 na /26 que começa em .0), nunca o .255 da /24.","type":"calculo","rev":false},{"k":"note:5","h":140,"s":"Redes de computadores","t":"169.254 é falha de DHCP","r":"IP 169.254.x.x = APIPA = o DHCP não respondeu. Verifico o servidor DHCP e o cabo antes de pensar em DNS.","type":"interpretacao","rev":false},{"k":"note:6","h":230,"s":"Programação","t":"Overflow em uint8_t","r":"Escolho o tipo pelo maior valor possível: contador de encoder vai em uint32_t. uint8_t para em 255.","type":"conceitual","rev":true},{"k":"note:7","h":40,"s":"Programação","t":"ISR longa demais","r":"Na ISR só marco uma flag volatile. delay(), Serial e cálculos pesados ficam no loop.","type":"conceitual","rev":false}],"study":[{"s":"ELE","summary":{"title":"Eletrônica: Lei de Ohm, divisores e potência","overview":"Nos seus exercícios de LEDs, sensores NTC, motores de passo e reguladores, quase todo cálculo parte de V = R × I e de P = V × I. O que mais derrubou as respostas foi a unidade da corrente e a posição do resistor no divisor.","key_points":["Converta mA para A antes de usar V = R × I (15 mA = 0,015 A).","No divisor, Vout = Vin × Rbaixo ÷ (Rcima + Rbaixo).","Potência da carga = V × I; a fonte fornece P ÷ eficiência.","Confira a ordem de grandeza: resistor de LED fica na casa das dezenas ou centenas de ohms."],"common_mistakes":["Usar corrente em mA direto na Lei de Ohm (apareceu 3 vezes).","Colocar o resistor de cima no numerador do divisor.","Multiplicar pela eficiência em vez de dividir."]},"flash":[{"front":"Quanto é 1200 mA em ampères?","back":"1,2 A","concept":"Lei de Ohm"},{"front":"Fórmula do divisor de tensão (saída sobre o resistor de baixo)","back":"Vout = Vin × R2 ÷ (R1 + R2)","concept":"Divisor de tensão"},{"front":"Regulador de 80% entrega 10 W. Quanto a bateria fornece?","back":"10 ÷ 0,8 = 12,5 W","concept":"Potência elétrica"},{"front":"Resistor para LED: que tensão ele recebe?","back":"Vfonte − Vled","concept":"Lei de Ohm"}],"h":100,"src":7,"quiz":[{"prompt":"Um sensor de fim de curso puxa 25 mA de 5 V através de um resistor. Qual resistor?","options":["200 Ω","0,2 Ω","125 Ω","5 Ω"],"concept":"Lei de Ohm","correct_choice":0,"explanation":"25 mA = 0,025 A; 5 ÷ 0,025 = 200 Ω.","k":"quiz:ELE:0"},{"prompt":"Divisor com R1 = 20 kΩ em cima e R2 = 10 kΩ embaixo, em 9 V. Qual Vout sobre R2?","options":["6 V","4,5 V","3 V","9 V"],"concept":"Divisor de tensão","correct_choice":2,"explanation":"9 × 10 ÷ 30 = 3 V.","k":"quiz:ELE:1"},{"prompt":"Um módulo de câmera consome 5 V × 0,6 A com regulador de 75%. Quanto a bateria fornece?","options":["2,25 W","3 W","4 W","3,75 W"],"concept":"Potência elétrica","correct_choice":2,"explanation":"3 W ÷ 0,75 = 4 W.","k":"quiz:ELE:2"}],"round":[0,1,2]},{"s":"ROB","summary":{"title":"Robótica: PID, odometria e tração diferencial","overview":"Seus erros em robótica se concentram em como cada ganho do PID muda o comportamento do robô e em conversões geométricas (diâmetro, raio, sentido de giro).","key_points":["Kp dá força à correção; em excesso causa overshoot.","Kd amortece a oscilação reagindo à velocidade do erro.","Ki elimina erro de regime, mas acumula e pode piorar a oscilação.","Distância por volta = π × diâmetro.","ω = (vD − vE) ÷ L; positivo = giro anti-horário."],"common_mistakes":["Aumentar Kp ou Ki para conter oscilação.","Usar o diâmetro no lugar do raio.","Inverter vD e vE no cálculo de ω."]},"flash":[{"front":"O robô oscila cada vez mais em torno da linha. Primeiro ajuste?","back":"Diminuir Kp e acrescentar Kd","concept":"Controle PID"},{"front":"Roda de 7 cm de diâmetro: quanto anda por volta?","back":"π × 7 ≈ 22 cm","concept":"Odometria"},{"front":"PWM 8 bits para 25% de duty","back":"≈ 64","concept":"PWM de motores"}],"h":30,"src":6,"quiz":[{"prompt":"O braço robótico para um pouco antes do alvo e fica parado ali. Qual termo do PID resolve?","options":["Kd","Ki","Reduzir Kp","Nenhum"],"concept":"Controle PID","correct_choice":1,"explanation":"Erro de regime persistente é tarefa do integral.","k":"quiz:ROB:0"},{"prompt":"Encoder de 20 pulsos/volta, roda de 10 cm de diâmetro. Pulsos em 1 m?","options":["32","64","200","100"],"concept":"Odometria","correct_choice":1,"explanation":"Volta = 31,4 cm; 100 ÷ 31,4 ≈ 3,18 voltas × 20 ≈ 64.","k":"quiz:ROB:1"}],"round":[1,1]}],"qb":[{"k":"qb:0","slug":"me-ohm-led","choice":"d","h":196},{"k":"qb:1","slug":"me-ohm-led","choice":"a","h":20},{"k":"qb:2","slug":"me-byte-decimal","choice":"c","h":150},{"k":"qb:3","slug":"me-drone-mruv","choice":"b","h":60}],"goal":"Chegar bem na prova de Sistemas Embarcados e na competição de robótica"}$d$;
+  uid uuid; v uuid; r jsonb; e jsonb; x jsonb; c text; aid uuid; eid uuid; s_id uuid;
+  qrow record; ex uuid; subj uuid; conc uuid; diag jsonb; ans text; ok boolean; an jsonb; h numeric; keys jsonb; pub jsonb; res jsonb; mid uuid;
+begin
+  -- O seed grava centenas de linhas na mesma transação: desliga o limite de 300/min
+  -- (enforce_rate_limit) só durante este bloco; o bloco é atômico e religa no fim.
+  alter table public.subjects disable trigger enforce_rate_limit;
+  alter table public.concepts disable trigger enforce_rate_limit;
+  alter table public.concept_edges disable trigger enforce_rate_limit;
+  alter table public.exercises disable trigger enforce_rate_limit;
+  alter table public.exercise_concepts disable trigger enforce_rate_limit;
+  alter table public.attempts disable trigger enforce_rate_limit;
+  alter table public.corrections disable trigger enforce_rate_limit;
+  alter table public.error_events disable trigger enforce_rate_limit;
+  alter table public.mastery_events disable trigger enforce_rate_limit;
+  alter table public.profiles disable trigger enforce_rate_limit;
+  alter table public.attempt_assets disable trigger enforce_rate_limit;
+  create temp table mm_map(k text primary key, id uuid not null) on commit drop;
+  execute $f$create function pg_temp.i(k text) returns uuid language sql stable as 'select md5(current_setting(''mm.uid'')||k)::uuid'$f$;
+  execute $f$create function pg_temp.m(k text) returns uuid language sql stable as 'select id from mm_map where mm_map.k=$1'$f$;
+  execute $f$create function pg_temp.h(n numeric) returns timestamptz language sql stable as 'select now() - make_interval(secs => (n + current_setting(''mm.off'')::numeric)*3600)'$f$;
+  if (select count(*) from auth.users where lower(email) = any(array['aluno1.volt.demo@mistakemap.dev','aluno2.volt.demo@mistakemap.dev','aluno3.volt.demo@mistakemap.dev','aluno4.volt.demo@mistakemap.dev','aluno5.volt.demo@mistakemap.dev','aluno01.nexo.demo@mistakemap.dev','aluno02.nexo.demo@mistakemap.dev','aluno03.nexo.demo@mistakemap.dev','aluno04.nexo.demo@mistakemap.dev','aluno05.nexo.demo@mistakemap.dev','aluno06.nexo.demo@mistakemap.dev','aluno07.nexo.demo@mistakemap.dev','aluno08.nexo.demo@mistakemap.dev','aluno09.nexo.demo@mistakemap.dev','aluno10.nexo.demo@mistakemap.dev','admin.demo@mistakemap.dev','dev.demo@mistakemap.dev','teste@mistakemap.dev'])) <> cardinality(array['aluno1.volt.demo@mistakemap.dev','aluno2.volt.demo@mistakemap.dev','aluno3.volt.demo@mistakemap.dev','aluno4.volt.demo@mistakemap.dev','aluno5.volt.demo@mistakemap.dev','aluno01.nexo.demo@mistakemap.dev','aluno02.nexo.demo@mistakemap.dev','aluno03.nexo.demo@mistakemap.dev','aluno04.nexo.demo@mistakemap.dev','aluno05.nexo.demo@mistakemap.dev','aluno06.nexo.demo@mistakemap.dev','aluno07.nexo.demo@mistakemap.dev','aluno08.nexo.demo@mistakemap.dev','aluno09.nexo.demo@mistakemap.dev','aluno10.nexo.demo@mistakemap.dev','admin.demo@mistakemap.dev','dev.demo@mistakemap.dev','teste@mistakemap.dev']) then
+    raise exception 'alguma conta de demonstração não existe';
+  end if;
+  foreach uid in array (select array_agg(id order by email) from auth.users where lower(email) = any(array['aluno1.volt.demo@mistakemap.dev','aluno2.volt.demo@mistakemap.dev','aluno3.volt.demo@mistakemap.dev','aluno4.volt.demo@mistakemap.dev','aluno5.volt.demo@mistakemap.dev','aluno01.nexo.demo@mistakemap.dev','aluno02.nexo.demo@mistakemap.dev','aluno03.nexo.demo@mistakemap.dev','aluno04.nexo.demo@mistakemap.dev','aluno05.nexo.demo@mistakemap.dev','aluno06.nexo.demo@mistakemap.dev','aluno07.nexo.demo@mistakemap.dev','aluno08.nexo.demo@mistakemap.dev','aluno09.nexo.demo@mistakemap.dev','aluno10.nexo.demo@mistakemap.dev','admin.demo@mistakemap.dev','dev.demo@mistakemap.dev','teste@mistakemap.dev'])) loop
+    truncate mm_map;
+    perform set_config('mm.uid', uid::text, true);
+    -- Cada aluno ganha um deslocamento de até 9 h e pula parte das tentativas
+    -- opcionais, para o mapa da turma não ter todos os alunos iguais.
+    perform set_config('mm.off', (get_byte(decode(md5(uid::text), 'hex'), 0) % 10)::text, true);
+    if exists (select 1 from public.study_sessions where id = pg_temp.i('sess:S1')) then raise notice 'já aplicado em %', uid; continue; end if;
+    perform set_config('request.jwt.claim.sub', uid::text, true);
+
+    for r in select * from jsonb_array_elements(d->'subjects') loop
+      select id into v from public.subjects where user_id = uid and lower(btrim(name)) = lower(r->>'name') order by created_at limit 1;
+      if v is null then
+        insert into public.subjects(id,user_id,name,description,created_at)
+        values (pg_temp.i('subj:'||(r->>'k')), uid, r->>'name', d->>'mark', pg_temp.h(700)) returning id into v;
+      end if;
+      insert into mm_map values ('S:'||(r->>'k'), v);
+    end loop;
+    for r in select * from jsonb_array_elements(d->'concepts') loop
+      select id into v from public.concepts where subject_id = pg_temp.m('S:'||(r->>'s')) and lower(name) = lower(r->>'name') order by created_at limit 1;
+      if v is null then
+        insert into public.concepts(id,subject_id,name,importance,created_at)
+        values (pg_temp.i('conc:'||(r->>'k')), pg_temp.m('S:'||(r->>'s')), r->>'name', (r->>'imp')::numeric, pg_temp.h(690)) returning id into v;
+      end if;
+      insert into mm_map values ('C:'||(r->>'k'), v);
+    end loop;
+    for r in select * from jsonb_array_elements(d->'edges') loop
+      insert into public.concept_edges(id,from_concept_id,to_concept_id,relation)
+      values (pg_temp.i('edge:'||(r->>0)||(r->>1)), pg_temp.m('C:'||(r->>0)), pg_temp.m('C:'||(r->>1)), r->>2) on conflict do nothing;
+    end loop;
+    for r in select * from jsonb_array_elements(d->'exercises') loop
+      insert into public.exercises(id,subject_id,source,prompt_text,difficulty,focus_concept,created_at)
+      values (pg_temp.i('ex:'||(r->>'k')), pg_temp.m('S:'||(r->>'s')), 'manual', r->>'prompt', r->>'diff',
+        (select name from public.concepts where id = pg_temp.m('C:'||(r->'concs'->>0))), pg_temp.h((r->>'h')::numeric));
+      for c in select * from jsonb_array_elements_text(r->'concs') loop
+        insert into public.exercise_concepts(exercise_id,concept_id) values (pg_temp.i('ex:'||(r->>'k')), pg_temp.m('C:'||c)) on conflict do nothing;
+      end loop;
+    end loop;
+
+    -- tentativas + análise no formato do analyze-attempt
+    for r in select * from jsonb_array_elements(d->'attempts') loop
+      continue when coalesce((r->>'opt')::boolean, false)
+        and get_byte(decode(md5(uid::text || (r->>'k')), 'hex'), 0) % 3 = 0;
+      select x2 into e from jsonb_array_elements(d->'exercises') x2 where x2->>'k' = r->>'e';
+      aid := pg_temp.i(r->>'k'); h := (r->>'h')::numeric;
+      perform set_config('request.jwt.claim.sub', '', true);  -- guard_attempt_ai_state só aceita 'completed' sem JWT
+      insert into public.attempts(id,exercise_id,user_id,answer,solution_text,attempted_at,status)
+      values (aid, pg_temp.i('ex:'||(r->>'e')), uid, r->>'ans', r->>'ans', pg_temp.h(h), 'completed');
+      perform set_config('request.jwt.claim.sub', uid::text, true);
+      an := jsonb_build_object('is_correct', (r->>'ok')::boolean, 'correct_answer', e->>'gab', 'explanation', e->>'expl',
+        'transcribed_prompt', e->>'prompt', 'transcribed_answer', r->>'ans',
+        'errors', coalesce((select jsonb_agg(jsonb_build_object('category', x3->>'cat',
+            'concept', (select name from public.concepts where id = pg_temp.m('C:'||(x3->>'c'))),
+            'evidence', x3->>'ev', 'confidence', (x3->>'cf')::numeric)) from jsonb_array_elements(r->'errs') x3), '[]'::jsonb),
+        'concepts', (select jsonb_agg(name order by n) from jsonb_array_elements_text(e->'concs') with ordinality t(ck,n)
+                     join public.concepts cc on cc.id = pg_temp.m('C:'||ck)));
+      insert into public.attempt_analyses(attempt_id,user_id,subject_id,analysis,model,pipeline_version,created_at)
+      values (aid, uid, pg_temp.m('S:'||(e->>'s')), an, 'gemini-2.5-flash', 'gemini-analysis-v1', pg_temp.h(h-0.02));
+      insert into public.corrections(attempt_id,reference_text,created_at)
+      values (aid, (e->>'gab')||E'\n\n'||(e->>'expl'), pg_temp.h(h-0.02));
+      for x, h in select y, (n - 1) from jsonb_array_elements(r->'errs') with ordinality t(y,n) loop
+        eid := pg_temp.i('ee:'||(r->>'k')||':'||h::int);
+        insert into public.error_events(id,attempt_id,error_type_id,concept_id,evidence_ref,confidence,status,created_at)
+        values (eid, aid, (select id from public.error_types where name = x->>'cat'), pg_temp.m('C:'||(x->>'c')),
+          x->>'ev', (x->>'cf')::numeric, x->>'st', pg_temp.h((r->>'h')::numeric - 0.02));
+        if x->>'st' = 'confirmed' then
+          insert into public.error_event_decisions(id,user_id,error_event_id,decision,category,importance,created_at)
+          values (pg_temp.i('dec:'||eid::text), uid, eid, 'confirmed', x->>'cat',
+            (select importance from public.concepts where id = pg_temp.m('C:'||(x->>'c'))), pg_temp.h((r->>'h')::numeric - 3));
+        end if;
+      end loop;
+      if (r->>'ok')::boolean then
+        for c in select * from jsonb_array_elements_text(e->'concs') loop
+          insert into public.mastery_events(id,concept_id,attempt_id,outcome,created_at)
+          values (pg_temp.i('me:'||(r->>'k')||c), pg_temp.m('C:'||c), aid, 'ai_suggested_correct', pg_temp.h((r->>'h')::numeric - 0.02));
+        end loop;
+      end if;
+    end loop;
+
+    -- agenda de revisão (mm-intervals-v1) e sessões concluídas
+    for r in select * from jsonb_array_elements(d->'items') loop
+      insert into public.review_items(id,user_id,subject_id,concept_id,error_event_id,category,due_at,interval_days,repetitions,lapses,last_reviewed_at,created_at,updated_at)
+      values (pg_temp.i(r->>'k'), uid, (select subject_id from public.concepts where id = pg_temp.m('C:'||(r->>'c'))), pg_temp.m('C:'||(r->>'c')),
+        pg_temp.i(r->>'ev'), r->>'cat', pg_temp.h((r->>'due_h')::numeric), (r->>'interval')::int, (r->>'reps')::int, (r->>'lapses')::int,
+        case when r->>'last_h' is null then null else pg_temp.h((r->>'last_h')::numeric) end,
+        pg_temp.h((r->>'created_h')::numeric), pg_temp.h(coalesce((r->>'last_h')::numeric, (r->>'created_h')::numeric)));
+    end loop;
+    for r in select * from jsonb_array_elements(d->'sessions') loop
+      s_id := pg_temp.i(r->>'k');
+      insert into public.study_sessions(id,user_id,status,planned_minutes,started_at,completed_at)
+      values (s_id, uid, 'completed', (r->>'min')::int, pg_temp.h((r->>'h')::numeric), pg_temp.h((r->>'h')::numeric - 0.25));
+      for x in select * from jsonb_array_elements(r->'items') loop
+        insert into public.study_session_items(session_id,item_id,user_id,position,source_attempt_id,source_error_event_id,prompt_text,evidence,category)
+        values (s_id, pg_temp.i(x->>'item'), uid, (x->>'pos')::int, pg_temp.i(x->>'att'), pg_temp.i(x->>'ev'),
+          (select y->>'prompt' from jsonb_array_elements(d->'exercises') y where y->>'k' = x->>'e'), x->>'evidence', x->>'cat');
+        insert into public.review_events(user_id,event_id,session_id,item_id,rating,answered_at,elapsed_seconds,payload_hash,next_due_at)
+        values (uid, pg_temp.i('rev:'||(r->>'k')||(x->>'item')), s_id, pg_temp.i(x->>'item'), x->>'rt', pg_temp.h((x->>'ah')::numeric),
+          (x->>'el')::int, encode(extensions.digest(s_id::text||(x->>'item')||(x->>'rt'), 'sha256'), 'hex'), pg_temp.h((x->>'next_h')::numeric));
+      end loop;
+    end loop;
+
+    insert into public.study_profiles(user_id,stage,daily_minutes,timezone,subject_ids,goal,exam_date,updated_at)
+    values (uid, 'superior', 20, 'America/Sao_Paulo', array[pg_temp.m('S:ELE'), pg_temp.m('S:ROB'), pg_temp.m('S:RED'), pg_temp.m('S:PRG')],
+      d->>'goal', (now() + interval '24 days')::date, now()) on conflict (user_id) do nothing;
+
+    for r in select * from jsonb_array_elements(d->'notes') loop
+      insert into public.error_notes(id,user_id,subject,title,description,error_type,reviewed,created_at,updated_at)
+      values (pg_temp.i(r->>'k'), uid, r->>'s', r->>'t', r->>'r', r->>'type', (r->>'rev')::boolean, pg_temp.h((r->>'h')::numeric),
+        pg_temp.h((r->>'h')::numeric - case when (r->>'rev')::boolean then 30 else 0 end));
+    end loop;
+
+    for r in select * from jsonb_array_elements(d->'study') loop
+      mid := pg_temp.i('mat:'||(r->>'s'));
+      select jsonb_agg(jsonb_build_object('id', pg_temp.i(q->>'k'), 'prompt', q->>'prompt', 'options', q->'options', 'concept', q->>'concept') order by n),
+             jsonb_agg(jsonb_build_object('id', pg_temp.i(q->>'k'), 'correct_choice', (q->>'correct_choice')::int, 'explanation', q->>'explanation') order by n)
+        into pub, keys from jsonb_array_elements(r->'quiz') with ordinality t(q,n);
+      insert into public.study_materials(id,user_id,subject_id,summary,flashcards,quiz,source_count,model,created_at)
+      values (mid, uid, pg_temp.m('S:'||(r->>'s')), r->'summary', r->'flash', pub, (r->>'src')::int, 'gemini-2.5-flash', pg_temp.h((r->>'h')::numeric));
+      insert into public.study_quiz_keys(material_id,answers) values (mid, keys);
+      select jsonb_agg(jsonb_build_object('question_id', k->>'id', 'choice', (r->'round'->>(n-1)::int)::int, 'correct_choice', (k->>'correct_choice')::int,
+          'is_correct', (r->'round'->>(n-1)::int)::int = (k->>'correct_choice')::int, 'explanation', k->>'explanation') order by n)
+        into res from jsonb_array_elements(keys) with ordinality t(k,n);
+      insert into public.study_quiz_rounds(id,material_id,user_id,answers,correct_count,total,created_at)
+      values (pg_temp.i('round:'||(r->>'s')), mid, uid, res,
+        (select count(*) from jsonb_array_elements(res) z where (z->>'is_correct')::boolean), jsonb_array_length(res), pg_temp.h((r->>'h')::numeric - 0.3));
+    end loop;
+
+    -- banco de questões: mesmo caminho do question_bank_service.saveObjective (múltipla escolha)
+    for r in select * from jsonb_array_elements(d->'qb') loop
+      h := (r->>'h')::numeric; aid := pg_temp.i(r->>'k');
+      select b.*, k.answer as key_answer, k.correct_answer, k.explanation into qrow
+        from public.question_bank b join public.question_bank_keys k on k.question_id = b.id where b.slug = r->>'slug';
+      continue when qrow.id is null;
+      select id into subj from public.subjects where user_id = uid and lower(btrim(name)) = lower(qrow.subject) order by created_at limit 1;
+      if subj is null then
+        insert into public.subjects(id,user_id,name,description,created_at) values (pg_temp.i('qbsubj:'||(r->>'slug')), uid, qrow.subject, d->>'mark', pg_temp.h(h+1)) returning id into subj;
+      end if;
+      select e2.id into ex from public.exercises e2 where e2.subject_id = subj and e2.question_id = qrow.id order by e2.created_at limit 1;
+      if ex is null then
+        insert into public.exercises(id,subject_id,source,prompt_text,difficulty,focus_concept,question_id,created_at)
+        values (pg_temp.i('qbex:'||(r->>'slug')), subj, 'question_bank',
+          qrow.prompt_text || E'\n\nAlternativas:' || (select string_agg(E'\n' || (o->>'id') || ') ' || (o->>'text'), '' order by n)
+            from jsonb_array_elements(qrow.payload->'options') with ordinality t(o,n)),
+          qrow.difficulty, qrow.theme, qrow.id, pg_temp.h(h+0.5)) returning id into ex;
+      end if;
+      select (o->>'id') || ') ' || (o->>'text') into ans from jsonb_array_elements(qrow.payload->'options') o where o->>'id' = r->>'choice';
+      ok := (r->>'choice') = qrow.key_answer->>'correct';
+      diag := qrow.key_answer->'diagnosis'->(r->>'choice');
+      an := jsonb_build_object('is_correct', ok, 'correct_answer', qrow.correct_answer, 'explanation', qrow.explanation,
+        'transcribed_prompt', (select prompt_text from public.exercises where id = ex), 'transcribed_answer', ans,
+        'concepts', jsonb_build_array(left(btrim(qrow.theme),120)),
+        'errors', case when ok then '[]'::jsonb else jsonb_build_array(jsonb_build_object(
+          'category', coalesce(diag->>'category', qrow.error_category), 'concept', left(btrim(qrow.theme),120),
+          'evidence', coalesce(diag->>'feedback', 'Resposta dada: ' || ans || '. Resposta correta: ' || qrow.correct_answer || '.'),
+          'confidence', case when diag ? 'feedback' then 0.7 else 0.5 end)) end);
+      perform set_config('request.jwt.claim.sub', '', true);
+      insert into public.attempts(id,exercise_id,user_id,answer,solution_text,attempted_at,status) values (aid, ex, uid, ans, ans, pg_temp.h(h), 'completed');
+      perform set_config('request.jwt.claim.sub', uid::text, true);
+      insert into public.attempt_analyses(attempt_id,user_id,subject_id,analysis,model,pipeline_version,created_at)
+      values (aid, uid, subj, an, 'gabarito-revisado', 'question-bank-v1', pg_temp.h(h));
+      insert into public.corrections(attempt_id,reference_text,created_at) values (aid, qrow.correct_answer || E'\n\n' || qrow.explanation, pg_temp.h(h));
+      select id into conc from public.concepts where subject_id = subj and lower(name) = lower(left(btrim(qrow.theme),120)) order by created_at limit 1;
+      if conc is null then
+        insert into public.concepts(id,subject_id,name,created_at) values (pg_temp.i('qbconc:'||(r->>'slug')), subj, left(btrim(qrow.theme),120), pg_temp.h(h)) returning id into conc;
+      end if;
+      insert into public.exercise_concepts(exercise_id,concept_id) values (ex, conc) on conflict do nothing;
+      if not ok then
+        insert into public.error_events(id,attempt_id,error_type_id,concept_id,evidence_ref,confidence,status,created_at)
+        select pg_temp.i('qbee:'||(r->>'k')), aid, et.id, conc, an->'errors'->0->>'evidence', (an->'errors'->0->>'confidence')::numeric, 'pending', pg_temp.h(h)
+        from public.error_types et where et.name = an->'errors'->0->>'category';
+      else
+        insert into public.mastery_events(id,concept_id,attempt_id,outcome,created_at) values (pg_temp.i('qbme:'||(r->>'k')), conc, aid, 'question_bank_correct', pg_temp.h(h));
+      end if;
+      insert into public.question_responses(id,user_id,question_id,attempt_id,response,is_correct,score,created_at)
+      values (pg_temp.i('qbr:'||(r->>'k')), uid, qrow.id, aid, jsonb_build_object('choice', r->>'choice'), ok, case when ok then 1 else 0 end, pg_temp.h(h));
+    end loop;
+    perform set_config('request.jwt.claim.sub', '', true);
+  end loop;
+  alter table public.subjects enable trigger enforce_rate_limit;
+  alter table public.concepts enable trigger enforce_rate_limit;
+  alter table public.concept_edges enable trigger enforce_rate_limit;
+  alter table public.exercises enable trigger enforce_rate_limit;
+  alter table public.exercise_concepts enable trigger enforce_rate_limit;
+  alter table public.attempts enable trigger enforce_rate_limit;
+  alter table public.corrections enable trigger enforce_rate_limit;
+  alter table public.error_events enable trigger enforce_rate_limit;
+  alter table public.mastery_events enable trigger enforce_rate_limit;
+  alter table public.profiles enable trigger enforce_rate_limit;
+  alter table public.attempt_assets enable trigger enforce_rate_limit;
+end
+$seed$;
