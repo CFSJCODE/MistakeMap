@@ -22,6 +22,7 @@ class SchoolCheckoutPage extends StatefulWidget {
     required this.gateway,
     this.savedCardLast4,
     this.initialStudents = 30,
+    this.currentPlanId,
     this.pollEvery = const Duration(seconds: 5),
   });
 
@@ -31,6 +32,9 @@ class SchoolCheckoutPage extends StatefulWidget {
   /// Final do cartão já salvo no Asaas (só o token fica no servidor).
   final String? savedCardLast4;
   final int initialStudents;
+
+  /// Plano que a escola já tem: o carrossel abre nele e o marca como atual.
+  final String? currentPlanId;
 
   /// Intervalo da consulta enquanto o Pix ou o boleto aguardam pagamento.
   final Duration pollEvery;
@@ -44,7 +48,14 @@ class _SchoolCheckoutPageState extends State<SchoolCheckoutPage> {
 
   int _step = 0;
   bool _forward = true;
-  int _planIndex = 1;
+  late int _planIndex = _initialPlanIndex(widget.currentPlanId);
+
+  static int _initialPlanIndex(String? id) {
+    final i = checkoutPlans.indexWhere((p) => p.id == id);
+    // Quem está no Grátis (ou sem plano) vê primeiro o plano pago de entrada.
+    return i <= 0 ? 1 : i;
+  }
+
   late int _students = widget.initialStudents.clamp(5, maxCheckoutStudents);
   CheckoutCycle _cycle = CheckoutCycle.annual;
   CheckoutMethod _method = CheckoutMethod.pix;
@@ -253,6 +264,7 @@ class _SchoolCheckoutPageState extends State<SchoolCheckoutPage> {
     0 => _PlanStep(
       schoolName: widget.schoolName,
       index: _planIndex,
+      currentPlanId: widget.currentPlanId,
       onIndex: (i) => setState(() => _planIndex = i),
       onBack: _back,
       onChoose: () => _go(1),
@@ -891,10 +903,12 @@ class _PlanStep extends StatefulWidget {
     required this.onIndex,
     required this.onBack,
     required this.onChoose,
+    this.currentPlanId,
   });
 
   final String schoolName;
   final int index;
+  final String? currentPlanId;
   final ValueChanged<int> onIndex;
   final VoidCallback onBack;
   final VoidCallback onChoose;
@@ -927,6 +941,7 @@ class _PlanStepState extends State<_PlanStep> {
   @override
   Widget build(BuildContext context) {
     final current = checkoutPlans[widget.index];
+    final isCurrent = current.id == widget.currentPlanId;
     return _StepFrame(
       onBack: widget.onBack,
       topLabel: Padding(
@@ -941,7 +956,9 @@ class _PlanStepState extends State<_PlanStep> {
       actions: [
         _Cta(
           key: const Key('checkout-choose'),
-          label: 'Escolher ${current.name}',
+          label: isCurrent
+              ? 'Continuar no ${current.name}'
+              : 'Escolher ${current.name}',
           onPressed: widget.onChoose,
         ),
       ],
@@ -956,6 +973,24 @@ class _PlanStepState extends State<_PlanStep> {
         ),
         const SizedBox(height: 14),
         _PlanLabels(index: widget.index),
+        SizedBox(
+          height: 22,
+          child: AnimatedOpacity(
+            opacity: isCurrent ? 1 : 0,
+            duration: _d(context, 200),
+            child: const Center(
+              child: Text(
+                'Seu plano atual',
+                key: Key('checkout-current-plan'),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: MistakeMapDesign.aquaInk,
+                ),
+              ),
+            ),
+          ),
+        ),
         SizedBox(
           height: 336,
           child: CallbackShortcuts(

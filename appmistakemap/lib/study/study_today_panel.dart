@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../theme/motion.dart';
 import '../ai/analysis_models.dart' show categoryLabels;
 import '../theme/control_styles.dart';
 import '../theme/design_tokens.dart';
@@ -200,7 +201,8 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
       return;
     }
     await Navigator.of(context).push<void>(
-      FluentPageRoute(
+      MistakeMapPageRoute(
+        context: context,
         builder: (_) => StudyReviewPage(
           userId: widget.userId,
           repository: _repository,
@@ -214,7 +216,8 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
   Future<void> _diagnostics() async {
     if (!mounted || _busy) return;
     await Navigator.of(context).push<void>(
-      FluentPageRoute(
+      MistakeMapPageRoute(
+        context: context,
         builder: (_) => StudyDiagnosticsPage(
           userId: widget.userId,
           repository: _repository,

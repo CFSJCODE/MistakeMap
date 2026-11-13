@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/motion.dart';
 import '../auth/team_login.dart';
 import '../school/escola_ui.dart';
 import '../theme/design_tokens.dart';
@@ -177,7 +178,8 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
         ? quota['active_students'] as int
         : 30;
     await Navigator.of(context).push(
-      FluentPageRoute(
+      MistakeMapPageRoute(
+        context: context,
         builder: (_) => SchoolCheckoutPage(
           schoolName: widget.escolaNome,
           gateway: ServerCheckoutGateway(
@@ -186,6 +188,7 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
           ),
           savedCardLast4: s['card_last4'] as String?,
           initialStudents: ativos < 5 ? 30 : ativos,
+          currentPlanId: billingMap(_dados['school'])['plan'] as String?,
         ),
       ),
     );

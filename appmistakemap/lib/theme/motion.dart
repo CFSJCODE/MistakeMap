@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import 'glass_surface.dart';
+
 abstract final class MistakeMapMotion {
   static const controls = Duration(milliseconds: 160);
   static const hover = Duration(milliseconds: 480);
@@ -101,25 +103,53 @@ class MistakeMapPageRoute<T> extends PageRouteBuilder<T> {
          transitionsBuilder: _transition,
        );
 
+  static final _backdropIn = CurveTween(
+    curve: const Interval(0, .4, curve: Curves.easeOut),
+  );
+  static final _contentIn = CurveTween(
+    curve: const Interval(.3, 1, curve: MistakeMapMotion.curve),
+  );
+
+  /// "Fade through": o fundo da tela nova cobre a anterior primeiro e só
+  /// depois o conteúdo aparece. Antes era um cross-fade direto e, com os
+  /// cartões de vidro translúcidos, as duas telas apareciam sobrepostas.
   static Widget _transition(
     BuildContext context,
     Animation<double> animation,
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    final eased = MediaQuery.disableAnimationsOf(context)
-        ? kAlwaysCompleteAnimation
-        : animation.drive(CurveTween(curve: MistakeMapMotion.curve));
-    return FadeTransition(
-      opacity: eased,
-      child: AnimatedBuilder(
-        animation: eased,
-        child: RepaintBoundary(child: child),
-        builder: (context, child) => Transform.translate(
-          offset: Offset(0, 6 * (1 - eased.value)),
-          child: child,
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+    final backdrop = animation.drive(_backdropIn);
+    final content = animation.drive(_contentIn);
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: animation,
+              builder: (context, _) => Opacity(
+                // Parada, a própria tela pinta o fundo; o pano só existe na
+                // transição.
+                opacity: animation.isCompleted ? 0 : backdrop.value,
+                child: const AuroraBackground(),
+              ),
+            ),
+          ),
         ),
-      ),
+        FadeTransition(
+          opacity: content,
+          child: AnimatedBuilder(
+            animation: content,
+            child: RepaintBoundary(child: child),
+            builder: (context, child) => Transform.translate(
+              offset: Offset(0, 8 * (1 - content.value)),
+              child: child,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

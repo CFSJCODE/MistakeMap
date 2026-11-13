@@ -173,9 +173,22 @@ void main() {
   group('modelos', () {
     final r = SchoolReport.fromJson(_report());
 
+    test('conceitos voltam com siglas e nomes próprios', () {
+      expect(conceptTitle('controle pid'), 'Controle PID');
+      expect(conceptTitle('dns e dhcp'), 'DNS e DHCP');
+      expect(conceptTitle('sub-redes ipv4'), 'Sub-redes IPv4');
+      expect(conceptTitle('interrupções (isr)'), 'Interrupções (ISR)');
+      expect(
+        conceptTitle('conversão binário-decimal'),
+        'Conversão binário-decimal',
+      );
+      expect(conceptTitle('canção'), 'Canção');
+      expect(conceptTitle(''), '');
+    });
+
     test('lê as duas seções e os totais', () {
       expect(r.pedagogical!.current!.activeStudents, 1935);
-      expect(r.pedagogical!.concepts.single.title, 'Lei de ohm');
+      expect(r.pedagogical!.concepts.single.title, 'Lei de Ohm');
       expect(r.pedagogical!.conceptTypes, ['calculo', 'sinal']);
       expect(r.financial!.paidTotal, 600);
       expect(r.financial!.openTotal, 480);
@@ -225,7 +238,7 @@ void main() {
     expect(find.text('Pedagógico'), findsOneWidget);
     expect(find.text('1.935'), findsOneWidget);
     expect(find.text('Mapa de erros da escola'), findsOneWidget);
-    expect(find.text('Lei de ohm'), findsOneWidget);
+    expect(find.text('Lei de Ohm'), findsOneWidget);
     expect(find.text('Dados de demonstração'), findsNothing);
 
     await _tap(tester, find.text('Financeiro'));
