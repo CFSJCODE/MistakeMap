@@ -466,8 +466,8 @@ class _Heatmap extends StatelessWidget {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Table(
-            defaultColumnWidth: const FixedColumnWidth(92),
-            columnWidths: const {0: FixedColumnWidth(170)},
+            defaultColumnWidth: const FixedColumnWidth(84),
+            columnWidths: const {0: FixedColumnWidth(132)},
             defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: [
               TableRow(
@@ -989,6 +989,15 @@ class _MonthBars extends StatelessWidget {
       );
     }
     final maxV = values.fold<double>(0, math.max);
+    if (maxV <= 0) {
+      // Um gráfico vazio de 160 px parece erro; com tudo zerado, uma frase
+      // diz o mesmo e não empurra o resto do relatório para baixo.
+      return Text(
+        'Nenhum registro no período (${monthLabel(months.last)}: '
+        '${format(0)}).',
+        style: const TextStyle(color: MistakeMapDesign.content),
+      );
+    }
     return Semantics(
       label:
           '$semantics: ${[for (var i = 0; i < values.length; i++) '${monthLabel(months[i])} ${format(values[i])}'].join(', ')}',
@@ -1029,15 +1038,23 @@ class _MonthBars extends StatelessWidget {
                                 horizontal: 1,
                               ),
                               child: FractionallySizedBox(
-                                heightFactor: maxV <= 0
-                                    ? 0
-                                    : (values[i] / maxV).clamp(0.01, 1),
+                                heightFactor: (values[i] / maxV).clamp(0.01, 1),
                                 alignment: Alignment.bottomCenter,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(4),
+                                // Com poucos meses, a barra não vira um bloco
+                                // da largura do cartão.
+                                child: Center(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 56,
+                                    ),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: color,
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              top: Radius.circular(4),
+                                            ),
+                                      ),
                                     ),
                                   ),
                                 ),

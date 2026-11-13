@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
+import '../theme/motion.dart';
 import '../billing/billing_panel.dart';
 import '../billing/billing_repository.dart';
 import '../platform/platform_forms.dart' show PlatformCheck;
@@ -200,9 +201,13 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
     return _MolduraPerfil(
       perfil: widget.perfil,
       titulo: '${escola['name'] ?? widget.perfil.escolaNome ?? 'Escola'}',
-      subtitulo:
-          '${nomesPapel[papel] ?? papel} · plano '
-          '${nomesPlano[escola['plan']] ?? 'Grátis'}',
+      // Antes do servidor responder, usa o plano que veio com o perfil; sem
+      // nenhum dos dois, não mostra plano (nada de "Grátis" piscando).
+      subtitulo: [
+        nomesPapel[papel] ?? papel,
+        if (nomesPlano[escola['plan'] ?? widget.perfil.plano] case final plano?)
+          'plano $plano',
+      ].join(' · '),
       onAtualizar: _carregar,
       children: [
         if (_erro != null) AvisoEscola(_erro!),
@@ -257,7 +262,8 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
 
   Widget _cartaoRelatorios(String papel, String nome) {
     void abrir(ReportSection secao) => Navigator.of(context).push(
-      FluentPageRoute(
+      MistakeMapPageRoute(
+        context: context,
         builder: (_) => SchoolReportsPage(
           schoolId: widget.perfil.escolaId!,
           schoolName: nome,
@@ -328,9 +334,9 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
               'compra, centro de custo, boleto ou Pix e nota fiscal. Não vê '
               'respostas nem o mapa de nenhum aluno.',
         'it_admin' =>
-          'Convide professores, estudantes e responsáveis. Busca de usuários, '
-              'importação por planilha e uso dos aparelhos chegam nas próximas '
-              'etapas. A TI não vê respostas nem o mapa de nenhum aluno.',
+          'Convide professores, estudantes e responsáveis e acompanhe quem '
+              'já entrou na escola. A TI não vê respostas nem o mapa de nenhum '
+              'aluno.',
         'teacher' =>
           'Crie e acompanhe suas turmas no perfil Estudante, em Explorar e '
               'aprender > Turmas: a turma fica ligada a esta escola. Aqui você '

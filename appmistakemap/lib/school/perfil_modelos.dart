@@ -214,12 +214,15 @@ class EquipeDoUsuario {
 
 /// Perfil que a pessoa pode usar agora (o seletor no topo troca entre eles).
 class PerfilAtivo {
-  const PerfilAtivo(this.papel, {this.escolaId, this.escolaNome});
+  const PerfilAtivo(this.papel, {this.escolaId, this.escolaNome, this.plano});
 
   /// `student` (o app de sempre) ou um papel de escola.
   final String papel;
   final String? escolaId;
   final String? escolaNome;
+
+  /// Plano da escola conhecido no login; o painel o mostra até carregar.
+  final String? plano;
 
   String get chave => escolaId == null ? papel : '$papel:$escolaId';
   bool get ehEstudante => papel == 'student';
@@ -262,6 +265,7 @@ class ContextoPerfil {
         p.papel,
         escolaId: p.escolaId,
         escolaNome: p.escolaNome,
+        plano: p.plano,
       );
       if (vistos.add(perfil.chave)) lista.add(perfil);
     }

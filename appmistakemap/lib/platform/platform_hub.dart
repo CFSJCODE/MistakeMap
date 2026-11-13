@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
 
+import '../theme/motion.dart';
 import '../about/external_profile.dart' show openLearningLink;
 import '../sync/conexao.dart' show novoUuid;
 import '../teacher/assignment_result_page.dart';
@@ -175,7 +176,8 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
 
   Future<void> _session(PlatformData session) async {
     await Navigator.of(context).push<void>(
-      FluentPageRoute(
+      MistakeMapPageRoute(
+        context: context,
         builder: (_) =>
             PlatformSessionPage(repository: _repository, session: session),
       ),
@@ -695,8 +697,9 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
   }
 
   Future<void> _push(Widget page) async {
-    await Navigator.of(context)
-        .push<void>(FluentPageRoute(builder: (_) => page));
+    await Navigator.of(
+      context,
+    ).push<void>(MistakeMapPageRoute(context: context, builder: (_) => page));
     if (mounted) await _load();
   }
 

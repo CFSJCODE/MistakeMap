@@ -168,10 +168,9 @@ class ConceptReport {
   final int students;
   final Map<String, int> byType;
 
-  /// "lei de ohm" → "Lei de ohm"
-  String get title => concept.isEmpty
-      ? concept
-      : concept[0].toUpperCase() + concept.substring(1);
+  /// O servidor agrupa em minúsculas; aqui volta a grafia de leitura:
+  /// "controle pid" → "Controle PID", "lei de ohm" → "Lei de Ohm".
+  String get title => conceptTitle(concept);
 }
 
 class PedagogicalReport {
@@ -454,3 +453,95 @@ String invoiceKindLabel(String kind) => switch (kind) {
   'test' => 'Teste',
   _ => 'Mensal',
 };
+
+/// Siglas e nomes próprios comuns nos conceitos de tecnologia do app.
+const _conceptWords = {
+  'ohm': 'Ohm',
+  'kirchhoff': 'Kirchhoff',
+  'newton': 'Newton',
+  'thevenin': 'Thevenin',
+  'norton': 'Norton',
+  'python': 'Python',
+  'arduino': 'Arduino',
+  'linux': 'Linux',
+  'ipv4': 'IPv4',
+  'ipv6': 'IPv6',
+  'i2c': 'I2C',
+  'esp32': 'ESP32',
+  'wi': 'Wi',
+  'fi': 'Fi',
+};
+
+const _acronyms = {
+  'pid',
+  'dns',
+  'dhcp',
+  'isr',
+  'tcp',
+  'udp',
+  'ip',
+  'led',
+  'pwm',
+  'adc',
+  'dac',
+  'uart',
+  'spi',
+  'gpio',
+  'cpu',
+  'gpu',
+  'ram',
+  'rom',
+  'ntc',
+  'ptc',
+  'rc',
+  'rl',
+  'rlc',
+  'ac',
+  'dc',
+  'http',
+  'https',
+  'api',
+  'sql',
+  'json',
+  'html',
+  'css',
+  'usb',
+  'mosfet',
+  'bjt',
+  'lcd',
+  'oled',
+  'rtos',
+  'mru',
+  'mruv',
+  'imu',
+  'gps',
+  'nat',
+  'vlan',
+  'lan',
+  'wan',
+  'osi',
+  'rgb',
+  'ttl',
+  'cmos',
+  'fpga',
+  'cnc',
+  'pcb',
+  'smd',
+  'ldr',
+  'pir',
+  'rfid',
+};
+
+/// Primeira letra maiúscula, siglas em maiúsculas e nomes próprios com a
+/// grafia certa; o resto fica como veio.
+String conceptTitle(String concept) {
+  if (concept.isEmpty) return concept;
+  final words = concept.replaceAllMapped(
+    RegExp(r'[\p{L}0-9]+', unicode: true),
+    (m) {
+      final w = m[0]!;
+      return _conceptWords[w] ?? (_acronyms.contains(w) ? w.toUpperCase() : w);
+    },
+  );
+  return words[0].toUpperCase() + words.substring(1);
+}
