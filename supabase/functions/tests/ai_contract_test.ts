@@ -349,6 +349,8 @@ Deno.test("CORS accepts loopback dev ports and configured origins only", () => {
       "http://localhost:5000",
       "http://localhost",
       "http://[::1]:8080",
+      "https://mistakemap-bn9vl4kf9-cfsjtech.vercel.app",
+      "https://mistakemap-git-main-cfsjtech.vercel.app",
     ]
   ) assert.equal(originAllowed(origin, origins()), true, origin);
   for (
@@ -359,6 +361,10 @@ Deno.test("CORS accepts loopback dev ports and configured origins only", () => {
       "http://localhost.evil.example",
       "http://127.0.0.1.nip.io",
       "http://127.0.0.1:65360/path",
+      "https://mistakemap-x-cfsjtech.vercel.app.evil.example",
+      "https://mistakemap-x-outro.vercel.app",
+      "http://mistakemap-x-cfsjtech.vercel.app",
+      "https://evil-mistakemap-x-cfsjtech.vercel.app",
     ]
   ) assert.equal(originAllowed(origin, origins()), false, origin);
   const configured = origins(" https://app.example , https://b.example");

@@ -6116,16 +6116,10 @@ class _ContribuicoesMembro extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, restricoes) {
         const espaco = 12.0;
-        final colunas = restricoes.maxWidth >= 480 ? 2 : 1;
-        final largura =
-            (restricoes.maxWidth - espaco * (colunas - 1)) / colunas;
-        return Wrap(
-          spacing: espaco,
-          runSpacing: espaco,
-          children: [
-            for (final area in areas)
-              SizedBox(width: largura, child: _item(context, area)),
-          ],
+        return GradeAlinhada(
+          colunas: restricoes.maxWidth >= 480 ? 2 : 1,
+          espaco: espaco,
+          children: [for (final area in areas) _item(context, area)],
         );
       },
     );
@@ -6526,42 +6520,48 @@ class CartaoVersaoApp extends StatelessWidget {
               ),
               if (ServicoAtualizacao.suportado) ...[
                 const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (nova != null && !jaBaixada)
-                      MistakeMapFilledButton(
-                        style: _estiloBotao(fonte: 14),
-                        onPressed: nativa.abrindo.value
-                            ? null
-                            : () => _baixar(context, nova),
-                        child: Text('Baixar versão ${nova.versao}'),
-                      ),
-                    if (nova != null && jaBaixada)
+                // Botões centralizados no cartão (no celular e no PC).
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (nova != null && !jaBaixada)
+                        MistakeMapFilledButton(
+                          style: _estiloBotao(fonte: 14),
+                          onPressed: nativa.abrindo.value
+                              ? null
+                              : () => _baixar(context, nova),
+                          child: Text('Baixar versão ${nova.versao}'),
+                        ),
+                      if (nova != null && jaBaixada)
+                        MistakeMapButton(
+                          style: _estiloBotao(fonte: 14),
+                          onPressed: nativa.abrindo.value
+                              ? null
+                              : () => _baixar(context, nova),
+                          child: const Text('Baixar de novo'),
+                        ),
                       MistakeMapButton(
                         style: _estiloBotao(fonte: 14),
-                        onPressed: nativa.abrindo.value
+                        onPressed:
+                            codigo.estado.value == EstadoPatch.verificando
                             ? null
-                            : () => _baixar(context, nova),
-                        child: const Text('Baixar de novo'),
+                            : () {
+                                unawaited(codigo.verificar(forcar: true));
+                                unawaited(
+                                  nativa.verificar(
+                                    defaultTargetPlatform,
+                                    forcar: true,
+                                  ),
+                                );
+                              },
+                        child: const Text('Procurar atualizações'),
                       ),
-                    MistakeMapButton(
-                      style: _estiloBotao(fonte: 14),
-                      onPressed: codigo.estado.value == EstadoPatch.verificando
-                          ? null
-                          : () {
-                              unawaited(codigo.verificar(forcar: true));
-                              unawaited(
-                                nativa.verificar(
-                                  defaultTargetPlatform,
-                                  forcar: true,
-                                ),
-                              );
-                            },
-                      child: const Text('Procurar atualizações'),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ],

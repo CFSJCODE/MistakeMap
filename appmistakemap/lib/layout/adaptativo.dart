@@ -210,16 +210,69 @@ class GradeAdaptativa extends StatelessWidget {
           espaco: espaco,
           maxColunas: maxColunas,
         );
-        final larguraItem =
-            (constraints.maxWidth - espaco * (colunas - 1)) / colunas;
-        return Wrap(
-          spacing: espaco,
-          runSpacing: espaco,
-          children: [
-            for (final c in children) SizedBox(width: larguraItem, child: c),
-          ],
+        return GradeAlinhada(
+          colunas: colunas,
+          espaco: espaco,
+          children: children,
         );
       },
+    );
+  }
+}
+
+/// Grade de [colunas] fixas em que os itens de cada linha têm a mesma
+/// altura (a do mais alto) e a última linha mantém a largura das colunas.
+/// Evita a grade "em escada" de um `Wrap` com cartões de textos diferentes.
+class GradeAlinhada extends StatelessWidget {
+  const GradeAlinhada({
+    super.key,
+    required this.colunas,
+    required this.children,
+    this.espaco = 12,
+  });
+
+  final int colunas;
+  final double espaco;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final n = math.max(1, colunas);
+    if (n == 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) SizedBox(height: espaco),
+            children[i],
+          ],
+        ],
+      );
+    }
+    final linhas = <Widget>[];
+    for (var i = 0; i < children.length; i += n) {
+      if (i > 0) linhas.add(SizedBox(height: espaco));
+      linhas.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var j = 0; j < n; j++) ...[
+                if (j > 0) SizedBox(width: espaco),
+                Expanded(
+                  child: i + j < children.length
+                      ? children[i + j]
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: linhas,
     );
   }
 }
