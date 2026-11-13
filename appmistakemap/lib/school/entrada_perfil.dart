@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
+import '../layout/adaptativo.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'perfil_modelos.dart';
@@ -58,26 +59,17 @@ class TelaEntradaPorPerfil extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               LayoutBuilder(
-                builder: (context, caixa) {
-                  final colunas = caixa.maxWidth >= 640 ? 2 : 1;
-                  final largura =
-                      (caixa.maxWidth - 12 * (colunas - 1)) / colunas;
-                  return Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      for (final p in PerfilCadastro.values)
-                        SizedBox(
-                          key: ValueKey('entrada-${p.codigo}'),
-                          width: largura,
-                          child: CartaoPerfil(
-                            perfil: p,
-                            onTap: () => onEscolher(p),
-                          ),
-                        ),
-                    ],
-                  );
-                },
+                builder: (context, caixa) => GradeAlinhada(
+                  colunas: caixa.maxWidth >= 640 ? 2 : 1,
+                  children: [
+                    for (final p in PerfilCadastro.values)
+                      CartaoPerfil(
+                        key: ValueKey('entrada-${p.codigo}'),
+                        perfil: p,
+                        onTap: () => onEscolher(p),
+                      ),
+                  ],
+                ),
               ),
               if (rodape != null) ...[const SizedBox(height: 24), rodape!],
             ],

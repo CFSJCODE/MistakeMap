@@ -4,6 +4,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/services.dart';
 
+import '../layout/adaptativo.dart';
 import '../school/escola_ui.dart';
 import '../theme/control_styles.dart';
 import '../theme/design_tokens.dart';
@@ -58,6 +59,9 @@ enum SecaoEquipe {
   const SecaoEquipe(this.rotulo, this.icone);
   final String rotulo;
   final IconData icone;
+
+  /// Rótulo do botão no celular, onde cada botão tem um terço da largura.
+  String get rotuloCurto => this == ferramentas ? 'Ferramentas' : rotulo;
 }
 
 class CentralEquipe extends StatefulWidget {
@@ -235,31 +239,61 @@ class _CentralEquipeState extends State<CentralEquipe> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final s in SecaoEquipe.values)
-              Semantics(
-                selected: _secao == s,
-                child: MistakeMapButton(
-                  key: ValueKey('equipe-secao-${s.name}'),
-                  style: MistakeMapControls.button(
-                    background: _secao == s ? MistakeMapDesign.aqua : null,
-                    foreground: _secao == s ? MistakeMapDesign.abyss : null,
+        // Seções em grade regular: 3 colunas no celular (ícone em cima do
+        // texto), todas numa linha em telas largas.
+        LayoutBuilder(
+          builder: (context, caixa) {
+            final estreito = caixa.maxWidth < 600;
+            return GradeAlinhada(
+              colunas: estreito ? 3 : SecaoEquipe.values.length,
+              espaco: 8,
+              children: [
+                for (final s in SecaoEquipe.values)
+                  Semantics(
+                    selected: _secao == s,
+                    child: MistakeMapButton(
+                      key: ValueKey('equipe-secao-${s.name}'),
+                      style: MistakeMapControls.button(
+                        padding: estreito
+                            ? const EdgeInsets.symmetric(
+                                vertical: 10,
+                                horizontal: 4,
+                              )
+                            : const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 20,
+                              ),
+                        fontSize: estreito ? 14 : 16,
+                        background: _secao == s ? MistakeMapDesign.aqua : null,
+                        foreground: _secao == s ? MistakeMapDesign.abyss : null,
+                      ),
+                      onPressed: () => setState(() => _secao = s),
+                      child: Center(
+                        child: Flex(
+                          direction: estreito ? Axis.vertical : Axis.horizontal,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(s.icone, size: 16),
+                            SizedBox(
+                              width: estreito ? 0 : 8,
+                              height: estreito ? 4 : 0,
+                            ),
+                            Flexible(
+                              child: Text(
+                                estreito ? s.rotuloCurto : s.rotulo,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  onPressed: () => setState(() => _secao = s),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(s.icone, size: 16),
-                      const SizedBox(width: 8),
-                      Text(s.rotulo),
-                    ],
-                  ),
-                ),
-              ),
-          ],
+              ],
+            );
+          },
         ),
         const SizedBox(height: 16),
         Expanded(
@@ -884,14 +918,9 @@ class _Numeros extends StatelessWidget {
     builder: (context, limites) {
       // Grade regular: 2 colunas no celular, mais conforme a largura.
       final colunas = (limites.maxWidth / 170).floor().clamp(2, 6);
-      final largura = (limites.maxWidth - 12 * (colunas - 1)) / colunas;
-      return Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          for (final (rotulo, valor) in itens)
-            SizedBox(width: largura, child: _tile(rotulo, valor)),
-        ],
+      return GradeAlinhada(
+        colunas: colunas,
+        children: [for (final (rotulo, valor) in itens) _tile(rotulo, valor)],
       );
     },
   );
