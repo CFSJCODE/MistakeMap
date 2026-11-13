@@ -2,7 +2,12 @@ import 'dart:typed_data';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb, kReleaseMode;
+    show
+        TargetPlatform,
+        defaultTargetPlatform,
+        kDebugMode,
+        kIsWeb,
+        kReleaseMode;
 
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:fluent_ui/fluent_ui.dart';
@@ -57,6 +62,7 @@ import 'school/perfil_modelos.dart' show PerfilCadastro, motivoPerfilRecusado;
 import 'school/porta_perfil.dart';
 import 'team/central_equipe.dart';
 import 'team/central_equipe_dados.dart';
+import 'team/relato_erros.dart';
 
 part 'caderno_erros.dart';
 part 'learning_platform.dart';
@@ -980,6 +986,29 @@ void main() async {
     anonKey: _supabaseAnonKey,
   );
   await LiquidGlassWidgets.initialize();
+  // Erros de produção vão para a Central da Equipe (só tipo, local e versão).
+  if (!kDebugMode) {
+    RelatorErros(
+      enviar: (e) async {
+        if (_db.auth.currentSession == null) return;
+        await _db
+            .rpc(
+              'report_app_error',
+              params: {
+                'p_app': kTeamBuild ? 'equipe' : 'aluno',
+                'p_platform': kIsWeb ? 'web' : defaultTargetPlatform.name,
+                'p_version': versaoApp,
+                'p_build': buildApp,
+                'p_patch': atualizacoes.codigo.patchAtual.value,
+                'p_kind': e.assinatura.tipo,
+                'p_location': e.assinatura.local,
+                'p_fatal': e.fatal,
+              },
+            )
+            .timeout(const Duration(seconds: 8));
+      },
+    ).instalar();
+  }
   runApp(
     LiquidGlassWidgets.wrap(
       theme: temaVidro,

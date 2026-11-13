@@ -10,11 +10,22 @@
 
 import { AwsClient } from "aws4fetch"
 import postgres from "postgresjs"
+import { cors } from "../_shared/ai_http.ts"
 
-function json(body: unknown, status: number): Response {
+// CORS das mesmas origens das outras funções: a Central da Equipe na web
+// chama a health pelo navegador.
+function headers(req: Request): HeadersInit {
+  return { ...cors(req), "Access-Control-Allow-Methods": "GET, OPTIONS" }
+}
+
+function json(req: Request, body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      ...headers(req),
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    },
   })
 }
 
@@ -64,7 +75,10 @@ async function pingR2(
   }
 }
 
-Deno.serve(async (_req: Request) => {
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: headers(req) })
+  }
   const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? ""
   const endpoint = Deno.env.get("CLOUDFLARE_R2_S3_ENDPOINT") ?? ""
   const bucket = Deno.env.get("CLOUDFLARE_R2_BUCKET") ?? ""
@@ -82,6 +96,7 @@ Deno.serve(async (_req: Request) => {
   console.log(`health: db=${dbOk ? "ok" : "error"} r2=${r2Ok ? "ok" : "error"}`)
 
   return json(
+    req,
     {
       database: dbOk ? "ok" : "error",
       r2: r2Ok ? "ok" : "error",
