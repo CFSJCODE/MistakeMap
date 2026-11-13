@@ -116,6 +116,268 @@ abstract interface class RepositorioEquipe {
 
   /// Recomeça os dados de estudo da própria conta de teste.
   Future<DadosEquipe> recomecarDadosDemo();
+
+  /// Erros do app por versão e assinatura (`team_app_errors`).
+  Future<DadosEquipe> errosApp({int horas = 72});
+
+  /// Chama uma Edge Function com a sessão atual e devolve o status HTTP e o
+  /// código de erro público, sem lançar exceção por status.
+  Future<RespostaFuncao> chamarFuncao(
+    String nome, {
+    DadosEquipe corpo = const {},
+    bool get = false,
+  });
+
+  /// Tenta ler uma tabela fechada com a sessão atual (sonda de segurança).
+  Future<LeituraProtegida> tentarLer(String tabela);
+}
+
+/// Resposta de uma Edge Function no teste de fumaça.
+class RespostaFuncao {
+  const RespostaFuncao(this.status, {this.codigo});
+
+  /// Status HTTP; 0 quando não houve resposta (rede, CORS ou tempo).
+  final int status;
+
+  /// Campo `error` do corpo, quando houver.
+  final String? codigo;
+}
+
+/// Resultado de uma tentativa de leitura de tabela fechada.
+class LeituraProtegida {
+  const LeituraProtegida({required this.negada, this.linhas = 0, this.codigo});
+
+  /// O banco recusou a leitura (permissão ou tabela fora da API).
+  final bool negada;
+
+  /// Linhas devolvidas quando a leitura passou.
+  final int linhas;
+  final String? codigo;
+
+  /// Fechada de verdade: recusada ou sem nenhuma linha visível.
+  bool get fechada => negada || linhas == 0;
+}
+
+/// Um caso do teste de fumaça das Edge Functions: uma chamada segura (sem
+/// IA, sem cobrança, sem escrita) e os status que provam que a função está
+/// no ar, autentica e valida a entrada.
+class CasoFumaca {
+  const CasoFumaca({
+    required this.funcao,
+    required this.descricao,
+    required this.esperado,
+    this.corpo = const {},
+    this.get = false,
+  });
+
+  final String funcao;
+  final String descricao;
+  final Set<int> esperado;
+  final DadosEquipe corpo;
+  final bool get;
+}
+
+/// Ação que nenhuma função conhece: a resposta tem de ser 400
+/// `invalid_action`, antes de qualquer acesso ao banco, à IA ou ao gateway.
+const acaoDeTeste = 'qa_smoke_test';
+
+const casosFumaca = <CasoFumaca>[
+  CasoFumaca(
+    funcao: 'health',
+    descricao: 'Banco e R2 respondem',
+    esperado: {200},
+    get: true,
+  ),
+  CasoFumaca(
+    funcao: 'review-queue',
+    descricao: 'Painel de revisão da conta (só leitura)',
+    esperado: {200},
+    corpo: {'action': 'dashboard'},
+  ),
+  CasoFumaca(
+    funcao: 'school-admin',
+    descricao: 'Contexto de escola da conta (só leitura)',
+    esperado: {200},
+    corpo: {'action': 'context'},
+  ),
+  CasoFumaca(
+    funcao: 'school-billing',
+    descricao: 'Recusa ação desconhecida',
+    esperado: {400},
+    corpo: {'action': acaoDeTeste},
+  ),
+  CasoFumaca(
+    funcao: 'question-bank',
+    descricao: 'Recusa ação desconhecida',
+    esperado: {400},
+    corpo: {'action': acaoDeTeste},
+  ),
+  CasoFumaca(
+    funcao: 'study-platform',
+    descricao: 'Recusa ação desconhecida',
+    esperado: {400},
+    corpo: {'action': acaoDeTeste},
+  ),
+  CasoFumaca(
+    funcao: 'study-material',
+    descricao: 'Recusa ação desconhecida',
+    esperado: {400},
+    corpo: {'action': acaoDeTeste},
+  ),
+  CasoFumaca(
+    funcao: 'account-data',
+    descricao: 'Recusa quem não tem o segredo do cron',
+    esperado: {401},
+    corpo: {'action': acaoDeTeste},
+  ),
+  CasoFumaca(
+    funcao: 'analyze-attempt',
+    descricao: 'Recusa tentativa sem id (antes da IA)',
+    esperado: {400},
+  ),
+  CasoFumaca(
+    funcao: 'generate-practice',
+    descricao: 'Recusa matéria sem id (antes da IA)',
+    esperado: {400},
+  ),
+];
+
+/// Tabelas que nenhuma conta, nem da equipe, lê pela API.
+const tabelasFechadas = [
+  'question_bank_keys',
+  'team_error_events',
+  'app_error_events',
+  'ai_api_events',
+];
+
+/// Classifica uma resposta do teste de fumaça.
+CheckDiagnostico avaliarFumaca(
+  CasoFumaca caso,
+  RespostaFuncao resposta,
+  Duration duracao,
+) {
+  final ms = duracao.inMilliseconds;
+  final codigo = resposta.codigo == null ? '' : ' (${resposta.codigo})';
+  final SituacaoCheck situacao;
+  final String detalhe;
+  if (caso.esperado.contains(resposta.status)) {
+    situacao = ms > 4000 ? SituacaoCheck.aviso : SituacaoCheck.ok;
+    detalhe =
+        'HTTP ${resposta.status}$codigo em $ms ms'
+        '${ms > 4000 ? ': lenta' : ''}.';
+  } else if (resposta.status == 0) {
+    situacao = SituacaoCheck.falha;
+    detalhe = 'Sem resposta (rede, CORS ou tempo esgotado).';
+  } else if (resposta.status >= 500 || resposta.status == 401) {
+    situacao = SituacaoCheck.falha;
+    detalhe =
+        'HTTP ${resposta.status}$codigo; esperado '
+        '${caso.esperado.join(' ou ')}.';
+  } else {
+    situacao = SituacaoCheck.aviso;
+    detalhe =
+        'HTTP ${resposta.status}$codigo; esperado '
+        '${caso.esperado.join(' ou ')}.';
+  }
+  return CheckDiagnostico(
+    id: 'smoke_${caso.funcao}',
+    titulo: '${caso.funcao}: ${caso.descricao}',
+    situacao: situacao,
+    detalhe: detalhe,
+    origem: 'Deploy',
+    duracao: duracao,
+  );
+}
+
+/// Classifica uma sonda de leitura de tabela fechada.
+CheckDiagnostico avaliarSonda(
+  String tabela,
+  LeituraProtegida leitura,
+) => CheckDiagnostico(
+  id: 'probe_$tabela',
+  titulo: 'Leitura de $tabela bloqueada',
+  situacao: leitura.fechada ? SituacaoCheck.ok : SituacaoCheck.falha,
+  detalhe: leitura.negada
+      ? 'Recusada pelo banco${leitura.codigo == null ? '' : ' (${leitura.codigo})'}.'
+      : leitura.linhas == 0
+      ? 'Nenhuma linha visível para esta conta.'
+      : 'VAZOU: ${leitura.linhas} linha(s) visível(is) pela API.',
+  origem: 'Segurança',
+);
+
+/// Valida um deploy sem custo: chama cada Edge Function de forma segura e
+/// tenta ler as tabelas fechadas com a sessão do app.
+Future<RodadaDiagnostico> validarDeploy(
+  RepositorioEquipe repo, {
+  DateTime Function() agora = DateTime.now,
+}) async {
+  final itens = await Future.wait([
+    for (final caso in casosFumaca)
+      () async {
+        final relogio = Stopwatch()..start();
+        RespostaFuncao resposta;
+        try {
+          resposta = await repo.chamarFuncao(
+            caso.funcao,
+            corpo: caso.corpo,
+            get: caso.get,
+          );
+        } catch (_) {
+          resposta = const RespostaFuncao(0);
+        }
+        relogio.stop();
+        return avaliarFumaca(caso, resposta, relogio.elapsed);
+      }(),
+    for (final tabela in tabelasFechadas)
+      () async {
+        try {
+          return avaliarSonda(tabela, await repo.tentarLer(tabela));
+        } catch (_) {
+          return avaliarSonda(tabela, const LeituraProtegida(negada: true));
+        }
+      }(),
+  ]);
+  return RodadaDiagnostico(quando: agora(), itens: itens);
+}
+
+/// Resumo dos erros do app vindos de `team_app_errors`.
+class ResumoErrosApp {
+  ResumoErrosApp(DadosEquipe m)
+    : horas = inteiroEquipe(m['hours']),
+      total = inteiroEquipe(m['total']),
+      usuarios = inteiroEquipe(m['users']),
+      fatais = inteiroEquipe(m['fatal']),
+      porVersao = listaEquipe(m['by_version']),
+      principais = listaEquipe(m['top']),
+      recentes = listaEquipe(m['recent']);
+
+  final int horas;
+  final int total;
+  final int usuarios;
+  final int fatais;
+  final List<DadosEquipe> porVersao;
+  final List<DadosEquipe> principais;
+  final List<DadosEquipe> recentes;
+
+  /// "1.0.2+3 · patch 62" ou "1.0.2+3 · sem patch".
+  static String rotuloVersao(DadosEquipe v) {
+    final patch = v['patch'];
+    return '${v['version']}+${inteiroEquipe(v['build'])} · '
+        '${patch == null ? 'sem patch' : 'patch ${inteiroEquipe(patch)}'}';
+  }
+
+  /// Texto para colar num bug.
+  String relatorio({String? cabecalho}) => [
+    ?cabecalho,
+    'Erros do app nas últimas $horas h: $total ($fatais fatal(is)), '
+        '$usuarios conta(s)',
+    for (final v in porVersao)
+      '- ${v['app']} ${rotuloVersao(v)}: ${inteiroEquipe(v['n'])} erro(s), '
+          '${inteiroEquipe(v['users'])} conta(s)',
+    for (final t in principais)
+      '* ${t['kind']} em ${t['location']}: ${inteiroEquipe(t['n'])}x '
+          '(${(t['versions'] as List?)?.join(', ') ?? ''})',
+  ].join('\n');
 }
 
 class FalhaEquipe implements Exception {
@@ -180,6 +442,52 @@ class RepositorioEquipeSupabase implements RepositorioEquipe {
   Future<DadosEquipe> recomecarDadosDemo() async => mapaEquipe(
     await cliente.rpc('team_reset_own_demo_data').timeout(_limite),
   );
+
+  @override
+  Future<DadosEquipe> errosApp({int horas = 72}) async => mapaEquipe(
+    await cliente
+        .rpc('team_app_errors', params: {'p_hours': horas})
+        .timeout(_limite),
+  );
+
+  @override
+  Future<RespostaFuncao> chamarFuncao(
+    String nome, {
+    DadosEquipe corpo = const {},
+    bool get = false,
+  }) async {
+    try {
+      final r = await cliente.functions
+          .invoke(
+            nome,
+            method: get ? HttpMethod.get : HttpMethod.post,
+            body: get ? null : corpo,
+          )
+          .timeout(_limite);
+      return RespostaFuncao(r.status, codigo: _codigo(r.data));
+    } on FunctionException catch (e) {
+      return RespostaFuncao(e.status, codigo: _codigo(e.details));
+    }
+  }
+
+  static String? _codigo(Object? corpo) {
+    final erro = mapaEquipe(corpo)['error'];
+    return erro is String ? erro : null;
+  }
+
+  @override
+  Future<LeituraProtegida> tentarLer(String tabela) async {
+    try {
+      final linhas = await cliente
+          .from(tabela)
+          .select()
+          .limit(1)
+          .timeout(_limite);
+      return LeituraProtegida(negada: false, linhas: linhas.length);
+    } on PostgrestException catch (e) {
+      return LeituraProtegida(negada: true, codigo: e.code);
+    }
+  }
 }
 
 /// Roda os diagnósticos: os do servidor e os feitos pelo próprio app

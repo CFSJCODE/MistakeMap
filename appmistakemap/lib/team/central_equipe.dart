@@ -99,6 +99,10 @@ class _CentralEquipeState extends State<CentralEquipe> {
   bool _carregando = false;
   RodadaDiagnostico? _rodada;
   bool _diagnosticando = false;
+  RodadaDiagnostico? _deploy;
+  bool _validando = false;
+  ResumoErrosApp? _errosApp;
+  String? _falhaErrosApp;
   String? _avisoQa;
   bool _avisoQaOk = true;
   bool _qaOcupado = false;
@@ -141,11 +145,37 @@ class _CentralEquipeState extends State<CentralEquipe> {
         _retrato = retrato;
         _erro = null;
       });
+      unawaited(_carregarErrosApp());
     } catch (e) {
       if (mounted) setState(() => _erro = mensagemFalhaEquipe(e));
     } finally {
       if (mounted) setState(() => _carregando = false);
     }
+  }
+
+  /// Erros do app vêm de outra RPC: se ela falhar (ex.: antes do deploy da
+  /// migration), o resto da Central continua de pé.
+  Future<void> _carregarErrosApp() async {
+    try {
+      final dados = await widget.repositorio.errosApp();
+      if (!mounted) return;
+      setState(() {
+        _errosApp = ResumoErrosApp(dados);
+        _falhaErrosApp = null;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _falhaErrosApp = mensagemFalhaEquipe(e));
+    }
+  }
+
+  Future<void> _validarDeploy() async {
+    setState(() => _validando = true);
+    final rodada = await validarDeploy(widget.repositorio);
+    if (!mounted) return;
+    setState(() {
+      _deploy = rodada;
+      _validando = false;
+    });
   }
 
   Future<void> _diagnosticar() async {
@@ -545,7 +575,8 @@ class _CentralEquipeState extends State<CentralEquipe> {
     final porCodigo = listaEquipe(erros['by_code_24h']);
     final recentes = listaEquipe(erros['recent']);
     return [
-      ..._cabecalhoCarga('Erros do backend'),
+      ..._cabecalhoCarga('Erros do backend e do app'),
+      ..._cartaoErrosApp(),
       if (r == null && _erro == null) const Center(child: ProgressRing()),
       if (r != null) ...[
         CartaoEscola(
@@ -603,10 +634,138 @@ class _CentralEquipeState extends State<CentralEquipe> {
     ];
   }
 
+  List<Widget> _cartaoErrosApp() {
+    final e = _errosApp;
+    if (e == null) {
+      return [
+        if (_falhaErrosApp != null)
+          CartaoEscola(
+            titulo: 'Erros do app',
+            children: [AvisoEscola(_falhaErrosApp!, sucesso: false)],
+          ),
+      ];
+    }
+    return [
+      CartaoEscola(
+        titulo: 'Erros do app (últimas ${e.horas} h)',
+        subtitulo:
+            'Exceções dos apps do aluno e da equipe em produção, por versão '
+            'e patch: depois de um patch, confira se o erro sumiu ou se '
+            'apareceu um novo. Só tipo, arquivo:linha e versão.',
+        children: [
+          _Numeros(
+            itens: [
+              ('Erros', e.total),
+              ('Fatais', e.fatais),
+              ('Contas afetadas', e.usuarios),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (e.total == 0)
+            const Text('Nenhum erro do app no período.')
+          else ...[
+            const Text(
+              'Por versão',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            for (final v in e.porVersao)
+              _LinhaSituacao(
+                situacao: SituacaoCheck.aviso,
+                titulo:
+                    '${v['app'] == 'equipe' ? 'Equipe' : 'Aluno'} '
+                    '${ResumoErrosApp.rotuloVersao(v)}',
+                detalhe:
+                    '${inteiroEquipe(v['n'])} erro(s) · '
+                    '${inteiroEquipe(v['users'])} conta(s) · último '
+                    '${_quando(dataEquipe(v['last_at']))}',
+              ),
+            const SizedBox(height: 12),
+            const Text(
+              'Erros mais frequentes',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            for (final t in e.principais)
+              _LinhaSituacao(
+                situacao: t['fatal'] == true
+                    ? SituacaoCheck.falha
+                    : SituacaoCheck.aviso,
+                titulo: '${t['kind']} · ${t['location']}',
+                detalhe:
+                    '${inteiroEquipe(t['n'])} vez(es) em '
+                    '${inteiroEquipe(t['users'])} conta(s) · '
+                    '${(t['versions'] as List?)?.join(', ') ?? ''} · '
+                    '${(t['platforms'] as List?)?.join(', ') ?? ''} · '
+                    'último ${_quando(dataEquipe(t['last_at']))}',
+              ),
+            const SizedBox(height: 12),
+            BotaoEscola(
+              'Copiar resumo',
+              onPressed: () => _copiar(
+                e.relatorio(cabecalho: widget.info.texto()),
+                'Resumo dos erros copiado.',
+              ),
+            ),
+          ],
+        ],
+      ),
+    ];
+  }
+
   // ─── Diagnóstico ────────────────────────────────────────────────────────
   List<Widget> _diagnostico() {
     final rodada = _rodada;
+    final deploy = _deploy;
     return [
+      CartaoEscola(
+        titulo: 'Validar deploy',
+        subtitulo:
+            'Teste de fumaça sem custo depois de um merge: chama cada Edge '
+            'Function de um jeito seguro (sem IA, sem cobrança, sem gravar '
+            'nada) e tenta ler as tabelas fechadas com esta conta.',
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              BotaoEscola(
+                _validando ? 'Validando…' : 'Validar deploy',
+                key: const ValueKey('equipe-validar-deploy'),
+                principal: true,
+                onPressed: _validando ? null : _validarDeploy,
+              ),
+              if (deploy != null)
+                BotaoEscola(
+                  'Copiar resultado',
+                  onPressed: () => _copiar(
+                    deploy.relatorio(cabecalho: widget.info.texto()),
+                    'Resultado copiado. Cole no PR ou no chat.',
+                  ),
+                ),
+            ],
+          ),
+          if (_validando) ...[
+            const SizedBox(height: 12),
+            const Center(child: ProgressRing()),
+          ],
+          if (deploy != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Deploy: ${deploy.geral.rotulo} · '
+              '${deploy.conta(SituacaoCheck.ok)} ok · '
+              '${deploy.conta(SituacaoCheck.aviso)} atenção · '
+              '${deploy.conta(SituacaoCheck.falha)} falha · às '
+              '${_hora(deploy.quando)}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            for (final i in deploy.itens)
+              _LinhaSituacao(
+                situacao: i.situacao,
+                titulo: '${i.titulo} (${i.origem})',
+                detalhe: i.detalhe,
+              ),
+          ],
+        ],
+      ),
       CartaoEscola(
         titulo: 'Executor de diagnósticos',
         subtitulo:

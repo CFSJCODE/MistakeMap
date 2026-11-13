@@ -101,6 +101,63 @@ class _RepoFalso implements RepositorioEquipe {
     recomecos++;
     return {'exercises_removed': 3, 'notes_archived': 1, 'examples_created': 6};
   }
+
+  /// Função que responde 500 no teste de fumaça.
+  String? funcaoQuebrada;
+
+  /// Tabela que "vaza" linhas na sonda.
+  String? tabelaAberta;
+
+  @override
+  Future<DadosEquipe> errosApp({int horas = 72}) async => {
+    'hours': horas,
+    'total': 3,
+    'users': 2,
+    'fatal': 1,
+    'by_version': [
+      {
+        'app': 'aluno',
+        'version': '1.0.2',
+        'build': 3,
+        'patch': 62,
+        'n': 3,
+        'users': 2,
+        'last_at': '2026-11-13T01:00:00Z',
+      },
+    ],
+    'top': [
+      {
+        'kind': 'RangeError',
+        'location': 'ai/force_layout.dart:88',
+        'n': 2,
+        'users': 2,
+        'fatal': true,
+        'versions': ['1.0.2+3 p62'],
+        'platforms': ['android'],
+        'last_at': '2026-11-13T01:00:00Z',
+      },
+    ],
+    'recent': [],
+  };
+
+  @override
+  Future<RespostaFuncao> chamarFuncao(
+    String nome, {
+    DadosEquipe corpo = const {},
+    bool get = false,
+  }) async {
+    if (nome == funcaoQuebrada) {
+      return const RespostaFuncao(500, codigo: 'internal_error');
+    }
+    final caso = casosFumaca.firstWhere((c) => c.funcao == nome);
+    return RespostaFuncao(caso.esperado.first);
+  }
+
+  @override
+  Future<LeituraProtegida> tentarLer(String tabela) async =>
+      tabela == tabelaAberta
+      ? const LeituraProtegida(negada: false, linhas: 1)
+      : const LeituraProtegida(negada: true, codigo: '42501');
 }
 
 const _info = InfoBuild(
@@ -226,6 +283,62 @@ void main() {
     expect(texto, contains('Versão: 1.0.2 (build 3)'));
     expect(texto, contains('[Falhou] App: Sessão da conta'));
     expect(texto, contains('[OK] App: Edge Functions (health)'));
+  });
+
+  test('Validar deploy aponta função com 500 e tabela que vaza', () async {
+    final ok = await validarDeploy(_RepoFalso());
+    expect(ok.geral, SituacaoCheck.ok);
+    expect(ok.itens.length, casosFumaca.length + tabelasFechadas.length);
+
+    final repo = _RepoFalso()
+      ..funcaoQuebrada = 'question-bank'
+      ..tabelaAberta = 'question_bank_keys';
+    final ruim = await validarDeploy(repo);
+    expect(ruim.geral, SituacaoCheck.falha);
+    final texto = ruim.relatorio();
+    expect(texto, contains('[Falhou] Deploy: question-bank'));
+    expect(texto, contains('HTTP 500 (internal_error)'));
+    expect(texto, contains('VAZOU: 1 linha'));
+  });
+
+  test('Fumaça: 4xx inesperado é atenção; sem resposta é falha', () {
+    const caso = CasoFumaca(funcao: 'x', descricao: 'y', esperado: {200});
+    expect(
+      avaliarFumaca(caso, const RespostaFuncao(404), Duration.zero).situacao,
+      SituacaoCheck.aviso,
+    );
+    expect(
+      avaliarFumaca(caso, const RespostaFuncao(0), Duration.zero).situacao,
+      SituacaoCheck.falha,
+    );
+    expect(
+      avaliarFumaca(
+        caso,
+        const RespostaFuncao(200),
+        const Duration(seconds: 5),
+      ).situacao,
+      SituacaoCheck.aviso,
+    );
+  });
+
+  testWidgets('Diagnóstico valida o deploy e Erros mostra erros do app', (
+    tester,
+  ) async {
+    _telaAlta(tester);
+    await tester.pumpWidget(_app(_RepoFalso()..funcaoQuebrada = 'health'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('equipe-secao-diagnostico')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('equipe-validar-deploy')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Deploy: Falhou'), findsOneWidget);
+    expect(find.text('health: Banco e R2 respondem (Deploy)'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('equipe-secao-erros')));
+    await tester.pumpAndSettle();
+    expect(find.text('Erros do app (últimas 72 h)'), findsOneWidget);
+    expect(find.text('Aluno 1.0.2+3 · patch 62'), findsOneWidget);
+    expect(find.text('RangeError · ai/force_layout.dart:88'), findsOneWidget);
   });
 
   testWidgets('Barra mostra a Central da Equipe no destino da conta', (
