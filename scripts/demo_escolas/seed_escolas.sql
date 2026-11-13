@@ -435,9 +435,9 @@ begin
   on conflict (user_id) do nothing;
 
   -- ── Turmas ────────────────────────────────────────────────────────────────
-  volt_alunos := array(select pg_temp.u('VOLT_ALUNO' || k) from generate_series(1, 5) k);
-  a2 := array(select pg_temp.u('NEXO_ALUNO' || lpad(k::text, 2, '0')) from generate_series(1, 5) k);
-  b3 := array(select pg_temp.u('NEXO_ALUNO' || lpad(k::text, 2, '0')) from generate_series(6, 10) k);
+  volt_alunos := array(select pg_temp.u('VOLT_ALUNO' || g.n) from generate_series(1, 5) as g(n));
+  a2 := array(select pg_temp.u('NEXO_ALUNO' || lpad(g.n::text, 2, '0')) from generate_series(1, 5) as g(n));
+  b3 := array(select pg_temp.u('NEXO_ALUNO' || lpad(g.n::text, 2, '0')) from generate_series(6, 10) as g(n));
 
   c_sab := pg_temp.turma(volt, pg_temp.u('VOLT_DONO'), 'Robótica com Arduino — Turma de Sábado', 150);
   c_qua := pg_temp.turma(volt, pg_temp.u('VOLT_PROFESSORA'), 'Eletrônica Básica — Turma de Quarta', 120);

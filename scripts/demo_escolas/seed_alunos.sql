@@ -7,6 +7,19 @@ declare
   uid uuid; v uuid; r jsonb; e jsonb; x jsonb; c text; aid uuid; eid uuid; s_id uuid;
   qrow record; ex uuid; subj uuid; conc uuid; diag jsonb; ans text; ok boolean; an jsonb; h numeric; keys jsonb; pub jsonb; res jsonb; mid uuid;
 begin
+  -- O seed grava centenas de linhas na mesma transação: desliga o limite de 300/min
+  -- (enforce_rate_limit) só durante este bloco; o bloco é atômico e religa no fim.
+  alter table public.subjects disable trigger enforce_rate_limit;
+  alter table public.concepts disable trigger enforce_rate_limit;
+  alter table public.concept_edges disable trigger enforce_rate_limit;
+  alter table public.exercises disable trigger enforce_rate_limit;
+  alter table public.exercise_concepts disable trigger enforce_rate_limit;
+  alter table public.attempts disable trigger enforce_rate_limit;
+  alter table public.corrections disable trigger enforce_rate_limit;
+  alter table public.error_events disable trigger enforce_rate_limit;
+  alter table public.mastery_events disable trigger enforce_rate_limit;
+  alter table public.profiles disable trigger enforce_rate_limit;
+  alter table public.attempt_assets disable trigger enforce_rate_limit;
   create temp table mm_map(k text primary key, id uuid not null) on commit drop;
   execute $f$create function pg_temp.i(k text) returns uuid language sql stable as 'select md5(current_setting(''mm.uid'')||k)::uuid'$f$;
   execute $f$create function pg_temp.m(k text) returns uuid language sql stable as 'select id from mm_map where mm_map.k=$1'$f$;
@@ -191,5 +204,16 @@ begin
     end loop;
     perform set_config('request.jwt.claim.sub', '', true);
   end loop;
+  alter table public.subjects enable trigger enforce_rate_limit;
+  alter table public.concepts enable trigger enforce_rate_limit;
+  alter table public.concept_edges enable trigger enforce_rate_limit;
+  alter table public.exercises enable trigger enforce_rate_limit;
+  alter table public.exercise_concepts enable trigger enforce_rate_limit;
+  alter table public.attempts enable trigger enforce_rate_limit;
+  alter table public.corrections enable trigger enforce_rate_limit;
+  alter table public.error_events enable trigger enforce_rate_limit;
+  alter table public.mastery_events enable trigger enforce_rate_limit;
+  alter table public.profiles enable trigger enforce_rate_limit;
+  alter table public.attempt_assets enable trigger enforce_rate_limit;
 end
 $seed$;
