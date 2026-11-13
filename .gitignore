@@ -67,8 +67,18 @@ desktop.ini
 # Reversa � configura��es pessoais (n�o versionar)
 .reversa/config.user.toml
 
-# Cópia local de build (worktree antigo, sem código-fonte)
-MistakeMap_release/
+# Cópias locais, caches e worktrees criados dentro do clone (o lugar deles é
+# fora da pasta; ver .github/CONTRIBUTING.md, seção 26.1)
+MistakeMap_*/
+MistakeMap-wt-*/
+/_reversa_unificacao/
+
+# Crash dumps da JVM (Gradle/Android Studio)
+hs_err_pid*.log
+replay_pid*.log
+
+# Configuração pessoal do Claude Code (permissões locais)
+.claude/settings.local.json
 
 # SDK do Flutter baixado pelo build da Vercel
 /.vercel-flutter/

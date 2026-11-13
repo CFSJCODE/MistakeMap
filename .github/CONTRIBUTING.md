@@ -653,6 +653,13 @@ git push origin feat/minha-funcionalidade
 
 Abra um Pull Request.
 
+### 26.1 Pasta local organizada
+
+- **Worktrees ficam fora da pasta do clone.** Crie-os ao lado (`git worktree add ../MistakeMap-wt-<nome> <branch>`), nunca dentro de `MistakeMap/`. Para mudar um de lugar use `git worktree move`, e para tirar use `git worktree remove` (só se estiver limpo); depois rode `git worktree prune`.
+- **Caches e builds também ficam fora**, ou em pastas já ignoradas (`build/`, `.dart_tool/`). Cópias como `MistakeMap_release/` e `MistakeMap_build_cache/` são ignoradas, mas o lugar delas é fora do repositório.
+- **Segredos só em `.env.*.local`** (ignorados). Nunca apague nem versione esses arquivos; o modelo versionado é o `.env.*.example`.
+- **Depois do merge**, volte para o `main` atualizado (`git switch main && git pull`) e apague a branch local já mergeada (`git branch -d <branch>`). Uma branch antiga com upstream `[gone]` faz a raiz parecer desatualizada.
+
 ---
 
 ## 27. Nomes de branches
