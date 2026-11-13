@@ -599,6 +599,42 @@ begin
 end
 $seed2$;
 
+-- Cargo e área de cada pessoa (migration 20261113200000): o organograma que
+-- aparece no app em "Equipe e cargos". Vale para todas as linhas da pessoa na
+-- escola. Quem não está na lista (alunos, responsáveis) fica sem cargo.
+update public.school_members m
+   set job_title = c.cargo, department = c.area
+  from (values
+    ('Oficina Volt — Robótica e Eletrônica (demonstração)', 'VOLT_DONO', 'Diretor e proprietário', 'Direção'),
+    ('Oficina Volt — Robótica e Eletrônica (demonstração)', 'VOLT_PROFESSORA', 'Professora auxiliar', 'Ensino'),
+    ('Oficina Volt — Robótica e Eletrônica (demonstração)', 'VOLT_SECRETARIA', 'Secretária e atendimento', 'Secretaria'),
+    ('*nexo', 'NEXO_DIRETORIA', 'Diretora Regional', 'Sede — Diretoria Regional'),
+    ('*nexo', 'NEXO_SUPERINTENDENCIA', 'Superintendente de Educação', 'Sede — Superintendência de Educação'),
+    ('*nexo', 'NEXO_TI', 'Gerente Geral de Tecnologia da Informação', 'Sede — Tecnologia da Informação'),
+    ('*nexo', 'NEXO_FINANCEIRO', 'Gerente de Finanças e Controle', 'Sede — Finanças e Controle'),
+    ('*nexo', 'NEXO_SUPRIMENTOS', 'Analista de Suprimentos, Compras e Contratos', 'Sede — Finanças e Controle'),
+    ('Colégio Nexo — Unidade Vale do Ferro (demonstração)', 'NEXO_VF_DIRETOR', 'Diretor da Unidade', 'Direção da Unidade'),
+    ('Colégio Nexo — Unidade Vale do Ferro (demonstração)', 'NEXO_VF_COORDENACAO', 'Coordenadora Pedagógica', 'Coordenação Pedagógica'),
+    ('Colégio Nexo — Unidade Vale do Ferro (demonstração)', 'NEXO_VF_ORIENTACAO', 'Orientadora Educacional', 'Coordenação Pedagógica'),
+    ('Colégio Nexo — Unidade Vale do Ferro (demonstração)', 'NEXO_VF_ADMINISTRATIVO', 'Coordenador Administrativo-Financeiro', 'Núcleo Administrativo-Financeiro'),
+    ('Colégio Nexo — Unidade Vale do Ferro (demonstração)', 'NEXO_VF_SECRETARIA', 'Secretário Escolar', 'Secretaria Escolar'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_CENTRO_GERENTE', 'Gerente da Unidade', 'Direção da Unidade'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_COORDENACAO', 'Coordenador de Educação', 'Coordenação Pedagógica'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_CENTRO_ADMINISTRATIVO', 'Coordenador Administrativo-Financeiro', 'Núcleo Administrativo-Financeiro'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_CENTRO_SECRETARIA', 'Secretária Acadêmica', 'Secretaria Escolar'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_PROF_ELETRONICA', 'Instrutora de Eletrônica', 'Corpo Docente'),
+    ('Colégio Nexo — Unidade Centro (demonstração)', 'NEXO_PROF_ROBOTICA', 'Instrutor de Robótica e técnico da equipe OBR', 'Corpo Docente'),
+    ('*todas', 'EQUIPE_ADMIN', 'Equipe MistakeMap — Administração', 'Suporte MistakeMap'),
+    ('*todas', 'EQUIPE_DEV', 'Equipe MistakeMap — Desenvolvimento', 'Suporte MistakeMap')
+  ) as c(escola, chave, cargo, area)
+  join public.schools s on s.name = c.escola
+    or (c.escola = '*nexo' and s.name like 'Colégio Nexo — Unidade % (demonstração)')
+    or (c.escola = '*todas' and s.name in ('Oficina Volt — Robótica e Eletrônica (demonstração)',
+                                         'Colégio Nexo — Unidade Vale do Ferro (demonstração)',
+                                         'Colégio Nexo — Unidade Centro (demonstração)'))
+ where m.school_id = s.id and m.user_id = pg_temp.u(c.chave)
+   and (m.job_title is distinct from c.cargo or m.department is distinct from c.area);
+
 -- Resumo para conferência.
 select s.name, s.plan, s.billing_cycle, s.status,
   (select count(*) from public.school_members m where m.school_id = s.id) as papeis,

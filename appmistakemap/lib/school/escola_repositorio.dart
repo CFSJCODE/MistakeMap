@@ -43,7 +43,10 @@ class RepositorioEscolaSupabase implements RepositorioEscola {
           .limit(1),
       cliente
           .from('school_members')
-          .select('school_id,role,status,schools(name,plan,status)')
+          .select(
+            'school_id,role,status,job_title,department,'
+            'schools(name,plan,status)',
+          )
           .eq('user_id', uid),
       cliente
           .from('school_team_members')

@@ -192,6 +192,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
     final membros = linhasEscola(_dados['members']);
     final convites = linhasEscola(_dados['invites']);
     final equipes = linhasEscola(_dados['teams']);
+    final equipeEscola = linhasEscola(_dados['staff']);
     final podeConvidar = papeisConvidaveis.containsKey(papel);
     final podeEquipe = const {
       'owner',
@@ -205,6 +206,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
       // nenhum dos dois, não mostra plano (nada de "Grátis" piscando).
       subtitulo: [
         nomesPapel[papel] ?? papel,
+        ?widget.perfil.cargo,
         if (nomesPlano[escola['plan'] ?? widget.perfil.plano] case final plano?)
           'plano $plano',
       ].join(' · '),
@@ -252,6 +254,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
                 ),
               ],
             ),
+          if (equipeEscola.isNotEmpty) _cartaoOrganograma(equipeEscola),
           if (podeConvidar) _cartaoConvites(papel, convites),
           if (podeEquipe || equipes.isNotEmpty)
             _cartaoEquipes(podeEquipe, equipes),
@@ -347,6 +350,34 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
       }, style: const TextStyle(color: MistakeMapDesign.content)),
     ],
   );
+
+  /// Quem trabalha na escola, com cargo e área, agrupado por área como num
+  /// organograma. Só a gestão e o financeiro recebem essa lista.
+  Widget _cartaoOrganograma(List<DadosEscola> pessoas) {
+    final porArea = <String, List<DadosEscola>>{};
+    for (final p in pessoas) {
+      final area = textoOuNulo(p['department']) ?? 'Sem área definida';
+      porArea.putIfAbsent(area, () => []).add(p);
+    }
+    return CartaoEscola(
+      titulo: 'Equipe e cargos',
+      subtitulo:
+          'Quem trabalha na escola, por área. O cargo é só o nome no '
+          'organograma; o acesso vem do papel.',
+      children: [
+        for (final MapEntry(key: area, value: lista) in porArea.entries) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Text(
+              area,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          for (final p in lista) _LinhaPessoa(pessoa: p),
+        ],
+      ],
+    );
+  }
 
   Widget _cartaoConvites(String papel, List<DadosEscola> convites) {
     final papeis = papeisConvidaveis[papel]!;
@@ -724,6 +755,37 @@ class _MolduraPerfil extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _LinhaPessoa extends StatelessWidget {
+  const _LinhaPessoa({required this.pessoa});
+  final DadosEscola pessoa;
+
+  @override
+  Widget build(BuildContext context) {
+    final nome =
+        textoOuNulo(pessoa['full_name']) ??
+        textoOuNulo(pessoa['email']) ??
+        'Pessoa da escola';
+    final cargo = textoOuNulo(pessoa['job_title']);
+    final papeis = [
+      for (final r in pessoa['roles'] is List ? pessoa['roles'] as List : [])
+        nomesPapel['$r'] ?? '$r',
+    ];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(nome),
+          Text(
+            [?cargo, papeis.join(', ')].where((t) => t.isNotEmpty).join(' · '),
+            style: TextStyle(color: MistakeMapDesign.steel),
+          ),
+        ],
       ),
     );
   }
