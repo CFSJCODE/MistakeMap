@@ -18,9 +18,14 @@ export function required(name: string, get: Environment = env): string {
 // authentication: every handler still validates the caller's JWT.
 const LOOPBACK_ORIGIN =
   /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d{1,5})?$/;
+// Deploys da Vercel do projeto (preview e links de cada deploy): o sufixo
+// "-cfsjtech.vercel.app" só é emitido para o time da Vercel do MistakeMap.
+const VERCEL_DEPLOY_ORIGIN =
+  /^https:\/\/mistakemap-[a-z0-9-]{1,80}-cfsjtech\.vercel\.app$/;
 export function originAllowed(origin: string, get: Environment = env): boolean {
   if (!origin) return false;
   if (LOOPBACK_ORIGIN.test(origin)) return true;
+  if (VERCEL_DEPLOY_ORIGIN.test(origin)) return true;
   return (get("ALLOWED_ORIGINS") ?? "").split(",").map((s) => s.trim())
     .filter(Boolean).includes(origin);
 }
