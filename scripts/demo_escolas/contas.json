@@ -1,0 +1,35 @@
+{
+  "_sobre": "Contas de demonstração comercial/acadêmica do MistakeMap. Sem senhas: criar_contas.mjs gera as senhas no PC e grava só em appmistakemap/.env.contas-demo.local (ignorado pelo Git).",
+  "contas": [
+    {"chave": "VOLT_DONO", "email": "dono.volt.demo@mistakemap.dev", "nome": "Marcos Andrade", "perfil": "owner", "escola": "Oficina Volt", "demonstra": "Dono de escola pequena que faz quase tudo: dono, coordenação e professor da turma de sábado; paga por Pix, vê faturas, plano e relatórios."},
+    {"chave": "VOLT_PROFESSORA", "email": "professora.volt.demo@mistakemap.dev", "nome": "Juliana Prado", "perfil": "teacher", "escola": "Oficina Volt", "demonstra": "Professora auxiliar: turma de quarta, mapa da turma e tarefas."},
+    {"chave": "VOLT_ALUNO1", "email": "aluno1.volt.demo@mistakemap.dev", "nome": "Davi Lima", "perfil": "student", "nascimento": "2012-03-18", "escola": "Oficina Volt", "demonstra": "Aluno menor de idade (14 anos) com responsável vinculado."},
+    {"chave": "VOLT_ALUNO2", "email": "aluno2.volt.demo@mistakemap.dev", "nome": "Lara Mendes", "perfil": "student_team", "nascimento": "2011-08-02", "escola": "Oficina Volt", "demonstra": "Aluna da equipe FLL da oficina."},
+    {"chave": "VOLT_ALUNO3", "email": "aluno3.volt.demo@mistakemap.dev", "nome": "Pedro Souza", "perfil": "student", "nascimento": "2010-11-25", "escola": "Oficina Volt", "demonstra": "Aluno com Mapa, Caderno, Estudar e tarefas."},
+    {"chave": "VOLT_ALUNO4", "email": "aluno4.volt.demo@mistakemap.dev", "nome": "Sofia Ramos", "perfil": "student_team", "nascimento": "2011-01-14", "escola": "Oficina Volt", "demonstra": "Aluna da equipe FLL da oficina."},
+    {"chave": "VOLT_ALUNO5", "email": "aluno5.volt.demo@mistakemap.dev", "nome": "Gabriel Costa", "perfil": "student", "nascimento": "2009-06-30", "escola": "Oficina Volt", "demonstra": "Aluno que não compartilha o progresso com a turma (consentimento desligado)."},
+    {"chave": "VOLT_RESPONSAVEL", "email": "responsavel.volt.demo@mistakemap.dev", "nome": "Sandra Lima", "perfil": "guardian", "escola": "Oficina Volt", "demonstra": "Responsável do Davi: acompanha o progresso do filho."},
+
+    {"chave": "NEXO_DIRETORIA", "email": "diretoria.nexo.demo@mistakemap.dev", "nome": "Helena Vasconcelos", "perfil": "owner", "escola": "Rede Nexo", "demonstra": "Diretoria regional da rede: dona das duas unidades, acompanha relatórios e faturas sem pagar diretamente."},
+    {"chave": "NEXO_COORDENACAO", "email": "coordenacao.nexo.demo@mistakemap.dev", "nome": "Ricardo Teixeira", "perfil": "coordinator", "escola": "Rede Nexo", "demonstra": "Coordenação pedagógica das duas unidades: turmas, professores, mapa das turmas e relatórios."},
+    {"chave": "NEXO_TI", "email": "ti.nexo.demo@mistakemap.dev", "nome": "Fernanda Okada", "perfil": "it_admin", "escola": "Rede Nexo", "demonstra": "TI da rede: convites, cadastros e painel administrativo sem dado pedagógico."},
+    {"chave": "NEXO_FINANCEIRO", "email": "financeiro.nexo.demo@mistakemap.dev", "nome": "Paulo Siqueira", "perfil": "finance", "escola": "Rede Nexo", "demonstra": "Financeiro/Compras: é quem paga; boleto 30 dias com pedido de compra, centro de custo e NFS-e."},
+    {"chave": "NEXO_PROF_ELETRONICA", "email": "prof.eletronica.nexo.demo@mistakemap.dev", "nome": "Carla Nogueira", "perfil": "teacher", "escola": "Rede Nexo", "demonstra": "Professora do 2º ano A (Eletrônica e Sistemas Embarcados): mapa da turma e tarefas."},
+    {"chave": "NEXO_PROF_ROBOTICA", "email": "prof.robotica.nexo.demo@mistakemap.dev", "nome": "André Moura", "perfil": "teacher", "escola": "Rede Nexo", "demonstra": "Professor do 3º ano B (Robótica Móvel) e técnico da equipe OBR."},
+    {"chave": "NEXO_ALUNO01", "email": "aluno01.nexo.demo@mistakemap.dev", "nome": "Beatriz Alves", "perfil": "student", "nascimento": "2010-04-09", "escola": "Rede Nexo", "demonstra": "Aluna menor de idade com responsável vinculado (2º ano A)."},
+    {"chave": "NEXO_ALUNO02", "email": "aluno02.nexo.demo@mistakemap.dev", "nome": "Lucas Ferreira", "perfil": "student", "nascimento": "2009-12-01", "escola": "Rede Nexo", "demonstra": "Aluno do 2º ano A."},
+    {"chave": "NEXO_ALUNO03", "email": "aluno03.nexo.demo@mistakemap.dev", "nome": "Mariana Rocha", "perfil": "student_team", "nascimento": "2009-07-21", "escola": "Rede Nexo", "demonstra": "Aluna do 2º ano A e da equipe OBR (eletrônica)."},
+    {"chave": "NEXO_ALUNO04", "email": "aluno04.nexo.demo@mistakemap.dev", "nome": "Thiago Martins", "perfil": "student", "nascimento": "2009-10-15", "escola": "Rede Nexo", "demonstra": "Aluno do 2º ano A."},
+    {"chave": "NEXO_ALUNO05", "email": "aluno05.nexo.demo@mistakemap.dev", "nome": "Isabela Cardoso", "perfil": "student", "nascimento": "2010-02-27", "escola": "Rede Nexo", "demonstra": "Aluna do 2º ano A."},
+    {"chave": "NEXO_ALUNO06", "email": "aluno06.nexo.demo@mistakemap.dev", "nome": "Rafael Gomes", "perfil": "student_team", "nascimento": "2009-05-06", "escola": "Rede Nexo", "demonstra": "Aluno menor do 3º ano B e da equipe OBR (programação), com responsável."},
+    {"chave": "NEXO_ALUNO07", "email": "aluno07.nexo.demo@mistakemap.dev", "nome": "Julia Barbosa", "perfil": "student_team", "nascimento": "2008-09-19", "escola": "Rede Nexo", "demonstra": "Aluna do 3º ano B e da equipe OBR (mecânica)."},
+    {"chave": "NEXO_ALUNO08", "email": "aluno08.nexo.demo@mistakemap.dev", "nome": "Enzo Ribeiro", "perfil": "student", "nascimento": "2008-12-11", "escola": "Rede Nexo", "demonstra": "Aluno do 3º ano B."},
+    {"chave": "NEXO_ALUNO09", "email": "aluno09.nexo.demo@mistakemap.dev", "nome": "Laura Pinto", "perfil": "student_team", "nascimento": "2008-03-03", "escola": "Rede Nexo", "demonstra": "Aluna do 3º ano B e da equipe OBR (estratégia)."},
+    {"chave": "NEXO_ALUNO10", "email": "aluno10.nexo.demo@mistakemap.dev", "nome": "Miguel Araújo", "perfil": "student", "nascimento": "2008-07-28", "escola": "Rede Nexo", "demonstra": "Aluno do 3º ano B que não compartilha o progresso."},
+    {"chave": "NEXO_RESPONSAVEL", "email": "responsavel.nexo.demo@mistakemap.dev", "nome": "Cláudia Gomes", "perfil": "guardian", "escola": "Rede Nexo", "demonstra": "Responsável de dois alunos (Beatriz e Rafael)."},
+
+    {"chave": "EQUIPE_ADMIN", "email": "admin.demo@mistakemap.dev", "nome": "Admin Demonstração", "perfil": "admin", "escola": "Todas", "demonstra": "App MistakeMap Equipe: Admin + Central da Equipe, e todos os papéis nas três escolas demo."},
+    {"chave": "EQUIPE_DEV", "email": "dev.demo@mistakemap.dev", "nome": "Dev Demonstração", "perfil": "developer", "escola": "Todas", "demonstra": "App MistakeMap Equipe como desenvolvedor: Central da Equipe, diagnósticos e todos os papéis nas três escolas demo."},
+    {"chave": "INDIVIDUAL", "email": "teste@mistakemap.dev", "nome": "Estudante Individual", "perfil": "student", "nascimento": "2005-05-20", "escola": "Nenhuma", "demonstra": "Estudante sem escola (uso individual, plano grátis) com todas as abas preenchidas; também é a conta dos testes."}
+  ]
+}
