@@ -70,12 +70,81 @@ export function failure(req: Request, e: unknown): Response {
   console.warn(
     JSON.stringify({ event: "ai_request_failed", code: error.code }),
   );
+  keepAlive(recordFailure(req, error.code, error.status));
   return json(
     req,
     { error: error.code, message: error.publicMessage },
     error.status,
   );
 }
+/** Nome da Edge Function a partir da URL (`/functions/v1/<nome>` ou `/<nome>`). */
+export function functionName(url: string): string {
+  let path: string[];
+  try {
+    path = new URL(url).pathname.split("/").filter(Boolean);
+  } catch {
+    return "unknown";
+  }
+  const [first, second, third] = path;
+  const name = first === "functions" && second === "v1" ? third : first;
+  return name && /^[a-z0-9][a-z0-9_-]{0,63}$/.test(name) ? name : "unknown";
+}
+
+/** Só falhas que a equipe precisa ver: limite (429) e erros do servidor. */
+export function shouldRecord(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+/**
+ * Registra a falha em `team_error_events` (Central da Equipe): função, código
+ * público e status, nunca usuário ou conteúdo. Melhor esforço: sem
+ * configuração ou com o banco fora, não atrapalha a resposta.
+ */
+export async function recordFailure(
+  req: Request,
+  code: string,
+  status: number,
+  get: Environment = env,
+  fetcher: typeof fetch = fetch,
+): Promise<void> {
+  if (!shouldRecord(status)) return;
+  const url = get("SUPABASE_URL")?.trim();
+  const key = get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+  if (!url || !key) return;
+  try {
+    const response = await fetcher(
+      `${url.replace(/\/$/, "")}/rest/v1/team_error_events`,
+      {
+        method: "POST",
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          function_name: functionName(req.url),
+          code: code.slice(0, 64) || "unknown",
+          status,
+        }),
+        signal: AbortSignal.timeout(3000),
+      },
+    );
+    await response.body?.cancel();
+  } catch {
+    // O registro nunca derruba a resposta ao usuário.
+  }
+}
+
+type WaitUntil = { waitUntil?: (promise: Promise<unknown>) => void };
+
+/** Mantém a gravação viva depois da resposta, quando o runtime permite. */
+function keepAlive(promise: Promise<void>): void {
+  const runtime = (globalThis as { EdgeRuntime?: WaitUntil }).EdgeRuntime;
+  if (runtime?.waitUntil) runtime.waitUntil(promise);
+  else promise.catch(() => {});
+}
+
 export async function body(req: Request): Promise<Record<string, unknown>> {
   try {
     const bytes = await readLimited(req.body, 4096);
