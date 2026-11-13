@@ -157,12 +157,20 @@ export async function schoolItOperation(
   const school = id(input, "school_id");
   if (action === "it_reset_password") {
     const member = id(input, "user_id");
-    // Confere a permissão e registra na auditoria; o e-mail não volta ao app.
+    // Confere a permissão e o intervalo; o e-mail não volta ao app.
     const row = await asUser(sql, user, (tx) =>
       one(
         tx`SELECT public.school_member_password_reset(${school}::uuid, ${member}::uuid) AS email`,
       ));
     await sendRecovery(String(row.email));
+    // Só registra depois que o Auth aceitou; falha de entrega não bloqueia
+    // nova tentativa nem aparece como enviada na auditoria.
+    await asUser(
+      sql,
+      user,
+      (tx) =>
+        tx`SELECT public.school_member_password_reset_sent(${school}::uuid, ${member}::uuid)`,
+    );
     return { sent: true };
   }
   return await asUser(sql, user, (tx) => STEPS[action](tx, school, input));

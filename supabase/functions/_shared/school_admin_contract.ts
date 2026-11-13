@@ -270,6 +270,8 @@ const MESSAGES: Record<string, string> = {
   password_reset_recent:
     "Um e-mail de redefinição já foi enviado para esta pessoa há menos de 10 minutos.",
   invalid_rows: "A planilha precisa ter de 1 a 500 linhas com e-mail e papel.",
+  invite_not_open:
+    "Este convite já foi revogado ou usado. Atualize a lista e gere um novo.",
   not_found: "Não encontrado. Atualize a lista e tente de novo.",
   school_member_immutable: "Troca de papel exige um convite novo.",
 };

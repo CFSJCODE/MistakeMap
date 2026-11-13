@@ -124,7 +124,8 @@ class _CartaoAdministracaoTiState extends State<CartaoAdministracaoTi> {
           if (l.convitesPassamDoLimite) ...[
             const SizedBox(height: 12),
             AvisoEscola(
-              'Há ${l.convitesAbertos} convites em aberto e só ${l.vagas} '
+              'Os convites em aberto deixam entrar até '
+              '${l.usosConvitesAbertos} pessoas e só há ${l.vagas} '
               '${l.vagas == 1 ? 'vaga' : 'vagas'} no plano ${l.planoNome}. '
               'Quem passar do limite não consegue entrar: peça ao dono para '
               'mudar de plano ou revogue convites.',

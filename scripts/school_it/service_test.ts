@@ -45,6 +45,40 @@ console.log(
   "ok: it_reset_password pede o e-mail ao Auth sem devolver o endereço",
 );
 
+// Falha no Auth: nada registrado e a próxima tentativa não fica bloqueada.
+const other = "c0000000-0000-4000-8000-00000000000b";
+const owner = "c0000000-0000-4000-8000-000000000001";
+await sql`INSERT INTO auth.users(id, email) VALUES (${other}, 'al3@c.dev')`;
+await sql.begin(async (tx) => {
+  await tx`SELECT set_config('request.jwt.claim.sub', ${owner}, true)`;
+  const [inv] = await tx`SELECT code FROM public.create_school_invite(
+    ${school_id}::uuid, 'student', null, 1, 7)`;
+  await tx`SELECT set_config('request.jwt.claim.sub', ${other}, true)`;
+  await tx`SELECT * FROM public.redeem_school_invite(${inv.code})`;
+});
+await assert.rejects(
+  schoolItOperation(
+    sql,
+    ti,
+    "it_reset_password",
+    { school_id, user_id: other },
+    () => Promise.reject(new PublicError(502, "auth_failed", "falhou")),
+  ),
+  (e: unknown) => e instanceof PublicError && e.status === 502,
+);
+const [logged] = await sql`SELECT count(*)::int AS n
+  FROM public.school_audit_log
+  WHERE action = 'password_reset_sent' AND target_user = ${other}`;
+assert.equal(logged.n, 0);
+await schoolItOperation(
+  sql,
+  ti,
+  "it_reset_password",
+  { school_id, user_id: other },
+  () => Promise.resolve(),
+);
+console.log("ok: falha no Auth não registra envio nem bloqueia nova tentativa");
+
 await assert.rejects(
   schoolItOperation(
     sql,

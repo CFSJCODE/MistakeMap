@@ -135,6 +135,9 @@ select pg_temp.fails($$select public.revoke_school_member_sessions((select v::uu
 -- ------------------------------------------------------------- 4. senha
 select pg_temp.ok(public.school_member_password_reset((select v::uuid from t where k='school'), :al2) = 'al2@c.dev',
   'pedido de redefinição devolve o e-mail para a Edge Function');
+select pg_temp.ok((select count(*) from public.school_audit_log where action = 'password_reset_sent') = 0,
+  'conferir não registra envio (só depois que o Auth aceita)');
+select public.school_member_password_reset_sent((select v::uuid from t where k='school'), :al2);
 select pg_temp.fails($$select public.school_member_password_reset((select v::uuid from t where k='school'), 'c0000000-0000-4000-8000-000000000007')$$,
   'MM429', 'segundo pedido em 10 minutos é recusado');
 select pg_temp.fails($$select public.school_member_password_reset((select v::uuid from t where k='school'), 'c0000000-0000-4000-8000-000000000001')$$,
@@ -163,6 +166,28 @@ select pg_temp.as_user(:coord);
 select pg_temp.ok(public.is_school_member((select v::uuid from t where k='school')), 'dono suspende e reativa a coordenação');
 select pg_temp.fails($$select public.set_school_member_status((select v::uuid from t where k='school'), 'c0000000-0000-4000-8000-000000000007', 'student', 'suspended')$$,
   'MM403', 'coordenação não usa as funções da TI');
+
+-- Professor suspenso perde a turma da escola; turma sem escola continua dele.
+reset role;
+with x as (insert into public.platform_classes(teacher_id, title, school_id)
+  values (:prof, 'Turma da escola', (select v::uuid from t where k='school')) returning id)
+insert into t select 'class_school', id::text from x;
+with x as (insert into public.platform_classes(teacher_id, title)
+  values (:prof, 'Turma particular') returning id)
+insert into t select 'class_free', id::text from x;
+set role authenticated;
+select pg_temp.as_user(:prof);
+select pg_temp.ok(public.platform_owns_class((select v::uuid from t where k='class_school')), 'professor ativo é dono da turma da escola');
+select pg_temp.as_user(:ti);
+select public.set_school_member_status((select v::uuid from t where k='school'), :prof, 'teacher', 'suspended');
+select pg_temp.as_user(:prof);
+select pg_temp.ok(not public.platform_owns_class((select v::uuid from t where k='class_school')), 'professor suspenso perde a turma da escola');
+select pg_temp.ok(public.platform_owns_class((select v::uuid from t where k='class_free')), 'turma sem escola continua do professor');
+select pg_temp.as_user(:ti);
+select public.set_school_member_status((select v::uuid from t where k='school'), :prof, 'teacher', 'active');
+select pg_temp.as_user(:prof);
+select pg_temp.ok(public.platform_owns_class((select v::uuid from t where k='class_school')), 'reativado, recupera a turma');
+select pg_temp.as_user(:ti);
 
 -- ------------------------------------------------------------- 6. remover
 select pg_temp.as_user(:ti);
@@ -200,11 +225,15 @@ select pg_temp.ok((select revoked_at is not null from public.school_invites wher
 select pg_temp.ok((select count(*) from public.school_invites where email = 'novo2@c.dev' and revoked_at is null) = 1,
   'renovar cria um convite novo para o mesmo e-mail');
 set role authenticated;
+select pg_temp.fails($$select * from public.renew_school_invite((select v::uuid from t where k='renew_old'))$$,
+  'MM409', 'convite já renovado não gera segundo código');
+insert into t select 'multi', code from public.create_school_invite((select v::uuid from t where k='school'), 'student', null, 30, 7);
 
 -- ------------------------------------------------------------- 9. licenças
 insert into t select 'lic', public.school_it_licenses((select v::uuid from t where k='school'))::text;
 select pg_temp.ok((select (v::jsonb->>'users_active')::int from t where k='lic') = 7, 'licenças: 7 usuários ativos');
-select pg_temp.ok((select (v::jsonb->>'open_invites')::int from t where k='lic') = 2, 'licenças: 2 convites em aberto');
+select pg_temp.ok((select (v::jsonb->>'open_invites')::int from t where k='lic') = 3, 'licenças: 3 convites em aberto');
+select pg_temp.ok((select (v::jsonb->>'open_invite_seats')::int from t where k='lic') = 32, 'licenças: convites deixam entrar 32 pessoas');
 select pg_temp.ok((select v::jsonb->>'plan' from t where k='lic') = 'escola', 'licenças: plano');
 select pg_temp.ok(not (select v from t where k='lic') ~ 'brl|price|total', 'licenças sem valor em reais');
 select pg_temp.as_user(:prof);

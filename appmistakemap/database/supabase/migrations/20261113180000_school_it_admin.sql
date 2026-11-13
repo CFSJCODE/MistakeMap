@@ -327,19 +327,35 @@ begin
   if v_email is null then
     raise exception 'not_found' using errcode = 'MM404';
   end if;
-  perform public.school_audit_write(p_school, 'password_reset_sent', p_user, null, '{}'::jsonb);
   return v_email;
+end;
+$$;
+
+-- Registro do envio, só depois que o Auth aceitou o pedido (a Edge Function
+-- chama esta função em seguida). Uma falha de entrega não deixa rastro de
+-- "enviado" nem bloqueia uma nova tentativa.
+create or replace function public.school_member_password_reset_sent(p_school uuid, p_user uuid)
+returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  perform public.school_it_require(p_school);
+  if not public.school_can_manage_account(p_school, p_user) then
+    raise exception 'forbidden' using errcode = 'MM403';
+  end if;
+  perform public.school_audit_write(p_school, 'password_reset_sent', p_user, null, '{}'::jsonb);
 end;
 $$;
 
 revoke all on function public.set_school_member_status(uuid, uuid, text, text),
   public.remove_school_member(uuid, uuid, text),
   public.revoke_school_member_sessions(uuid, uuid),
-  public.school_member_password_reset(uuid, uuid) from public, anon;
+  public.school_member_password_reset(uuid, uuid),
+  public.school_member_password_reset_sent(uuid, uuid) from public, anon;
 grant execute on function public.set_school_member_status(uuid, uuid, text, text),
   public.remove_school_member(uuid, uuid, text),
   public.revoke_school_member_sessions(uuid, uuid),
-  public.school_member_password_reset(uuid, uuid) to authenticated, service_role;
+  public.school_member_password_reset(uuid, uuid),
+  public.school_member_password_reset_sent(uuid, uuid) to authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- Convites em lote e renovação
@@ -401,9 +417,14 @@ declare
   v_days integer;
   v_uses integer;
 begin
-  select * into v_old from public.school_invites i where i.id = p_invite;
+  -- Trava o convite: duas renovações ao mesmo tempo não geram dois códigos,
+  -- e um resgate em andamento não some da conta de usos restantes.
+  select * into v_old from public.school_invites i where i.id = p_invite for update;
   if not found then
     raise exception 'not_found' using errcode = 'MM404';
+  end if;
+  if v_old.revoked_at is not null or v_old.uses >= v_old.max_uses then
+    raise exception 'invite_not_open' using errcode = 'MM409';
   end if;
   v_days := coalesce(p_valid_days,
     case when v_old.role in ('owner','coordinator','it_admin','finance') then 7 else 30 end);
@@ -459,6 +480,9 @@ begin
     'open_invites', (select count(*) from public.school_invites i
                      where i.school_id = s.id and i.revoked_at is null
                        and i.expires_at > now() and i.uses < i.max_uses),
+    'open_invite_seats', (select coalesce(sum(i.max_uses - i.uses), 0) from public.school_invites i
+                          where i.school_id = s.id and i.revoked_at is null
+                            and i.expires_at > now() and i.uses < i.max_uses),
     'active_students', coalesce(u.active_students, 0),
     'analyses_pot', l.analyses_per_active * coalesce(u.active_students, 0),
     'analyses_used', coalesce(u.analyses, 0),
@@ -501,3 +525,28 @@ end;
 $$;
 revoke all on function public.school_audit(uuid, integer, bigint) from public, anon;
 grant execute on function public.school_audit(uuid, integer, bigint) to authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
+-- Professor suspenso ou removido perde as turmas da escola
+-- ---------------------------------------------------------------------------
+
+-- Turma de escola só vale para o professor enquanto ele tiver papel ativo de
+-- quem dá aula ali (o mesmo conjunto do platform_classes_school_guard).
+-- Turma sem escola continua sendo só do professor.
+create or replace function public.platform_teacher_active(p_school uuid, p_teacher uuid)
+returns boolean
+language sql stable security definer set search_path = '' as $$
+  select p_school is null or exists(
+    select 1 from public.school_members m
+    where m.school_id = p_school and m.user_id = p_teacher and m.status = 'active'
+      and m.role in ('teacher','coordinator','owner'));
+$$;
+revoke all on function public.platform_teacher_active(uuid, uuid) from public, anon;
+grant execute on function public.platform_teacher_active(uuid, uuid) to authenticated, service_role;
+
+create or replace function public.platform_owns_class(p_class uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists(select 1 from public.platform_classes c
+    where c.id = p_class and c.teacher_id = (select auth.uid())
+      and public.platform_teacher_active(c.school_id, c.teacher_id));
+$$;

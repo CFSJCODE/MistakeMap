@@ -58,7 +58,8 @@ async function teacherEnabled(sql: Query, user: string): Promise<boolean> {
 async function ownClass(sql: Query, user: string, classId: string) {
   const [row] =
     await sql`SELECT id,title,teacher_id FROM public.platform_classes
-    WHERE id=${classId} AND teacher_id=${user}`;
+    WHERE id=${classId} AND teacher_id=${user}
+      AND public.platform_teacher_active(school_id, teacher_id)`;
   if (!row) throw denied();
   return row;
 }
@@ -159,14 +160,17 @@ export async function platformOverview(sql: Database, user: string) {
     sql`SELECT id,title,mode,status,total,correct_count,assisted,created_at,finished_at
       FROM public.platform_sessions WHERE user_id=${user} ORDER BY created_at DESC LIMIT 100`,
     sql`SELECT c.id,c.title,c.teacher_id,c.teacher_id=${user} AS is_teacher,
-      CASE WHEN c.teacher_id=${user} THEN i.code ELSE NULL END AS code,
+      CASE WHEN c.teacher_id=${user} AND public.platform_teacher_active(c.school_id,c.teacher_id)
+        THEN i.code ELSE NULL END AS code,
       coalesce(m.share_progress,false) AS share_progress,coalesce(m.share_answers,false) AS share_answers,
       coalesce(m.share_notes,false) AS share_notes
       FROM public.platform_classes c LEFT JOIN public.platform_memberships m ON m.class_id=c.id AND m.user_id=${user}
       LEFT JOIN public.platform_class_invites i ON i.class_id=c.id
-      WHERE c.teacher_id=${user} OR m.user_id=${user} ORDER BY c.created_at DESC LIMIT 100`,
+      WHERE (c.teacher_id=${user} AND public.platform_teacher_active(c.school_id,c.teacher_id))
+        OR m.user_id=${user} ORDER BY c.created_at DESC LIMIT 100`,
     sql`SELECT a.id,a.class_id,a.title,a.due_at,a.catalog_ids,a.question_ids,a.source_concept FROM public.platform_assignments a
-      JOIN public.platform_classes c ON c.id=a.class_id WHERE c.teacher_id=${user} OR EXISTS(
+      JOIN public.platform_classes c ON c.id=a.class_id
+      WHERE (c.teacher_id=${user} AND public.platform_teacher_active(c.school_id,c.teacher_id)) OR EXISTS(
         SELECT 1 FROM public.platform_memberships m WHERE m.class_id=c.id AND m.user_id=${user})
       ORDER BY a.created_at DESC LIMIT 100`,
     sql`SELECT id,title,url,notes,page_number,created_at FROM public.platform_materials WHERE user_id=${user} ORDER BY created_at DESC LIMIT 100`,
@@ -901,6 +905,7 @@ export async function platformOperation(
           JOIN public.platform_classes c ON c.id=a.class_id
           JOIN public.platform_memberships m ON m.class_id=c.id AND m.user_id=s.user_id
           WHERE s.id=${sessionId} AND s.status='completed' AND c.teacher_id=${user} AND m.share_answers
+            AND public.platform_teacher_active(c.school_id, c.teacher_id)
           FOR SHARE OF m,c`;
         if (!session) {
           throw new PublicError(

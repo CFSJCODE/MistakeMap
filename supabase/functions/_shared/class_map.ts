@@ -340,7 +340,8 @@ const denied = () =>
 
 async function ownClassTitle(sql: Query, user: string, classId: string) {
   const [row] = await sql`SELECT id,title FROM public.platform_classes
-    WHERE id=${classId} AND teacher_id=${user}`;
+    WHERE id=${classId} AND teacher_id=${user}
+      AND public.platform_teacher_active(school_id, teacher_id)`;
   if (!row) throw denied();
   return String(row.title);
 }
@@ -442,7 +443,8 @@ export async function assignmentResult(sql: Query, user: string, input: Input) {
       a.source_concept,a.due_at,a.created_at
     FROM public.platform_assignments a
     JOIN public.platform_classes c ON c.id=a.class_id
-    WHERE a.id=${assignmentId} AND c.teacher_id=${user}`;
+    WHERE a.id=${assignmentId} AND c.teacher_id=${user}
+      AND public.platform_teacher_active(c.school_id, c.teacher_id)`;
   if (!assignment) throw denied();
   const questionIds = assignment.question_ids as string[];
   if (!questionIds.length) {

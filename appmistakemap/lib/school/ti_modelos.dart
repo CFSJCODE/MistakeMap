@@ -147,6 +147,7 @@ class LicencasTi {
     required this.maxTurmas,
     required this.turmas,
     required this.convitesAbertos,
+    required this.usosConvitesAbertos,
     required this.alunosAtivos,
     required this.analisesPote,
     required this.analisesUsadas,
@@ -166,6 +167,7 @@ class LicencasTi {
     maxTurmas: j['max_classes'] == null ? null : _int(j['max_classes']),
     turmas: _int(j['classes']),
     convitesAbertos: _int(j['open_invites']),
+    usosConvitesAbertos: _int(j['open_invite_seats'] ?? j['open_invites']),
     alunosAtivos: _int(j['active_students']),
     analisesPote: _int(j['analyses_pot']),
     analisesUsadas: _int(j['analyses_used']),
@@ -182,6 +184,9 @@ class LicencasTi {
   final int? maxTurmas;
   final int turmas;
   final int convitesAbertos;
+
+  /// Pessoas que ainda podem entrar pelos convites em aberto (usos restantes).
+  final int usosConvitesAbertos;
   final int alunosAtivos;
   final int analisesPote;
   final int analisesUsadas;
@@ -195,7 +200,8 @@ class LicencasTi {
       : (maxUsuarios! - usuariosAtivos).clamp(0, maxUsuarios!);
 
   /// Convites em aberto que não cabem no plano se todos forem usados.
-  bool get convitesPassamDoLimite => vagas != null && convitesAbertos > vagas!;
+  bool get convitesPassamDoLimite =>
+      vagas != null && usosConvitesAbertos > vagas!;
 
   double get usoAnalises => analisesPote == 0
       ? (analisesUsadas > 0 ? 1 : 0)
@@ -341,10 +347,14 @@ const motivosLinha = {
 
 // ─── CSV (ponto e vírgula: abre direto no Excel em português) ────────────────
 
-String _celula(String v) =>
-    v.contains(';') || v.contains('"') || v.contains('\n')
-    ? '"${v.replaceAll('"', '""')}"'
-    : v;
+/// Célula de CSV. Texto que começa com = + - @ (ou tabulação) vira texto
+/// com apóstrofo, para nome vindo do cadastro não virar fórmula no Excel.
+String celulaCsv(String valor) {
+  final v = RegExp(r'^[=+\-@\t\r]').hasMatch(valor) ? "'$valor" : valor;
+  return v.contains(';') || v.contains('"') || v.contains('\n')
+      ? '"${v.replaceAll('"', '""')}"'
+      : v;
+}
 
 String _iso(DateTime? d) => d == null
     ? ''
@@ -354,7 +364,7 @@ String _iso(DateTime? d) => d == null
           '${d.minute.toString().padLeft(2, '0')}';
 
 String _csv(List<List<String>> linhas) =>
-    linhas.map((l) => l.map(_celula).join(';')).join('\n');
+    linhas.map((l) => l.map(celulaCsv).join(';')).join('\n');
 
 String pessoasCsv(List<PessoaTi> pessoas) => _csv([
   ['email', 'nome', 'papeis', 'situacao', 'entrou_em', 'ultimo_acesso'],

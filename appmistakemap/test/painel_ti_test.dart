@@ -176,6 +176,24 @@ void main() {
   });
 
   group('modelos', () {
+    test('CSV neutraliza fórmula vinda do cadastro', () {
+      expect(celulaCsv('=HYPERLINK("x")'), '"\'=HYPERLINK(""x"")"');
+      expect(celulaCsv('+5511'), "'+5511");
+      expect(celulaCsv('-1'), "'-1");
+      expect(celulaCsv('@soma'), "'@soma");
+      expect(celulaCsv('Ana'), 'Ana');
+    });
+
+    test('aviso de vagas conta os usos restantes dos convites', () {
+      final l = LicencasTi.deJson({
+        'max_users': 5,
+        'users_active': 4,
+        'open_invites': 1,
+        'open_invite_seats': 30,
+      });
+      expect(l.convitesPassamDoLimite, isTrue);
+    });
+
     test('aparelho resumido sem expor o user agent inteiro', () {
       expect(
         resumoAparelho('Mozilla/5.0 (Windows NT 10.0) Chrome/140 Edg/140'),
@@ -259,7 +277,7 @@ void main() {
     );
     expect(find.text('Licenças e acessos'), findsOneWidget);
     expect(find.text('4 de 5'), findsOneWidget);
-    expect(find.textContaining('só 1 vaga'), findsOneWidget);
+    expect(find.textContaining('só há 1 vaga'), findsOneWidget);
     expect(find.text('Pessoas e acessos'), findsOneWidget);
     expect(find.text('Convidar em lote'), findsOneWidget);
     expect(find.text('Registro de auditoria'), findsOneWidget);
