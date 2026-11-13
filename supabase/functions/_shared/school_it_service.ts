@@ -73,6 +73,80 @@ export function authRecovery(
 const one = async (rows: Promise<Record<string, unknown>[]>) =>
   (await rows)[0] ?? {};
 
+type Tx = Parameters<Parameters<typeof asUser>[2]>[0];
+type Step = (tx: Tx, school: string, input: Input) => Promise<unknown>;
+
+/** Lê a coluna `r` (jsonb) da única linha devolvida. */
+const read = (
+  query: (tx: Tx, school: string, input: Input) => Promise<
+    Record<string, unknown>[]
+  >,
+): Step =>
+async (tx, school, input) => (await one(query(tx, school, input))).r;
+
+const optionalBefore = (input: Input) =>
+  input.before == null
+    ? null
+    : boundedInteger(input, "before", 1, Number.MAX_SAFE_INTEGER, 1);
+
+/** Ações que só chamam uma função do banco como o usuário. */
+const STEPS: Record<Exclude<SchoolItAction, "it_reset_password">, Step> = {
+  it_directory: read((tx, school) =>
+    tx`SELECT public.school_it_directory(${school}::uuid) AS r`
+  ),
+  it_licenses: read((tx, school) =>
+    tx`SELECT public.school_it_licenses(${school}::uuid) AS r`
+  ),
+  it_audit: read((tx, school, input) =>
+    tx`SELECT public.school_audit(${school}::uuid, ${
+      boundedInteger(input, "limit", 1, 500, 100)
+    }, ${optionalBefore(input)}::bigint) AS r`
+  ),
+  it_member_sessions: read((tx, school, input) =>
+    tx`SELECT public.school_member_sessions(${school}::uuid, ${
+      id(input, "user_id")
+    }::uuid) AS r`
+  ),
+  it_revoke_sessions: async (tx, school, input) => {
+    const row = await one(
+      tx`SELECT public.revoke_school_member_sessions(${school}::uuid, ${
+        id(input, "user_id")
+      }::uuid) AS total`,
+    );
+    return { revoked: Number(row.total ?? 0) };
+  },
+  it_set_status: async (tx, school, input) => {
+    const status = memberStatus(input);
+    await tx`SELECT public.set_school_member_status(${school}::uuid, ${
+      id(input, "user_id")
+    }::uuid, ${schoolRole(input)}, ${status})`;
+    return { status };
+  },
+  it_remove_member: async (tx, school, input) => {
+    await tx`SELECT public.remove_school_member(${school}::uuid, ${
+      id(input, "user_id")
+    }::uuid, ${schoolRole(input)})`;
+    return { removed: true };
+  },
+  it_import_invites: read((tx, school, input) =>
+    tx`SELECT public.create_school_invites_batch(${school}::uuid, ${
+      tx.json(importRows(input))
+    }::jsonb, ${boundedInteger(input, "valid_days", 1, 90, 30)}) AS r`
+  ),
+  it_renew_invite: async (tx, _school, input) => {
+    const row = await one(
+      tx`SELECT * FROM public.renew_school_invite(${
+        id(input, "invite_id")
+      }::uuid)`,
+    );
+    return {
+      invite_id: row.invite_id,
+      code: row.code,
+      expires_at: row.expires_at,
+    };
+  },
+};
+
 export async function schoolItOperation(
   sql: Database,
   user: string,
@@ -81,96 +155,15 @@ export async function schoolItOperation(
   sendRecovery: SendRecovery = authRecovery(),
 ): Promise<unknown> {
   const school = id(input, "school_id");
-  switch (action) {
-    case "it_directory":
-      return (await asUser(sql, user, (tx) =>
-        one(
-          tx`SELECT public.school_it_directory(${school}::uuid) AS r`,
-        ))).r;
-    case "it_licenses":
-      return (await asUser(sql, user, (tx) =>
-        one(
-          tx`SELECT public.school_it_licenses(${school}::uuid) AS r`,
-        ))).r;
-    case "it_audit": {
-      const limit = boundedInteger(input, "limit", 1, 500, 100);
-      const before = input.before == null
-        ? null
-        : boundedInteger(input, "before", 1, Number.MAX_SAFE_INTEGER, 1);
-      return (await asUser(sql, user, (tx) =>
-        one(
-          tx`SELECT public.school_audit(${school}::uuid, ${limit}, ${before}::bigint) AS r`,
-        ))).r;
-    }
-    case "it_member_sessions": {
-      const member = id(input, "user_id");
-      return (await asUser(sql, user, (tx) =>
-        one(
-          tx`SELECT public.school_member_sessions(${school}::uuid, ${member}::uuid) AS r`,
-        ))).r;
-    }
-    case "it_revoke_sessions": {
-      const member = id(input, "user_id");
-      const row = await asUser(sql, user, (tx) =>
-        one(
-          tx`SELECT public.revoke_school_member_sessions(${school}::uuid, ${member}::uuid) AS total`,
-        ));
-      return { revoked: Number(row.total ?? 0) };
-    }
-    case "it_reset_password": {
-      const member = id(input, "user_id");
-      // Confere a permissão e registra na auditoria; o e-mail não volta ao app.
-      const row = await asUser(sql, user, (tx) =>
-        one(
-          tx`SELECT public.school_member_password_reset(${school}::uuid, ${member}::uuid) AS email`,
-        ));
-      await sendRecovery(String(row.email));
-      return { sent: true };
-    }
-    case "it_set_status": {
-      const member = id(input, "user_id");
-      const role = schoolRole(input);
-      const status = memberStatus(input);
-      await asUser(
-        sql,
-        user,
-        (tx) =>
-          tx`SELECT public.set_school_member_status(${school}::uuid, ${member}::uuid, ${role}, ${status})`,
-      );
-      return { status };
-    }
-    case "it_remove_member": {
-      const member = id(input, "user_id");
-      const role = schoolRole(input);
-      await asUser(
-        sql,
-        user,
-        (tx) =>
-          tx`SELECT public.remove_school_member(${school}::uuid, ${member}::uuid, ${role})`,
-      );
-      return { removed: true };
-    }
-    case "it_import_invites": {
-      const rows = importRows(input);
-      const days = boundedInteger(input, "valid_days", 1, 90, 30);
-      return (await asUser(sql, user, (tx) =>
-        one(
-          tx`SELECT public.create_school_invites_batch(${school}::uuid, ${
-            tx.json(rows)
-          }::jsonb, ${days}) AS r`,
-        ))).r;
-    }
-    case "it_renew_invite": {
-      const invite = id(input, "invite_id");
-      const row = await asUser(sql, user, (tx) =>
-        one(
-          tx`SELECT * FROM public.renew_school_invite(${invite}::uuid)`,
-        ));
-      return {
-        invite_id: row.invite_id,
-        code: row.code,
-        expires_at: row.expires_at,
-      };
-    }
+  if (action === "it_reset_password") {
+    const member = id(input, "user_id");
+    // Confere a permissão e registra na auditoria; o e-mail não volta ao app.
+    const row = await asUser(sql, user, (tx) =>
+      one(
+        tx`SELECT public.school_member_password_reset(${school}::uuid, ${member}::uuid) AS email`,
+      ));
+    await sendRecovery(String(row.email));
+    return { sent: true };
   }
+  return await asUser(sql, user, (tx) => STEPS[action](tx, school, input));
 }
