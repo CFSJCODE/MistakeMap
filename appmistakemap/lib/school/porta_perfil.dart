@@ -333,24 +333,35 @@ class SeletorPerfil extends StatelessWidget {
     ),
     child: Row(
       children: [
-        if (onVoltar != null) ...[
+        // Antes era só uma seta, que parecia "voltar" e levava à lista de
+        // perfis sem dizer. Agora o botão diz o que faz.
+        if (onVoltar != null)
           Tooltip(
-            message: 'Voltar aos perfis',
-            child: IconButton(
-              key: const ValueKey('voltar-perfis'),
-              icon: const Icon(WindowsIcons.back, size: 18),
-              onPressed: onVoltar,
+            message: 'Ver todos os perfis da conta',
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 40),
+              child: Button(
+                key: const ValueKey('voltar-perfis'),
+                onPressed: onVoltar,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 6,
+                  children: [
+                    Icon(WindowsIcons.switch_user, size: 16),
+                    Text('Trocar perfil', maxLines: 1, softWrap: false),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          const Text(
+            'Perfil',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: MistakeMapDesign.steel,
             ),
           ),
-          const SizedBox(width: 4),
-        ],
-        const Text(
-          'Perfil',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: MistakeMapDesign.steel,
-          ),
-        ),
         const SizedBox(width: 12),
         Flexible(
           child: ConstrainedBox(
@@ -430,7 +441,7 @@ class TelaInicialPerfis extends StatelessWidget {
                 titulo: 'Escolha o perfil',
                 subtitulo:
                     'Toque num perfil para abrir. Para voltar a esta lista, '
-                    'use o voltar do aparelho ou a seta ao lado de "Perfil".',
+                    'use o voltar do aparelho ou o botão "Trocar perfil".',
                 children: [
                   for (final p in perfis) ...[
                     BotaoEscola(
