@@ -532,7 +532,7 @@ void main() {
     expect(find.text('APP DO ESTUDANTE'), findsOneWidget);
     expect(find.byType(TelaInicialPerfis), findsNothing);
 
-    // A seta ao lado de "Perfil" também volta.
+    // O botão "Trocar perfil" também volta.
     await _tocar(tester, find.byKey(const ValueKey('voltar-perfis')));
     expect(find.byType(TelaInicialPerfis), findsOneWidget);
     await _tocar(tester, find.byKey(const ValueKey('perfil-owner:$_escola')));
