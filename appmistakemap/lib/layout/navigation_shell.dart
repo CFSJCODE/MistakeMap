@@ -376,7 +376,11 @@ class AppNavigationShell extends StatelessWidget {
   /// Menu Mais: Admin, Estudar (se disponível), Sobre o App, Sair (se
   /// disponível). Na barra de 7 fatias, Estudar e Sobre estão na barra;
   /// o flyout contém Admin e Sair.
-  Widget _more(BuildContext context, {bool compactRail = false}) => Semantics(
+  Widget _more(
+    BuildContext context, {
+    bool compactRail = false,
+    bool withAbout = false,
+  }) => Semantics(
     selected: selectedIndex == 4,
     child: DropDownButton(
       title: const Text('Mais'),
@@ -441,7 +445,7 @@ class AppNavigationShell extends StatelessWidget {
             label: 'Estudar com a IA',
             action: onStudy!,
           ),
-        if (compactRail)
+        if (compactRail || withAbout)
           _flyoutItem(
             context,
             icon: WindowsIcons.info,
@@ -739,7 +743,9 @@ class AppNavigationShell extends StatelessWidget {
   static const _moreSlot = -2;
   static const _studySlot = -3;
   static const _aboutSlot = -4;
-  static const _barSlots = [0, 1, 2, _studySlot, 3, _aboutSlot, _moreSlot];
+  // Sobre foi para o Mais: com 7 fatias os rótulos ("Exercícios") encolhiam
+  // demais no celular. O atalho _aboutSlot fica para quem quiser voltá-lo.
+  static const _barSlots = [0, 1, 2, _studySlot, 3, _moreSlot];
 
   /// Barra inferior de ponta a ponta, no modelo do NavigationBar do
   /// Material 3 com o vidro do app: fatias iguais para todos os botões, a
@@ -748,7 +754,7 @@ class AppNavigationShell extends StatelessWidget {
   Widget _bottomBar(BuildContext context) {
     // Mais aparece quando há Admin ou Sair no flyout (Estudar e Sobre estão
     // na barra; o flyout fica só com Admin e Sair).
-    final moreEmpty = !hasAdmin && onSignOut == null;
+    const moreEmpty = false; // Sobre o App sempre está no Mais.
     final slots = [
       for (final slot in _barSlots)
         if (!(slot == _actionSlot && onAnalysis == null) &&
@@ -830,7 +836,7 @@ class AppNavigationShell extends StatelessWidget {
                             ink: MistakeMapDesign.steel,
                             onPressed: onAbout,
                           ),
-                          _moreSlot => _more(context),
+                          _moreSlot => _more(context, withAbout: true),
                           _ => _destination(context, slot, compact: true),
                         },
                       ),

@@ -1624,6 +1624,8 @@ class TelaCadastro extends StatefulWidget {
 class _TelaCadastroState extends State<TelaCadastro> {
   final _emailCtrl = TextEditingController();
   final _senhaCtrl = TextEditingController();
+  final _senhaFoco = FocusNode();
+  final _botaoEntrar = GlobalKey();
   bool _senhaVisivel = false;
   bool _carregando = false;
   bool _modoCadastro = false; // false = entrar, true = criar conta
@@ -1636,6 +1638,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
   @override
   void initState() {
     super.initState();
+    _senhaFoco.addListener(_mostrarBotaoEntrar);
     _avisarErroAuth();
     _lerPerfilPedido();
   }
@@ -1743,6 +1746,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
   void dispose() {
     _emailCtrl.dispose();
     _senhaCtrl.dispose();
+    _senhaFoco.dispose();
     super.dispose();
   }
 
@@ -1775,7 +1779,30 @@ class _TelaCadastroState extends State<TelaCadastro> {
     return 'Não foi possível concluir o login. Tente novamente.';
   }
 
+  /// No celular o teclado cobria o botão Entrar: com o foco na senha, rola
+  /// até o botão depois que o teclado termina de subir.
+  void _mostrarBotaoEntrar() {
+    if (!_senhaFoco.hasFocus) return;
+    final duracao = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : MistakeMapMotion.section;
+    Future.delayed(const Duration(milliseconds: 350), () {
+      final alvo = _botaoEntrar.currentContext;
+      if (!mounted || alvo == null || !alvo.mounted || !_senhaFoco.hasFocus) {
+        return;
+      }
+      Scrollable.ensureVisible(
+        alvo,
+        alignment: 1,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+        duration: duracao,
+      );
+    });
+  }
+
   Future<void> _entrarComEmailSenha() async {
+    // Fecha o teclado: antes ele ficava aberto por cima da tela seguinte.
+    FocusManager.instance.primaryFocus?.unfocus();
     final email = _emailCtrl.text.trim();
     final senha = _senhaCtrl.text.trim();
     if (email.isEmpty || senha.isEmpty) {
@@ -2152,6 +2179,9 @@ class _TelaCadastroState extends State<TelaCadastro> {
         TextBox(
           controller: _emailCtrl,
           keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          autocorrect: false,
+          autofillHints: const [AutofillHints.email],
           placeholder: 'email@dominio.com',
           placeholderStyle: const TextStyle(color: contentBlue),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -2162,7 +2192,16 @@ class _TelaCadastroState extends State<TelaCadastro> {
         const SizedBox(height: 16),
         TextBox(
           controller: _senhaCtrl,
+          focusNode: _senhaFoco,
           obscureText: !_senhaVisivel,
+          textInputAction: TextInputAction.done,
+          autofillHints: [
+            _modoCadastro ? AutofillHints.newPassword : AutofillHints.password,
+          ],
+          onTap: _mostrarBotaoEntrar,
+          onSubmitted: (_) {
+            if (!_carregando) _entrarComEmailSenha();
+          },
           placeholder: 'senha',
           placeholderStyle: const TextStyle(color: contentBlue),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -2193,6 +2232,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
         const SizedBox(height: 16),
         // Botão principal
         MistakeMapFilledButton(
+          key: _botaoEntrar,
           style: _estiloBotao(
             fundo: kAcento,
             texto: MistakeMapDesign.abyss,
