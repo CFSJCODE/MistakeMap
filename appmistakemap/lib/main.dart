@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+    show TargetPlatform, defaultTargetPlatform, kIsWeb, kReleaseMode;
 
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:fluent_ui/fluent_ui.dart';
@@ -55,6 +55,8 @@ import 'school/escola_repositorio.dart'
     show PreferenciasPerfil, RepositorioEscolaSupabase;
 import 'school/perfil_modelos.dart' show PerfilCadastro, motivoPerfilRecusado;
 import 'school/porta_perfil.dart';
+import 'team/central_equipe.dart';
+import 'team/central_equipe_dados.dart';
 
 part 'caderno_erros.dart';
 part 'learning_platform.dart';
@@ -912,6 +914,10 @@ class AppUser {
   const AppUser({required this.id, required this.email, required this.role});
 
   bool get isAdmin => role == 'admin';
+
+  /// Equipe do MistakeMap (admin ou desenvolvedor): abre a Central da Equipe
+  /// no app da equipe.
+  bool get isTeam => role == 'admin' || role == 'developer';
 }
 
 // Carrega o perfil do Supabase e constrói um AppUser. Em falha (rede, RLS),
@@ -1512,9 +1518,15 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       navigatorKey: _mapaNavegador,
     ),
     TelaCadernoErros(key: _cadernoKey, user: widget.user, aba: true),
-    if (widget.user.isAdmin)
+    if (_temCentral)
+      TelaEquipe(user: widget.user, active: _indiceAtual == 4 && !_paginaAberta)
+    else if (widget.user.isAdmin)
       TelaAdmin(user: widget.user, active: _indiceAtual == 4 && !_paginaAberta),
   ];
+
+  /// App da equipe: admin e desenvolvedor ganham a Central da Equipe no lugar
+  /// da Administração (que continua a um toque, dentro dela, para admins).
+  bool get _temCentral => kTeamBuild && widget.user.isTeam;
 
   @override
   Widget build(BuildContext context) {
@@ -1522,7 +1534,12 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       selectedIndex: _indiceAtual,
       studySelected: _indiceAtual == _mapa && _mapaControle.studyOpen.value,
       onSelected: _selecionar,
-      hasAdmin: widget.user.isAdmin,
+      hasAdmin: widget.user.isAdmin || _temCentral,
+      extraLabel: _temCentral ? 'Central da Equipe' : 'Administração',
+      extraShortLabel: _temCentral ? 'Equipe' : 'Admin',
+      extraIcon: _temCentral
+          ? WindowsIcons.developer_tools
+          : WindowsIcons.admin,
       onStudy: () => _irAoMapa(ErrorMapRequest.study),
       onAnalysis: () => _irAoMapa(ErrorMapRequest.analysis),
       onSignOut: _sair,
@@ -5493,7 +5510,15 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
 class TelaAdmin extends StatefulWidget {
   final AppUser user;
   final bool active;
-  const TelaAdmin({super.key, required this.user, this.active = true});
+
+  /// Aberta por cima da Central da Equipe: mostra o voltar.
+  final bool voltar;
+  const TelaAdmin({
+    super.key,
+    required this.user,
+    this.active = true,
+    this.voltar = false,
+  });
 
   @override
   State<TelaAdmin> createState() => _TelaAdminState();
@@ -5557,6 +5582,7 @@ class _TelaAdminState extends State<TelaAdmin> {
   Widget build(BuildContext context) {
     return _PaginaVidro(
       titulo: 'Administração',
+      voltar: widget.voltar,
       acoes: [
         _BotaoBarra(
           icone: WindowsIcons.refresh,
@@ -5778,6 +5804,58 @@ class _TelaAdminState extends State<TelaAdmin> {
               : null,
         ),
       ],
+    );
+  }
+}
+
+// ─── Central da Equipe (só no app da equipe) ─────────────────────────────────
+class TelaEquipe extends StatelessWidget {
+  final AppUser user;
+  final bool active;
+  final RepositorioEquipe? repositorio;
+  const TelaEquipe({
+    super.key,
+    required this.user,
+    this.active = true,
+    this.repositorio,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final voltarAosPerfis = VoltarAosPerfis.of(context);
+    return _PaginaVidro(
+      titulo: 'Central da Equipe',
+      corpo: Padding(
+        padding: _paddingCorpo(context),
+        child: CentralEquipe(
+          repositorio: repositorio ?? RepositorioEquipeSupabase(_db),
+          papel: user.role,
+          email: user.email,
+          active: active,
+          sessaoValida: () {
+            final sessao = _db.auth.currentSession;
+            return sessao != null && !sessao.isExpired;
+          },
+          info: InfoBuild(
+            versao: versaoApp,
+            build: buildApp,
+            equipe: kTeamBuild,
+            release: kReleaseMode,
+            plataforma: kIsWeb ? 'Web' : defaultTargetPlatform.name,
+            servidor: Uri.parse(_supabaseUrl).host,
+            patch: atualizacoes.codigo.patchAtual,
+          ),
+          onVoltarAosPerfis: voltarAosPerfis,
+          onAbrirAdministracao: user.isAdmin
+              ? () => Navigator.of(context).push(
+                  MistakeMapPageRoute(
+                    context: context,
+                    builder: (_) => TelaAdmin(user: user, voltar: true),
+                  ),
+                )
+              : null,
+        ),
+      ),
     );
   }
 }

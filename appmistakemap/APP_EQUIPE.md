@@ -92,6 +92,23 @@ admin.demo têm os 6 papéis da escola demo, então entram em qualquer perfil. O
 seletor "Perfil" no topo troca entre os papéis da conta sem outro login, e a
 seta ao lado dele volta ao início.
 
+## Central da Equipe
+
+No app da equipe, admin e desenvolvedor têm o destino **Central da Equipe**
+(no lugar de Administração; para admins, a Administração abre de dentro dela).
+Tudo vem de funções do banco que conferem o papel (`is_team_member()`), com
+agregados técnicos apenas: nada de e-mail de aluno, conteúdo ou credencial.
+
+| Seção | O que mostra | Backend |
+|---|---|---|
+| Saúde | Semáforo, uso (contas, ativos, tentativas, análises), IA (modelos e chamadas), pg_cron, fila, banco, cobrança | `team_console_snapshot()` |
+| Erros | Falhas 429/5xx das Edge Functions por função e código, incluindo `invalid_ai_output` (30 dias) | `team_error_events`, gravada por `ai_http.failure()` |
+| Diagnóstico | Executor: sessão, latência, `health`, RLS, gabaritos fechados, search_path, pg_cron, fila, exclusões, escola demo sem cobrança real, IA. Copia o relatório para colar num bug | `team_run_diagnostics()` + checagens do app |
+| Ferramentas de QA | Conta e papel, volta à escolha de perfil, recomeçar os dados (só contas `@mistakemap.dev`), evento de teste `qa_probe` | `team_reset_own_demo_data()`, `team_log_probe()` |
+| Build | Versão, build, patch do Shorebird, modo, plataforma e servidor, com botão de copiar | — |
+
+Migration: `20261113030000_team_console.sql`.
+
 ## Observação
 
 O login com Google volta pelo esquema `io.supabase.mistakemap://`. Num celular

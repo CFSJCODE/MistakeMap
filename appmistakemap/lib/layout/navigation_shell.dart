@@ -21,6 +21,9 @@ class AppNavigationShell extends StatelessWidget {
     this.onSignOut,
     this.onAnalysis,
     required this.hasAdmin,
+    this.extraLabel = 'Administração',
+    this.extraShortLabel = 'Admin',
+    this.extraIcon = WindowsIcons.admin,
     required this.child,
   });
 
@@ -43,7 +46,16 @@ class AppNavigationShell extends StatelessWidget {
   /// Sair da conta fica junto das outras opções, não escondido numa tela.
   final VoidCallback? onSignOut;
   final bool hasAdmin;
+
+  /// Destino 4 (o da conta): Administração no app dos alunos; no app da
+  /// equipe, a Central da Equipe.
+  final String extraLabel;
+  final String extraShortLabel;
+  final IconData extraIcon;
   final Widget child;
+
+  String _labelOf(int index) => index == 4 ? extraLabel : labels[index];
+  IconData _iconOf(int index) => index == 4 ? extraIcon : icons[index];
 
   static const labels = [
     'Início',
@@ -249,7 +261,7 @@ class AppNavigationShell extends StatelessWidget {
     final accent = accents[index];
     final icon = _icon(
       context,
-      icons[index],
+      _iconOf(index),
       selected,
       compact: compact,
       accent: accent,
@@ -258,7 +270,7 @@ class AppNavigationShell extends StatelessWidget {
     final text = Text(
       compact
           ? const ['Início', 'Exercícios', 'Mapa', 'Caderno'][index]
-          : labels[index],
+          : _labelOf(index),
       textAlign: compact ? TextAlign.center : TextAlign.start,
       maxLines: compact ? 1 : null,
       softWrap: !compact,
@@ -274,7 +286,7 @@ class AppNavigationShell extends StatelessWidget {
     return Semantics(
       selected: selected,
       child: Tooltip(
-        message: 'Ir para ${labels[index]}',
+        message: 'Ir para ${_labelOf(index)}',
         child: _surface(
           context,
           selected,
@@ -404,7 +416,7 @@ class AppNavigationShell extends StatelessWidget {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      selectedIndex == 4 ? 'Admin' : 'Mais',
+                      selectedIndex == 4 ? extraShortLabel : 'Mais',
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       softWrap: false,
@@ -439,8 +451,8 @@ class AppNavigationShell extends StatelessWidget {
         if (hasAdmin)
           _flyoutItem(
             context,
-            icon: WindowsIcons.admin,
-            label: 'Admin',
+            icon: extraIcon,
+            label: extraShortLabel,
             selected: selectedIndex == 4,
             action: () => onSelected(4),
           ),
