@@ -54,8 +54,8 @@ void main() {
           greaterThanOrEqualTo(44),
         );
       }
-      // Barra compacta de 7 fatias: Admin no flyout do Mais; Sobre é fatia da
-      // barra (celular/tablet) ou destino direto no trilho (desktop).
+      // Barra compacta de 6 fatias: Admin e Sobre no flyout do Mais; no
+      // desktop, destinos diretos no trilho.
       if (scenario.$1 < 840) {
         await tester.tap(find.byKey(const ValueKey('navigation-more')));
         await tester.pumpAndSettle();
@@ -67,10 +67,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(selected, 4);
       }
-      // Sobre fica na barra do celular, no menu do trilho compacto ou no trilho largo.
-      if (scenario.$1 / scenario.$2 < 600) {
-        await tester.tap(find.byKey(const ValueKey('navigation-about')));
-      } else if (scenario.$1 / scenario.$2 < 840) {
+      // Sobre fica no Mais (barra do celular e trilho compacto) ou no trilho
+      // largo.
+      if (scenario.$1 / scenario.$2 < 840) {
         await tester.tap(find.byKey(const ValueKey('navigation-more')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Sobre o App'));

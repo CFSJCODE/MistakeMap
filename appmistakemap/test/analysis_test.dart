@@ -537,7 +537,7 @@ void main() {
     await tester.ensureVisible(find.text('Frações (1)'));
     await tester.tap(find.text('Frações (1)'));
     await tester.pumpAndSettle();
-    expect(find.text('Frações · 1 tentativa(s)'), findsOneWidget);
+    expect(find.text('Frações · 1 tentativa'), findsOneWidget);
     await tester.tap(find.text('Calcule 1/2 + 1/3'));
     await tester.pumpAndSettle();
     expect(find.text('Resposta sugerida'), findsOneWidget);

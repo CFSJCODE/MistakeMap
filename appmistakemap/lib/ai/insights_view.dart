@@ -281,7 +281,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  '$label · ${attempts.length} tentativa(s)',
+                  '$label · ${_qtd(attempts.length, 'tentativa', 'tentativas')}',
                   style: const TextStyle(
                     fontSize: 20,
                     color: mapTitleBlue,
@@ -476,7 +476,9 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '${insights.analyzedCount} análise(s) · ${insights.errorsCount} tentativa(s) com erros sugeridos pela IA',
+                    '${_qtd(insights.analyzedCount, 'análise', 'análises')} · '
+                    '${_qtd(insights.errorsCount, 'tentativa', 'tentativas')} '
+                    'com erros sugeridos pela IA',
                     style: const TextStyle(fontSize: 16, color: mapContentBlue),
                   ),
                   const SizedBox(height: 8),
@@ -1729,3 +1731,6 @@ class _PracticeViewState extends State<PracticeView> {
     );
   }
 }
+
+/// "1 análise", "3 análises": sem o "(s)" nos textos para o aluno.
+String _qtd(int n, String um, String varios) => '$n ${n == 1 ? um : varios}';

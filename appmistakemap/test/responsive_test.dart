@@ -654,7 +654,7 @@ void main() {
             find.byKey(const ValueKey('graph-node-concept:math:frações')),
           );
           await _settle(tester);
-          expect(find.text('Frações · 2 tentativa(s)'), findsOneWidget);
+          expect(find.text('Frações · 2 tentativas'), findsOneWidget);
           expect(tester.takeException(), isNull);
         },
       );
