@@ -2,7 +2,6 @@
 """Seed compacto: os dados vão num único jsonb e o SQL genérico expande.
 Ids = md5(conta || chave)::uuid. Uso: python3 gerar_compacto.py <email> [...] (gera seed_alunos.sql)"""
 import json
-import math
 import sys
 import pathlib
 import importlib.util
@@ -43,10 +42,10 @@ for key, evs in events.items():
     items[key] = {"k": f"ri:{key[0]}:{key[1]}", "c": key[0], "cat": key[1], "ev": latest[1], "att": latest[2],
                   "prompt_e": latest[3], "evidence": latest[4], "created_h": ch, "interval": 0, "reps": 0,
                   "lapses": 0, "last_h": None, "due_h": ch}
-def sched(iv, r, l, rt):
-    p = max(0, min(180, iv))
-    d = 1 if rt == "again" else max(1, math.ceil(p * 1.2)) if rt == "hard" else max(3, math.ceil(p * 2.5)) if rt == "easy" else max(1, math.ceil(p * 2) if p else 1)
-    return min(180, d), r + 1, l + (rt == "again")
+# Mesmo agendamento (mm-intervals-v1) do gerador por conta.
+sched = g.schedule
+
+
 D["sessions"] = []
 for sid, h, revs in g.SESSIONS:
     S = {"k": "sess:" + sid, "h": h, "min": 15 if len(revs) <= 3 else 20, "items": []}

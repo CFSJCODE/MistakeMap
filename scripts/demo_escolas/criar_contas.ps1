@@ -45,6 +45,14 @@ $linhas = @(
   "# Gerado por scripts/demo_escolas/criar_contas.ps1 em $(Get-Date -Format 'yyyy-MM-dd HH:mm'). NÃO versionar.",
   ''
 )
+$destino = Join-Path $AppDir '.env.contas-demo.local'
+if (Test-Path $destino) {
+  Copy-Item $destino "$destino.bak-$(Get-Date -Format 'yyyyMMdd-HHmm')"
+}
+# Grava o arquivo depois de cada conta: se a API falhar no meio, as senhas já
+# trocadas continuam registradas.
+function Save-Contas { [IO.File]::WriteAllLines($destino, $linhas, (New-Object Text.UTF8Encoding $false)) }
+
 $senhaIndividual = $null
 foreach ($c in $contas) {
   $senha = New-SenhaDemo
@@ -65,13 +73,8 @@ foreach ($c in $contas) {
   $linhas += "DEMO_$($c.chave)_EMAIL=$email"
   $linhas += "DEMO_$($c.chave)_SENHA=$senha"
   $linhas += ''
+  Save-Contas
 }
-
-$destino = Join-Path $AppDir '.env.contas-demo.local'
-if (Test-Path $destino) {
-  Copy-Item $destino "$destino.bak-$(Get-Date -Format 'yyyyMMdd-HHmm')"
-}
-[IO.File]::WriteAllLines($destino, $linhas, (New-Object Text.UTF8Encoding $false))
 Write-Output "senhas gravadas em $destino"
 
 # A conta individual também é a conta dos testes (MISTAKEMAP_TEST_*).
