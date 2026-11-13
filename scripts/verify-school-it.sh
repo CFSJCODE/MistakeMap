@@ -7,7 +7,12 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 mig="$root/appmistakemap/database/supabase/migrations"
 here="$root/scripts/school_it"
-bin="${PG_BIN:-$(dirname "$(command -v initdb 2>/dev/null || ls /usr/lib/postgresql/*/bin/initdb | tail -1)")}"
+initdb_bin="$(command -v initdb 2>/dev/null || true)"
+if [ -z "$initdb_bin" ]; then
+  # O glob vem em ordem: fica a versão mais nova do Postgres instalada.
+  for f in /usr/lib/postgresql/*/bin/initdb; do initdb_bin="$f"; done
+fi
+bin="${PG_BIN:-$(dirname "$initdb_bin")}"
 tmp="$(mktemp -d)"
 port="${PG_TEST_PORT:-55434}"
 cleanup() { "$bin/pg_ctl" -D "$tmp/data" -m immediate stop >/dev/null 2>&1 || true; rm -rf "$tmp"; }
