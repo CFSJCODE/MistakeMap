@@ -1,20 +1,29 @@
 #!/usr/bin/env python3
 """Seed compacto: os dados vão num único jsonb e o SQL genérico expande.
 Ids = md5(conta || chave)::uuid. Uso: python3 gerar_compacto.py <email> [...] (gera seed_alunos.sql)"""
-import json, sys, hashlib, uuid, math, pathlib, importlib.util
+import json
+import math
+import sys
+import pathlib
+import importlib.util
 base = pathlib.Path(__file__).parent
 spec = importlib.util.spec_from_file_location("g", base / "gerar_seed.py")
-sys_argv = sys.argv; sys.argv = ["x", "__USER_ID__"]
-g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
+sys_argv = sys.argv
+sys.argv = ["x", "__USER_ID__"]
+g = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(g)
 sys.argv = sys_argv
-for f in base.glob("*__USER_I.sql"): f.unlink()
+for f in base.glob("*__USER_I.sql"):
+    f.unlink()
 users = sys.argv[1:]
-PEND = g.PENDING_UNDER_H; DEC = g.DECISION_DELAY_H
+PEND = g.PENDING_UNDER_H
+DEC = g.DECISION_DELAY_H
 D = {"subjects": [{"k": k, "name": n} for k, n in g.SUBJECTS.items()],
      "concepts": [{"k": k, "s": s, "name": n, "imp": i} for k, (s, n, i) in g.CONCEPTS.items()],
      "edges": [list(e) for e in g.EDGES], "mark": g.MARK}
 first = {}
-for a, e, h, *_ in g.AT: first[e] = max(first.get(e, 0), h)
+for a, e, h, *_ in g.AT:
+    first[e] = max(first.get(e, 0), h)
 D["exercises"] = [{"k": k, "s": s, "diff": d, "prompt": p, "gab": gb, "expl": ex, "concs": c, "h": first[k] + 2}
                   for k, (s, d, p, gb, ex, c) in g.EX.items()]
 D["attempts"] = []
@@ -45,7 +54,8 @@ for sid, h, revs in g.SESSIONS:
         it = items[(c, cat)]
         ah = round(h - 0.03 * (pos + 1), 2)
         it["interval"], it["reps"], it["lapses"] = sched(it["interval"], it["reps"], it["lapses"], rt)
-        it["last_h"] = ah; it["due_h"] = round(ah - 24 * it["interval"], 2)
+        it["last_h"] = ah
+        it["due_h"] = round(ah - 24 * it["interval"], 2)
         S["items"].append({"item": it["k"], "pos": pos, "rt": rt, "ah": ah, "next_h": it["due_h"], "att": it["att"],
                            "ev": it["ev"], "e": it["prompt_e"], "evidence": it["evidence"], "cat": cat, "el": 40 + 17 * pos})
     D["sessions"].append(S)

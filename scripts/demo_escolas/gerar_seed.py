@@ -225,10 +225,14 @@ for a, e, h, answer, correct, errs in AT:
 def schedule(interval, reps, lapses, rating):
     import math
     prev = max(0, min(180, interval))
-    if rating == "again": d = 1
-    elif rating == "hard": d = max(1, math.ceil(prev * 1.2))
-    elif rating == "easy": d = max(3, math.ceil(prev * 2.5))
-    else: d = max(1, math.ceil(prev * 2) if prev else 1)
+    if rating == "again":
+        d = 1
+    elif rating == "hard":
+        d = max(1, math.ceil(prev * 1.2))
+    elif rating == "easy":
+        d = max(3, math.ceil(prev * 2.5))
+    else:
+        d = max(1, math.ceil(prev * 2) if prev else 1)
     return min(180, d), reps + 1, lapses + (rating == "again")
 
 items = {}
