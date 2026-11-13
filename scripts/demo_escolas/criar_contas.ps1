@@ -24,7 +24,7 @@ if (-not $service) { throw 'Não consegui ler a chave service_role pelo Supabase
 $base = "https://$ProjectRef.supabase.co/auth/v1/admin"
 $h = @{ apikey = $service; Authorization = "Bearer $service"; 'Content-Type' = 'application/json' }
 
-function Nova-Senha {
+function New-SenhaDemo {
   $alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
   $bytes = New-Object byte[] 18
   [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
@@ -47,18 +47,18 @@ $linhas = @(
 )
 $senhaIndividual = $null
 foreach ($c in $contas) {
-  $senha = Nova-Senha
+  $senha = New-SenhaDemo
   $tipo = if ($c.chave -eq 'INDIVIDUAL') { 'dev_test' } else { 'demo_comercial' }
   $meta = @{ account_type = $tipo; full_name = $c.nome }
   $email = $c.email.ToLower()
   if ($existentes.ContainsKey($email)) {
     $corpo = @{ password = $senha; email_confirm = $true; user_metadata = $meta } | ConvertTo-Json -Depth 4
     Invoke-RestMethod -Method Put -Uri "$base/users/$($existentes[$email])" -Headers $h -Body ([Text.Encoding]::UTF8.GetBytes($corpo)) | Out-Null
-    Write-Host "senha redefinida: $email"
+    Write-Output "senha redefinida: $email"
   } else {
     $corpo = @{ email = $email; password = $senha; email_confirm = $true; user_metadata = $meta } | ConvertTo-Json -Depth 4
     Invoke-RestMethod -Method Post -Uri "$base/users" -Headers $h -Body ([Text.Encoding]::UTF8.GetBytes($corpo)) | Out-Null
-    Write-Host "criada: $email"
+    Write-Output "criada: $email"
   }
   if ($c.chave -eq 'INDIVIDUAL') { $senhaIndividual = $senha }
   $linhas += "# $($c.nome) ($($c.escola)): $($c.demonstra)"
@@ -72,7 +72,7 @@ if (Test-Path $destino) {
   Copy-Item $destino "$destino.bak-$(Get-Date -Format 'yyyyMMdd-HHmm')"
 }
 [IO.File]::WriteAllLines($destino, $linhas, (New-Object Text.UTF8Encoding $false))
-Write-Host "senhas gravadas em $destino"
+Write-Output "senhas gravadas em $destino"
 
 # A conta individual também é a conta dos testes (MISTAKEMAP_TEST_*).
 $teste = Join-Path $AppDir '.env.test.local'
@@ -82,5 +82,5 @@ if ($senhaIndividual -and (Test-Path $teste)) {
     if ($_ -match '^MISTAKEMAP_TEST_PASSWORD=') { "MISTAKEMAP_TEST_PASSWORD=$senhaIndividual" } else { $_ }
   }
   [IO.File]::WriteAllLines($teste, $conteudo, (New-Object Text.UTF8Encoding $false))
-  Write-Host "senha da conta de teste atualizada em $teste"
+  Write-Output "senha da conta de teste atualizada em $teste"
 }
