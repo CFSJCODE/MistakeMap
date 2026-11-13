@@ -7,10 +7,16 @@ import {
   cnpjValid,
   databaseError,
   expectedRoles,
+  importRows,
   INVITE_ROLES_BY_PERSONA,
+  memberStatus,
   persona,
   shortCode,
 } from "../_shared/school_admin_contract.ts";
+import {
+  authRecovery,
+  isSchoolItAction,
+} from "../_shared/school_it_service.ts";
 import {
   createSchoolAdminHandler,
   type SchoolAdminServices,
@@ -126,4 +132,95 @@ Deno.test("erros do banco viram mensagens públicas", () => {
   assert.match(minor.publicMessage, /maior de idade/);
   const other = new Error("boom");
   assert.equal(databaseError(other), other);
+});
+
+// ─── Perfil TI ──────────────────────────────────────────────────────────────
+
+Deno.test("school-admin aceita as ações da TI e planilha maior", async () => {
+  const { handler, calls } = setup();
+  const rows = Array.from({ length: 500 }, (_, i) => ({
+    email: `aluno${i}@escola.dev`,
+    role: "student",
+  }));
+  const response = await handler(request({
+    action: "it_import_invites",
+    school_id: USER,
+    rows,
+  }));
+  assert.equal(response.status, 200);
+  assert.equal(calls.length, 1);
+});
+
+Deno.test("planilha de convites: 1 a 500 linhas, campos aparados", () => {
+  assert.deepEqual(
+    importRows({ rows: [{ email: " A@B.dev ", role: " student " }, 3] }),
+    [{ email: "A@B.dev", role: "student" }, { email: "", role: "" }],
+  );
+  for (const rows of [[], null, "x", Array(501).fill({})]) {
+    assert.throws(
+      () => importRows({ rows }),
+      (e: unknown) => e instanceof PublicError && e.code === "invalid_rows",
+    );
+  }
+});
+
+Deno.test("situação do membro só ativo ou suspenso", () => {
+  assert.equal(memberStatus({ status: "suspended" }), "suspended");
+  assert.throws(() => memberStatus({ status: "banido" }));
+});
+
+Deno.test("ações da TI são reconhecidas pelo prefixo", () => {
+  assert.equal(isSchoolItAction("it_directory"), true);
+  assert.equal(isSchoolItAction("school_overview"), false);
+});
+
+Deno.test("redefinição de senha chama o recover do Auth com a chave anon", async () => {
+  const seen: { url: string; init?: RequestInit }[] = [];
+  const send = authRecovery(
+    (name) =>
+      ({ SUPABASE_URL: "https://x.supabase.co/", SUPABASE_ANON_KEY: "anon" })[
+        name
+      ],
+    (url, init) => {
+      seen.push({ url: String(url), init });
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    },
+  );
+  await send("al@b.dev");
+  assert.equal(seen[0].url, "https://x.supabase.co/auth/v1/recover");
+  assert.equal(
+    (seen[0].init?.headers as Record<string, string>).apikey,
+    "anon",
+  );
+  assert.equal(seen[0].init?.body, JSON.stringify({ email: "al@b.dev" }));
+});
+
+Deno.test("redefinição de senha traduz limite e falha do Auth", async () => {
+  const get = (name: string) =>
+    ({ SUPABASE_URL: "https://x", SUPABASE_ANON_KEY: "k" })[name];
+  for (const [status, code] of [[429, "limit_reached"], [500, "auth_failed"]]) {
+    const send = authRecovery(
+      get,
+      () => Promise.resolve(new Response("", { status: status as number })),
+    );
+    await assert.rejects(
+      send("a@b.dev"),
+      (e: unknown) => e instanceof PublicError && e.code === code,
+    );
+  }
+});
+
+Deno.test("erros do banco da TI viram mensagens claras", () => {
+  const recent = databaseError({
+    code: "MM429",
+    message: "password_reset_recent",
+  });
+  assert.ok(recent instanceof PublicError && recent.status === 429);
+  assert.match((recent as PublicError).publicMessage, /10 minutos/);
+  const limit = databaseError({
+    code: "MM402",
+    message: "school_plan_user_limit",
+    hint: "O plano Grátis vai até 5 usuários. Mude para o plano Escola.",
+  });
+  assert.match((limit as PublicError).publicMessage, /até 5 usuários/);
 });

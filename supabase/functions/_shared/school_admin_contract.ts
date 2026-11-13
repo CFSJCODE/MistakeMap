@@ -19,6 +19,16 @@ export const SCHOOL_ADMIN_ACTIONS = [
   "create_team",
   "join_team",
   "leave_team",
+  "it_directory",
+  "it_member_sessions",
+  "it_revoke_sessions",
+  "it_reset_password",
+  "it_set_status",
+  "it_remove_member",
+  "it_import_invites",
+  "it_renew_invite",
+  "it_licenses",
+  "it_audit",
 ] as const;
 export type SchoolAdminAction = typeof SCHOOL_ADMIN_ACTIONS[number];
 
@@ -257,7 +267,41 @@ const MESSAGES: Record<string, string> = {
   invoice_canceled: "Esta fatura foi cancelada.",
   invalid_students: "Confira o número de alunos.",
   invalid_plan: "Escolha um plano válido.",
+  password_reset_recent:
+    "Um e-mail de redefinição já foi enviado para esta pessoa há menos de 10 minutos.",
+  invalid_rows: "A planilha precisa ter de 1 a 500 linhas com e-mail e papel.",
+  not_found: "Não encontrado. Atualize a lista e tente de novo.",
+  school_member_immutable: "Troca de papel exige um convite novo.",
 };
+
+/** Papéis que a TI convida em lote (gestão continua só com o dono, um a um). */
+export const IMPORT_ROLES = ["teacher", "student", "guardian"] as const;
+
+export const memberStatus = (input: Input) =>
+  oneOf(input, "status", ["active", "suspended"] as const);
+
+/**
+ * Linhas da planilha de convites: 1 a 500 objetos {email, role}. A conferência
+ * de cada e-mail e papel fica no banco, que devolve o motivo linha a linha.
+ */
+export function importRows(input: Input): { email: string; role: string }[] {
+  const rows = input.rows;
+  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 500) {
+    throw new PublicError(
+      400,
+      "invalid_rows",
+      "A planilha precisa ter de 1 a 500 linhas com e-mail e papel.",
+    );
+  }
+  return rows.map((row) => {
+    const value = row && typeof row === "object" && !Array.isArray(row)
+      ? row as Record<string, unknown>
+      : {};
+    const email = typeof value.email === "string" ? value.email.trim() : "";
+    const role = typeof value.role === "string" ? value.role.trim() : "";
+    return { email: email.slice(0, 254), role: role.slice(0, 20) };
+  });
+}
 
 /** Converte erro do Postgres (SQLSTATE MMxxx das funções) em erro público. */
 export function databaseError(error: unknown): unknown {

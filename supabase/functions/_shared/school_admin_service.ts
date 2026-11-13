@@ -29,6 +29,7 @@ import {
   shortCode,
   teamRole,
 } from "./school_admin_contract.ts";
+import { isSchoolItAction, schoolItOperation } from "./school_it_service.ts";
 
 type Tx = postgres.TransactionSql;
 
@@ -172,6 +173,9 @@ export async function schoolAdminOperation(
   input: Input,
 ): Promise<unknown> {
   const action: SchoolAdminAction = schoolAdminAction(input.action);
+  if (isSchoolItAction(action)) {
+    return await schoolItOperation(sql, user, action, input);
+  }
   switch (action) {
     case "context":
       return await context(sql, user);

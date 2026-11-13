@@ -10,6 +10,7 @@ import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'escola_repositorio.dart';
 import 'escola_ui.dart';
+import 'painel_ti.dart';
 import 'perfil_modelos.dart';
 
 // ─── Tela inicial dos perfis de escola ───────────────────────────────────────
@@ -161,6 +162,24 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
     await _carregar();
   }
 
+  Future<void> _renovar(DadosEscola convite) async {
+    final r = await _rodar('it_renew_invite', {
+      'school_id': widget.perfil.escolaId,
+      'invite_id': convite['id'],
+    });
+    if (r == null || !mounted) return;
+    final email = convite['email'];
+    await mostrarCodigo(
+      context,
+      titulo: 'Convite renovado',
+      codigo: '${r['code']}',
+      explicacao:
+          'O código antigo deixou de valer. Envie este '
+          '${email == null ? 'código' : 'código para $email'}.',
+    );
+    await _carregar();
+  }
+
   Future<void> _criarEquipe() async {
     final nome = _equipe.text.trim();
     if (nome.length < 2) {
@@ -235,6 +254,16 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
             _cartaoRelatorios(
               papel,
               '${escola['name'] ?? widget.perfil.escolaNome ?? 'Escola'}',
+            ),
+          if (widget.perfil.escolaId != null &&
+              const {'owner', 'it_admin'}.contains(papel))
+            CartaoAdministracaoTi(
+              key: ValueKey('ti-${widget.perfil.escolaId}'),
+              escolaId: widget.perfil.escolaId!,
+              escolaNome:
+                  '${escola['name'] ?? widget.perfil.escolaNome ?? 'Escola'}',
+              repositorio: widget.repositorio,
+              onMudou: _carregar,
             ),
           if (membros.isNotEmpty && papel != 'teacher')
             CartaoEscola(
@@ -334,9 +363,10 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
               'compra, centro de custo, boleto ou Pix e nota fiscal. Não vê '
               'respostas nem o mapa de nenhum aluno.',
         'it_admin' =>
-          'Convide professores, estudantes e responsáveis e acompanhe quem '
-              'já entrou na escola. A TI não vê respostas nem o mapa de nenhum '
-              'aluno.',
+          'Você cuida das contas e dos acessos: convites (um a um ou em '
+              'lote), quem entrou, aparelhos conectados, senha, suspensão e o '
+              'registro de auditoria. A TI não vê respostas, mapa de aluno nem '
+              'valores.',
         'teacher' =>
           'Crie e acompanhe suas turmas no perfil Estudante, em Explorar e '
               'aprender > Turmas: a turma fica ligada a esta escola. Aqui você '
@@ -404,6 +434,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
           for (final c in convites)
             _LinhaConvite(
               convite: c,
+              onRenovar: _enviando ? null : () => _renovar(c),
               onRevogar: _enviando
                   ? null
                   : () async {
@@ -461,9 +492,16 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
 }
 
 class _LinhaConvite extends StatelessWidget {
-  const _LinhaConvite({required this.convite, required this.onRevogar});
+  const _LinhaConvite({
+    required this.convite,
+    required this.onRevogar,
+    required this.onRenovar,
+  });
   final DadosEscola convite;
   final VoidCallback? onRevogar;
+
+  /// Revoga e gera um código novo igual (perdeu o código, venceu o prazo).
+  final VoidCallback? onRenovar;
 
   @override
   Widget build(BuildContext context) {
@@ -481,6 +519,8 @@ class _LinhaConvite extends StatelessWidget {
               '${vence == null ? '' : ' · vence ${vence.day.toString().padLeft(2, '0')}/${vence.month.toString().padLeft(2, '0')}'}',
             ),
           ),
+          const SizedBox(width: 8),
+          BotaoEscola('Novo código', onPressed: onRenovar),
           const SizedBox(width: 8),
           BotaoEscola('Revogar', onPressed: onRevogar),
         ],

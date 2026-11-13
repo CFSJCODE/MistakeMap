@@ -28,7 +28,7 @@ export function createSchoolAdminHandler(services: SchoolAdminServices) {
       const user = await services.authenticate(req);
       let input: Input;
       try {
-        const raw = await readLimited(req.body, 16384);
+        const raw = await readLimited(req.body, 65536);
         const parsed = JSON.parse(new TextDecoder().decode(raw));
         if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
           throw new Error();
