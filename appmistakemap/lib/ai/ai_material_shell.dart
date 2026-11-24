@@ -218,6 +218,39 @@ class AiMaterialShell extends StatefulWidget {
           side: const BorderSide(color: Color(0xE6FFFFFF)),
         ),
       ),
+      // Segmentos com a aparência do GlassSegmented do Fluent: cápsula
+      // branca, borda clara e o escolhido no acento da IA.
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(Size(48, 44)),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 12),
+          ),
+          visualDensity: VisualDensity.standard,
+          textStyle: const WidgetStatePropertyAll(
+            TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? Color.alphaBlend(
+                    MistakeMapDesign.violet.withValues(alpha: .22),
+                    MistakeMapDesign.white,
+                  )
+                : const Color(0xD9FFFFFF),
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.disabled)
+                ? MistakeMapDesign.disabledInk
+                : states.contains(WidgetState.selected)
+                ? MistakeMapDesign.violetInk
+                : MistakeMapDesign.deep,
+          ),
+          side: const WidgetStatePropertyAll(
+            BorderSide(color: MistakeMapDesign.border),
+          ),
+          shape: const WidgetStatePropertyAll(StadiumBorder()),
+        ),
+      ),
       // Abas de seção em cápsula: a selecionada acende no acento da IA.
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xD9FFFFFF),
