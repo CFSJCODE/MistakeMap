@@ -57,3 +57,64 @@ Future<void> mostrarAparencia(BuildContext context, {Aparencia? aparencia}) {
     ),
   );
 }
+
+/// Lua/sol que alterna claro e escuro na hora e salva a escolha. Para telas
+/// sem a barra do topo (como a escolha de perfil, antes do login).
+class BotaoAparencia extends StatelessWidget {
+  const BotaoAparencia({super.key, this.aparencia});
+
+  /// Outra instância (testes); por padrão, [Aparencia.instancia].
+  final Aparencia? aparencia;
+
+  @override
+  Widget build(BuildContext context) {
+    final alvo = aparencia ?? Aparencia.instancia;
+    if (!Aparencia.disponivel) return const SizedBox.shrink();
+    return ValueListenableBuilder<ModoAparencia>(
+      valueListenable: alvo,
+      builder: (context, _, _) {
+        final escuro = MistakeMapDesign.escuro;
+        // O MediaQuery do app segue a paleta; aqui vale o brilho do aparelho.
+        void alternar() => alvo.alternar(
+          WidgetsBinding.instance.platformDispatcher.platformBrightness,
+        );
+        final dica = escuro
+            ? 'Mudar para o modo claro'
+            : 'Mudar para o modo escuro';
+        return Semantics(
+          button: true,
+          toggled: escuro,
+          label: 'Modo escuro',
+          onTap: alternar,
+          excludeSemantics: true,
+          child: Tooltip(
+            message: dica,
+            child: SizedBox.square(
+              dimension: 44,
+              child: IconButton(
+                key: const Key('botao-aparencia'),
+                icon: Icon(
+                  escuro ? WindowsIcons.brightness : WindowsIcons.quiet_hours,
+                  size: 18,
+                  color: MistakeMapDesign.abyss,
+                ),
+                style: ButtonStyle(
+                  backgroundColor: WidgetStatePropertyAll(
+                    MistakeMapDesign.pelicula(0xC7),
+                  ),
+                  shape: WidgetStatePropertyAll(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Raio.md),
+                      side: BorderSide(color: MistakeMapDesign.hairline),
+                    ),
+                  ),
+                ),
+                onPressed: alternar,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

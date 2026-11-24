@@ -235,6 +235,9 @@ capturas trocam a família só no momento de gerar a imagem.
   (`Key('botao-aparencia')`) alterna para o oposto do que está na tela e
   salva a escolha como Claro ou Escuro. "Igual ao aparelho" continua em
   Mais > Aparência.
+- O mesmo botão (`BotaoAparencia`, em `aparencia_dialogo.dart`) fica ao
+  lado do título nas telas sem barra do topo: escolha de perfil antes do
+  login ("Como você vai entrar?") e "Quem é você?".
 - Verificação: claro idêntico ao `main` em 18 capturas (11 telas do aluno,
   5 passos da cobrança e 2 dos relatórios); escuro conferido nas mesmas.
 

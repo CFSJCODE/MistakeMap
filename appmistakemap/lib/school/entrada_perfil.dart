@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
 import '../layout/adaptativo.dart';
+import '../theme/aparencia_dialogo.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'perfil_modelos.dart';
@@ -38,12 +39,21 @@ class TelaEntradaPorPerfil extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
             children: [
-              Text(
-                'Como você vai entrar?',
-                key: ValueKey('entrada-titulo'),
-                style: Tipo.tituloPagina.copyWith(
-                  color: MistakeMapDesign.primary,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Como você vai entrar?',
+                      key: ValueKey('entrada-titulo'),
+                      style: Tipo.tituloPagina.copyWith(
+                        color: MistakeMapDesign.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const BotaoAparencia(),
+                ],
               ),
               const SizedBox(height: 8),
               Text(
