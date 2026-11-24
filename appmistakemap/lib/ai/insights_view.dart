@@ -431,7 +431,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                     'Diagnóstico dos seus erros: o que se repete, em quais '
                     'matérias e em quais conceitos.',
                     key: Key('map-role'),
-                    style: TextStyle(fontSize: 16, color: mapContentBlue),
+                    style: Tipo.corpo,
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
@@ -458,51 +458,37 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                         setState(() => _subject = value == '' ? null : value),
                   ),
                   const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final period in [
-                        (0, 'Todo o histórico'),
-                        (30, '30 dias'),
-                        (7, '7 dias'),
-                      ])
-                        ChoiceChip(
-                          label: Text(period.$2),
-                          selected: _days == period.$1,
-                          onSelected: (_) => setState(() => _days = period.$1),
-                        ),
-                    ],
+                  _Segmentos<int>(
+                    key: const Key('map-period'),
+                    rotulo: 'Período',
+                    valor: _days,
+                    opcoes: const [(0, 'Tudo'), (30, '30 dias'), (7, '7 dias')],
+                    onChanged: (v) => setState(() => _days = v),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     '${_qtd(insights.analyzedCount, 'análise', 'análises')} · '
                     '${_qtd(insights.errorsCount, 'tentativa', 'tentativas')} '
                     'com erros sugeridos pela IA',
-                    style: const TextStyle(fontSize: 16, color: mapContentBlue),
+                    style: Tipo.tituloComponente,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Espaco.xxs),
                   const Text(
                     'As frequências contam tentativas distintas. As classificações são sugestões da IA; toque para conferir os exercícios.',
-                    style: TextStyle(fontSize: 14, color: mapContentBlue),
+                    style: Tipo.secundario,
                   ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final view in [
-                        (2, 'Conexões'),
-                        (0, 'Gráficos'),
-                        (1, 'Nuvem'),
-                        (3, 'Tentativas'),
-                      ])
-                        ChoiceChip(
-                          label: Text(view.$2),
-                          selected: _view == view.$1,
-                          onSelected: (_) => setState(() => _view = view.$1),
-                        ),
+                  const SizedBox(height: Espaco.md),
+                  _Segmentos<int>(
+                    key: const Key('map-view'),
+                    rotulo: 'Visualização',
+                    valor: _view,
+                    opcoes: const [
+                      (2, 'Conexões'),
+                      (0, 'Gráficos'),
+                      (1, 'Nuvem'),
+                      (3, 'Tentativas'),
                     ],
+                    onChanged: (v) => setState(() => _view = v),
                   ),
                   const SizedBox(height: 24),
                   if (insights.attempts.isEmpty)
@@ -1623,13 +1609,18 @@ class _PracticeViewState extends State<PracticeView> {
           padding: const EdgeInsets.all(24),
           children: [
             const Text(
-              'A IA gera exercícios personalizados com base nos seus erros nesta matéria, '
-              'priorizando os conceitos que você errou mais vezes e mais recentemente. '
-              'Conceitos que você já voltou a acertar perdem prioridade. Sem histórico, '
-              'a IA gera questões diagnósticas. Respostas antigas ainda sem análise '
-              'serão avaliadas antes da geração.',
+              'A IA cria exercícios a partir dos conceitos que você mais errou, '
+              'e mais recentemente, nesta matéria. Sem histórico, ela começa '
+              'com questões diagnósticas.',
+              style: Tipo.corpo,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Espaco.xxs),
+            const Text(
+              'Conceitos que você voltou a acertar perdem prioridade, e '
+              'respostas antigas ainda sem análise são avaliadas antes.',
+              style: Tipo.secundario,
+            ),
+            const SizedBox(height: Espaco.md),
             DropdownButtonFormField<String>(
               initialValue: _subject,
               isExpanded: true,
@@ -1653,46 +1644,47 @@ class _PracticeViewState extends State<PracticeView> {
                   : (value) => setState(() => _subject = value),
             ),
             const SizedBox(height: 16),
-            const Text('Tipo de erro para reforçar'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ChoiceChip(
-                  key: const Key('practice-category-all'),
-                  label: const Text('Todos os tipos'),
-                  selected: _category == null,
-                  onSelected: controlsDisabled
-                      ? null
-                      : (_) => setState(() => _category = null),
+            DropdownButtonFormField<String>(
+              key: const Key('practice-category'),
+              initialValue: _category ?? '',
+              isExpanded: true,
+              borderRadius: BorderRadius.circular(12),
+              dropdownColor: mapSurface,
+              decoration: const InputDecoration(
+                labelText: 'Tipo de erro para reforçar',
+              ),
+              items: [
+                const DropdownMenuItem(
+                  key: Key('practice-category-all'),
+                  value: '',
+                  child: Text('Todos os tipos'),
                 ),
                 for (final entry in categoryLabels.entries)
-                  ChoiceChip(
+                  DropdownMenuItem(
                     key: Key('practice-category-${entry.key}'),
-                    label: Text(entry.value),
-                    selected: _category == entry.key,
-                    onSelected: controlsDisabled
-                        ? null
-                        : (_) => setState(() => _category = entry.key),
+                    value: entry.key,
+                    child: Text(entry.value, overflow: TextOverflow.ellipsis),
                   ),
               ],
+              onChanged: controlsDisabled
+                  ? null
+                  : (value) => setState(
+                      () => _category = value == null || value.isEmpty
+                          ? null
+                          : value,
+                    ),
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              children: [
-                for (final count in [3, 4, 5])
-                  ChoiceChip(
-                    label: Text('$count exercícios'),
-                    selected: count == _count,
-                    onSelected: controlsDisabled
-                        ? null
-                        : (_) => setState(() => _count = count),
-                  ),
-              ],
+            const SizedBox(height: Espaco.md),
+            _Segmentos<int>(
+              key: const Key('practice-count'),
+              rotulo: 'Quantos exercícios',
+              valor: _count,
+              opcoes: const [(3, '3'), (4, '4'), (5, '5')],
+              onChanged: controlsDisabled
+                  ? null
+                  : (v) => setState(() => _count = v),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Espaco.md),
             ElevatedButton.icon(
               onPressed: controlsDisabled || _subject == null
                   ? null
@@ -1758,3 +1750,96 @@ class _PracticeViewState extends State<PracticeView> {
 
 /// "1 análise", "3 análises": sem o "(s)" nos textos para o aluno.
 String _qtd(int n, String um, String varios) => '$n ${n == 1 ? um : varios}';
+
+/// Escolha única em segmentos (a versão Material do `GlassSegmented`):
+/// uma linha só, de largura inteira, rótulo acima e o escolhido no acento da
+/// IA. Quando os segmentos não cabem (tela estreita ou fonte ampliada), volta
+/// às pílulas que quebram linha, para nenhum rótulo ser cortado.
+class _Segmentos<T> extends StatelessWidget {
+  const _Segmentos({
+    super.key,
+    required this.rotulo,
+    required this.valor,
+    required this.opcoes,
+    required this.onChanged,
+  });
+
+  final String rotulo;
+  final T valor;
+  final List<(T, String)> opcoes;
+  final ValueChanged<T>? onChanged;
+
+  static const _estilo = TextStyle(fontSize: 14, fontWeight: FontWeight.w600);
+
+  @override
+  Widget build(BuildContext context) {
+    final mudar = onChanged;
+    final escala = MediaQuery.textScalerOf(context);
+    double largura(String texto) {
+      final pintor = TextPainter(
+        text: TextSpan(text: texto, style: _estilo),
+        textDirection: TextDirection.ltr,
+        textScaler: escala,
+        maxLines: 1,
+      )..layout();
+      final w = pintor.width;
+      pintor.dispose();
+      return w;
+    }
+
+    final maior = opcoes.map((o) => largura(o.$2)).fold(0.0, math.max);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(rotulo, style: Tipo.legenda),
+        const SizedBox(height: Espaco.xxs),
+        LayoutBuilder(
+          builder: (context, limites) {
+            // Segmentos têm a mesma largura; o respiro (padding e borda) não
+            // encolhe, só o rótulo. Um só fator para todos, até 90%; abaixo
+            // disso, pílulas.
+            final porSegmento = limites.maxWidth / opcoes.length - 28;
+            final fator = maior == 0 ? 1.0 : math.min(1.0, porSegmento / maior);
+            final cabe = fator >= .9;
+            if (!cabe) {
+              return Wrap(
+                spacing: Espaco.xs,
+                runSpacing: Espaco.xs,
+                children: [
+                  for (final (v, texto) in opcoes)
+                    ChoiceChip(
+                      label: Text(texto),
+                      selected: v == valor,
+                      onSelected: mudar == null ? null : (_) => mudar(v),
+                    ),
+                ],
+              );
+            }
+            return SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<T>(
+                showSelectedIcon: false,
+                segments: [
+                  for (final (v, texto) in opcoes)
+                    ButtonSegment<T>(
+                      value: v,
+                      label: Text(
+                        texto,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: TextStyle(fontSize: 14 * fator),
+                      ),
+                    ),
+                ],
+                selected: {valor},
+                onSelectionChanged: mudar == null
+                    ? null
+                    : (escolha) => mudar(escolha.first),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}

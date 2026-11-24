@@ -25,6 +25,8 @@ visto, não o que foi presumido.
 | 11 | Meus exercícios e Caderno: cartões soltos com fundo tingido, botão "Opções" com moldura em cada cartão, 3 a 4 pílulas por cartão e texto de introdução centralizado | `main.dart` (`_ExercicioCard`), `caderno_erros.dart` | Média | Resolvido na etapa 2 (linhas em `GrupoLista`, sobretítulo matéria · tipo, menu sem moldura com alvo de 48 dp) |
 | 12 | "1 certos" no resumo do Praticar | `banco_exercicios.dart` | Baixa | Resolvido (singular) |
 | 13 | Sessão de revisão sem progresso visível; botão "Voltar" em texto colado ao título; as 4 autoavaliações em botões brancos de larguras diferentes, sem cor nem ícone; "Ver referência" sem destaque sendo a única ação do passo | `StudyReviewPage` | Média | Resolvido na etapa 3 |
+| 15 | Mapa: período (3) e visualização (4) em pílulas que quebravam em duas linhas; tamanhos de fonte soltos (16/14) | `insights_view.dart` | Média | Resolvido na etapa 4 |
+| 16 | Praticar meus erros: 9 pílulas de tipo de erro + 3 de quantidade (~260 px) e um parágrafo de 7 linhas antes do botão | `PracticeView` | Média | Resolvido na etapa 4 |
 | 14 | Conferir sugestões: mesmos problemas de cabeçalho; três botões quebrando em duas linhas desiguais por sugestão | `StudyDiagnosticsPage` | Baixa | Resolvido na etapa 3 |
 
 Sem problema encontrado: navegação inferior persistente com estado por aba,
@@ -151,13 +153,33 @@ como modo foco:
 
 Nenhuma chamada ao `StudyRepository` mudou. 410 testes passam.
 
+### Etapa 4: Mapa e Praticar meus erros
+
+- `_Segmentos` (em `insights_view.dart`): escolha única em segmentos
+  Material com tema próprio (`segmentedButtonTheme`: cápsula branca, borda
+  clara, escolhido no violeta da IA, alvo ≥ 44 px). Todos os segmentos
+  têm a mesma largura; se o maior rótulo não cabe nem a 90% do tamanho,
+  volta às pílulas que quebram linha (nada é cortado com fonte ampliada).
+- Mapa: Período ("Tudo", "30 dias", "7 dias") e Visualização em segmentos,
+  com rótulo acima; contagem em `Tipo.tituloComponente` e nota em
+  `Tipo.secundario`. A 390 px a visualização (4 opções) continua em
+  pílulas; em tablet e desktop vira segmentos.
+- Praticar meus erros: tipo de erro num menu (`Key('practice-category')`,
+  itens `practice-category-<tipo>`), quantidade em segmentos
+  (`Key('practice-count')`) e o texto de 7 linhas reduzido a duas frases
+  curtas, sem perder as regras (prioridade, recuperação, análise pendente).
+
+Capturas: as pílulas e botões Material usam a fonte padrão da plataforma
+(sem família no estilo); no teste de widget isso vira blocos, então as
+capturas trocam a família só no momento de gerar a imagem.
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |
 |---|---|---|
 | 2 | Exercícios e Caderno: listas compactas, filtros em menu | Feita (itens 10 a 12 da auditoria). Estados vazios mantidos como estavam |
 | 3 | Estudar e sessão de revisão: modo foco, menos navegação visível durante a sessão | Feita para a revisão e a conferência (itens 13 e 14). A aba Estudar (material da IA, em Material) fica com a etapa 4 |
-| 4 | Mapa: chips e botões Material com a mesma aparência dos Fluent; visão em lista como alternativa ao grafo | |
+| 4 | Mapa: chips e botões Material com a mesma aparência dos Fluent; visão em lista como alternativa ao grafo | Feita em parte (itens 15 e 16): segmentos Material com o visual do `GlassSegmented`. A visão "Tentativas" já é a lista alternativa ao grafo |
 | 5 | Modo escuro: trocar as constantes `MistakeMapDesign.*` por cores lidas do tema (`ThemeExtension`), tela a tela | Mudança grande; cada etapa precisa sair sem deixar o app misto |
 | 6 | Migrar `fontSize:` soltos para `Tipo` nas telas de escola, TI e professor | |
 

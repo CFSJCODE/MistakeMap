@@ -636,13 +636,17 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('practice-category-sinal')));
+    await tester.tap(find.byKey(const Key('practice-category')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('practice-category-sinal')).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Gerar exercícios'));
     await tester.pumpAndSettle();
     expect(repository.practiceCategory, 'sinal');
     expect(repository.practiceCount, 5);
-    await tester.tap(find.byKey(const Key('practice-category-all')));
+    await tester.tap(find.byKey(const Key('practice-category')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('practice-category-all')).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Gerar exercícios'));
     await tester.pumpAndSettle();
