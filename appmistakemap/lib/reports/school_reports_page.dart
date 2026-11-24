@@ -209,9 +209,7 @@ class _SchoolReportsPageState extends State<SchoolReportsPage> {
                 children: [
                   Text(
                     'Relatórios',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
+                    style: Tipo.tituloPagina.copyWith(
                       color: MistakeMapDesign.primary,
                     ),
                   ),
@@ -494,8 +492,7 @@ class _Heatmap extends StatelessWidget {
                       child: Text(
                         errorTypeLabel(t),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
+                        style: Tipo.legenda.copyWith(
                           color: MistakeMapDesign.steel,
                         ),
                       ),
@@ -526,7 +523,7 @@ class _Heatmap extends StatelessWidget {
           children: [
             Text(
               'Menos',
-              style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
+              style: Tipo.legenda.copyWith(color: MistakeMapDesign.steel),
             ),
             const SizedBox(width: 6),
             for (final c in ReportColors.ramp.skip(1))
@@ -542,7 +539,7 @@ class _Heatmap extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               'Mais erros',
-              style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
+              style: Tipo.legenda.copyWith(color: MistakeMapDesign.steel),
             ),
           ],
         ),
@@ -565,7 +562,7 @@ class _Heatmap extends StatelessWidget {
         ),
         child: Text(
           n == 0 ? '' : formatInt(n),
-          style: TextStyle(fontSize: 12, color: ReportColors.heatInk(t)),
+          style: Tipo.legenda.copyWith(color: ReportColors.heatInk(t)),
         ),
       ),
     );
@@ -869,9 +866,7 @@ class _KpiRow extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         k.value,
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
+                        style: Tipo.numero.copyWith(
                           color: MistakeMapDesign.primary,
                         ),
                       ),
@@ -879,8 +874,7 @@ class _KpiRow extends StatelessWidget {
                     if (k.note != null)
                       Text(
                         k.note!,
-                        style: TextStyle(
-                          fontSize: 12,
+                        style: Tipo.legenda.copyWith(
                           color: MistakeMapDesign.steel,
                         ),
                       ),
@@ -1206,8 +1200,7 @@ class _HorizontalBars extends StatelessWidget {
                     ),
                     Text(
                       r.detail,
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: Tipo.legenda.copyWith(
                         color: MistakeMapDesign.steel,
                       ),
                     ),

@@ -1090,15 +1090,11 @@ class _Numeros extends StatelessWidget {
       children: [
         Text(
           '$valor',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: MistakeMapDesign.abyss,
-          ),
+          style: Tipo.numero.copyWith(color: MistakeMapDesign.abyss),
         ),
         Text(
           rotulo,
-          style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
+          style: Tipo.legenda.copyWith(color: MistakeMapDesign.steel),
         ),
       ],
     ),

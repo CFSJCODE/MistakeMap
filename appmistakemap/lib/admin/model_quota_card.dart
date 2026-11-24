@@ -73,11 +73,7 @@ class ModelQuotaCard extends StatelessWidget {
               ),
               Text(
                 model,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: MistakeMapDesign.navy,
-                ),
+                style: Tipo.tituloSecao.copyWith(color: MistakeMapDesign.navy),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -90,8 +86,7 @@ class ModelQuotaCard extends StatelessWidget {
                 ),
                 child: Text(
                   'Plano gratuito',
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: Tipo.legenda.copyWith(
                     fontWeight: FontWeight.w600,
                     color: MistakeMapDesign.mintInk,
                   ),
@@ -104,7 +99,7 @@ class ModelQuotaCard extends StatelessWidget {
             telemetryAvailable
                 ? 'Consumo registrado pelo aplicativo'
                 : 'Aguardando dados de consumo',
-            style: TextStyle(fontSize: 12, color: MistakeMapDesign.content),
+            style: Tipo.legenda.copyWith(color: MistakeMapDesign.content),
           ),
           const SizedBox(height: 20),
           _quotaRow(
@@ -167,8 +162,7 @@ class ModelQuotaCard extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontSize: 14,
+              style: Tipo.secundario.copyWith(
                 fontWeight: FontWeight.w600,
                 color: MistakeMapDesign.content,
               ),
@@ -181,16 +175,11 @@ class ModelQuotaCard extends StatelessWidget {
               children: [
                 Text(
                   used == null ? '—' : formatarMilhar(used),
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
+                  style: Tipo.numero.copyWith(color: color),
                 ),
                 Text(
                   '/ ${formatarMilhar(limit)}',
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: Tipo.secundario.copyWith(
                     color: MistakeMapDesign.content,
                   ),
                 ),
@@ -219,11 +208,10 @@ class ModelQuotaCard extends StatelessWidget {
               runSpacing: 4,
               alignment: WrapAlignment.spaceBetween,
               children: [
-                Text(percent, style: TextStyle(fontSize: 12, color: color)),
+                Text(percent, style: Tipo.legenda.copyWith(color: color)),
                 Text(
                   balance,
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: Tipo.legenda.copyWith(
                     fontWeight: FontWeight.w600,
                     color: MistakeMapDesign.content,
                   ),

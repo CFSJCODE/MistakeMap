@@ -41,9 +41,7 @@ class TelaEntradaPorPerfil extends StatelessWidget {
               Text(
                 'Como você vai entrar?',
                 key: ValueKey('entrada-titulo'),
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
+                style: Tipo.tituloPagina.copyWith(
                   color: MistakeMapDesign.primary,
                 ),
               ),
@@ -52,7 +50,7 @@ class TelaEntradaPorPerfil extends StatelessWidget {
                 subtitulo ??
                     'Escolha o perfil. Em seguida, entre com o e-mail e a '
                         'senha da conta desse perfil.',
-                style: TextStyle(fontSize: 16, color: MistakeMapDesign.content),
+                style: Tipo.corpo.copyWith(color: MistakeMapDesign.content),
               ),
               const SizedBox(height: 24),
               LayoutBuilder(

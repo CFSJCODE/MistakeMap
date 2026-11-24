@@ -250,10 +250,7 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-        ),
+        Text(title, style: Tipo.tituloSecao),
         const SizedBox(height: 16),
         ...children,
       ],
@@ -1031,11 +1028,7 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
           'Seu espaço de estudos',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: MistakeMapDesign.primary,
-          ),
+          style: Tipo.tituloSecao.copyWith(color: MistakeMapDesign.primary),
         ),
       ),
     ],
