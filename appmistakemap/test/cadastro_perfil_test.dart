@@ -1,3 +1,4 @@
+import 'package:appmistakemap/layout/conta.dart';
 import 'package:appmistakemap/main.dart' show temaFluent, temaVidro;
 import 'package:appmistakemap/school/escola_repositorio.dart';
 import 'package:appmistakemap/school/painel_escola.dart';
@@ -392,13 +393,14 @@ void main() {
     // Cada abertura começa na tela de perfis.
     expect(find.byType(TelaInicialPerfis), findsOneWidget);
     await _tocar(tester, find.byKey(const ValueKey('perfil-owner:$_escola')));
-    expect(find.byType(SeletorPerfil), findsOneWidget);
     expect(find.byType(TelaPainelEscola), findsOneWidget);
     expect(find.text('Painel do dono'), findsOneWidget);
     expect(find.text('Estudante: 12'), findsOneWidget);
 
-    await _tocar(tester, find.byType(ComboBox<String>).first);
-    await _tocar(tester, find.text('Estudante').last);
+    // A troca fica no botão de conta do topo, sem pedir login de novo.
+    await _tocar(tester, find.byKey(const Key('botao-conta')));
+    expect(find.text('Perfis desta conta'), findsOneWidget);
+    await _tocar(tester, find.byKey(const Key('conta-perfil-student')));
     expect(find.text('APP DO ESTUDANTE'), findsOneWidget);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('perfil_ativo_$_uid'), 'student');
@@ -534,7 +536,9 @@ void main() {
       PortaDePerfil(
         usuarioId: _uid,
         repositorio: repo,
-        estudante: const Text('APP DO ESTUDANTE'),
+        estudante: const Column(
+          children: [Text('APP DO ESTUDANTE'), BotaoConta()],
+        ),
       ),
     );
     await _tocar(tester, find.byKey(const ValueKey('perfil-owner:$_escola')));
@@ -550,11 +554,11 @@ void main() {
     expect(find.text('APP DO ESTUDANTE'), findsOneWidget);
     expect(find.byType(TelaInicialPerfis), findsNothing);
 
-    // O botão "Trocar perfil" também volta.
-    await _tocar(tester, find.byKey(const ValueKey('voltar-perfis')));
-    expect(find.byType(TelaInicialPerfis), findsOneWidget);
-    await _tocar(tester, find.byKey(const ValueKey('perfil-owner:$_escola')));
+    // O botão de conta troca de perfil sem passar pela lista.
+    await _tocar(tester, find.byKey(const Key('botao-conta')));
+    await _tocar(tester, find.byKey(Key('conta-perfil-owner:$_escola')));
     expect(find.text('Painel do dono'), findsOneWidget);
+    expect(find.byType(TelaInicialPerfis), findsNothing);
   });
 
   testWidgets('porta: app da equipe abre nos perfis e troca de conta', (

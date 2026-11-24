@@ -1,8 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
-import '../theme/aparencia.dart';
-import '../theme/aparencia_dialogo.dart';
 import '../theme/control_styles.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
@@ -17,10 +15,8 @@ class AppNavigationShell extends StatelessWidget {
     super.key,
     required this.selectedIndex,
     required this.onSelected,
-    required this.onAbout,
     this.onStudy,
     this.studySelected = false,
-    this.onSignOut,
     this.onAnalysis,
     required this.hasAdmin,
     this.extraLabel = 'Administração',
@@ -39,14 +35,11 @@ class AppNavigationShell extends StatelessWidget {
   /// [onSelected], para a página voltar à raiz.
   final int selectedIndex;
   final ValueChanged<int> onSelected;
-  final VoidCallback onAbout;
 
   /// Atalho para o Estudar, que mora dentro do Mapa.
   final VoidCallback? onStudy;
   final bool studySelected;
 
-  /// Sair da conta fica junto das outras opções, não escondido numa tela.
-  final VoidCallback? onSignOut;
   final bool hasAdmin;
 
   /// Destino 4 (o da conta): Administração no app dos alunos; no app da
@@ -271,7 +264,9 @@ class AppNavigationShell extends StatelessWidget {
     );
     final text = Text(
       compact
-          ? const ['Início', 'Exercícios', 'Mapa', 'Caderno'][index]
+          ? index == 4
+                ? extraShortLabel
+                : const ['Início', 'Exercícios', 'Mapa', 'Caderno'][index]
           : _labelOf(index),
       textAlign: compact ? TextAlign.center : TextAlign.start,
       maxLines: compact ? 1 : null,
@@ -332,153 +327,6 @@ class AppNavigationShell extends StatelessWidget {
       ),
     );
   }
-
-  void _openAfterMenu(BuildContext context, VoidCallback action) {
-    // Fluent starts closing its flyout before calling the menu item's action.
-    // Wait for that pop to finish before a new page becomes the current route.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) action();
-    });
-  }
-
-  MenuFlyoutItemBase _flyoutItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback action,
-    bool selected = false,
-  }) => MenuFlyoutItemBuilder(
-    builder: (menuContext) => _surface(
-      menuContext,
-      selected,
-      Button(
-        style: _style(selected),
-        onPressed: () {
-          Navigator.of(menuContext).maybePop();
-          _openAfterMenu(context, action);
-        },
-        child: _NavigationHoverInk(
-          selected: selected,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 24),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _icon(menuContext, icon, selected),
-                const SizedBox(width: 12),
-                Flexible(child: Text(label, textAlign: TextAlign.start)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  /// Menu Mais: Admin, Estudar (se disponível), Aparência, Sobre o App, Sair (se
-  /// disponível). Na barra de 7 fatias, Estudar e Sobre estão na barra;
-  /// o flyout contém Admin e Sair.
-  Widget _more(
-    BuildContext context, {
-    bool compactRail = false,
-    bool withAbout = false,
-  }) => Semantics(
-    selected: selectedIndex == 4,
-    child: DropDownButton(
-      title: const Text('Mais'),
-      leading: const Icon(WindowsIcons.more, size: 20),
-      // Na barra inferior o menu abre acima dela, alinhado à direita; abaixo
-      // não cabe e ele acabava por cima de Caderno, Sobre e Mais.
-      placement: compactRail
-          ? FlyoutPlacementMode.bottomCenter
-          : FlyoutPlacementMode.topRight,
-      menuColor: MistakeMapDesign.raised,
-      menuShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: MistakeMapDesign.border),
-      ),
-      buttonBuilder: (context, open) => Tooltip(
-        message: 'Mais opções de navegação',
-        child: _surface(
-          context,
-          selectedIndex == 4,
-          Button(
-            key: const ValueKey('navigation-more'),
-            style: _style(selectedIndex == 4, compact: true),
-            onPressed: open,
-            child: _NavigationHoverInk(
-              selected: selectedIndex == 4,
-              compact: true,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _icon(
-                    context,
-                    WindowsIcons.more,
-                    selectedIndex == 4,
-                    compact: true,
-                  ),
-                  const SizedBox(height: _compactGap),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      selectedIndex == 4 ? extraShortLabel : 'Mais',
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      softWrap: false,
-                      style: const TextStyle(
-                        fontSize: _compactFont,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          compact: true,
-        ),
-      ),
-      items: [
-        if (compactRail && onStudy != null)
-          _flyoutItem(
-            context,
-            icon: WindowsIcons.education,
-            label: 'Estudar com a IA',
-            action: onStudy!,
-          ),
-        if (Aparencia.disponivel)
-          _flyoutItem(
-            context,
-            icon: WindowsIcons.brightness,
-            label: 'Aparência',
-            action: () => mostrarAparencia(context),
-          ),
-        if (compactRail || withAbout)
-          _flyoutItem(
-            context,
-            icon: WindowsIcons.info,
-            label: 'Sobre o App',
-            action: onAbout,
-          ),
-        if (hasAdmin)
-          _flyoutItem(
-            context,
-            icon: extraIcon,
-            label: extraShortLabel,
-            selected: selectedIndex == 4,
-            action: () => onSelected(4),
-          ),
-        if (onSignOut != null)
-          _flyoutItem(
-            context,
-            icon: WindowsIcons.sign_out,
-            label: 'Sair',
-            action: onSignOut!,
-          ),
-      ],
-    ),
-  );
 
   /// Ação do trilho que abre uma página em vez de trocar de aba.
   Widget _railAction(
@@ -625,34 +473,10 @@ class AppNavigationShell extends StatelessWidget {
         ],
         _destination(context, 3, compact: false),
         const SizedBox(height: 24),
-        _section('CONTA'),
+        // Aparência, Sobre e Sair ficam no botão de conta, no topo.
         if (hasAdmin) ...[
+          _section('CONTA'),
           _destination(context, 4, compact: false),
-          const SizedBox(height: 8),
-        ],
-        if (Aparencia.disponivel) ...[
-          _railAction(
-            context,
-            icon: WindowsIcons.brightness,
-            label: 'Aparência',
-            onPressed: () => mostrarAparencia(context),
-          ),
-          const SizedBox(height: 8),
-        ],
-        _railAction(
-          context,
-          icon: WindowsIcons.info,
-          label: 'Sobre o App',
-          onPressed: onAbout,
-        ),
-        if (onSignOut != null) ...[
-          const SizedBox(height: 8),
-          _railAction(
-            context,
-            icon: WindowsIcons.sign_out,
-            label: 'Sair',
-            onPressed: onSignOut!,
-          ),
         ],
       ],
     ),
@@ -682,12 +506,22 @@ class AppNavigationShell extends StatelessWidget {
             ),
             const SizedBox(height: 8),
           ],
-          _pilled(
-            context,
-            selected: selectedIndex == 4,
-            accent: accents[4],
-            child: _more(context, compactRail: true),
-          ),
+          if (onStudy != null) ...[
+            _pilled(
+              context,
+              selected: studySelected,
+              accent: MistakeMapDesign.violet,
+              child: _studyTab(context),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (hasAdmin)
+            _pilled(
+              context,
+              selected: selectedIndex == 4,
+              accent: accents[4],
+              child: _destination(context, 4, compact: true),
+            ),
         ],
       ),
     ),
@@ -749,41 +583,30 @@ class AppNavigationShell extends StatelessWidget {
 
   /// Medidas dos botões compactos (barra do celular e trilho compacto):
   /// pequenos o bastante para oito fatias caberem em 320 px.
-  static const _compactFont = 11.0;
+  static const _compactFont = 12.0;
   static const _compactGap = 6.0;
 
-  /// Ordem dos botões na barra inferior — até sete fatias em qualquer
-  /// largura de celular: Início · Exercícios · Mapa · Estudar · Caderno · Sobre ·
-  /// Mais. Ícones compactos para que os 7 destinos caibam em qualquer celular.
-  /// Analisar não tem fatia: o Mapa já traz o painel. Cada entrada é um índice
-  /// de destino ou um dos atalhos negativos.
-  static const _actionSlot = -1;
-  static const _moreSlot = -2;
+  /// Ordem dos botões na barra inferior: Início · Exercícios · Mapa ·
+  /// Estudar · Caderno. Analisar não tem fatia (o Mapa já traz o painel) e
+  /// o que era do Mais (Aparência, Sobre, Administração, Sair) fica no botão
+  /// de conta, no topo. Cada entrada é um índice de destino ou um atalho
+  /// negativo.
   static const _studySlot = -3;
-  static const _aboutSlot = -4;
-  // Sobre foi para o Mais: com 7 fatias os rótulos ("Exercícios") encolhiam
-  // demais no celular. O atalho _aboutSlot fica para quem quiser voltá-lo.
-  static const _barSlots = [0, 1, 2, _studySlot, 3, _moreSlot];
+  static const _barSlots = [0, 1, 2, _studySlot, 3];
 
   /// Barra inferior de ponta a ponta, no modelo do NavigationBar do
   /// Material 3 com o vidro do app: fatias iguais para todos os botões, a
   /// pílula que desliza entre os destinos e se acomoda no atual, brilho que
   /// segue o dedo e a área de gestos coberta pelo próprio vidro.
   Widget _bottomBar(BuildContext context) {
-    // Mais aparece quando há Admin ou Sair no flyout (Estudar e Sobre estão
-    // na barra; o flyout fica só com Admin e Sair).
-    const moreEmpty = false; // Sobre o App sempre está no Mais.
     final slots = [
       for (final slot in _barSlots)
-        if (!(slot == _actionSlot && onAnalysis == null) &&
-            !(slot == _studySlot && onStudy == null) &&
-            !(slot == _moreSlot && moreEmpty))
-          slot,
+        if (!(slot == _studySlot && onStudy == null)) slot,
     ];
+    // Administração (índice 4) abre pelo botão de conta: nenhuma fatia fica
+    // marcada.
     final selectedSlot = studySelected && slots.contains(_studySlot)
         ? slots.indexOf(_studySlot)
-        : selectedIndex >= 4
-        ? slots.indexOf(_moreSlot)
         : slots.indexOf(selectedIndex);
     final accent = accents[selectedIndex.clamp(0, 4)];
     final inset = MediaQuery.paddingOf(context).bottom;
@@ -807,14 +630,18 @@ class AppNavigationShell extends StatelessWidget {
                 AnimatedPositioned(
                   duration: _motionDuration(context, MistakeMapMotion.page),
                   curve: MistakeMapMotion.curve,
-                  left: selectedSlot * (width + gap),
+                  left: selectedSlot.clamp(0, n - 1) * (width + gap),
                   top: 0,
                   bottom: 0,
                   width: width,
-                  child: AnimatedContainer(
+                  child: AnimatedOpacity(
+                    opacity: selectedSlot < 0 ? 0 : 1,
                     duration: _motionDuration(context),
-                    curve: MistakeMapMotion.curve,
-                    decoration: _pill(accent),
+                    child: AnimatedContainer(
+                      duration: _motionDuration(context),
+                      curve: MistakeMapMotion.curve,
+                      decoration: _pill(accent),
+                    ),
                   ),
                 ),
                 Row(
@@ -824,37 +651,7 @@ class AppNavigationShell extends StatelessWidget {
                     for (final slot in slots)
                       Expanded(
                         child: switch (slot) {
-                          _actionSlot => _actionTab(
-                            context,
-                            key: const ValueKey('navigation-action'),
-                            icon: WindowsIcons.lightbulb,
-                            label: 'Analisar',
-                            tooltip: 'Analisar um exercício',
-                            accent: MistakeMapDesign.aqua,
-                            ink: MistakeMapDesign.aquaInk,
-                            onPressed: onAnalysis,
-                          ),
-                          _studySlot => _actionTab(
-                            context,
-                            key: const ValueKey('navigation-study'),
-                            icon: WindowsIcons.education,
-                            label: 'Estudar',
-                            tooltip: 'Estudar com a IA',
-                            accent: MistakeMapDesign.violet,
-                            ink: MistakeMapDesign.violetInk,
-                            onPressed: onStudy,
-                          ),
-                          _aboutSlot => _actionTab(
-                            context,
-                            key: const ValueKey('navigation-about'),
-                            icon: WindowsIcons.info,
-                            label: 'Sobre',
-                            tooltip: 'Sobre o App',
-                            accent: MistakeMapDesign.mist,
-                            ink: MistakeMapDesign.steel,
-                            onPressed: onAbout,
-                          ),
-                          _moreSlot => _more(context, withAbout: true),
+                          _studySlot => _studyTab(context),
                           _ => _destination(context, slot, compact: true),
                         },
                       ),
@@ -889,6 +686,18 @@ class AppNavigationShell extends StatelessWidget {
       child: glass,
     );
   }
+
+  /// Estudar como fatia da barra e do trilho compacto (mora no Mapa).
+  Widget _studyTab(BuildContext context) => _actionTab(
+    context,
+    key: const ValueKey('navigation-study'),
+    icon: WindowsIcons.education,
+    label: 'Estudar',
+    tooltip: 'Estudar com a IA',
+    accent: MistakeMapDesign.violet,
+    ink: MistakeMapDesign.violetInk,
+    onPressed: onStudy,
+  );
 
   /// Um atalho como fatia da barra: mesmo tamanho dos destinos, mas sem
   /// pílula (a pílula marca onde o aluno está; isto executa ou abre uma

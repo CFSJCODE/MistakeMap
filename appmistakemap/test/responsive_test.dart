@@ -596,14 +596,16 @@ void main() {
         expect(find.byKey(const ValueKey('navigation-action')), findsNothing);
         expect(find.byType(FloatingActionButton), findsNothing);
         expect(find.text('Analisar com a IA'), findsOneWidget);
+        // O botão de conta também fica na barra do Mapa.
+        expect(find.byKey(const Key('botao-conta')).hitTestable(), findsOne);
         expect(tester.takeException(), isNull);
         // Voltar do sistema numa aba que não é o Início leva ao Início.
         await _voltar(tester);
         expect(find.text('Atalhos'), findsOneWidget);
         if (user.isAdmin) {
-          await tester.tap(find.byKey(const ValueKey('navigation-more')));
+          await tester.tap(find.byKey(const Key('botao-conta')).first);
           await _settle(tester);
-          await tester.tap(find.text('Admin').hitTestable().first);
+          await tester.tap(find.byKey(const Key('conta-admin')));
           await _settle(tester);
           expect(find.text('Administração'), findsOneWidget);
           expect(tester.takeException(), isNull);

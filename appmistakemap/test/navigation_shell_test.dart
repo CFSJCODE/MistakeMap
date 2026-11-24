@@ -20,7 +20,6 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       var selected = 0;
-      var about = 0;
       await tester.pumpWidget(
         FluentApp(
           builder: (context, child) => MediaQuery(
@@ -33,7 +32,6 @@ void main() {
               selectedIndex: selected,
               onSelected: (index) => setState(() => selected = index),
               hasAdmin: true,
-              onAbout: () => about++,
               child: const ColoredBox(
                 color: Colors.white,
                 child: Center(child: Text('Conteúdo da seção')),
@@ -54,30 +52,17 @@ void main() {
           greaterThanOrEqualTo(44),
         );
       }
-      // Barra compacta de 6 fatias: Admin e Sobre no flyout do Mais; no
-      // desktop, destinos diretos no trilho.
-      if (scenario.$1 < 840) {
-        await tester.tap(find.byKey(const ValueKey('navigation-more')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Admin'));
-        await tester.pumpAndSettle();
-        expect(selected, 4);
+      // Barra do celular de 5 fatias, sem Mais: Administração abre pelo
+      // botão de conta. Nos trilhos ela continua como destino.
+      final admin = find.byKey(const ValueKey('navigation-4'));
+      expect(find.byKey(const ValueKey('navigation-more')), findsNothing);
+      if (scenario.$1 / scenario.$2 < 600) {
+        expect(admin, findsNothing);
       } else {
-        await tester.tap(find.byKey(const ValueKey('navigation-4')));
+        await tester.tap(admin);
         await tester.pumpAndSettle();
         expect(selected, 4);
       }
-      // Sobre fica no Mais (barra do celular e trilho compacto) ou no trilho
-      // largo.
-      if (scenario.$1 / scenario.$2 < 840) {
-        await tester.tap(find.byKey(const ValueKey('navigation-more')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Sobre o App'));
-      } else {
-        await tester.tap(find.text('Sobre o App'));
-      }
-      await tester.pumpAndSettle();
-      expect(about, 1);
       expect(tester.takeException(), isNull);
     });
   }
@@ -88,63 +73,44 @@ void main() {
         home: AppNavigationShell(
           selectedIndex: 0,
           onSelected: (_) {},
-          onAbout: () {},
           hasAdmin: false,
           child: const SizedBox.expand(),
         ),
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('navigation-more')));
-    await tester.pumpAndSettle();
-    expect(find.text('Admin'), findsNothing);
-    // Janela padrão de 800 px: trilho compacto, onde Sobre mora no Mais.
-    expect(find.text('Sobre o App'), findsOneWidget);
+    expect(find.byKey(const ValueKey('navigation-more')), findsNothing);
+    expect(find.byKey(const ValueKey('navigation-4')), findsNothing);
+    expect(find.text('Sobre o App'), findsNothing);
   });
 
   for (final width in [390.0, 768.0, 1280.0]) {
-    testWidgets('Estudar e Sair ficam à vista em ${width.toInt()}px', (
-      tester,
-    ) async {
+    testWidgets('Estudar fica à vista em ${width.toInt()}px', (tester) async {
       tester.view.physicalSize = Size(width, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       var study = 0;
-      var signOut = 0;
       await tester.pumpWidget(
         FluentApp(
           home: AppNavigationShell(
             selectedIndex: 0,
             onSelected: (_) {},
-            onAbout: () {},
             onStudy: () => study++,
-            onSignOut: () => signOut++,
             hasAdmin: false,
             child: const SizedBox.expand(),
           ),
         ),
       );
       await tester.pumpAndSettle();
-      Future<void> abrirMais() async {
-        if (width >= 840) return;
-        await tester.tap(find.byKey(const ValueKey('navigation-more')));
-        await tester.pumpAndSettle();
-      }
-
-      // Estudar fica na barra do celular e no menu do trilho compacto.
-      if (width < 600) {
+      // Fatia na barra do celular e no trilho compacto; ação no trilho largo.
+      if (width < 840) {
         await tester.tap(find.byKey(const ValueKey('navigation-study')));
       } else {
-        await abrirMais();
         await tester.tap(find.text('Estudar com a IA'));
       }
       await tester.pumpAndSettle();
       expect(study, 1);
-      await abrirMais();
-      await tester.tap(find.text('Sair'));
-      await tester.pumpAndSettle();
-      expect(signOut, 1);
       expect(tester.takeException(), isNull);
     });
   }
@@ -167,7 +133,6 @@ void main() {
               taps++;
               setState(() => selected = index);
             },
-            onAbout: () {},
             hasAdmin: false,
             child: const SizedBox.expand(),
           ),
@@ -205,7 +170,6 @@ void main() {
           home: AppNavigationShell(
             selectedIndex: 0,
             onSelected: (_) {},
-            onAbout: () {},
             onAnalysis: () => analysis++,
             hasAdmin: false,
             child: const SizedBox.expand(),
@@ -246,7 +210,6 @@ void main() {
                 setState(() => selected = index);
               },
               hasAdmin: true,
-              onAbout: () => actions++,
               child: const Center(child: Text('Conteúdo preservado')),
             ),
           ),
@@ -259,18 +222,10 @@ void main() {
         3: 'Caderno de erros',
         2: 'Mapa de erros',
         4: 'Administração',
-        6: 'Sobre o App',
       };
       final buttons = <int, Finder>{
         for (final index in [0, 1, 2, 3, 4])
           index: find.byKey(ValueKey('navigation-$index')),
-        for (final index in [6])
-          index: find
-              .ancestor(
-                of: find.text(labels[index]!),
-                matching: find.byType(Button),
-              )
-              .first,
       };
       final originalButtons = {
         for (final entry in buttons.entries)
@@ -304,7 +259,7 @@ void main() {
       await mouse.addPointer(location: const Offset(1000, 800));
       addTearDown(mouse.removePointer);
       for (var pass = 0; pass < 2; pass++) {
-        for (final index in [0, 1, 3, 2, 4, 6, 4, 2, 3, 1, 0]) {
+        for (final index in [0, 1, 3, 2, 4, 2, 3, 1, 0]) {
           await mouse.moveTo(tester.getCenter(buttons[index]!));
           await tester.pump(const Duration(milliseconds: 16));
           verifyLayout();

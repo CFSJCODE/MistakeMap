@@ -27,6 +27,7 @@ import 'theme/glass_surface.dart';
 import 'theme/rolagem.dart';
 import 'theme/motion.dart';
 import 'layout/adaptativo.dart';
+import 'layout/conta.dart';
 import 'layout/navigation_shell.dart';
 import 'auth/google_sign_in.dart';
 import 'auth/team_login.dart';
@@ -359,6 +360,10 @@ class _PaginaVidro extends StatelessWidget {
             const _IndicadorConexao(),
             ...acoes,
             if (Aparencia.disponivel) const _BotaoAparencia(),
+            const Padding(
+              padding: EdgeInsetsDirectional.only(start: 4),
+              child: BotaoConta(tamanho: 40),
+            ),
           ],
         ),
       ),
@@ -1355,6 +1360,7 @@ class _CarregadorDePerfilState extends State<_CarregadorDePerfil> {
       usuarioId: _appUser!.id,
       perfilEntrada: widget.perfilEntrada,
       onVoltarAoInicio: widget.onVoltarAoInicio,
+      sair: _sairDaConta,
       // No fim do "Quem é você?": versão instalada e atualizações.
       rodapeCadastro: const CartaoVersaoApp(),
       estudante: TelaNavegacao(
@@ -1543,16 +1549,6 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
     }
   }
 
-  Future<void> _sair() async {
-    final ok = await _confirmar(
-      context,
-      titulo: 'Sair da conta',
-      mensagem: 'Deseja sair do MistakeMap neste aparelho?',
-      confirmar: 'Sair',
-    );
-    if (ok) await _sairDaConta();
-  }
-
   void _selecionar(int i) {
     if (i == _indiceAtual) {
       // Tocar na aba atual volta à raiz dela, como nas barras do Android e
@@ -1624,6 +1620,32 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
 
   @override
   Widget build(BuildContext context) {
+    // Sobre, Administração e Sair ficam no botão de conta do topo.
+    return AcoesConta(
+      email: widget.user.email,
+      onSair: _sairDaConta,
+      itens: [
+        if (widget.user.isAdmin || _temCentral)
+          ItemConta(
+            chave: 'admin',
+            icone: _temCentral
+                ? WindowsIcons.developer_tools
+                : WindowsIcons.admin,
+            rotulo: _temCentral ? 'Central da Equipe' : 'Administração',
+            onPressed: () => _selecionar(4),
+          ),
+        ItemConta(
+          chave: 'sobre',
+          icone: WindowsIcons.info,
+          rotulo: 'Sobre o MistakeMap',
+          onPressed: _abrirSobre,
+        ),
+      ],
+      child: _shell(context),
+    );
+  }
+
+  Widget _shell(BuildContext context) {
     return AppNavigationShell(
       selectedIndex: _indiceAtual,
       studySelected: _indiceAtual == _mapa && _mapaControle.studyOpen.value,
@@ -1636,8 +1658,6 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
           : WindowsIcons.admin,
       onStudy: () => _irAoMapa(ErrorMapRequest.study),
       onAnalysis: () => _irAoMapa(ErrorMapRequest.analysis),
-      onSignOut: _sair,
-      onAbout: _abrirSobre,
       child: PopScope(
         canPop: _indiceAtual == 0 && VoltarAosPerfis.of(context) == null,
         onPopInvokedWithResult: (didPop, result) {

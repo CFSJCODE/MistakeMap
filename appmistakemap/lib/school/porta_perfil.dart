@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/team_login.dart' show kTeamBuild;
 import '../billing/billing_repository.dart';
+import '../layout/conta.dart';
 import '../reports/school_reports.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
@@ -16,7 +17,7 @@ import 'quem_e_voce.dart';
 
 // ─── Porta de perfil ─────────────────────────────────────────────────────────
 // Fica entre o login e o app. Conta sem perfil vê "Quem é você?"; quem tem
-// mais de um papel ganha o seletor no topo; menor sem escola e sem
+// mais de um papel troca no botão de conta do topo; menor sem escola e sem
 // consentimento vê o pedido ao responsável antes de entrar. Sem rede e sem
 // contexto salvo, abre direto o app de estudante (a regra de acesso fica no
 // servidor, então abrir a tela errada não libera nada).
@@ -205,6 +206,13 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     await sair();
   }
 
+  /// Sair pelo botão de conta: sai e volta ao início do app.
+  Future<void> _sairDoBotao() async {
+    final inicio = widget.onVoltarAoInicio;
+    await _trocarConta();
+    inicio?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_carregado) {
@@ -281,112 +289,16 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
         children: [widget.estudante, noEstudante ? const SizedBox() : conteudo],
       ),
     );
-    if (!variosPerfis) return pilha;
-    return Column(
-      children: [
-        SeletorPerfil(
-          perfis: perfis,
-          ativo: ativo,
-          onTrocar: _trocar,
-          onVoltar: _voltarAosPerfis,
-        ),
-        Expanded(
-          child: MediaQuery.removePadding(
-            context: context,
-            removeTop: true,
-            child: pilha,
-          ),
-        ),
-      ],
+    // A troca de perfil, a aparência e o sair ficam no botão de conta do
+    // topo de cada tela (sem pedir a senha de novo).
+    return ContaAtual(
+      perfis: perfis,
+      ativo: ativo,
+      onTrocar: _trocar,
+      onSair: _sairDoBotao,
+      child: pilha,
     );
   }
-}
-
-/// Seletor de perfil no topo, para quem tem mais de um papel.
-class SeletorPerfil extends StatelessWidget {
-  const SeletorPerfil({
-    super.key,
-    required this.perfis,
-    required this.ativo,
-    required this.onTrocar,
-    this.onVoltar,
-  });
-
-  final List<PerfilAtivo> perfis;
-  final PerfilAtivo ativo;
-  final ValueChanged<PerfilAtivo> onTrocar;
-
-  /// Volta à tela inicial do seletor (lista de perfis).
-  final VoidCallback? onVoltar;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: EdgeInsets.fromLTRB(
-      16,
-      MediaQuery.paddingOf(context).top + 6,
-      16,
-      6,
-    ),
-    decoration: BoxDecoration(
-      color: MistakeMapDesign.surface,
-      border: Border(bottom: BorderSide(color: MistakeMapDesign.border)),
-    ),
-    child: Row(
-      children: [
-        // Antes era só uma seta, que parecia "voltar" e levava à lista de
-        // perfis sem dizer. Agora o botão diz o que faz.
-        if (onVoltar != null)
-          Tooltip(
-            message: 'Ver todos os perfis da conta',
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 40),
-              child: Button(
-                key: const ValueKey('voltar-perfis'),
-                onPressed: onVoltar,
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 6,
-                  children: [
-                    Icon(WindowsIcons.switch_user, size: 16),
-                    Text('Trocar perfil', maxLines: 1, softWrap: false),
-                  ],
-                ),
-              ),
-            ),
-          )
-        else
-          Text(
-            'Perfil',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: MistakeMapDesign.steel,
-            ),
-          ),
-        const SizedBox(width: 12),
-        Flexible(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420, minHeight: 40),
-            child: ComboBox<String>(
-              isExpanded: true,
-              value: ativo.chave,
-              items: [
-                for (final p in perfis)
-                  ComboBoxItem(
-                    value: p.chave,
-                    child: Text(p.rotulo, overflow: TextOverflow.ellipsis),
-                  ),
-              ],
-              onChanged: (chave) {
-                for (final p in perfis) {
-                  if (p.chave == chave) onTrocar(p);
-                }
-              },
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
 }
 
 /// Avisa o app de estudante de que existe a tela de perfis acima dele: no
@@ -440,8 +352,8 @@ class TelaInicialPerfis extends StatelessWidget {
               CartaoEscola(
                 titulo: 'Escolha o perfil',
                 subtitulo:
-                    'Toque num perfil para abrir. Para voltar a esta lista, '
-                    'use o voltar do aparelho ou o botão "Trocar perfil".',
+                    'Toque num perfil para abrir. Depois, troque de perfil pelo '
+                    'botão de conta, no topo.',
                 children: [
                   for (final p in perfis) ...[
                     BotaoEscola(

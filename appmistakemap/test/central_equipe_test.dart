@@ -353,7 +353,6 @@ void main() {
         home: AppNavigationShell(
           selectedIndex: 4,
           onSelected: (_) {},
-          onAbout: () {},
           hasAdmin: true,
           extraLabel: 'Central da Equipe',
           extraShortLabel: 'Equipe',

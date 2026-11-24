@@ -45,7 +45,6 @@ void main() {
         AppNavigationShell(
           selectedIndex: 0,
           onSelected: (_) {},
-          onAbout: () {},
           hasAdmin: false,
           child: const SizedBox.expand(),
         ),

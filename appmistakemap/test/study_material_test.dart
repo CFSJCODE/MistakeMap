@@ -1,5 +1,7 @@
 import 'package:appmistakemap/ai/study_material.dart';
+import 'package:appmistakemap/layout/conta.dart';
 import 'package:appmistakemap/ai/study_material_view.dart';
+import 'package:fluent_ui/fluent_ui.dart' show FluentTheme, FluentThemeData;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -283,5 +285,24 @@ void main() {
       await _pump(tester, _FakeStudyRepository());
       expect(find.text('Exercícios'), findsNothing);
     });
+  });
+
+  testWidgets('barra do Estudar tem o botão de conta', (tester) async {
+    await tester.pumpWidget(
+      FluentTheme(
+        data: FluentThemeData(),
+        child: AcoesConta(
+          email: 'aluno@exemplo.dev',
+          child: MaterialApp(
+            home: StudyMaterialView(
+              repository: _FakeStudyRepository(),
+              subjects: const {'s1': 'Matemática'},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('botao-conta')).hitTestable(), findsOne);
   });
 }

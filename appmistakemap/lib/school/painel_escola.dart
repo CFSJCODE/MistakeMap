@@ -1,11 +1,13 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
 import '../theme/motion.dart';
+import '../layout/conta.dart';
 import '../billing/billing_panel.dart';
 import '../billing/billing_repository.dart';
 import '../platform/platform_forms.dart' show PlatformCheck;
 import '../reports/school_reports.dart';
 import '../reports/school_reports_page.dart';
+import '../theme/aparencia_dialogo.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'escola_repositorio.dart';
@@ -749,41 +751,68 @@ class _MolduraPerfil extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: [
-                Row(
-                  children: [
-                    if (cadastro != null) ...[
-                      GlassIconTile(
-                        icon: cadastro.icone,
-                        ink: cadastro.tinta,
-                        accent: cadastro.acento,
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    Expanded(
-                      child: Column(
+                LayoutBuilder(
+                  builder: (context, caixa) {
+                    final icone = cadastro == null
+                        ? null
+                        : GlassIconTile(
+                            icon: cadastro.icone,
+                            ink: cadastro.tinta,
+                            accent: cadastro.acento,
+                          );
+                    final textos = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          titulo,
+                          style: Tipo.tituloPagina.copyWith(
+                            color: MistakeMapDesign.primary,
+                          ),
+                        ),
+                        Text(
+                          subtitulo,
+                          style: TextStyle(color: MistakeMapDesign.steel),
+                        ),
+                      ],
+                    );
+                    final botoes = Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: Espaco.xs,
+                      children: [
+                        Tooltip(
+                          message: 'Atualizar',
+                          child: IconButton(
+                            icon: const Icon(WindowsIcons.refresh, size: 18),
+                            onPressed: onAtualizar,
+                          ),
+                        ),
+                        const BotaoAparencia(),
+                        const BotaoConta(),
+                      ],
+                    );
+                    // No celular os botões ficam numa linha própria, para o
+                    // nome da escola não quebrar no meio.
+                    if (caixa.maxWidth < 560) {
+                      return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            titulo,
-                            style: Tipo.tituloPagina.copyWith(
-                              color: MistakeMapDesign.primary,
-                            ),
-                          ),
-                          Text(
-                            subtitulo,
-                            style: TextStyle(color: MistakeMapDesign.steel),
-                          ),
+                          Row(children: [?icone, const Spacer(), botoes]),
+                          const SizedBox(height: 12),
+                          textos,
                         ],
-                      ),
-                    ),
-                    Tooltip(
-                      message: 'Atualizar',
-                      child: IconButton(
-                        icon: const Icon(WindowsIcons.refresh, size: 18),
-                        onPressed: onAtualizar,
-                      ),
-                    ),
-                  ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        if (icone != null) ...[
+                          icone,
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(child: textos),
+                        botoes,
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 ...children,
