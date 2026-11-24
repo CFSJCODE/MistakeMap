@@ -57,6 +57,14 @@ class Aparencia extends ValueNotifier<ModoAparencia> {
     } catch (_) {}
   }
 
+  /// Troca rápida (botão da barra do topo): vai para o oposto do que está
+  /// na tela e salva a escolha. "Igual ao aparelho" volta em Mais > Aparência.
+  Future<void> alternar(Brightness doAparelho) => escolher(
+    brilho(doAparelho) == Brightness.dark
+        ? ModoAparencia.claro
+        : ModoAparencia.escuro,
+  );
+
   /// Brilho efetivo, dado o brilho do aparelho.
   Brightness brilho(Brightness doAparelho) => switch (value) {
     ModoAparencia.claro => Brightness.light,

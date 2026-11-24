@@ -355,7 +355,11 @@ class _PaginaVidro extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: context.tipo.subtitle?.copyWith(color: titleBlue),
           ),
-          actions: [const _IndicadorConexao(), ...acoes],
+          actions: [
+            const _IndicadorConexao(),
+            ...acoes,
+            if (Aparencia.disponivel) const _BotaoAparencia(),
+          ],
         ),
       ),
       // A rolagem da página passa por baixo da barra superior: o trilho da
@@ -490,6 +494,42 @@ class _IndicadorConexao extends StatelessWidget {
                 cor: online ? Cores.azul600 : Cores.laranja700,
               ),
             ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Sol/lua na barra do topo: alterna claro e escuro na hora.
+class _BotaoAparencia extends StatelessWidget {
+  const _BotaoAparencia();
+
+  @override
+  Widget build(BuildContext context) {
+    final aparencia = Aparencia.instancia;
+    return ValueListenableBuilder<ModoAparencia>(
+      valueListenable: aparencia,
+      builder: (context, _, _) {
+        final escuro = MistakeMapDesign.escuro;
+        // O MediaQuery do app segue a paleta; aqui vale o brilho do aparelho.
+        void alternar() => aparencia.alternar(
+          WidgetsBinding.instance.platformDispatcher.platformBrightness,
+        );
+        // O wrapper substitui a semântica do botão; por isso repete o toque.
+        return Semantics(
+          button: true,
+          toggled: escuro,
+          label: 'Modo escuro',
+          onTap: alternar,
+          excludeSemantics: true,
+          child: _BotaoBarra(
+            key: const Key('botao-aparencia'),
+            icone: escuro ? WindowsIcons.brightness : WindowsIcons.quiet_hours,
+            dica: escuro
+                ? 'Mudar para o modo claro'
+                : 'Mudar para o modo escuro',
+            onPressed: alternar,
           ),
         );
       },

@@ -231,6 +231,10 @@ capturas trocam a família só no momento de gerar a imagem.
   larga) abre o diálogo com "Igual ao aparelho", "Claro" e "Escuro". A
   troca vale na hora e fica salva no aparelho; sem escolha salva, segue o
   aparelho. Build só clara: `--dart-define=MISTAKEMAP_MODO_ESCURO=false`.
+- Troca rápida: botão lua/sol no canto direito da barra do topo
+  (`Key('botao-aparencia')`) alterna para o oposto do que está na tela e
+  salva a escolha como Claro ou Escuro. "Igual ao aparelho" continua em
+  Mais > Aparência.
 - Verificação: claro idêntico ao `main` em 18 capturas (11 telas do aluno,
   5 passos da cobrança e 2 dos relatórios); escuro conferido nas mesmas.
 
