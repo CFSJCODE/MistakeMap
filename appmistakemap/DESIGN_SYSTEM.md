@@ -281,8 +281,8 @@ projeto). Esta etapa:
 - Visual do botão: avatar no acento do perfil (gradiente de cima para
   baixo, glifo escuro `onAccent`, reflexo no topo), aro de 2 px da
   superfície e sombra em duas camadas (brilho na cor do acento e uma sombra
-  curta escura). Sobe um pouco no hover, afunda ao tocar e ganha anel no
-  foco do teclado; sem animação com movimento reduzido. TI e conta sem
+  curta escura). No hover a sombra cresce, ao tocar afunda como todo botão
+  (`PressScale`, 0,97 em 120 ms) e no foco do teclado ganha anel; sem animação com movimento reduzido. TI e conta sem
   perfil usam o neutro #9BA8AB.
 - A troca de perfil não pede senha: a porta de perfil publica `ContaAtual`
   (perfis, ativo, trocar, sair) e a tela de navegação publica `AcoesConta`

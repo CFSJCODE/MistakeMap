@@ -4,6 +4,7 @@ import '../school/perfil_modelos.dart';
 import '../theme/aparencia.dart';
 import '../theme/aparencia_dialogo.dart';
 import '../theme/design_tokens.dart';
+import '../theme/motion.dart';
 
 // ─── Botão de conta ──────────────────────────────────────────────────────────
 // Um lugar só, no topo de toda tela, para o que é da conta: trocar de perfil
@@ -89,7 +90,7 @@ String nomeDoPerfil(PerfilAtivo perfil) {
 
 /// Botão redondo do topo, com o ícone do perfil atual: um "avatar" no acento
 /// do perfil, com aro da superfície e sombra na cor do acento, que sobe no
-/// hover e afunda ao tocar.
+/// hover e afunda ao tocar como os outros botões.
 class BotaoConta extends StatelessWidget {
   const BotaoConta({super.key, this.tamanho = 44});
 
@@ -177,10 +178,10 @@ class _Avatar extends StatelessWidget {
         offset: const Offset(0, 1),
       ),
     ];
-    return AnimatedScale(
-      scale: pressionado ? .93 : (hover ? 1.04 : 1),
-      duration: duracao,
-      curve: Movimento.curva,
+    // Toque igual ao resto do app (0,97 em 120 ms); o hover só acende a
+    // sombra e o gradiente, sem mudar a escala.
+    return PressScale(
+      pressed: pressionado,
       child: AnimatedContainer(
         duration: duracao,
         curve: Movimento.curva,
