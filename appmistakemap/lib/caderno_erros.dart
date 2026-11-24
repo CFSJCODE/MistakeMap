@@ -322,7 +322,7 @@ class _RegistroErroLinha extends StatelessWidget {
             decoration: BoxDecoration(
               color: Color.alphaBlend(
                 tinta.withValues(alpha: .12),
-                MistakeMapDesign.white,
+                MistakeMapDesign.raised,
               ),
               borderRadius: BorderRadius.circular(Raio.md),
             ),

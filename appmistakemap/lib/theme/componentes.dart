@@ -115,7 +115,7 @@ class LinhaLista extends StatelessWidget {
             decoration: BoxDecoration(
               color: Color.alphaBlend(
                 _acento.withValues(alpha: .16),
-                MistakeMapDesign.white,
+                MistakeMapDesign.raised,
               ),
               borderRadius: BorderRadius.circular(Raio.md),
             ),

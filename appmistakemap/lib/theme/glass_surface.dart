@@ -80,7 +80,7 @@ class GlassSurface extends StatelessWidget {
     if (PreferenciaVidro.solido(context)) {
       return DecoratedBox(
         decoration: BoxDecoration(
-          color: MistakeMapDesign.white,
+          color: MistakeMapDesign.raised,
           borderRadius: shape,
           border: Border.all(color: MistakeMapDesign.steel),
         ),
@@ -177,7 +177,7 @@ class GlassRimPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            liquid ? const Color(0x99FFFFFF) : const Color(0x80FFFFFF),
+            MistakeMapDesign.brilho(liquid ? 0x99 : 0x80),
             const Color(0x00FFFFFF),
           ],
           stops: const [0, .35],
@@ -223,15 +223,15 @@ class GlassHero extends StatelessWidget {
       ),
       foregroundDecoration: BoxDecoration(
         borderRadius: shape,
-        border: Border.all(color: const Color(0x2EFFFFFF)),
+        border: Border.all(color: MistakeMapDesign.brilho(0x2E)),
       ),
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: shape,
-          gradient: const RadialGradient(
-            center: Alignment(-0.6, -1.2),
+          gradient: RadialGradient(
+            center: const Alignment(-0.6, -1.2),
             radius: 1.1,
-            colors: [Color(0x47FFFFFF), Color(0x00FFFFFF)],
+            colors: [MistakeMapDesign.brilho(0x47), const Color(0x00FFFFFF)],
           ),
         ),
         child: Padding(padding: padding, child: child),
@@ -306,7 +306,7 @@ class GradientBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(height / 2),
         child: Container(
           height: height,
-          color: const Color(0x1411212D),
+          color: MistakeMapDesign.hairline,
           alignment: Alignment.centerLeft,
           child: FractionallySizedBox(
             widthFactor: fraction,
@@ -410,7 +410,7 @@ class _Segment<T> extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 40),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? MistakeMapDesign.white : const Color(0x00FFFFFF),
+            color: selected ? MistakeMapDesign.raised : const Color(0x00FFFFFF),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: selected

@@ -866,7 +866,7 @@ class _ConceptGraphState extends State<ConceptGraph> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: ColoredBox(
-                  color: MistakeMapDesign.white.withValues(alpha: .72),
+                  color: MistakeMapDesign.raised.withValues(alpha: .72),
                   child: Stack(
                     children: [
                       Positioned.fill(
@@ -1027,11 +1027,11 @@ class AttemptTile extends StatelessWidget {
   const AttemptTile({super.key, required this.attempt, required this.onTap});
   @override
   Widget build(BuildContext context) => Card(
-    color: Colors.white,
+    color: MistakeMapDesign.raised,
     child: TextButton(
       style: MistakeMapMaterialControls.button(
         context,
-        background: Colors.white,
+        background: MistakeMapDesign.raised,
         radius: 12,
         border: BorderSide.none,
       ).copyWith(padding: const WidgetStatePropertyAll(EdgeInsets.zero)),
@@ -1266,7 +1266,7 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
                 for (final error in analysis.errors) ...[
                   const SizedBox(height: 16),
                   Card(
-                    color: Colors.white,
+                    color: MistakeMapDesign.raised,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -1711,7 +1711,7 @@ class _PracticeViewState extends State<PracticeView> {
             for (var index = 0; index < _exercises.length; index++)
               if (_exercises[index].subjectId == _subject)
                 Card(
-                  color: Colors.white,
+                  color: MistakeMapDesign.raised,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(

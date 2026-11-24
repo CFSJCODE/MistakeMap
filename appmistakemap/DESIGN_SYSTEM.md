@@ -200,6 +200,25 @@ capturas trocam a família só no momento de gerar a imagem.
 - Verificação: as 11 telas da captura a 390 px saíram idênticas pixel a
   pixel às do `main` no modo claro.
 
+### Etapa 5b: telas do aluno sem cores fixas
+
+- Novos auxiliares com alfa em `MistakeMapDesign`, que no claro dão
+  exatamente as cores fixas antigas: `pelicula(alfa)` (vidro fosco, branco
+  no claro), `tom(alfa)` (linhas e realces: #11212D no claro, branco no
+  escuro), `brilho(alfa)` (reflexo especular, mais discreto no escuro) e
+  `sombra(alfa)` (sombra projetada, mais densa no escuro).
+- `MistakeMapDesign.white` usado como superfície virou `raised`; o branco
+  fica só para glifo sobre cor. Texto sobre acento vivo usa `onAccent`.
+- Trocados: barra do topo, vidro (`GlassSurface`, `GradientBar`,
+  `GlassSegmented`), navegação, rolagem, controles, Início, Exercícios,
+  Caderno, revisão, Mapa, Praticar meus erros, Estudar e análise. O tema
+  Material de `lib/ai` monta `ColorScheme.dark` no escuro, com contêineres
+  e "on" coerentes.
+- `Cores.vermelho400/700`, `verde600` e `laranja400/700` viram as tintas
+  claras no escuro.
+- Verificação: claro idêntico ao `main` (11 telas, pixel a pixel); escuro
+  conferido nas mesmas 11 telas.
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |
@@ -207,7 +226,7 @@ capturas trocam a família só no momento de gerar a imagem.
 | 2 | Exercícios e Caderno: listas compactas, filtros em menu | Feita (itens 10 a 12 da auditoria). Estados vazios mantidos como estavam |
 | 3 | Estudar e sessão de revisão: modo foco, menos navegação visível durante a sessão | Feita para a revisão e a conferência (itens 13 e 14). A aba Estudar (material da IA, em Material) fica com a etapa 4 |
 | 4 | Mapa: chips e botões Material com a mesma aparência dos Fluent; visão em lista como alternativa ao grafo | Feita em parte (itens 15 e 16): segmentos Material com o visual do `GlassSegmented`. A visão "Tentativas" já é a lista alternativa ao grafo |
-| 5 | Modo escuro: trocar as constantes `MistakeMapDesign.*` por cores da paleta, tela a tela | 5a feita (paleta e troca de aparência, escondida). 5b: superfícies brancas e `Color(0x…)` fixas, tema Material de `lib/ai`, barra superior; depois liberar a escolha em Mais |
+| 5 | Modo escuro: trocar as constantes `MistakeMapDesign.*` por cores da paleta, tela a tela | 5a e 5b feitas (paleta, troca de aparência e telas do aluno). 5c: telas de escola, cobrança, relatórios e equipe; depois liberar a escolha em Mais |
 | 6 | Migrar `fontSize:` soltos para `Tipo` nas telas de escola, TI e professor | |
 
 Lembrete de publicação: todo merge no `main` que toca `lib/` vira patch do

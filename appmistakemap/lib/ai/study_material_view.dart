@@ -696,9 +696,9 @@ class _QuizPanelState extends State<QuizPanel> {
             color: chosen == option
                 ? Color.alphaBlend(
                     MistakeMapDesign.violet.withValues(alpha: .14),
-                    Colors.white,
+                    MistakeMapDesign.raised,
                   )
-                : Colors.white,
+                : MistakeMapDesign.raised,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(

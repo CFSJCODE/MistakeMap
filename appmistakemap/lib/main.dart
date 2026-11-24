@@ -80,20 +80,30 @@ Color get contentBlue => MistakeMapDesign.content;
 const Color kAcento = MistakeMapDesign.accent;
 
 // Cores de estado do app. Os nomes vêm da paleta Material antiga; os valores
-// são os acentos Aurora escurecidos, legíveis como texto sobre o branco.
+// são as tintas dos acentos Aurora, legíveis sobre a superfície do tema.
 abstract final class Cores {
   static const Color branco = Color(0xFFFFFFFF);
   static const Color transparente = Color(0x00000000);
   static Color get vermelho => MistakeMapDesign.coralInk;
   static const Color vermelho300 = MistakeMapDesign.coral;
-  static const Color vermelho400 = Color(0xFFC8364A);
+  static Color get vermelho400 => MistakeMapDesign.escuro
+      ? MistakeMapDesign.coralInk
+      : const Color(0xFFC8364A);
   static Color get vermelho600 => MistakeMapDesign.coralInk;
-  static const Color vermelho700 = Color(0xFF9E1F31);
+  static Color get vermelho700 => MistakeMapDesign.escuro
+      ? MistakeMapDesign.coralInk
+      : const Color(0xFF9E1F31);
   static Color get verde => MistakeMapDesign.mintInk;
-  static const Color verde600 = Color(0xFF0F6640);
+  static Color get verde600 => MistakeMapDesign.escuro
+      ? MistakeMapDesign.mintInk
+      : const Color(0xFF0F6640);
   static Color get laranja => MistakeMapDesign.amberInk;
-  static const Color laranja400 = Color(0xFF9A5E00);
-  static const Color laranja700 = Color(0xFF7A4900);
+  static Color get laranja400 => MistakeMapDesign.escuro
+      ? MistakeMapDesign.amberInk
+      : const Color(0xFF9A5E00);
+  static Color get laranja700 => MistakeMapDesign.escuro
+      ? MistakeMapDesign.amberInk
+      : const Color(0xFF7A4900);
   static const Color ambar = MistakeMapDesign.amber;
   static Color get azul600 => MistakeMapDesign.azureInk;
   static Color get cinza => MistakeMapDesign.steel;
@@ -124,7 +134,7 @@ FluentThemeData _temaFluent(PaletaMistakeMap paleta) => FluentThemeData(
   accentColor: MistakeMapDesign.aquaInk.toAccentColor(),
   scaffoldBackgroundColor: kScaffoldBg,
   cardColor: kGlassBg,
-  menuColor: MistakeMapDesign.white,
+  menuColor: MistakeMapDesign.raised,
   micaBackgroundColor: MistakeMapDesign.canvas,
   inactiveColor: MistakeMapDesign.steel,
   shadowColor: MistakeMapDesign.deep,
@@ -379,7 +389,7 @@ class _BarraVidro extends StatelessWidget implements PreferredSizeWidget {
     if (solida) {
       return DecoratedBox(
         decoration: BoxDecoration(
-          color: MistakeMapDesign.white,
+          color: MistakeMapDesign.raised,
           border: Border(bottom: BorderSide(color: MistakeMapDesign.steel)),
         ),
         child: child,
@@ -393,12 +403,15 @@ class _BarraVidro extends StatelessWidget implements PreferredSizeWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xD1FFFFFF), Color(0xADFFFFFF)],
+          colors: [
+            MistakeMapDesign.pelicula(0xD1),
+            MistakeMapDesign.pelicula(0xAD),
+          ],
         ),
         border: Border(bottom: BorderSide(color: MistakeMapDesign.hairline)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x1411212D),
+            color: MistakeMapDesign.sombra(0x14),
             blurRadius: 16,
             offset: Offset(0, 4),
           ),
@@ -408,10 +421,10 @@ class _BarraVidro extends StatelessWidget implements PreferredSizeWidget {
         decoration: BoxDecoration(gradient: MistakeMapDesign.glint),
         child: DecoratedBox(
           position: DecorationPosition.foreground,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(color: Color(0xCCFFFFFF)),
-              bottom: BorderSide(color: Color(0xB3FFFFFF)),
+              top: BorderSide(color: MistakeMapDesign.brilho(0xCC)),
+              bottom: BorderSide(color: MistakeMapDesign.brilho(0xB3)),
             ),
           ),
           child: child,
@@ -441,7 +454,7 @@ class _IndicadorConexao extends StatelessWidget {
         final pendentes = sync.pendentes.value;
         if (sync.semSessao) {
           // Entrou sem rede: o envio espera um login com internet.
-          return const Tooltip(
+          return Tooltip(
             message:
                 'Você entrou sem internet. Para enviar o que fez neste '
                 'aparelho, saia e entre de novo quando estiver conectado.',
@@ -3482,8 +3495,8 @@ class _AdicionarCampoTexto extends StatelessWidget {
         // Revalida a cada digitação: o aviso some assim que o campo é
         // preenchido, sem esperar outro toque em Salvar.
         autovalidateMode: AutovalidateMode.onUserInteraction,
-        decoration: const WidgetStatePropertyAll(
-          BoxDecoration(color: MistakeMapDesign.white),
+        decoration: WidgetStatePropertyAll(
+          BoxDecoration(color: MistakeMapDesign.raised),
         ),
       ),
     );
@@ -3792,7 +3805,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
           const SizedBox(height: 16),
           Row(
             children: [
-              const _MapaLegenda(cor: Cores.vermelho400, texto: '0%'),
+              _MapaLegenda(cor: Cores.vermelho400, texto: '0%'),
               const SizedBox(width: 8),
               Expanded(
                 child: Container(
@@ -4022,12 +4035,12 @@ class _SubjectBar extends StatelessWidget {
                 if (data.pendentes > 0)
                   Expanded(
                     flex: data.pendentes,
-                    child: const ColoredBox(color: Cores.laranja400),
+                    child: ColoredBox(color: Cores.laranja400),
                   ),
                 if (data.erros > 0)
                   Expanded(
                     flex: data.erros,
-                    child: const ColoredBox(color: Cores.vermelho400),
+                    child: ColoredBox(color: Cores.vermelho400),
                   ),
                 if (data.semTentativa > 0)
                   Expanded(
@@ -4749,7 +4762,7 @@ class _InicialMateria extends StatelessWidget {
       decoration: BoxDecoration(
         color: Color.alphaBlend(
           MistakeMapDesign.azure.withValues(alpha: .16),
-          MistakeMapDesign.white,
+          MistakeMapDesign.raised,
         ),
         borderRadius: BorderRadius.circular(Raio.md),
       ),

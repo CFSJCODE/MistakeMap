@@ -16,10 +16,10 @@ abstract final class BarraRolagem {
     final recuo = EdgeInsets.only(top: topo + 4, bottom: 4);
     return ScrollbarThemeData(
       // Steel translúcido: legível sobre o fundo Aurora e sobre o vidro.
-      scrollbarColor: const Color(0x8C4A5C6A),
+      scrollbarColor: MistakeMapDesign.steel.withAlpha(0x8C),
       scrollbarPressingColor: MistakeMapDesign.steel,
       // Trilho de vidro claro, só com o ponteiro em cima e arrastando.
-      backgroundColor: const Color(0xB3FFFFFF),
+      backgroundColor: MistakeMapDesign.pelicula(0xB3),
       trackBorderColor: const Color(0x00000000),
       hoveringTrackBorderColor: MistakeMapDesign.hairline,
       thickness: 6,
