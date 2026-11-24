@@ -168,6 +168,7 @@ class _Fatia extends StatelessWidget {
     button: true,
     selected: atual,
     label: secao.rotulo,
+    onTap: onPressed,
     excludeSemantics: true,
     child: HoverButton(
       onPressed: onPressed,
@@ -234,6 +235,7 @@ class _AbaLarga extends StatelessWidget {
     button: true,
     selected: atual,
     label: secao.rotulo,
+    onTap: onPressed,
     excludeSemantics: true,
     child: HoverButton(
       onPressed: onPressed,
