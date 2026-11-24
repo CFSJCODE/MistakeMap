@@ -564,8 +564,6 @@ class _CartaoFluent extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.acento,
-    this.cor = kGlassBg,
-    this.onPressed,
   });
 
   final Widget child;
@@ -574,28 +572,9 @@ class _CartaoFluent extends StatelessWidget {
   /// Acento da seção que tinge o canto do vidro.
   final Color? acento;
 
-  /// Preenchimento opaco do cartão clicável (um tom do estado, por exemplo).
-  final Color cor;
-  final VoidCallback? onPressed;
-
   @override
-  Widget build(BuildContext context) {
-    final acao = onPressed;
-    if (acao == null) {
-      return GlassSurface(accent: acento, padding: padding, child: child);
-    }
-    // Cartão clicável: superfície opaca do botão, para o rótulo nunca
-    // depender do que está atrás durante o hover.
-    return MistakeMapButton(
-      onPressed: acao,
-      style: MistakeMapControls.button(
-        radius: kRadius,
-        padding: padding,
-        background: cor,
-      ),
-      child: child,
-    );
-  }
+  Widget build(BuildContext context) =>
+      GlassSurface(accent: acento, padding: padding, child: child);
 }
 
 // Etiqueta em pílula (status, papéis, tecnologias).
@@ -708,8 +687,10 @@ MenuFlyoutItemBuilder _itemMenu({
   required String texto,
   required VoidCallback? onPressed,
   Color cor = contentBlue,
+  Key? chave,
 }) => MenuFlyoutItemBuilder(
   builder: (context) => MistakeMapButton(
+    key: chave,
     style:
         MistakeMapControls.button(
           radius: 4,
@@ -4510,13 +4491,17 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
               'Não foi possível atualizar. Exibindo os exercícios já carregados.',
             ),
           ),
-        for (final ex in _exercicios)
-          _ExercicioCard(
-            exercicio: ex,
-            onTap: () => _abrirDetalhe(ex),
-            onEditar: () => _abrirEdicao(ex),
-            onExcluir: () => _confirmarExclusao(ex),
-          ),
+        GrupoLista(
+          children: [
+            for (final ex in _exercicios)
+              _ExercicioCard(
+                exercicio: ex,
+                onTap: () => _abrirDetalhe(ex),
+                onEditar: () => _abrirEdicao(ex),
+                onExcluir: () => _confirmarExclusao(ex),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -4617,69 +4602,68 @@ class _ExercicioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final estado = _EstadoTentativa.de(exercicio.status);
     final inicial = exercicio.subjectName.trim().isEmpty
         ? '?'
         : exercicio.subjectName.trim()[0].toUpperCase();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      // Mesma anatomia dos passos do Início: bloco da matéria, rótulo pequeno
-      // com matéria e data, enunciado como título e o estado em cor com
-      // função. O fundo leva um tom do estado, para a lista se ler em um
-      // relance; o cartão inteiro é o botão e afunda ao toque.
-      child: _CartaoFluent(
-        onPressed: onTap,
-        cor: Color.alphaBlend(
-          estado.acento.withValues(alpha: estado.pedeAcao ? .12 : .05),
-          kGlassBg,
+    // Linha do grupo: bloco da matéria, sobretítulo com matéria e data,
+    // enunciado como título e o estado com cor e rótulo. A linha inteira é
+    // o botão; o menu fica discreto à direita.
+    return MistakeMapButton(
+      onPressed: onTap,
+      style: MistakeMapControls.button(
+        radius: Raio.lg,
+        padding: const EdgeInsets.fromLTRB(
+          Espaco.md,
+          Espaco.sm,
+          Espaco.xs,
+          Espaco.sm,
         ),
-        padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
-        child: Builder(
-          builder: (context) => DefaultTextStyle.merge(
-            textAlign: TextAlign.start,
-            child: Row(
+        background: const Color(0x00FFFFFF),
+        foreground: MistakeMapDesign.abyss,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _InicialMateria(inicial: inicial),
+          const SizedBox(width: Espaco.sm),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _InicialMateria(inicial: inicial),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        exercicio.createdAt == null
-                            ? exercicio.subjectName.toUpperCase()
-                            : '${exercicio.subjectName.toUpperCase()} · '
-                                  '${_fmtData(exercicio.createdAt!)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.tipo.caption?.copyWith(
-                          color: MistakeMapDesign.azureInk,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        exercicio.promptText,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.tipo.bodyStrong?.copyWith(
-                          color: MistakeMapDesign.abyss,
-                          height: 1.3,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _StatusBadge(status: exercicio.status),
-                    ],
+                Text(
+                  exercicio.subjectName.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.start,
+                  style: Tipo.sobretitulo.copyWith(
+                    color: MistakeMapDesign.azureInk,
                   ),
                 ),
-                const SizedBox(width: 8),
-                _menu(),
+                const SizedBox(height: Espaco.xxs),
+                Text(
+                  exercicio.promptText,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.start,
+                  style: Tipo.tituloComponente.copyWith(fontSize: 15),
+                ),
+                const SizedBox(height: Espaco.xs),
+                Wrap(
+                  spacing: Espaco.xs,
+                  runSpacing: Espaco.xxs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _StatusBadge(status: exercicio.status),
+                    if (exercicio.createdAt != null)
+                      Text(_fmtData(exercicio.createdAt!), style: Tipo.legenda),
+                  ],
+                ),
               ],
             ),
           ),
-        ),
+          const SizedBox(width: Espaco.xxs),
+          _menu(),
+        ],
       ),
     );
   }
@@ -4689,13 +4673,7 @@ class _ExercicioCard extends StatelessWidget {
       placement: FlyoutPlacementMode.bottomRight,
       menuShape: MistakeMapControls.menuShape,
       menuColor: MistakeMapDesign.surface,
-      // Mesmo controle quadrado de 40 px das barras superiores.
-      buttonBuilder: (context, abrir) => _BotaoBarra(
-        icone: WindowsIcons.more,
-        dica: 'Opções',
-        cor: contentBlue,
-        onPressed: abrir,
-      ),
+      buttonBuilder: (context, abrir) => _BotaoOpcoesLinha(onPressed: abrir),
       items: [
         _itemMenu(
           icone: WindowsIcons.view,
@@ -4729,32 +4707,45 @@ class _InicialMateria extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
     child: Container(
-      width: 40,
-      height: 40,
+      width: 36,
+      height: 36,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        gradient: MistakeMapDesign.iconTile(
-          MistakeMapDesign.azureInk,
-          MistakeMapDesign.azure,
+        color: Color.alphaBlend(
+          MistakeMapDesign.azure.withValues(alpha: .16),
+          MistakeMapDesign.white,
         ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x40FFFFFF)),
-        boxShadow: [
-          BoxShadow(
-            color: MistakeMapDesign.azureInk.withValues(alpha: .35),
-            blurRadius: 14,
-            spreadRadius: -6,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(Raio.md),
       ),
       child: Text(
         inicial,
-        style: const TextStyle(
-          color: MistakeMapDesign.white,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
+        style: Tipo.tituloComponente.copyWith(color: MistakeMapDesign.azureInk),
+      ),
+    ),
+  );
+}
+
+/// Botão "Opções" das linhas de lista: sem moldura, para não competir com a
+/// linha, e com alvo de toque de 48 dp.
+class _BotaoOpcoesLinha extends StatelessWidget {
+  const _BotaoOpcoesLinha({required this.onPressed});
+
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: 'Opções',
+    child: SizedBox.square(
+      dimension: Espaco.alvoToque,
+      child: MistakeMapIconButton(
+        style: MistakeMapControls.button(
+          radius: Raio.md,
+          padding: const EdgeInsets.all(Espaco.sm),
+          background: const Color(0x00FFFFFF),
+          foreground: MistakeMapDesign.steel,
         ),
+        icon: const _IconeBotao(WindowsIcons.more, size: 18),
+        onPressed: onPressed,
       ),
     ),
   );

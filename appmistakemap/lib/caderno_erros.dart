@@ -167,18 +167,38 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
         child: const Center(child: ProgressRing()),
       );
     }
+    final pendentes = _registros.where((r) => !r.revisado).length;
     final intro = Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Text(
-        _ocultarRevisados
-            ? 'Mostrando só as regras que faltam revisar.'
-            // O Caderno guarda o que o aluno aprendeu, com as palavras dele;
-            // o diagnóstico da IA fica no Mapa e o treino, no Estudar.
-            : 'Suas regras, com as suas palavras: o que você errou e como não '
-                  'errar de novo. Funciona sem internet e sincroniza com sua '
-                  'conta.',
-        textAlign: TextAlign.center,
-        style: context.tipo.body?.copyWith(color: contentBlue),
+      padding: const EdgeInsets.only(bottom: Espaco.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _ocultarRevisados
+                ? 'Mostrando só as regras que faltam revisar.'
+                // O Caderno guarda o que o aluno aprendeu, com as palavras
+                // dele; o diagnóstico da IA fica no Mapa e o treino, no
+                // Estudar.
+                : 'Suas regras, com as suas palavras: o que você errou e '
+                      'como não errar de novo. Funciona sem internet e '
+                      'sincroniza com sua conta.',
+            textAlign: TextAlign.start,
+            style: Tipo.secundario,
+          ),
+          if (_registros.isNotEmpty) ...[
+            const SizedBox(height: Espaco.md),
+            SecaoTitulo(
+              _registros.length == 1
+                  ? '1 regra'
+                  : '${_registros.length} regras',
+              descricao: pendentes == 0
+                  ? 'Todas revisadas.'
+                  : pendentes == 1
+                  ? '1 para revisar antes da prova.'
+                  : '$pendentes para revisar antes da prova.',
+            ),
+          ],
+        ],
       ),
     );
     if (_registros.isEmpty) {
@@ -194,13 +214,17 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
       onRefresh: _carregar,
       children: [
         intro,
-        for (final r in _registros)
-          _RegistroErroCard(
-            registro: r,
-            onTap: () => _abrirFormulario(r),
-            onRevisado: () => _marcarRevisado(r),
-            onExcluir: () => _confirmarExclusao(r),
-          ),
+        GrupoLista(
+          children: [
+            for (final r in _registros)
+              _RegistroErroLinha(
+                registro: r,
+                onTap: () => _abrirFormulario(r),
+                onRevisado: () => _marcarRevisado(r),
+                onExcluir: () => _confirmarExclusao(r),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -257,13 +281,16 @@ class _CadernoVazio extends StatelessWidget {
   }
 }
 
-class _RegistroErroCard extends StatelessWidget {
+/// Um registro do Caderno como linha de lista: disciplina e tipo no
+/// sobretítulo (cor do tipo, sempre com o rótulo), título, a regra em duas
+/// linhas e, embaixo, a situação e a data. O menu fica discreto à direita.
+class _RegistroErroLinha extends StatelessWidget {
   final RegistroErro registro;
   final VoidCallback onTap;
   final VoidCallback onRevisado;
   final VoidCallback onExcluir;
 
-  const _RegistroErroCard({
+  const _RegistroErroLinha({
     required this.registro,
     required this.onTap,
     required this.onRevisado,
@@ -272,77 +299,92 @@ class _RegistroErroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: _CartaoFluent(
-        onPressed: onTap,
-        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-        child: Builder(
-          builder: (context) => DefaultTextStyle.merge(
-            textAlign: TextAlign.start,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+    final tinta = _corDoTipo(registro.tipo);
+    return MistakeMapButton(
+      onPressed: onTap,
+      style: MistakeMapControls.button(
+        radius: Raio.lg,
+        padding: const EdgeInsets.fromLTRB(
+          Espaco.md,
+          Espaco.sm,
+          Espaco.xs,
+          Espaco.sm,
+        ),
+        background: const Color(0x00FFFFFF),
+        foreground: MistakeMapDesign.abyss,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Color.alphaBlend(
+                tinta.withValues(alpha: .12),
+                MistakeMapDesign.white,
+              ),
+              borderRadius: BorderRadius.circular(Raio.md),
+            ),
+            child: Icon(
+              registro.revisado
+                  ? WindowsIcons.check_mark
+                  : WindowsIcons.quick_note,
+              size: 18,
+              color: tinta,
+            ),
+          ),
+          const SizedBox(width: Espaco.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              registro.titulo,
-                              style: context.tipo.bodyStrong?.copyWith(
-                                color: DefaultTextStyle.of(context).style.color,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _Pilula(
-                            texto: registro.revisado ? 'Revisado' : 'Pendente',
-                            cor: registro.revisado
-                                ? Cores.verde600
-                                : Cores.laranja700,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        registro.descricao,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.tipo.body?.copyWith(
-                          color: DefaultTextStyle.of(context).style.color,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          _Pilula(texto: registro.disciplina, cor: contentBlue),
-                          _Pilula(
-                            texto: registro.tipo.rotulo,
-                            cor: _corDoTipo(registro.tipo),
-                          ),
-                          Text(
-                            _dataCurta(registro.atualizadoEm),
-                            style: context.tipo.caption?.copyWith(
-                              color: DefaultTextStyle.of(context).style.color,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                Text(
+                  '${registro.disciplina} · ${registro.tipo.rotulo}'
+                      .toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.start,
+                  style: Tipo.sobretitulo.copyWith(color: tinta),
                 ),
-                const SizedBox(width: 12),
-                _menu(),
+                const SizedBox(height: Espaco.xxs),
+                Text(
+                  registro.titulo,
+                  textAlign: TextAlign.start,
+                  style: Tipo.tituloComponente.copyWith(fontSize: 15),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  registro.descricao,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.start,
+                  style: Tipo.secundario,
+                ),
+                const SizedBox(height: Espaco.xs),
+                Wrap(
+                  spacing: Espaco.xs,
+                  runSpacing: Espaco.xxs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _Pilula(
+                      texto: registro.revisado ? 'Revisado' : 'Pendente',
+                      cor: registro.revisado
+                          ? Cores.verde600
+                          : Cores.laranja700,
+                    ),
+                    Text(
+                      _dataCurta(registro.atualizadoEm),
+                      style: Tipo.legenda,
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-        ),
+          const SizedBox(width: Espaco.xxs),
+          _menu(),
+        ],
       ),
     );
   }
@@ -352,12 +394,7 @@ class _RegistroErroCard extends StatelessWidget {
       placement: FlyoutPlacementMode.bottomRight,
       menuShape: MistakeMapControls.menuShape,
       menuColor: MistakeMapDesign.surface,
-      buttonBuilder: (context, abrir) => _BotaoBarra(
-        icone: WindowsIcons.more,
-        dica: 'Opções',
-        cor: contentBlue,
-        onPressed: abrir,
-      ),
+      buttonBuilder: (context, abrir) => _BotaoOpcoesLinha(onPressed: abrir),
       items: [
         _itemMenu(icone: WindowsIcons.edit, texto: 'Editar', onPressed: onTap),
         _itemMenu(

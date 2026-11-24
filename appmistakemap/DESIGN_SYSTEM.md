@@ -21,6 +21,9 @@ visto, não o que foi presumido.
 | 7 | `GradientBar` sem altura no preenchimento: a barra aparecia vazia | `glass_surface.dart` | Baixa | Resolvido (`heightFactor: 1`) |
 | 8 | Só modo claro: as cores são constantes (`MistakeMapDesign.*`, ~700 usos) e o app força `Brightness.light` | `design_tokens.dart`, `MistakeMapApp` | Média | Pendente (seção 6) |
 | 9 | Mapa em Material e o resto em Fluent: duas famílias de controles (chips, botões) | `lib/ai/` | Média | Pendente |
+| 10 | Praticar com 12 chips de filtro (~300 px a 390 px) antes do primeiro exercício e um cartão pesado por questão | `banco_exercicios.dart` | Alta | Resolvido na etapa 2 (2 menus: Tipo e Situação; lista num grupo só) |
+| 11 | Meus exercícios e Caderno: cartões soltos com fundo tingido, botão "Opções" com moldura em cada cartão, 3 a 4 pílulas por cartão e texto de introdução centralizado | `main.dart` (`_ExercicioCard`), `caderno_erros.dart` | Média | Resolvido na etapa 2 (linhas em `GrupoLista`, sobretítulo matéria · tipo, menu sem moldura com alvo de 48 dp) |
+| 12 | "1 certos" no resumo do Praticar | `banco_exercicios.dart` | Baixa | Resolvido (singular) |
 
 Sem problema encontrado: navegação inferior persistente com estado por aba,
 Voltar previsível, trilho em tablet e desktop, alvos de toque ≥ 44 px e vidro
@@ -108,11 +111,29 @@ modo profile (nenhum ganho de desempenho é declarado), e as telas que o
 teste não alimenta com dados (Exercícios e Caderno aparecem vazios nas
 capturas).
 
+### Etapa 2: Exercícios e Caderno
+
+- Praticar: filtros "Tipo" e "Situação" viraram dois menus suspensos
+  (`Key('filtro-tipo')`, `Key('filtro-situacao')`); "Limpar filtros"
+  continua no estado sem resultado. Cada questão é uma linha do grupo:
+  sobretítulo matéria · tipo, enunciado em duas linhas, situação e
+  tema · dificuldade.
+- Meus exercícios: mesma linha, com a inicial da matéria num bloco claro;
+  data ao lado da situação (não corta com nome de matéria longo).
+- Caderno: resumo "N regras · N para revisar" no topo, introdução alinhada à
+  esquerda e uma linha por regra (sobretítulo disciplina · tipo na cor do
+  tipo, título, regra em duas linhas, situação e data). Textos do PR #75
+  mantidos.
+- Botão "Opções" das linhas: `_BotaoOpcoesLinha`, sem moldura, 48 dp.
+- Validação: 410 testes passam (5 pulados), `flutter analyze` e
+  `dart format` ok; capturas a 390 px antes/depois geradas por teste de
+  widget (fora do repositório).
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |
 |---|---|---|
-| 2 | Exercícios e Caderno: listas compactas com `LinhaLista`, filtros e estados vazios padronizados | Telas com mais uso depois do Início |
+| 2 | Exercícios e Caderno: listas compactas, filtros em menu | Feita (itens 10 a 12 da auditoria). Estados vazios mantidos como estavam |
 | 3 | Estudar e sessão de revisão: modo foco, menos navegação visível durante a sessão | |
 | 4 | Mapa: chips e botões Material com a mesma aparência dos Fluent; visão em lista como alternativa ao grafo | |
 | 5 | Modo escuro: trocar as constantes `MistakeMapDesign.*` por cores lidas do tema (`ThemeExtension`), tela a tela | Mudança grande; cada etapa precisa sair sem deixar o app misto |
