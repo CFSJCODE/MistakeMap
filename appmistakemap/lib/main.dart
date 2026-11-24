@@ -512,10 +512,16 @@ class _BotaoAparencia extends StatelessWidget {
       valueListenable: aparencia,
       builder: (context, _, _) {
         final escuro = MistakeMapDesign.escuro;
+        // O MediaQuery do app segue a paleta; aqui vale o brilho do aparelho.
+        void alternar() => aparencia.alternar(
+          WidgetsBinding.instance.platformDispatcher.platformBrightness,
+        );
+        // O wrapper substitui a semântica do botão; por isso repete o toque.
         return Semantics(
           button: true,
           toggled: escuro,
           label: 'Modo escuro',
+          onTap: alternar,
           excludeSemantics: true,
           child: _BotaoBarra(
             key: const Key('botao-aparencia'),
@@ -523,10 +529,7 @@ class _BotaoAparencia extends StatelessWidget {
             dica: escuro
                 ? 'Mudar para o modo claro'
                 : 'Mudar para o modo escuro',
-            onPressed: () => aparencia.alternar(
-              // O MediaQuery do app segue a paleta; aqui vale o do aparelho.
-              WidgetsBinding.instance.platformDispatcher.platformBrightness,
-            ),
+            onPressed: alternar,
           ),
         );
       },
