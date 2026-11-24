@@ -219,16 +219,18 @@ void main() {
       size: const Size(390, 2600),
     );
     await _settle(tester);
-    expect(find.text('2 de 7 respondidos · 1 certos'), findsOneWidget);
+    expect(find.text('2 de 7 respondidos · 1 certo'), findsOneWidget);
     expect(find.text('Acertou em parte'), findsOneWidget);
     expect(find.text('Acertou'), findsOneWidget);
     expect(find.text('Não respondida'), findsNWidgets(5));
 
+    await _tocar(tester, find.byKey(const Key('filtro-tipo')));
     await _tocar(tester, find.byKey(const Key('filtro-tipo-numerica')));
     expect(find.text('Resistência em série?'), findsOneWidget);
     expect(find.text('Qual resistor limita o LED?'), findsNothing);
 
-    await _tocar(tester, find.text('Para revisar'));
+    await _tocar(tester, find.byKey(const Key('filtro-situacao')));
+    await _tocar(tester, find.byKey(const Key('filtro-situacao-paraRevisar')));
     expect(find.text('Nenhum exercício com esses filtros.'), findsOneWidget);
     await _tocar(tester, find.text('Limpar filtros'));
     expect(find.text('Qual resistor limita o LED?'), findsOneWidget);

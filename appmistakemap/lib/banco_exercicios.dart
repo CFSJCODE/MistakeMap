@@ -170,46 +170,54 @@ class BancoExerciciosState extends State<BancoExercicios> {
             certas: certas,
           ),
           const SizedBox(height: 16),
-          _rotuloFiltro(context, 'TIPO DE EXERCÍCIO'),
-          const SizedBox(height: 8),
+          // Dois menus numa linha em vez de 12 pílulas: o filtro fica a um
+          // toque e a lista começa logo abaixo (lei de Hick).
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: Espaco.xs,
+            runSpacing: Espaco.xs,
             children: [
-              _ChipFiltro(
-                key: const Key('filtro-tipo-todos'),
-                texto: 'Todos',
-                selecionado: _tipo == null,
-                onPressed: () => setState(() => _tipo = null),
+              _FiltroMenu(
+                chave: const Key('filtro-tipo'),
+                rotulo: 'Tipo',
+                valor: _tipo?.rotulo ?? 'Todos',
+                ativo: _tipo != null,
+                itens: [
+                  _itemMenu(
+                    chave: const Key('filtro-tipo-todos'),
+                    icone: _tipo == null
+                        ? WindowsIcons.check_mark
+                        : WindowsIcons.bulleted_list,
+                    texto: 'Todos os tipos',
+                    onPressed: () => setState(() => _tipo = null),
+                  ),
+                  for (final t in TipoQuestao.values)
+                    _itemMenu(
+                      chave: Key('filtro-tipo-${t.chave}'),
+                      icone: _tipo == t
+                          ? WindowsIcons.check_mark
+                          : _iconeTipo(t),
+                      texto: t.rotulo,
+                      onPressed: () => setState(() => _tipo = t),
+                    ),
+                ],
               ),
-              for (final t in TipoQuestao.values)
-                _ChipFiltro(
-                  key: Key('filtro-tipo-${t.chave}'),
-                  texto: t.rotulo,
-                  icone: _iconeTipo(t),
-                  selecionado: _tipo == t,
-                  onPressed: () => setState(() => _tipo = t),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _rotuloFiltro(context, 'SITUAÇÃO'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final (f, texto) in const [
-                (_FiltroSituacao.todas, 'Todas'),
-                (_FiltroSituacao.naoRespondidas, 'Não respondidas'),
-                (_FiltroSituacao.paraRevisar, 'Para revisar'),
-                (_FiltroSituacao.certas, 'Acertadas'),
-              ])
-                _ChipFiltro(
-                  texto: texto,
-                  selecionado: _situacao == f,
-                  onPressed: () => setState(() => _situacao = f),
-                ),
+              _FiltroMenu(
+                chave: const Key('filtro-situacao'),
+                rotulo: 'Situação',
+                valor: _rotulosSituacao[_situacao]!,
+                ativo: _situacao != _FiltroSituacao.todas,
+                itens: [
+                  for (final f in _FiltroSituacao.values)
+                    _itemMenu(
+                      chave: Key('filtro-situacao-${f.name}'),
+                      icone: _situacao == f
+                          ? WindowsIcons.check_mark
+                          : WindowsIcons.filter,
+                      texto: _rotulosSituacao[f]!,
+                      onPressed: () => setState(() => _situacao = f),
+                    ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -223,24 +231,19 @@ class BancoExerciciosState extends State<BancoExercicios> {
               acao: 'Limpar filtros',
             )
           else
-            for (var i = 0; i < filtradas.length; i++)
-              _QuestaoCard(
-                questao: filtradas[i],
-                onTap: () => _abrir(filtradas, i),
-              ),
+            GrupoLista(
+              children: [
+                for (var i = 0; i < filtradas.length; i++)
+                  _QuestaoLinha(
+                    questao: filtradas[i],
+                    onTap: () => _abrir(filtradas, i),
+                  ),
+              ],
+            ),
         ],
       ],
     );
   }
-
-  Widget _rotuloFiltro(BuildContext context, String texto) => Text(
-    texto,
-    style: context.tipo.caption?.copyWith(
-      color: contentBlue,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 1,
-    ),
-  );
 }
 
 class _ResumoBanco extends StatelessWidget {
@@ -273,7 +276,7 @@ class _ResumoBanco extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$respondidas de $total respondidos · $certas certos',
+                  '$respondidas de $total respondidos · $certas ${certas == 1 ? 'certo' : 'certos'}',
                   style: context.tipo.bodyStrong?.copyWith(color: titleBlue),
                 ),
                 const SizedBox(height: 4),
@@ -324,57 +327,80 @@ class _AvisoBanco extends StatelessWidget {
   );
 }
 
-/// Filtro em pílula: o selecionado usa o botão preenchido do app.
-class _ChipFiltro extends StatelessWidget {
-  const _ChipFiltro({
-    super.key,
-    required this.texto,
-    required this.selecionado,
-    required this.onPressed,
-    this.icone,
+const _rotulosSituacao = {
+  _FiltroSituacao.todas: 'Todas',
+  _FiltroSituacao.naoRespondidas: 'Não respondidas',
+  _FiltroSituacao.paraRevisar: 'Para revisar',
+  _FiltroSituacao.certas: 'Acertadas',
+};
+
+/// Filtro em menu: "Tipo: Todos ▾". Com um filtro ativo, a pílula fica no
+/// acento, para o aluno ver que a lista está recortada.
+class _FiltroMenu extends StatelessWidget {
+  const _FiltroMenu({
+    required this.chave,
+    required this.rotulo,
+    required this.valor,
+    required this.ativo,
+    required this.itens,
   });
 
-  final String texto;
-  final bool selecionado;
-  final VoidCallback onPressed;
-  final IconData? icone;
+  final Key chave;
+  final String rotulo;
+  final String valor;
+  final bool ativo;
+  final List<MenuFlyoutItemBase> itens;
 
   @override
-  Widget build(BuildContext context) {
-    final estilo = _estiloBotao(
-      fonte: 13,
-      raio: 999,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-      fundo: selecionado ? MistakeMapDesign.azure : null,
-      texto: selecionado ? MistakeMapDesign.abyss : contentBlue,
-    );
-    final rotulo = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icone != null) ...[Icon(icone, size: 14), const SizedBox(width: 6)],
-        Text(texto),
-      ],
-    );
-    return Semantics(
-      selected: selecionado,
+  Widget build(BuildContext context) => DropDownButton(
+    placement: FlyoutPlacementMode.bottomLeft,
+    menuShape: MistakeMapControls.menuShape,
+    menuColor: MistakeMapDesign.surface,
+    buttonBuilder: (context, abrir) => Semantics(
       button: true,
-      child: selecionado
-          ? MistakeMapFilledButton(
-              style: estilo,
-              onPressed: onPressed,
-              child: rotulo,
-            )
-          : MistakeMapButton(
-              style: estilo,
-              onPressed: onPressed,
-              child: rotulo,
-            ),
-    );
-  }
+      label: '$rotulo: $valor',
+      onTap: abrir,
+      excludeSemantics: true,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 40),
+        child: MistakeMapButton(
+          key: chave,
+          onPressed: abrir,
+          style: _estiloBotao(
+            fonte: 14,
+            raio: Raio.pilula,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
+            fundo: ativo
+                ? Color.alphaBlend(
+                    MistakeMapDesign.azure.withValues(alpha: .18),
+                    MistakeMapDesign.white,
+                  )
+                : null,
+            texto: ativo ? MistakeMapDesign.azureInk : contentBlue,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '$rotulo: ',
+                style: const TextStyle(fontWeight: FontWeight.w400),
+              ),
+              Text(valor),
+              const SizedBox(width: Espaco.xs),
+              const Icon(WindowsIcons.chevron_down, size: 10),
+            ],
+          ),
+        ),
+      ),
+    ),
+    items: itens,
+  );
 }
 
-class _QuestaoCard extends StatelessWidget {
-  const _QuestaoCard({required this.questao, required this.onTap});
+/// Uma questão do banco como linha de lista: matéria e tipo, o enunciado em
+/// duas linhas e a situação com rótulo (nunca só cor).
+class _QuestaoLinha extends StatelessWidget {
+  const _QuestaoLinha({required this.questao, required this.onTap});
 
   final Questao questao;
   final VoidCallback onTap;
@@ -383,76 +409,85 @@ class _QuestaoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final estado = _estadoQuestao(questao);
     final dificuldade = rotulosDificuldade[questao.dificuldade];
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: _CartaoFluent(
+    final apoio = [
+      if (questao.tema.isNotEmpty) questao.tema,
+      ?dificuldade,
+    ].join(' · ');
+    return Semantics(
+      button: true,
+      label:
+          '${questao.materia}, ${questao.tipo.rotulo}. ${questao.enunciado}. ${estado.label}',
+      onTap: onTap,
+      excludeSemantics: true,
+      child: MistakeMapButton(
         onPressed: onTap,
-        cor: Color.alphaBlend(
-          estado.acento.withValues(alpha: estado.pedeAcao ? .12 : .05),
-          kGlassBg,
+        style: MistakeMapControls.button(
+          radius: Raio.lg,
+          padding: const EdgeInsets.all(Espaco.md),
+          background: const Color(0x00FFFFFF),
+          foreground: MistakeMapDesign.abyss,
         ),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        child: Builder(
-          builder: (context) => DefaultTextStyle.merge(
-            textAlign: TextAlign.start,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GlassIconTile(
-                  icon: _iconeTipo(questao.tipo),
-                  ink: MistakeMapDesign.azureInk,
-                  accent: MistakeMapDesign.azure,
-                  size: 40,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Color.alphaBlend(
+                  MistakeMapDesign.azure.withValues(alpha: .16),
+                  MistakeMapDesign.white,
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                borderRadius: BorderRadius.circular(Raio.md),
+              ),
+              child: Icon(
+                _iconeTipo(questao.tipo),
+                size: 18,
+                color: MistakeMapDesign.azureInk,
+              ),
+            ),
+            const SizedBox(width: Espaco.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    [
+                      questao.materia.toUpperCase(),
+                      questao.tipo.rotulo.toUpperCase(),
+                    ].join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Tipo.sobretitulo.copyWith(
+                      color: MistakeMapDesign.azureInk,
+                    ),
+                  ),
+                  const SizedBox(height: Espaco.xxs),
+                  Text(
+                    questao.enunciado,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.start,
+                    style: Tipo.tituloComponente.copyWith(fontSize: 15),
+                  ),
+                  const SizedBox(height: Espaco.xs),
+                  Wrap(
+                    spacing: Espaco.xs,
+                    runSpacing: Espaco.xxs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text(
-                        [
-                          questao.materia.toUpperCase(),
-                          questao.tipo.rotulo.toUpperCase(),
-                        ].join(' · '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.tipo.caption?.copyWith(
-                          color: MistakeMapDesign.azureInk,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                        ),
+                      _Pilula(
+                        texto: estado.label,
+                        cor: estado.tinta,
+                        icone: estado.icone,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        questao.enunciado,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.tipo.bodyStrong?.copyWith(
-                          color: MistakeMapDesign.abyss,
-                          height: 1.3,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          _Pilula(
-                            texto: estado.label,
-                            cor: estado.tinta,
-                            icone: estado.icone,
-                          ),
-                          _Pilula(texto: questao.tema, cor: contentBlue),
-                          if (dificuldade != null)
-                            _Pilula(texto: dificuldade, cor: contentBlue),
-                        ],
-                      ),
+                      if (apoio.isNotEmpty) Text(apoio, style: Tipo.legenda),
                     ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
