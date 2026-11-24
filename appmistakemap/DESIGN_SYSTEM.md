@@ -267,6 +267,29 @@ capturas trocam a família só no momento de gerar a imagem.
   `material_control_styles.dart`, botão de vidro, rótulos de seção da
   barra lateral, marca "MistakeMap" e botão do LinkedIn.
 
+### Perfis, etapa 1: botão de conta no topo
+
+Proposta completa em "Perfis, troca de perfil e navegação" (Claude Doc do
+projeto). Esta etapa:
+
+- `BotaoConta` (`lib/layout/conta.dart`): botão redondo no fim da barra do
+  topo de toda tela do app (e no cabeçalho dos painéis de escola), com o
+  ícone e o acento do perfil atual. Abre "Sua conta": e-mail, **Perfis desta
+  conta** (só com 2 ou mais; papel e escola em duas linhas), Aparência, os
+  itens da tela (Administração ou Central da Equipe, Sobre) e Sair da conta
+  (com confirmação).
+- A troca de perfil não pede senha: a porta de perfil publica `ContaAtual`
+  (perfis, ativo, trocar, sair) e a tela de navegação publica `AcoesConta`
+  (e-mail, itens, sair offline). O servidor continua conferindo o papel.
+- Saem a barra "Trocar perfil + caixa de seleção" (`SeletorPerfil`) e o
+  menu **Mais**. A barra do celular fica com 5 fatias (Início, Exercícios,
+  Mapa, Estudar, Caderno) e rótulos de 12 px; o trilho compacto ganha
+  Estudar como fatia; os trilhos mostram Administração como destino só para
+  quem tem acesso.
+- Sair pelo botão de conta volta à tela inicial do app.
+- Painéis de escola no celular: ícone e botões numa linha, nome da escola
+  na linha de baixo (não quebra no meio).
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |
@@ -274,7 +297,7 @@ capturas trocam a família só no momento de gerar a imagem.
 | 2 | Exercícios e Caderno: listas compactas, filtros em menu | Feita (itens 10 a 12 da auditoria). Estados vazios mantidos como estavam |
 | 3 | Estudar e sessão de revisão: modo foco, menos navegação visível durante a sessão | Feita para a revisão e a conferência (itens 13 e 14). A aba Estudar (material da IA, em Material) fica com a etapa 4 |
 | 4 | Mapa: chips e botões Material com a mesma aparência dos Fluent; visão em lista como alternativa ao grafo | Feita em parte (itens 15 e 16): segmentos Material com o visual do `GlassSegmented`. A visão "Tentativas" já é a lista alternativa ao grafo |
-| 5 | Modo escuro: trocar as constantes `MistakeMapDesign.*` por cores da paleta, tela a tela | Feita (5a, 5b e 5c). Escolha em Mais > Aparência; padrão "Igual ao aparelho" |
+| 5 | Modo escuro: trocar as constantes `MistakeMapDesign.*` por cores da paleta, tela a tela | Feita (5a, 5b e 5c). Escolha no botão de conta > Aparência (antes Mais > Aparência); padrão "Igual ao aparelho" |
 | 6 | Migrar `fontSize:` soltos para `Tipo` nas telas de escola, TI e professor | Feita (52 estilos em 14 arquivos) |
 
 Lembrete de publicação: todo merge no `main` que toca `lib/` vira patch do

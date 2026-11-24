@@ -339,7 +339,7 @@ void main() {
     await _settle(tester);
   });
 
-  testWidgets('Depois do login, voltar ao início mostra os perfis de novo', (
+  testWidgets('Sair pelo botão de conta volta aos perfis do início', (
     tester,
   ) async {
     addTearDown(_auth.signOut);
@@ -361,7 +361,11 @@ void main() {
     await _escolherPerfil(tester, 'student');
     await _entrar(tester);
     expect(find.byType(TelaNavegacao), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('voltar-perfis')));
+    await tester.tap(find.byKey(const Key('botao-conta')).first);
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('conta-sair')));
+    await _settle(tester);
+    await tester.tap(find.byKey(const Key('conta-sair-confirmar')));
     await _settle(tester);
     expect(find.byType(TelaEntradaPorPerfil), findsOneWidget);
     expect(find.byType(TelaNavegacao), findsNothing);

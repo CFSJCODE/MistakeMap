@@ -601,9 +601,9 @@ void main() {
         await _voltar(tester);
         expect(find.text('Atalhos'), findsOneWidget);
         if (user.isAdmin) {
-          await tester.tap(find.byKey(const ValueKey('navigation-more')));
+          await tester.tap(find.byKey(const Key('botao-conta')).first);
           await _settle(tester);
-          await tester.tap(find.text('Admin').hitTestable().first);
+          await tester.tap(find.byKey(const Key('conta-admin')));
           await _settle(tester);
           expect(find.text('Administração'), findsOneWidget);
           expect(tester.takeException(), isNull);

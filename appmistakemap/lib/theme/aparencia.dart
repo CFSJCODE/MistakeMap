@@ -21,7 +21,7 @@ enum ModoAparencia {
 /// aparência efetiva muda, a paleta é trocada e a árvore inteira é
 /// reconstruída, inclusive os widgets `const` (eles leem os tokens no build).
 ///
-/// A escolha fica em Mais > Aparência. Sem escolha salva, segue o aparelho.
+/// A escolha fica no botão de conta > Aparência. Sem escolha salva, segue o aparelho.
 /// Para gerar uma build só clara: `--dart-define=MISTAKEMAP_MODO_ESCURO=false`.
 class Aparencia extends ValueNotifier<ModoAparencia> {
   Aparencia([super.value = ModoAparencia.claro]);
@@ -58,7 +58,7 @@ class Aparencia extends ValueNotifier<ModoAparencia> {
   }
 
   /// Troca rápida (botão da barra do topo): vai para o oposto do que está
-  /// na tela e salva a escolha. "Igual ao aparelho" volta em Mais > Aparência.
+  /// na tela e salva a escolha. "Igual ao aparelho" volta no botão de conta > Aparência.
   Future<void> alternar(Brightness doAparelho) => escolher(
     brilho(doAparelho) == Brightness.dark
         ? ModoAparencia.claro
