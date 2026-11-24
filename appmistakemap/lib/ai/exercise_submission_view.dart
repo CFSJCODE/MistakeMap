@@ -292,7 +292,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
             Text(
               'Registre uma tentativa para compreender seus erros.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 19, color: mapContentBlue),
+              style: Tipo.tituloSecao.copyWith(color: mapContentBlue),
             ),
             const SizedBox(height: 24),
           ],
@@ -395,7 +395,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
           const SizedBox(height: 16),
           Text(
             'A IA sugere uma correção e identifica padrões. Confira a explicação antes de estudar por ela.',
-            style: TextStyle(fontSize: 14, color: mapContentBlue),
+            style: Tipo.secundario.copyWith(color: mapContentBlue),
           ),
           if (_notice != null) ...[
             const SizedBox(height: 16),

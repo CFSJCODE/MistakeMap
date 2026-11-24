@@ -282,11 +282,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                 padding: const EdgeInsets.all(24),
                 child: Text(
                   '$label · ${_qtd(attempts.length, 'tentativa', 'tentativas')}',
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: mapTitleBlue,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Tipo.tituloSecao.copyWith(color: mapTitleBlue),
                 ),
               ),
               Expanded(
@@ -411,17 +407,13 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                   Text(
                     'Seu mapa ainda está vazio',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 23,
-                      fontWeight: FontWeight.bold,
-                      color: mapTitleBlue,
-                    ),
+                    style: Tipo.tituloPagina.copyWith(color: mapTitleBlue),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Analise um exercício abaixo para identificar suas fragilidades conceituais.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: mapContentBlue),
+                    style: Tipo.corpo.copyWith(color: mapContentBlue),
                   ),
                 ] else ...[
                   // O Mapa é o diagnóstico; treinar fica no Estudar e as
@@ -644,9 +636,7 @@ class _StudyCallout extends StatelessWidget {
                     children: [
                       Text(
                         'Próximo passo: treinar',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
+                        style: Tipo.tituloComponente.copyWith(
                           color: mapTitleBlue,
                         ),
                       ),
@@ -683,14 +673,7 @@ class SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
-    child: Text(
-      text,
-      style: TextStyle(
-        fontSize: 20,
-        color: mapTitleBlue,
-        fontWeight: FontWeight.w600,
-      ),
-    ),
+    child: Text(text, style: Tipo.tituloSecao.copyWith(color: mapTitleBlue)),
   );
 }
 
@@ -854,7 +837,7 @@ class _ConceptGraphState extends State<ConceptGraph> {
                       const SizedBox(width: 6),
                       Text(
                         entry.$1,
-                        style: TextStyle(fontSize: 12, color: mapContentBlue),
+                        style: Tipo.legenda.copyWith(color: mapContentBlue),
                       ),
                     ],
                   ),
@@ -984,8 +967,7 @@ class _GraphNodeButton extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
+                style: Tipo.legenda.copyWith(
                   height: 1.1,
                   fontWeight: FontWeight.w600,
                   color: mapTitleBlue,
@@ -1234,11 +1216,7 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
                       : analysis.isCorrect!
                       ? 'A IA considerou sua resposta correta.'
                       : 'A IA identificou pontos a corrigir.',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: mapTitleBlue,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Tipo.tituloSecao.copyWith(color: mapTitleBlue),
                 ),
                 const SizedBox(height: 16),
                 if (analysis.correctAnswer.isNotEmpty) ...[
@@ -1274,10 +1252,8 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
                         children: [
                           Text(
                             '${error.label} · ${error.concept}',
-                            style: TextStyle(
-                              fontSize: 18,
+                            style: Tipo.tituloSecao.copyWith(
                               color: mapContentBlue,
-                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -1488,14 +1464,7 @@ class _PracticeViewState extends State<PracticeView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 12,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: mapTitleBlue,
-            ),
-          ),
+          Text(title, style: Tipo.tituloSecao.copyWith(color: mapTitleBlue)),
           ...children,
         ],
       ),
@@ -1531,7 +1500,7 @@ class _PracticeViewState extends State<PracticeView> {
           exercise.focusConcept.isEmpty
               ? exercise.prompt
               : '${exercise.focusConcept}\n\n${exercise.prompt}',
-          style: const TextStyle(fontSize: 16),
+          style: Tipo.corpo,
         ),
         ElevatedButton.icon(
           key: const Key('practice-round-resolve'),
@@ -1719,11 +1688,7 @@ class _PracticeViewState extends State<PracticeView> {
                       children: [
                         Text(
                           'Exercício ${index + 1}${_exercises[index].focusConcept.isEmpty ? '' : ' · ${_exercises[index].focusConcept}'}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: mapTitleBlue,
-                          ),
+                          style: Tipo.tituloSecao.copyWith(color: mapTitleBlue),
                         ),
                         const SizedBox(height: 8),
                         Text(_exercises[index].prompt),

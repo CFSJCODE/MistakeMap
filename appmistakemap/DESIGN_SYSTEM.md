@@ -16,7 +16,7 @@ visto, não o que foi presumido.
 | 2 | Caminhos duplicados no Início: "Enviar exercício" = Passo 1, "Praticar um conceito" = Passo 4, "Explorar conteúdos" ao lado de "Biblioteca" | idem | Alta | Resolvido |
 | 3 | Bloco de marca (gradiente "MistakeMap") ocupando o topo do Início sem função | `_cabecalho` | Média | Resolvido |
 | 4 | Três parágrafos de método no cartão "Sua semana de revisão" | `StudyTodayPanel` | Média | Resolvido (uma frase + barra + nota) |
-| 5 | Tamanhos de fonte soltos: 21 valores distintos (9,5 a 30 sp) em `fontSize:` | todo o `lib/` | Média | Escala `Tipo` criada; telas de escola, TI, professor, equipe, relatórios e admin migradas na etapa 6. Ficam a cobrança (fluxo desenhado à parte) e partes do Mapa |
+| 5 | Tamanhos de fonte soltos: 21 valores distintos (9,5 a 30 sp) em `fontSize:` | todo o `lib/` | Média | Escala `Tipo` criada; telas de escola, TI, professor, equipe, relatórios e admin migradas na etapa 6. Mapa, Estudar e Praticar migrados na etapa 7. Ficam a cobrança (fluxo desenhado à parte) e estilos internos de botões e segmentos |
 | 6 | Cartão "Próximo passo: treinar" do Mapa com o botão ao lado do texto: a 360–390 px o texto virava uma coluna de uma palavra por linha | `_StudyCallout` em `insights_view.dart` | Média | Resolvido (empilha abaixo de 480 px) |
 | 7 | `GradientBar` sem altura no preenchimento: a barra aparecia vazia | `glass_surface.dart` | Baixa | Resolvido (`heightFactor: 1`) |
 | 8 | Só modo claro: as cores são constantes (`MistakeMapDesign.*`, ~700 usos) e o app força `Brightness.light` | `design_tokens.dart`, `MistakeMapApp` | Média | Resolvido nas etapas 5a a 5c: modo escuro liberado em Mais > Aparência |
@@ -247,6 +247,18 @@ capturas trocam a família só no momento de gerar a imagem.
 - Ficam de fora: o eixo do gráfico dos relatórios (11 sp, rótulo cortado
   num espaço fixo), a cobrança (`checkout_page.dart`, que segue o
   protótipo próprio) e tamanhos passados como parâmetro de componente.
+
+### Etapa 7: escala `Tipo` no Mapa, Estudar e Praticar
+
+- 20 estilos soltos de `lib/ai` (Mapa, material de estudo, Praticar meus
+  erros, envio de exercício, título das telas Material) e a mensagem de
+  status do Início viraram `Tipo`, mantendo as cores do Mapa
+  (`mapTitleBlue`, `mapContentBlue`) via `copyWith`.
+- Ficam como estão os estilos internos de controles, que medem ou
+  desenham o próprio texto: rótulo dos segmentos (14 sp, usado no cálculo
+  de largura), botões Material de `ai_material_shell.dart` e
+  `material_control_styles.dart`, botão de vidro, rótulos de seção da
+  barra lateral, marca "MistakeMap" e botão do LinkedIn.
 
 ## 6. Próximas etapas
 

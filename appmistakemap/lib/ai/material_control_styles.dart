@@ -40,11 +40,7 @@ class MaterialMetric extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: MistakeMapDesign.primary,
-          ),
+          style: Tipo.tituloPagina.copyWith(color: MistakeMapDesign.primary),
         ),
         if (detail != null)
           Text(detail!, style: TextStyle(color: MistakeMapDesign.steel)),

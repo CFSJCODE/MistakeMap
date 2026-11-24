@@ -1574,9 +1574,8 @@ class _StudyNotice extends StatelessWidget {
     liveRegion: true,
     child: Text(
       message,
-      style: TextStyle(
+      style: Tipo.corpo.copyWith(
         color: error ? MistakeMapDesign.bad : MistakeMapDesign.steel,
-        fontSize: 16,
       ),
     ),
   );
