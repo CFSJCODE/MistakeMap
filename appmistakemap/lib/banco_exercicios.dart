@@ -373,7 +373,7 @@ class _FiltroMenu extends StatelessWidget {
             fundo: ativo
                 ? Color.alphaBlend(
                     MistakeMapDesign.azure.withValues(alpha: .18),
-                    MistakeMapDesign.white,
+                    MistakeMapDesign.raised,
                   )
                 : null,
             texto: ativo ? MistakeMapDesign.azureInk : contentBlue,
@@ -436,7 +436,7 @@ class _QuestaoLinha extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Color.alphaBlend(
                   MistakeMapDesign.azure.withValues(alpha: .16),
-                  MistakeMapDesign.white,
+                  MistakeMapDesign.raised,
                 ),
                 borderRadius: BorderRadius.circular(Raio.md),
               ),
@@ -1147,7 +1147,7 @@ class _CaixaItem extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: acertou == null
-            ? MistakeMapDesign.white
+            ? MistakeMapDesign.raised
             : cor.withValues(alpha: .06),
         borderRadius: BorderRadius.circular(kRadiusSm),
         border: Border.all(
@@ -1205,7 +1205,7 @@ class _OpcaoResposta extends StatelessWidget {
         ? cor.withValues(alpha: .08)
         : selecionada
         ? MistakeMapDesign.azure.withValues(alpha: .14)
-        : MistakeMapDesign.white;
+        : MistakeMapDesign.raised;
     final icone = multipla
         ? (selecionada
               ? WindowsIcons.checkbox_composite

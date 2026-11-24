@@ -267,6 +267,26 @@ abstract final class MistakeMapDesign {
   static Color get background => canvas;
   static Color get surface => raised;
   static Color get border => edge;
+
+  // ─── Cores com alfa que mudam com o tema ─────────────────────────────────
+  // No claro dão exatamente os valores fixos antigos (branco ou #11212D com
+  // alfa); no escuro, o equivalente sobre o vidro grafite.
+
+  /// Superfície com transparência (vidro fosco): branco no claro.
+  static Color pelicula(int alpha) => raised.withAlpha(alpha);
+
+  /// Tom neutro para linhas, trilhos e realces: tinta escura no claro,
+  /// branca no escuro.
+  static Color tom(int alpha) =>
+      (escuro ? white : const Color(0xFF11212D)).withAlpha(alpha);
+
+  /// Reflexo especular do vidro: branco, mais discreto no escuro.
+  static Color brilho(int alpha) =>
+      white.withAlpha(escuro ? alpha ~/ 3 : alpha);
+
+  /// Sombra projetada; no escuro, mais densa para continuar visível.
+  static Color sombra(int alpha) =>
+      paleta.sombra.withAlpha(escuro ? (alpha * 2).clamp(0, 255) : alpha);
   static const radius = 16.0;
 
   // Destaque vivo com texto branco legível em toda a faixa (as tintas do

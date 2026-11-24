@@ -7,7 +7,7 @@ import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
 import 'adaptativo.dart';
 
-const _hoverFill = Color(0x0F11212D);
+Color get _hoverFill => MistakeMapDesign.tom(0x0F);
 
 /// Navigation owns its space: no content is painted underneath its buttons.
 class AppNavigationShell extends StatelessWidget {
@@ -132,7 +132,7 @@ class AppNavigationShell extends StatelessWidget {
       if (selected && !compact) {
         return Color.alphaBlend(
           (accent ?? MistakeMapDesign.mist).withValues(alpha: .16),
-          MistakeMapDesign.white,
+          MistakeMapDesign.raised,
         );
       }
       if (states.contains(WidgetState.pressed) ||
@@ -164,9 +164,9 @@ class AppNavigationShell extends StatelessWidget {
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(12),
       boxShadow: selected && !compact
-          ? const [
+          ? [
               BoxShadow(
-                color: Color(0x1F11212D),
+                color: MistakeMapDesign.sombra(0x1F),
                 blurRadius: 14,
                 spreadRadius: -6,
                 offset: Offset(0, 6),
@@ -222,7 +222,7 @@ class AppNavigationShell extends StatelessWidget {
   static BoxDecoration _pill(Color accent) => BoxDecoration(
     color: Color.alphaBlend(
       accent.withValues(alpha: .22),
-      const Color(0xC7FFFFFF),
+      MistakeMapDesign.pelicula(0xC7),
     ),
     borderRadius: BorderRadius.circular(12),
     border: Border.all(color: accent.withValues(alpha: .55)),
@@ -390,7 +390,7 @@ class AppNavigationShell extends StatelessWidget {
       placement: compactRail
           ? FlyoutPlacementMode.bottomCenter
           : FlyoutPlacementMode.topRight,
-      menuColor: MistakeMapDesign.white,
+      menuColor: MistakeMapDesign.raised,
       menuShape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(color: MistakeMapDesign.border),
@@ -549,7 +549,7 @@ class AppNavigationShell extends StatelessWidget {
         fontSize: 14,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         background: MistakeMapDesign.accent,
-        foreground: MistakeMapDesign.abyss,
+        foreground: MistakeMapDesign.onAccent,
       ),
       onPressed: onAnalysis,
       child: const Row(

@@ -248,7 +248,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
     hintText: hint,
     border: const OutlineInputBorder(),
     filled: true,
-    fillColor: Colors.white,
+    fillColor: MistakeMapDesign.raised,
     alignLabelWithHint: true,
   );
 
@@ -425,7 +425,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                     width: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: MistakeMapDesign.abyss,
+                      color: MistakeMapDesign.onAccent,
                     ),
                   )
                 : const Icon(Icons.check),
@@ -440,7 +440,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                 MistakeMapMaterialControls.button(
                   context,
                   background: MistakeMapDesign.accent,
-                  foreground: MistakeMapDesign.abyss,
+                  foreground: MistakeMapDesign.onAccent,
                   radius: 10,
                 ).copyWith(
                   padding: const WidgetStatePropertyAll(

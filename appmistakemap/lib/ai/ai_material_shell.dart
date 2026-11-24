@@ -106,13 +106,18 @@ class AiMaterialShell extends StatefulWidget {
   State<AiMaterialShell> createState() => _AiMaterialShellState();
 
   static ThemeData _theme(BuildContext context) {
+    // Glifo sobre a tinta de um acento: branco no claro, escuro no escuro
+    // (lá as tintas são claras).
+    final sobreTinta = MistakeMapDesign.escuro
+        ? MistakeMapDesign.onAccent
+        : MistakeMapDesign.white;
     final inputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
       borderSide: BorderSide(color: MistakeMapDesign.fieldBorder),
     );
     final inputTheme = InputDecorationTheme(
       filled: true,
-      fillColor: MistakeMapDesign.white,
+      fillColor: MistakeMapDesign.raised,
       hoverColor: MistakeMapDesign.deep.withValues(alpha: .02),
       contentPadding: const EdgeInsets.all(16),
       border: inputBorder,
@@ -134,7 +139,7 @@ class AiMaterialShell extends StatefulWidget {
       side: BorderSide(color: MistakeMapDesign.border),
     );
     final menuStyle = MenuStyle(
-      backgroundColor: const WidgetStatePropertyAll(MistakeMapDesign.white),
+      backgroundColor: WidgetStatePropertyAll(MistakeMapDesign.raised),
       surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
       shadowColor: WidgetStatePropertyAll(
         MistakeMapDesign.deep.withValues(alpha: .16),
@@ -158,7 +163,7 @@ class AiMaterialShell extends StatefulWidget {
               states.contains(WidgetState.dragged) ||
                   states.contains(WidgetState.hovered)
               ? MistakeMapDesign.steel
-              : const Color(0x8C4A5C6A),
+              : MistakeMapDesign.steel.withAlpha(0x8C),
         ),
         radius: const Radius.circular(100),
         crossAxisMargin: 1,
@@ -166,34 +171,45 @@ class AiMaterialShell extends StatefulWidget {
       ),
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
-      colorScheme: ColorScheme.light(
-        primary: MistakeMapDesign.aquaInk,
-        onPrimary: MistakeMapDesign.white,
-        primaryContainer: Color(0xFFD7F7F3),
-        onPrimaryContainer: MistakeMapDesign.abyss,
-        secondary: MistakeMapDesign.violetInk,
-        onSecondary: MistakeMapDesign.white,
-        secondaryContainer: Color(0xFFEAE4FF),
-        onSecondaryContainer: MistakeMapDesign.abyss,
-        tertiary: MistakeMapDesign.azureInk,
-        onTertiary: MistakeMapDesign.white,
-        error: MistakeMapDesign.bad,
-        onError: MistakeMapDesign.white,
-        surface: MistakeMapDesign.white,
-        onSurface: MistakeMapDesign.deep,
-        onSurfaceVariant: MistakeMapDesign.steel,
-        surfaceContainerLowest: MistakeMapDesign.white,
-        surfaceContainerLow: MistakeMapDesign.well,
-        surfaceContainer: MistakeMapDesign.well,
-        surfaceContainerHigh: MistakeMapDesign.disabledFill,
-        surfaceContainerHighest: MistakeMapDesign.pressed,
-        outline: MistakeMapDesign.mist,
-        outlineVariant: MistakeMapDesign.border,
-        shadow: MistakeMapDesign.deep,
-      ),
+      colorScheme:
+          (MistakeMapDesign.escuro ? ColorScheme.dark : ColorScheme.light)(
+            primary: MistakeMapDesign.aquaInk,
+            onPrimary: sobreTinta,
+            primaryContainer: MistakeMapDesign.escuro
+                ? Color.alphaBlend(
+                    MistakeMapDesign.aqua.withAlpha(0x33),
+                    MistakeMapDesign.raised,
+                  )
+                : const Color(0xFFD7F7F3),
+            onPrimaryContainer: MistakeMapDesign.abyss,
+            secondary: MistakeMapDesign.violetInk,
+            onSecondary: sobreTinta,
+            secondaryContainer: MistakeMapDesign.escuro
+                ? Color.alphaBlend(
+                    MistakeMapDesign.violet.withAlpha(0x33),
+                    MistakeMapDesign.raised,
+                  )
+                : const Color(0xFFEAE4FF),
+            onSecondaryContainer: MistakeMapDesign.abyss,
+            tertiary: MistakeMapDesign.azureInk,
+            onTertiary: sobreTinta,
+            error: MistakeMapDesign.bad,
+            onError: sobreTinta,
+            surface: MistakeMapDesign.raised,
+            onSurface: MistakeMapDesign.deep,
+            onSurfaceVariant: MistakeMapDesign.steel,
+            surfaceContainerLowest: MistakeMapDesign.raised,
+            surfaceContainerLow: MistakeMapDesign.well,
+            surfaceContainer: MistakeMapDesign.well,
+            surfaceContainerHigh: MistakeMapDesign.disabledFill,
+            surfaceContainerHighest: MistakeMapDesign.pressed,
+            outline: MistakeMapDesign.mist,
+            outlineVariant: MistakeMapDesign.border,
+            shadow: MistakeMapDesign.deep,
+          ),
       scaffoldBackgroundColor: MistakeMapDesign.background,
-      canvasColor: MistakeMapDesign.white,
-      cardColor: MistakeMapDesign.white,
+      canvasColor: MistakeMapDesign.raised,
+      cardColor: MistakeMapDesign.raised,
       dividerColor: MistakeMapDesign.hairline,
       hoverColor: MistakeMapDesign.deep.withValues(alpha: .03),
       focusColor: MistakeMapDesign.aqua.withValues(alpha: .2),
@@ -209,13 +225,13 @@ class AiMaterialShell extends StatefulWidget {
       ),
       // Cartões em acrílico: branco quase opaco, borda clara e sombra suave.
       cardTheme: CardThemeData(
-        color: const Color(0xEBFFFFFF),
+        color: MistakeMapDesign.pelicula(0xEB),
         surfaceTintColor: Colors.transparent,
         shadowColor: MistakeMapDesign.deep.withValues(alpha: .22),
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(MistakeMapDesign.cardRadius),
-          side: const BorderSide(color: Color(0xE6FFFFFF)),
+          side: BorderSide(color: MistakeMapDesign.brilho(0xE6)),
         ),
       ),
       // Segmentos com a aparência do GlassSegmented do Fluent: cápsula
@@ -234,9 +250,9 @@ class AiMaterialShell extends StatefulWidget {
             (states) => states.contains(WidgetState.selected)
                 ? Color.alphaBlend(
                     MistakeMapDesign.violet.withValues(alpha: .22),
-                    MistakeMapDesign.white,
+                    MistakeMapDesign.raised,
                   )
-                : const Color(0xD9FFFFFF),
+                : MistakeMapDesign.pelicula(0xD9),
           ),
           foregroundColor: WidgetStateProperty.resolveWith(
             (states) => states.contains(WidgetState.disabled)
@@ -253,10 +269,10 @@ class AiMaterialShell extends StatefulWidget {
       ),
       // Abas de seção em cápsula: a selecionada acende no acento da IA.
       chipTheme: ChipThemeData(
-        backgroundColor: const Color(0xD9FFFFFF),
+        backgroundColor: MistakeMapDesign.pelicula(0xD9),
         selectedColor: Color.alphaBlend(
           MistakeMapDesign.violet.withValues(alpha: .22),
-          MistakeMapDesign.white,
+          MistakeMapDesign.raised,
         ),
         side: BorderSide(color: MistakeMapDesign.border),
         shape: const StadiumBorder(),
@@ -311,7 +327,7 @@ class AiMaterialShell extends StatefulWidget {
         style: _controlStyle(context, quiet: true),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: MistakeMapDesign.white,
+        color: MistakeMapDesign.raised,
         surfaceTintColor: Colors.transparent,
         shadowColor: MistakeMapDesign.deep.withValues(alpha: .16),
         elevation: 3,

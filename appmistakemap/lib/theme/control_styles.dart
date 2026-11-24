@@ -63,10 +63,10 @@ abstract final class MistakeMapControls {
         // darker, like the bottom of a pane of glass.
         return RoundedRectangleGradientBorder(
           borderRadius: BorderRadius.circular(radius),
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0x1411212D), Color(0x3311212D)],
+            colors: [MistakeMapDesign.tom(0x14), MistakeMapDesign.tom(0x33)],
           ),
         );
       }),
@@ -78,7 +78,7 @@ abstract final class MistakeMapControls {
             ? 0
             : 1,
       ),
-      shadowColor: const WidgetStatePropertyAll(Color(0x2911212D)),
+      shadowColor: WidgetStatePropertyAll(MistakeMapDesign.sombra(0x29)),
     );
   }
 

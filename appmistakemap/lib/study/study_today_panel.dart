@@ -933,7 +933,7 @@ class _StudyReviewPageState extends State<StudyReviewPage> {
         decoration: BoxDecoration(
           color: Color.alphaBlend(
             MistakeMapDesign.violet.withValues(alpha: .08),
-            MistakeMapDesign.white,
+            MistakeMapDesign.raised,
           ),
           borderRadius: BorderRadius.circular(Raio.md),
         ),
@@ -1205,7 +1205,7 @@ class _GradeAvaliacao extends StatelessWidget {
             ),
             background: Color.alphaBlend(
               acento.withValues(alpha: .14),
-              MistakeMapDesign.white,
+              MistakeMapDesign.raised,
             ),
             foreground: tinta,
           ),
@@ -1555,8 +1555,10 @@ class _StudyButton extends StatelessWidget {
     child: MistakeMapButton(
       onPressed: onPressed,
       style: MistakeMapControls.button(
-        background: primary ? MistakeMapDesign.aqua : MistakeMapDesign.white,
-        foreground: primary ? MistakeMapDesign.abyss : MistakeMapDesign.content,
+        background: primary ? MistakeMapDesign.aqua : MistakeMapDesign.raised,
+        foreground: primary
+            ? MistakeMapDesign.onAccent
+            : MistakeMapDesign.content,
       ),
       child: Text(label, textAlign: TextAlign.center),
     ),
