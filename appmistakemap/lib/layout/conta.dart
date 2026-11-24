@@ -87,11 +87,18 @@ String nomeDoPerfil(PerfilAtivo perfil) {
       : base;
 }
 
-/// Botão redondo do topo, com o ícone do perfil atual.
+/// Botão redondo do topo, com o ícone do perfil atual: um "avatar" no acento
+/// do perfil, com aro da superfície e sombra na cor do acento, que sobe no
+/// hover e afunda ao tocar.
 class BotaoConta extends StatelessWidget {
   const BotaoConta({super.key, this.tamanho = 44});
 
+  /// Área de toque (o avatar ocupa 88% dela).
   final double tamanho;
+
+  /// Acento neutro (TI e conta sem perfil): o "mist" da paleta clara, igual
+  /// nos dois temas para o glifo escuro continuar legível.
+  static const _neutro = Color(0xFF9BA8AB);
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +109,7 @@ class BotaoConta extends StatelessWidget {
         ? null
         : PerfilCadastro.doCodigo(conta.ativo.papel);
     final nome = conta == null ? null : nomeDoPerfil(conta.ativo);
+    final acento = perfil?.tom?.cor ?? _neutro;
     return Semantics(
       button: true,
       label: nome == null ? 'Conta' : 'Conta e perfis. Perfil atual: $nome',
@@ -111,33 +119,104 @@ class BotaoConta extends StatelessWidget {
         message: 'Conta e perfis',
         child: SizedBox.square(
           dimension: tamanho,
-          child: IconButton(
+          child: HoverButton(
             key: const Key('botao-conta'),
-            icon: Icon(
-              perfil?.icone ?? WindowsIcons.contact,
-              size: 18,
-              color: perfil?.tinta ?? MistakeMapDesign.abyss,
-            ),
-            style: ButtonStyle(
-              backgroundColor: WidgetStatePropertyAll(
-                Color.alphaBlend(
-                  (perfil?.acento ?? MistakeMapDesign.mist).withValues(
-                    alpha: .18,
-                  ),
-                  MistakeMapDesign.pelicula(0xE6),
-                ),
-              ),
-              shape: WidgetStatePropertyAll(
-                CircleBorder(
-                  side: BorderSide(
-                    color: (perfil?.acento ?? MistakeMapDesign.hairline)
-                        .withValues(alpha: .55),
-                  ),
-                ),
-              ),
-            ),
             onPressed: () => mostrarConta(context),
+            builder: (context, estados) => Center(
+              child: _Avatar(
+                icone: perfil?.icone ?? WindowsIcons.contact,
+                acento: acento,
+                diametro: tamanho * .88,
+                hover: estados.isHovered,
+                pressionado: estados.isPressed,
+                foco: estados.isFocused,
+              ),
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  const _Avatar({
+    required this.icone,
+    required this.acento,
+    required this.diametro,
+    required this.hover,
+    required this.pressionado,
+    required this.foco,
+  });
+
+  final IconData icone;
+  final Color acento;
+  final double diametro;
+  final bool hover, pressionado, foco;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduzir = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    final duracao = reduzir ? Duration.zero : Movimento.rapido;
+    // Sombra em duas camadas: o brilho colorido do acento, que dá a cor ao
+    // redor, e uma sombra curta e escura que assenta o botão na barra.
+    final elevacao = pressionado ? 0.0 : (hover ? 1.0 : .6);
+    final sombras = [
+      if (foco) BoxShadow(color: MistakeMapDesign.abyss, spreadRadius: 3.5),
+      BoxShadow(
+        color: acento.withValues(
+          alpha: (MistakeMapDesign.escuro ? .38 : .50) * elevacao,
+        ),
+        blurRadius: 6 + 10 * elevacao,
+        spreadRadius: -1,
+        offset: Offset(0, 1 + 5 * elevacao),
+      ),
+      BoxShadow(
+        color: MistakeMapDesign.sombra(0x29),
+        blurRadius: 2,
+        offset: const Offset(0, 1),
+      ),
+    ];
+    return AnimatedScale(
+      scale: pressionado ? .93 : (hover ? 1.04 : 1),
+      duration: duracao,
+      curve: Movimento.curva,
+      child: AnimatedContainer(
+        duration: duracao,
+        curve: Movimento.curva,
+        width: diametro,
+        height: diametro,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          // Do acento mais claro (luz de cima) ao mais fundo (embaixo).
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.lerp(acento, const Color(0xFFFFFFFF), hover ? .30 : .22)!,
+              Color.lerp(acento, MistakeMapDesign.onAccent, .14)!,
+            ],
+          ),
+          // Aro da superfície: separa o avatar do vidro em qualquer fundo.
+          border: Border.all(color: MistakeMapDesign.raised, width: 2),
+          boxShadow: sombras,
+        ),
+        // Reflexo no topo, como nos outros vidros do app.
+        foregroundDecoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.center,
+            colors: [
+              const Color(0xFFFFFFFF).withValues(alpha: .35),
+              const Color(0x00FFFFFF),
+            ],
+          ),
+        ),
+        child: Icon(
+          icone,
+          size: diametro * .5,
+          color: MistakeMapDesign.onAccent,
         ),
       ),
     );
