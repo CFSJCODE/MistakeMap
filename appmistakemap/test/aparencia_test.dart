@@ -123,4 +123,18 @@ void main() {
     expect(find.text('Aparência'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  test('alternar vai para o oposto do que está na tela e salva', () async {
+    SharedPreferences.setMockInitialValues({});
+    final a = Aparencia(ModoAparencia.sistema);
+    await a.alternar(Brightness.dark);
+    expect(a.value, ModoAparencia.claro);
+    await a.alternar(Brightness.dark);
+    expect(a.value, ModoAparencia.escuro);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('mistakemap.aparencia'), 'escuro');
+    a.value = ModoAparencia.sistema;
+    await a.alternar(Brightness.light);
+    expect(a.value, ModoAparencia.escuro);
+  });
 }
