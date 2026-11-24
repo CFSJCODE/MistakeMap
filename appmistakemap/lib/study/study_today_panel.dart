@@ -851,154 +851,44 @@ class _StudyReviewPageState extends State<StudyReviewPage> {
   Widget build(BuildContext context) {
     final item = _session.remaining.firstOrNull;
     final feedback = _feedback;
+    final total = _session.items.length;
+    final feitos = total - _session.remaining.length;
+    // Modo foco: sem navegação do app, só sair, o progresso da rodada e um
+    // passo por vez (responder → conferir → avaliar).
     return NavigationView(
       content: ScaffoldPage.scrollable(
-        header: PageHeader(
-          title: const Text('Sua revisão'),
-          leading: _StudyButton(
-            label: 'Voltar',
-            onPressed: () => Navigator.pop(context),
-          ),
+        header: _FocoCabecalho(
+          titulo: 'Revisão',
+          detalhe: total == 0
+              ? null
+              : item == null || feedback != null
+              ? '$feitos de $total concluídos'
+              : '${feitos + 1} de $total · ${item.subjectName}',
+          progresso: total == 0 ? null : feitos / total,
+          rotuloSair: 'Sair da revisão',
         ),
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
+              constraints: const BoxConstraints(
+                maxWidth: Espaco.larguraLeitura,
+              ),
               child: _StudyCard(
                 accent: MistakeMapDesign.violet,
                 children: [
-                  if (feedback != null) ...[
-                    _StudyTitle(
-                      feedback.queued
-                          ? 'Resposta salva neste aparelho'
-                          : 'Autoavaliação registrada',
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      feedback.queued
-                          ? 'Ela será enviada automaticamente quando a conexão voltar. A próxima data ainda depende do servidor.'
-                          : 'A agenda foi atualizada a partir da sua autoavaliação.',
-                    ),
-                    if (feedback.reference?.isNotEmpty == true) ...[
-                      const SizedBox(height: 16),
-                      const _StudyTitle('Referência da tentativa anterior'),
-                      const SizedBox(height: 8),
-                      SelectableText(feedback.reference!),
-                    ],
-                    if (feedback.nextDueAt != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        'Próxima revisão: ${_dateTime(context, feedback.nextDueAt!)}',
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    _StudyButton(
-                      label: item == null
-                          ? 'Ver conclusão'
-                          : 'Próximo conceito',
-                      primary: true,
-                      onPressed: () async {
-                        setState(() => _feedback = null);
-                        await _prepareItem();
-                      },
-                    ),
-                  ] else if (item == null) ...[
-                    const _StudyTitle('Você concluiu esta rodada'),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Sua lembrança foi registrada por autoavaliação. Praticar questões novas ajuda a verificar o que você aprendeu.',
-                    ),
-                    const SizedBox(height: 16),
-                    ValueListenableBuilder<StudySyncState>(
-                      valueListenable: widget.repository.syncState,
-                      builder: (context, state, _) => Text(
-                        state.pending > 0
-                            ? '${_plural(state.pending, 'resposta ainda aguarda', 'respostas ainda aguardam')} envio. Mantenha o aplicativo aberto ao reconectar.'
-                            : 'Respostas desta rodada enviadas ao servidor.',
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _StudyButton(
-                      label: 'Voltar ao meu estudo',
-                      primary: true,
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ] else ...[
-                    Text(
-                      '${_session.items.length - _session.remaining.length + 1} de ${_session.items.length} · ${item.subjectName}',
-                    ),
-                    const SizedBox(height: 8),
-                    _StudyTitle(item.conceptName, large: true),
-                    if (item.reason.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(item.reason),
-                    ],
-                    const SizedBox(height: 24),
-                    SelectableText(
-                      item.prompt,
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                    const SizedBox(height: 24),
-                    InfoLabel(
-                      label: 'Tente explicar ou resolver com suas palavras',
-                      child: TextBox(
-                        key: const Key('study-review-draft'),
-                        controller: _draft,
-                        onChanged: _changed,
-                        minLines: 4,
-                        maxLines: 8,
-                        maxLength: 8000,
-                        placeholder: 'Seu rascunho fica neste aparelho.',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (!_reference)
-                      _StudyButton(
-                        label: 'Ver referência',
-                        onPressed: _busy ? null : _reveal,
-                      )
-                    else ...[
-                      const _StudyTitle('Referência da tentativa anterior'),
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        _referenceText.isEmpty
-                            ? 'Não há uma referência salva para este conceito. Consulte seu material antes de se avaliar.'
-                            : _referenceText,
-                      ),
-                      const SizedBox(height: 24),
-                      const _StudyTitle('Como foi lembrar?'),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Sua resposta é uma autoavaliação; não é uma correção automática do rascunho.',
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final rating in const {
-                            'again': 'Não lembrei',
-                            'hard': 'Com dificuldade',
-                            'good': 'Lembrei',
-                            'easy': 'Foi fácil',
-                          }.entries)
-                            _StudyButton(
-                              label: rating.value,
-                              onPressed: _busy
-                                  ? null
-                                  : () => _answer(rating.key),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ],
+                  if (feedback != null)
+                    ..._retorno(context, feedback, item == null)
+                  else if (item == null)
+                    ..._conclusao(context)
+                  else
+                    ..._pergunta(item),
                   if (_busy) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Espaco.md),
                     const ProgressBar(),
                   ],
                   if (_error != null) ...[
-                    const SizedBox(height: 16),
-                    _StudyNotice(_error!, error: true),
+                    const SizedBox(height: Espaco.md),
+                    AvisoLinha(_error!, erro: true),
                   ],
                 ],
               ),
@@ -1006,6 +896,356 @@ class _StudyReviewPageState extends State<StudyReviewPage> {
           ),
         ],
       ),
+    );
+  }
+
+  List<Widget> _pergunta(StudyReviewItem item) => [
+    _StudyTitle(item.conceptName, large: true),
+    if (item.reason.isNotEmpty) ...[
+      const SizedBox(height: Espaco.xxs),
+      Text(item.reason, style: Tipo.secundario),
+    ],
+    const SizedBox(height: Espaco.md),
+    SelectableText(item.prompt, style: Tipo.corpo.copyWith(fontSize: 17)),
+    const SizedBox(height: Espaco.lg),
+    InfoLabel(
+      label: 'Tente explicar ou resolver com suas palavras',
+      child: TextBox(
+        key: const Key('study-review-draft'),
+        controller: _draft,
+        onChanged: _changed,
+        minLines: 4,
+        maxLines: 8,
+        maxLength: 8000,
+        placeholder: 'Seu rascunho fica neste aparelho.',
+      ),
+    ),
+    const SizedBox(height: Espaco.md),
+    if (!_reference)
+      _StudyButton(
+        label: 'Ver referência',
+        primary: true,
+        onPressed: _busy ? null : _reveal,
+      )
+    else ...[
+      Container(
+        padding: const EdgeInsets.all(Espaco.md),
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(
+            MistakeMapDesign.violet.withValues(alpha: .08),
+            MistakeMapDesign.white,
+          ),
+          borderRadius: BorderRadius.circular(Raio.md),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'REFERÊNCIA DA TENTATIVA ANTERIOR',
+              style: Tipo.sobretitulo.copyWith(
+                color: MistakeMapDesign.violetInk,
+              ),
+            ),
+            const SizedBox(height: Espaco.xs),
+            SelectableText(
+              _referenceText.isEmpty
+                  ? 'Não há uma referência salva para este conceito. Consulte seu material antes de se avaliar.'
+                  : _referenceText,
+              style: Tipo.corpo,
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: Espaco.lg),
+      const _StudyTitle('Como foi lembrar?'),
+      const SizedBox(height: Espaco.xxs),
+      const Text(
+        'Sua resposta é uma autoavaliação; não é uma correção automática do rascunho.',
+        style: Tipo.secundario,
+      ),
+      const SizedBox(height: Espaco.sm),
+      _GradeAvaliacao(onAvaliar: _busy ? null : _answer),
+    ],
+  ];
+
+  List<Widget> _retorno(
+    BuildContext context,
+    StudyAnswerResult feedback,
+    bool ultimo,
+  ) => [
+    Row(
+      children: [
+        Icon(
+          feedback.queued ? WindowsIcons.cloud : WindowsIcons.completed,
+          size: 22,
+          color: feedback.queued
+              ? MistakeMapDesign.amberInk
+              : MistakeMapDesign.mintInk,
+        ),
+        const SizedBox(width: Espaco.xs),
+        Expanded(
+          child: _StudyTitle(
+            feedback.queued
+                ? 'Resposta salva neste aparelho'
+                : 'Autoavaliação registrada',
+          ),
+        ),
+      ],
+    ),
+    const SizedBox(height: Espaco.xs),
+    Text(
+      feedback.queued
+          ? 'Ela será enviada automaticamente quando a conexão voltar. A próxima data ainda depende do servidor.'
+          : 'A agenda foi atualizada a partir da sua autoavaliação.',
+      style: Tipo.corpo,
+    ),
+    if (feedback.nextDueAt != null) ...[
+      const SizedBox(height: Espaco.md),
+      Row(
+        children: [
+          const Icon(
+            WindowsIcons.calendar,
+            size: 16,
+            color: MistakeMapDesign.violetInk,
+          ),
+          const SizedBox(width: Espaco.xs),
+          const Text('Próxima revisão: ', style: Tipo.corpo),
+          Flexible(
+            child: Text(
+              _dateTime(context, feedback.nextDueAt!),
+              style: Tipo.tituloComponente,
+            ),
+          ),
+        ],
+      ),
+    ],
+    if (feedback.reference?.isNotEmpty == true) ...[
+      const SizedBox(height: Espaco.md),
+      Text(
+        'REFERÊNCIA DA TENTATIVA ANTERIOR',
+        style: Tipo.sobretitulo.copyWith(color: MistakeMapDesign.violetInk),
+      ),
+      const SizedBox(height: Espaco.xxs),
+      SelectableText(feedback.reference!, style: Tipo.corpo),
+    ],
+    const SizedBox(height: Espaco.lg),
+    _StudyButton(
+      label: ultimo ? 'Ver conclusão' : 'Próximo conceito',
+      primary: true,
+      onPressed: () async {
+        setState(() => _feedback = null);
+        await _prepareItem();
+      },
+    ),
+  ];
+
+  List<Widget> _conclusao(BuildContext context) => [
+    const Row(
+      children: [
+        Icon(WindowsIcons.completed, size: 22, color: MistakeMapDesign.mintInk),
+        SizedBox(width: Espaco.xs),
+        Expanded(child: _StudyTitle('Você concluiu esta rodada')),
+      ],
+    ),
+    const SizedBox(height: Espaco.xs),
+    const Text(
+      'Sua lembrança foi registrada por autoavaliação. Praticar questões novas ajuda a verificar o que você aprendeu.',
+      style: Tipo.corpo,
+    ),
+    const SizedBox(height: Espaco.md),
+    ValueListenableBuilder<StudySyncState>(
+      valueListenable: widget.repository.syncState,
+      builder: (context, state, _) => AvisoLinha(
+        state.pending > 0
+            ? '${_plural(state.pending, 'resposta ainda aguarda', 'respostas ainda aguardam')} envio. Mantenha o aplicativo aberto ao reconectar.'
+            : 'Respostas desta rodada enviadas ao servidor.',
+      ),
+    ),
+    const SizedBox(height: Espaco.lg),
+    _StudyButton(
+      label: 'Voltar ao meu estudo',
+      primary: true,
+      onPressed: () => Navigator.pop(context),
+    ),
+  ];
+}
+
+/// Cabeçalho do modo foco: sair à esquerda, título e onde o aluno está na
+/// rodada, com a barra de progresso embaixo.
+class _FocoCabecalho extends StatelessWidget {
+  const _FocoCabecalho({
+    required this.titulo,
+    required this.rotuloSair,
+    this.detalhe,
+    this.progresso,
+  });
+
+  final String titulo;
+  final String rotuloSair;
+  final String? detalhe;
+  final double? progresso;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      Espaco.xs,
+      Espaco.xs,
+      Espaco.pagina,
+      Espaco.sm,
+    ),
+    child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: Espaco.larguraLeitura + 64),
+        child: Row(
+          children: [
+            Tooltip(
+              message: rotuloSair,
+              child: SizedBox.square(
+                dimension: Espaco.alvoToque,
+                child: Semantics(
+                  button: true,
+                  label: rotuloSair,
+                  onTap: () => Navigator.maybePop(context),
+                  excludeSemantics: true,
+                  child: MistakeMapIconButton(
+                    style: MistakeMapControls.button(
+                      radius: Raio.md,
+                      padding: const EdgeInsets.all(Espaco.sm),
+                      background: const Color(0x00FFFFFF),
+                      foreground: MistakeMapDesign.abyss,
+                    ),
+                    icon: const Icon(WindowsIcons.chrome_close, size: 16),
+                    onPressed: () => Navigator.maybePop(context),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: Espaco.xs),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text(titulo, style: Tipo.tituloSecao),
+                  ),
+                  if (detalhe != null) Text(detalhe!, style: Tipo.secundario),
+                  if (progresso != null) ...[
+                    const SizedBox(height: Espaco.xs),
+                    GradientBar(
+                      value: progresso!,
+                      height: 6,
+                      semanticsLabel: 'Progresso da rodada',
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// As quatro respostas de "Como foi lembrar?" com o mesmo peso: grade 2×2,
+/// cada uma com ícone, rótulo e a cor da escala (nunca só a cor).
+class _GradeAvaliacao extends StatelessWidget {
+  const _GradeAvaliacao({required this.onAvaliar});
+
+  final ValueChanged<String>? onAvaliar;
+
+  static const _opcoes = [
+    (
+      'again',
+      'Não lembrei',
+      WindowsIcons.refresh,
+      MistakeMapDesign.coral,
+      MistakeMapDesign.coralInk,
+    ),
+    (
+      'hard',
+      'Com dificuldade',
+      WindowsIcons.stopwatch,
+      MistakeMapDesign.amber,
+      MistakeMapDesign.amberInk,
+    ),
+    (
+      'good',
+      'Lembrei',
+      WindowsIcons.check_mark,
+      MistakeMapDesign.mint,
+      MistakeMapDesign.mintInk,
+    ),
+    (
+      'easy',
+      'Foi fácil',
+      WindowsIcons.favorite_star,
+      MistakeMapDesign.aqua,
+      MistakeMapDesign.aquaInk,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    Widget opcao((String, String, IconData, Color, Color) o) {
+      final (chave, rotulo, icone, acento, tinta) = o;
+      final avaliar = onAvaliar;
+      return ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 56),
+        child: MistakeMapButton(
+          key: Key('study-rating-$chave'),
+          onPressed: avaliar == null ? null : () => avaliar(chave),
+          style: MistakeMapControls.button(
+            radius: Raio.md,
+            padding: const EdgeInsets.symmetric(
+              horizontal: Espaco.sm,
+              vertical: Espaco.xs,
+            ),
+            background: Color.alphaBlend(
+              acento.withValues(alpha: .14),
+              MistakeMapDesign.white,
+            ),
+            foreground: tinta,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icone, size: 16, color: tinta),
+              const SizedBox(width: Espaco.xs),
+              Flexible(
+                child: Text(
+                  rotulo,
+                  textAlign: TextAlign.center,
+                  style: Tipo.tituloComponente.copyWith(
+                    fontSize: 15,
+                    color: tinta,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Widget linha(int i) => Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: opcao(_opcoes[i])),
+        const SizedBox(width: Espaco.xs),
+        Expanded(child: opcao(_opcoes[i + 1])),
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        IntrinsicHeight(child: linha(0)),
+        const SizedBox(height: Espaco.xs),
+        IntrinsicHeight(child: linha(2)),
+      ],
     );
   }
 }
@@ -1171,18 +1411,20 @@ class _StudyDiagnosticsPageState extends State<StudyDiagnosticsPage> {
   @override
   Widget build(BuildContext context) => NavigationView(
     content: ScaffoldPage.scrollable(
-      header: PageHeader(
-        title: const Text('Conferir sugestões'),
-        leading: _StudyButton(
-          label: 'Voltar',
-          onPressed: () => Navigator.pop(context),
-        ),
+      header: _FocoCabecalho(
+        titulo: 'Conferir sugestões',
+        rotuloSair: 'Sair da conferência',
+        detalhe: switch (_items?.length) {
+          null || 0 => null,
+          1 => '1 sugestão para conferir',
+          final n => '$n sugestões para conferir',
+        },
       ),
       children: [
-        const Text(
+        const AvisoLinha(
           'A IA pode errar. Uma sugestão só entra na sua revisão depois da sua confirmação.',
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: Espaco.md),
         if (_busy) const ProgressBar(),
         if (_error != null) ...[
           _StudyNotice(_error!, error: true),
@@ -1208,39 +1450,51 @@ class _StudyDiagnosticsPageState extends State<StudyDiagnosticsPage> {
           _StudyCard(
             accent: MistakeMapDesign.amber,
             children: [
-              Text(item.subjectName),
-              const SizedBox(height: 8),
+              Text(
+                item.subjectName.toUpperCase(),
+                style: Tipo.sobretitulo.copyWith(
+                  color: MistakeMapDesign.amberInk,
+                ),
+              ),
+              const SizedBox(height: Espaco.xxs),
               _StudyTitle(item.conceptName),
-              const SizedBox(height: 8),
+              const SizedBox(height: Espaco.xxs),
               Text(
                 '${item.status == 'confirmed' ? 'Confirmado por você' : 'Sugestão'}: ${categoryLabels[item.category] ?? item.category}',
+                style: Tipo.tituloComponente.copyWith(
+                  fontSize: 14,
+                  color: MistakeMapDesign.amberInk,
+                ),
               ),
               if (item.prompt.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                SelectableText(item.prompt),
+                const SizedBox(height: Espaco.sm),
+                SelectableText(item.prompt, style: Tipo.corpo),
               ],
-              const SizedBox(height: 16),
-              SelectableText(item.evidence),
-              const SizedBox(height: 24),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              const SizedBox(height: Espaco.sm),
+              SelectableText(item.evidence, style: Tipo.secundario),
+              const SizedBox(height: Espaco.md),
+              if (item.status != 'confirmed') ...[
+                _StudyButton(
+                  label: 'Confirmar',
+                  primary: true,
+                  onPressed: _busy ? null : () => _decide(item, 'confirmed'),
+                ),
+                const SizedBox(height: Espaco.xs),
+              ],
+              Row(
                 children: [
-                  if (item.status != 'confirmed')
-                    _StudyButton(
-                      label: 'Confirmar',
-                      primary: true,
-                      onPressed: _busy
-                          ? null
-                          : () => _decide(item, 'confirmed'),
+                  Expanded(
+                    child: _StudyButton(
+                      label: 'Corrigir',
+                      onPressed: _busy ? null : () => _correct(item),
                     ),
-                  _StudyButton(
-                    label: 'Corrigir',
-                    onPressed: _busy ? null : () => _correct(item),
                   ),
-                  _StudyButton(
-                    label: 'Rejeitar',
-                    onPressed: _busy ? null : () => _decide(item, 'rejected'),
+                  const SizedBox(width: Espaco.xs),
+                  Expanded(
+                    child: _StudyButton(
+                      label: 'Rejeitar',
+                      onPressed: _busy ? null : () => _decide(item, 'rejected'),
+                    ),
                   ),
                 ],
               ),
