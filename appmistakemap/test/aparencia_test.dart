@@ -1,7 +1,9 @@
 import 'package:appmistakemap/theme/aparencia.dart';
+import 'package:appmistakemap/theme/aparencia_dialogo.dart';
 import 'package:appmistakemap/theme/design_tokens.dart';
-import 'package:flutter/widgets.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Widget const que lê um token no build, como os do app.
 class _Amostra extends StatelessWidget {
@@ -84,5 +86,41 @@ void main() {
         expect(contraste(tinta, fundo), greaterThanOrEqualTo(4.5));
       }
     }
+  });
+
+  testWidgets('Mais > Aparência troca o tema na hora e salva a escolha', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final aparencia = Aparencia();
+    await tester.pumpWidget(
+      AparenciaApp(
+        aparencia: aparencia,
+        builder: (_) => FluentApp(
+          home: Builder(
+            builder: (context) => Center(
+              child: Button(
+                child: const Text('abrir'),
+                onPressed: () =>
+                    mostrarAparencia(context, aparencia: aparencia),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('abrir'));
+    await tester.pumpAndSettle();
+    expect(find.text('Igual ao aparelho'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('aparencia-escuro')));
+    await tester.pumpAndSettle();
+    expect(aparencia.value, ModoAparencia.escuro);
+    expect(MistakeMapDesign.escuro, isTrue);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('mistakemap.aparencia'), 'escuro');
+    await tester.tap(find.text('Pronto'));
+    await tester.pumpAndSettle();
+    expect(find.text('Aparência'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 }

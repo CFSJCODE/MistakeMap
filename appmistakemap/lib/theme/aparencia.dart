@@ -21,19 +21,22 @@ enum ModoAparencia {
 /// aparência efetiva muda, a paleta é trocada e a árvore inteira é
 /// reconstruída, inclusive os widgets `const` (eles leem os tokens no build).
 ///
-/// O modo escuro fica escondido ([disponivel] = false) até todas as telas do
-/// aluno terem saído das cores fixas. Para testar antes disso:
-/// `--dart-define=MISTAKEMAP_MODO_ESCURO=true`.
+/// A escolha fica em Mais > Aparência. Sem escolha salva, segue o aparelho.
+/// Para gerar uma build só clara: `--dart-define=MISTAKEMAP_MODO_ESCURO=false`.
 class Aparencia extends ValueNotifier<ModoAparencia> {
   Aparencia([super.value = ModoAparencia.claro]);
 
   static final instancia = Aparencia();
 
-  static const disponivel = bool.fromEnvironment('MISTAKEMAP_MODO_ESCURO');
+  static const disponivel = bool.fromEnvironment(
+    'MISTAKEMAP_MODO_ESCURO',
+    defaultValue: true,
+  );
 
   static const _chave = 'mistakemap.aparencia';
 
-  /// Lê a escolha salva. Sem o modo escuro liberado, o app fica no claro.
+  /// Lê a escolha salva (sem escolha: igual ao aparelho). Com o modo escuro
+  /// desligado na build, o app fica no claro.
   Future<void> carregar() async {
     if (!disponivel) return;
     try {
