@@ -38,7 +38,7 @@ class TelaEntradaPorPerfil extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
             children: [
-              const Text(
+              Text(
                 'Como você vai entrar?',
                 key: ValueKey('entrada-titulo'),
                 style: TextStyle(
@@ -52,10 +52,7 @@ class TelaEntradaPorPerfil extends StatelessWidget {
                 subtitulo ??
                     'Escolha o perfil. Em seguida, entre com o e-mail e a '
                         'senha da conta desse perfil.',
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: MistakeMapDesign.content,
-                ),
+                style: TextStyle(fontSize: 16, color: MistakeMapDesign.content),
               ),
               const SizedBox(height: 24),
               LayoutBuilder(

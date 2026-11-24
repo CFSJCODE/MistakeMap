@@ -51,7 +51,7 @@ abstract final class MistakeMapControls {
         if (states.contains(WidgetState.focused)) {
           return RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius),
-            side: const BorderSide(color: MistakeMapDesign.aquaInk, width: 2),
+            side: BorderSide(color: MistakeMapDesign.aquaInk, width: 2),
           );
         }
         if (clear) {
@@ -84,7 +84,7 @@ abstract final class MistakeMapControls {
 
   static ShapeBorder get menuShape => RoundedRectangleBorder(
     borderRadius: BorderRadius.circular(14),
-    side: const BorderSide(color: MistakeMapDesign.border),
+    side: BorderSide(color: MistakeMapDesign.border),
   );
 }
 

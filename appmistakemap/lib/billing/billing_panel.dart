@@ -277,7 +277,7 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
             pagante == 'finance'
                 ? 'Plano e pagamento ficam com o Financeiro/Compras da escola.'
                 : 'Plano e pagamento ficam com o dono da escola.',
-            style: const TextStyle(color: MistakeMapDesign.content),
+            style: TextStyle(color: MistakeMapDesign.content),
           ),
         if (verValores) ...[
           Wrap(
@@ -335,7 +335,7 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
             ],
           ),
           if (paga && !demo && widget.mostrarCobrancaTeste)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 8),
               child: Text(
                 r'A cobrança de teste gera um Pix real de R$ 5 para conferir '
@@ -345,7 +345,7 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
               ),
             ),
           if (!paga)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 8),
               child: Text(
                 'Nesta escola quem escolhe o plano e paga é o '
@@ -417,7 +417,7 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
               teclado: TextInputType.number,
               formatos: [FilteringTextInputFormatter.digitsOnly],
             ),
-            const Text(
+            Text(
               'Para pagar com cartão, o Asaas pede também o endereço e o '
               'telefone do titular:',
               style: TextStyle(color: MistakeMapDesign.steel),
@@ -473,11 +473,11 @@ class _Numero extends StatelessWidget {
     children: [
       Text(
         rotulo,
-        style: const TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
+        style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
       ),
       Text(
         valor,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: MistakeMapDesign.abyss,
@@ -567,10 +567,7 @@ class _LinhaFatura extends StatelessWidget {
           if (fatura['failure_reason'] != null && status != 'paid')
             Text(
               '${fatura['failure_reason']}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: MistakeMapDesign.steel,
-              ),
+              style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
             ),
           if (podePagar) ...[
             if ((status == 'awaiting_payment' || status == 'overdue') &&

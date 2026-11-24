@@ -136,7 +136,7 @@ class TeacherBar extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const ColoredBox(color: MistakeMapDesign.well),
+          ColoredBox(color: MistakeMapDesign.well),
           FractionallySizedBox(
             alignment: Alignment.centerLeft,
             widthFactor: fraction.clamp(0, 1).toDouble(),

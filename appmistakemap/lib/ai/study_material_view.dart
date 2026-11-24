@@ -301,7 +301,7 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
                 ? 'Baseado em ${material.sourceCount} exercício(s) seus.'
                 : 'Material introdutório: ainda há poucos exercícios '
                       'registrados nesta matéria.',
-            style: const TextStyle(color: MistakeMapDesign.steel),
+            style: TextStyle(color: MistakeMapDesign.steel),
           ),
         ),
         if (history.length > 1)
@@ -337,7 +337,7 @@ class _PracticeEntry extends StatelessWidget {
   Widget build(BuildContext context) => _panel(
     key: const Key('study-exercises'),
     children: [
-      const Text('Exercícios corrigidos pela IA', style: _panelTitle),
+      Text('Exercícios corrigidos pela IA', style: _panelTitle),
       Text(
         'Uma rodada de 3 a 5 exercícios inéditos de $subjectName, criados a '
         'partir dos enunciados que você errou. Você resolve com suas palavras '
@@ -382,7 +382,7 @@ class _StudyEmptyState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: mapTitleBlue,
@@ -409,11 +409,8 @@ Widget _panel({required List<Widget> children, Key? key}) => GlassSurface(
   ),
 );
 
-const _panelTitle = TextStyle(
-  fontSize: 18,
-  fontWeight: FontWeight.w600,
-  color: mapTitleBlue,
-);
+TextStyle get _panelTitle =>
+    TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: mapTitleBlue);
 
 class _SummaryPanel extends StatelessWidget {
   final StudySummary summary;
@@ -452,14 +449,14 @@ class _SummaryPanel extends StatelessWidget {
         Text(summary.title, style: _panelTitle),
         if (summary.overview.isNotEmpty) Text(summary.overview),
         if (summary.keyPoints.isNotEmpty) ...[
-          const Text(
+          Text(
             'Pontos-chave',
             style: TextStyle(fontWeight: FontWeight.w600, color: mapTitleBlue),
           ),
           _bullets(summary.keyPoints, Icons.check_circle_outline),
         ],
         if (summary.commonMistakes.isNotEmpty) ...[
-          const Text(
+          Text(
             'Onde você costuma errar',
             style: TextStyle(fontWeight: FontWeight.w600, color: mapTitleBlue),
           ),
@@ -519,7 +516,7 @@ class _FlashcardDeckState extends State<FlashcardDeck> {
       return _panel(
         key: const Key('study-flashcards-done'),
         children: [
-          const Text('Revisão concluída', style: _panelTitle),
+          Text('Revisão concluída', style: _panelTitle),
           Text('Você já sabia $_known de ${_deck.length} cartão(ões).'),
           if (review.isNotEmpty)
             ElevatedButton.icon(
@@ -542,7 +539,7 @@ class _FlashcardDeckState extends State<FlashcardDeck> {
         Text(
           'Cartão ${_index + 1} de ${_deck.length}'
           '${card.concept.isEmpty ? '' : ' · ${card.concept}'}',
-          style: const TextStyle(color: MistakeMapDesign.steel),
+          style: TextStyle(color: MistakeMapDesign.steel),
         ),
         GradientBar(
           value: _index / _deck.length,
@@ -589,7 +586,7 @@ class _FlashcardDeckState extends State<FlashcardDeck> {
               ? 'Você sabia a resposta?'
               : 'Toque no cartão para ver a resposta.',
           textAlign: TextAlign.center,
-          style: const TextStyle(color: MistakeMapDesign.steel),
+          style: TextStyle(color: MistakeMapDesign.steel),
         ),
         if (_flipped)
           Row(
@@ -685,7 +682,7 @@ class _QuizPanelState extends State<QuizPanel> {
         Text(
           'Questão ${_index + 1} de ${_quiz.length}'
           '${question.concept.isEmpty ? '' : ' · ${question.concept}'}',
-          style: const TextStyle(color: MistakeMapDesign.steel),
+          style: TextStyle(color: MistakeMapDesign.steel),
         ),
         GradientBar(
           value: _index / _quiz.length,
@@ -767,7 +764,7 @@ class _QuizPanelState extends State<QuizPanel> {
     return _panel(
       key: const Key('study-quiz-summary'),
       children: [
-        const Text('Resultado do quiz', style: _panelTitle),
+        Text('Resultado do quiz', style: _panelTitle),
         Wrap(
           spacing: 16,
           runSpacing: 12,
@@ -782,7 +779,7 @@ class _QuizPanelState extends State<QuizPanel> {
           ],
         ),
         if (missed.isNotEmpty) ...[
-          const Text(
+          Text(
             'Revise estes assuntos',
             style: TextStyle(fontWeight: FontWeight.w600, color: mapTitleBlue),
           ),
@@ -857,7 +854,7 @@ class _QuizPanelState extends State<QuizPanel> {
               if (item.explanation.isNotEmpty)
                 Text(
                   item.explanation,
-                  style: const TextStyle(color: MistakeMapDesign.steel),
+                  style: TextStyle(color: MistakeMapDesign.steel),
                 ),
             ],
           ),

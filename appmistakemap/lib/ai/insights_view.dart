@@ -186,7 +186,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
     clipBehavior: Clip.antiAlias,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
-      side: const BorderSide(color: MistakeMapDesign.border),
+      side: BorderSide(color: MistakeMapDesign.border),
     ),
     child: ExpansionTile(
       controller: _analysis,
@@ -194,12 +194,12 @@ class _ErrorMapViewState extends State<ErrorMapView> {
       onExpansionChanged: (open) => setState(() => _analysisOpen = open),
       // O formulário guarda o que já foi digitado ao recolher o painel.
       maintainState: true,
-      leading: const Icon(Icons.lightbulb_outline, color: mapTitleBlue),
-      title: const Text(
+      leading: Icon(Icons.lightbulb_outline, color: mapTitleBlue),
+      title: Text(
         'Analisar com a IA',
         style: TextStyle(color: mapTitleBlue, fontWeight: FontWeight.w600),
       ),
-      subtitle: const Text(
+      subtitle: Text(
         'Registre uma tentativa; a correção entra neste mapa.',
         style: TextStyle(color: mapContentBlue),
       ),
@@ -282,7 +282,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                 padding: const EdgeInsets.all(24),
                 child: Text(
                   '$label · ${_qtd(attempts.length, 'tentativa', 'tentativas')}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     color: mapTitleBlue,
                     fontWeight: FontWeight.w600,
@@ -402,13 +402,13 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                   RetryMessage(message: _error!, retry: _reload)
                 else if (_attempts.isEmpty) ...[
                   const SizedBox(height: 48),
-                  const Icon(
+                  Icon(
                     Icons.account_tree_outlined,
                     size: 64,
                     color: MistakeMapDesign.violetInk,
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Seu mapa ainda está vazio',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -418,7 +418,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Analise um exercício abaixo para identificar suas fragilidades conceituais.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, color: mapContentBlue),
@@ -427,7 +427,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                   // O Mapa é o diagnóstico; treinar fica no Estudar e as
                   // regras do aluno, no Caderno. O convite para estudar vem
                   // depois do diagnóstico, como próximo passo.
-                  const Text(
+                  Text(
                     'Diagnóstico dos seus erros: o que se repete, em quais '
                     'matérias e em quais conceitos.',
                     key: Key('map-role'),
@@ -473,7 +473,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                     style: Tipo.tituloComponente,
                   ),
                   const SizedBox(height: Espaco.xxs),
-                  const Text(
+                  Text(
                     'As frequências contam tentativas distintas. As classificações são sugestões da IA; toque para conferir os exercícios.',
                     style: Tipo.secundario,
                   ),
@@ -632,7 +632,7 @@ class _StudyCallout extends StatelessWidget {
               spacing: 12,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
+                Icon(
                   Icons.auto_stories_outlined,
                   size: 28,
                   color: MistakeMapDesign.violetInk,
@@ -642,7 +642,7 @@ class _StudyCallout extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     spacing: 4,
                     children: [
-                      const Text(
+                      Text(
                         'Próximo passo: treinar',
                         style: TextStyle(
                           fontSize: 17,
@@ -685,7 +685,7 @@ class SectionLabel extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 16),
     child: Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 20,
         color: mapTitleBlue,
         fontWeight: FontWeight.w600,
@@ -854,10 +854,7 @@ class _ConceptGraphState extends State<ConceptGraph> {
                       const SizedBox(width: 6),
                       Text(
                         entry.$1,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: mapContentBlue,
-                        ),
+                        style: TextStyle(fontSize: 12, color: mapContentBlue),
                       ),
                     ],
                   ),
@@ -987,7 +984,7 @@ class _GraphNodeButton extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   height: 1.1,
                   fontWeight: FontWeight.w600,
@@ -1197,7 +1194,7 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
             if (attempt != null) ...[
               Text(
                 '${attempt.subjectName} · ${attempt.statusLabel}',
-                style: const TextStyle(color: mapContentBlue),
+                style: TextStyle(color: mapContentBlue),
               ),
               const SizedBox(height: 24),
               const SectionLabel('Enunciado'),
@@ -1237,7 +1234,7 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
                       : analysis.isCorrect!
                       ? 'A IA considerou sua resposta correta.'
                       : 'A IA identificou pontos a corrigir.',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     color: mapTitleBlue,
                     fontWeight: FontWeight.w600,
@@ -1277,7 +1274,7 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
                         children: [
                           Text(
                             '${error.label} · ${error.concept}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               color: mapContentBlue,
                               fontWeight: FontWeight.w600,
@@ -1493,7 +1490,7 @@ class _PracticeViewState extends State<PracticeView> {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: mapTitleBlue,
@@ -1577,7 +1574,7 @@ class _PracticeViewState extends State<PracticeView> {
               : 'Percentuais calculados sobre ${summary.assessedCount} '
                     'resposta(s) classificadas. Inconclusivas ficam fora do cálculo.',
         ),
-        const Text(
+        Text(
           'Assuntos mais errados',
           style: TextStyle(fontWeight: FontWeight.w600, color: mapTitleBlue),
         ),
@@ -1608,14 +1605,14 @@ class _PracticeViewState extends State<PracticeView> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            const Text(
+            Text(
               'A IA cria exercícios a partir dos conceitos que você mais errou, '
               'e mais recentemente, nesta matéria. Sem histórico, ela começa '
               'com questões diagnósticas.',
               style: Tipo.corpo,
             ),
             const SizedBox(height: Espaco.xxs),
-            const Text(
+            Text(
               'Conceitos que você voltou a acertar perdem prioridade, e '
               'respostas antigas ainda sem análise são avaliadas antes.',
               style: Tipo.secundario,
@@ -1722,7 +1719,7 @@ class _PracticeViewState extends State<PracticeView> {
                       children: [
                         Text(
                           'Exercício ${index + 1}${_exercises[index].focusConcept.isEmpty ? '' : ' · ${_exercises[index].focusConcept}'}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: mapTitleBlue,

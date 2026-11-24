@@ -13,7 +13,7 @@ class ErrorNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     liveRegion: true,
-    child: Text(message, style: const TextStyle(color: MistakeMapDesign.bad)),
+    child: Text(message, style: TextStyle(color: MistakeMapDesign.bad)),
   );
 }
 
@@ -36,18 +36,18 @@ class MaterialMetric extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: MistakeMapDesign.steel)),
+        Text(label, style: TextStyle(color: MistakeMapDesign.steel)),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w700,
             color: MistakeMapDesign.primary,
           ),
         ),
         if (detail != null)
-          Text(detail!, style: const TextStyle(color: MistakeMapDesign.steel)),
+          Text(detail!, style: TextStyle(color: MistakeMapDesign.steel)),
       ],
     ),
   );
@@ -84,12 +84,14 @@ class AuroraScaffold extends StatelessWidget {
 abstract final class MistakeMapMaterialControls {
   static ButtonStyle button(
     BuildContext context, {
-    Color background = MistakeMapDesign.raised,
-    Color foreground = MistakeMapDesign.content,
+    Color? background,
+    Color? foreground,
     bool quiet = false,
     double radius = 12,
     BorderSide? border,
   }) {
+    final fundo = background ?? MistakeMapDesign.raised;
+    final tinta = foreground ?? MistakeMapDesign.content;
     final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : MistakeMapMotion.hover;
@@ -109,7 +111,7 @@ abstract final class MistakeMapMaterialControls {
         if (states.contains(WidgetState.disabled)) {
           return MistakeMapDesign.disabledInk;
         }
-        return foreground;
+        return tinta;
       }),
       // The layer below owns the fill, so the Material never snaps to a color.
       backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
@@ -120,8 +122,8 @@ abstract final class MistakeMapMaterialControls {
       backgroundBuilder: (context, states, child) => _MaterialHoverSurface(
         states: states,
         duration: duration,
-        background: background,
-        foreground: foreground,
+        background: fundo,
+        foreground: tinta,
         radius: radius,
         border:
             border ??

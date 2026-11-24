@@ -12,7 +12,7 @@ enum _FiltroSituacao { todas, naoRespondidas, paraRevisar, certas }
 _EstadoTentativa _estadoQuestao(Questao q) {
   final u = q.ultima;
   if (u == null) {
-    return const _EstadoTentativa(
+    return _EstadoTentativa(
       'Não respondida',
       MistakeMapDesign.mist,
       MistakeMapDesign.steel,
@@ -20,7 +20,7 @@ _EstadoTentativa _estadoQuestao(Questao q) {
     );
   }
   if (u.correta == null) {
-    return const _EstadoTentativa(
+    return _EstadoTentativa(
       'Aguardando correção',
       MistakeMapDesign.violet,
       MistakeMapDesign.violetInk,
@@ -28,7 +28,7 @@ _EstadoTentativa _estadoQuestao(Questao q) {
     );
   }
   if (u.correta!) {
-    return const _EstadoTentativa(
+    return _EstadoTentativa(
       'Acertou',
       MistakeMapDesign.mint,
       MistakeMapDesign.mintInk,
@@ -264,7 +264,7 @@ class _ResumoBanco extends StatelessWidget {
       acento: MistakeMapDesign.azure,
       child: Row(
         children: [
-          const GlassIconTile(
+          GlassIconTile(
             icon: WindowsIcons.education,
             ink: MistakeMapDesign.azureInk,
             accent: MistakeMapDesign.azure,

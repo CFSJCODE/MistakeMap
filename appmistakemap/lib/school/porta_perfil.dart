@@ -327,7 +327,7 @@ class SeletorPerfil extends StatelessWidget {
       16,
       6,
     ),
-    decoration: const BoxDecoration(
+    decoration: BoxDecoration(
       color: MistakeMapDesign.surface,
       border: Border(bottom: BorderSide(color: MistakeMapDesign.border)),
     ),
@@ -355,7 +355,7 @@ class SeletorPerfil extends StatelessWidget {
             ),
           )
         else
-          const Text(
+          Text(
             'Perfil',
             style: TextStyle(
               fontWeight: FontWeight.w600,
@@ -554,7 +554,7 @@ class _TelaConsentimentoPendenteState extends State<TelaConsentimentoPendente> {
                     onPressed: widget.onContinuar,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Se você entrar numa turma da escola, a escola cuida do '
                     'consentimento e este passo some.',
                     style: TextStyle(color: MistakeMapDesign.steel),

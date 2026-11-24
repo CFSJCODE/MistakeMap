@@ -1026,7 +1026,7 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
         ),
       ),
       const SizedBox(width: 12),
-      const Expanded(
+      Expanded(
         child: Text(
           'Seu espaço de estudos',
           maxLines: 2,

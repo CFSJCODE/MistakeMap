@@ -12,10 +12,10 @@ import '../sync/sincronizador.dart';
 import '../theme/design_tokens.dart';
 import '../theme/motion.dart';
 
-const mapTitleBlue = MistakeMapDesign.primary;
-const mapContentBlue = MistakeMapDesign.content;
-const mapBackground = MistakeMapDesign.background;
-const mapSurface = MistakeMapDesign.surface;
+Color get mapTitleBlue => MistakeMapDesign.primary;
+Color get mapContentBlue => MistakeMapDesign.content;
+Color get mapBackground => MistakeMapDesign.background;
+Color get mapSurface => MistakeMapDesign.surface;
 
 class ExerciseSubmissionView extends StatefulWidget {
   final String userId;
@@ -289,7 +289,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!widget.embedded) ...[
-            const Text(
+            Text(
               'Registre uma tentativa para compreender seus erros.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 19, color: mapContentBlue),
@@ -364,7 +364,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                   MistakeMapMaterialControls.button(
                     context,
                     radius: 10,
-                    border: const BorderSide(color: mapContentBlue),
+                    border: BorderSide(color: mapContentBlue),
                   ).copyWith(
                     padding: const WidgetStatePropertyAll(
                       EdgeInsets.symmetric(vertical: 16),
@@ -393,7 +393,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
             ),
           ],
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'A IA sugere uma correção e identifica padrões. Confira a explicação antes de estudar por ela.',
             style: TextStyle(fontSize: 14, color: mapContentBlue),
           ),
@@ -401,10 +401,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
             const SizedBox(height: 16),
             Semantics(
               liveRegion: true,
-              child: Text(
-                _notice!,
-                style: const TextStyle(color: mapContentBlue),
-              ),
+              child: Text(_notice!, style: TextStyle(color: mapContentBlue)),
             ),
           ],
           if (_error != null) ...[
@@ -423,7 +420,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
             key: const Key('submit-exercise'),
             onPressed: _busy ? null : _submit,
             icon: _busy
-                ? const SizedBox(
+                ? SizedBox(
                     height: 18,
                     width: 18,
                     child: CircularProgressIndicator(

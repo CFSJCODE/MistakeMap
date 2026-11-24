@@ -192,7 +192,7 @@ class _SchoolReportsPageState extends State<SchoolReportsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Relatórios',
                     style: TextStyle(
                       fontSize: 26,
@@ -202,7 +202,7 @@ class _SchoolReportsPageState extends State<SchoolReportsPage> {
                   ),
                   Text(
                     r?.schoolName ?? widget.schoolName,
-                    style: const TextStyle(color: MistakeMapDesign.steel),
+                    style: TextStyle(color: MistakeMapDesign.steel),
                   ),
                 ],
               ),
@@ -354,7 +354,7 @@ class _PedagogicalView extends StatelessWidget {
                     : 'Por privacidade, o mapa aparece quando 5 ou mais alunos '
                           'tiverem erros analisados (hoje: '
                           '${report.errorStudents}).',
-                style: const TextStyle(color: MistakeMapDesign.content),
+                style: TextStyle(color: MistakeMapDesign.content),
               )
             else ...[
               const _Subtitle('Erros por tipo'),
@@ -383,7 +383,7 @@ class _PedagogicalView extends StatelessWidget {
           subtitulo: 'Alunos que usaram nos últimos 28 dias.',
           children: [
             if (report.classes.isEmpty)
-              const Text(
+              Text(
                 'Nenhuma turma ligada à escola ainda.',
                 style: TextStyle(color: MistakeMapDesign.content),
               )
@@ -412,7 +412,7 @@ class _ClassRow extends StatelessWidget {
           children: [
             Text(
               c.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: MistakeMapDesign.deep,
               ),
@@ -420,7 +420,7 @@ class _ClassRow extends StatelessWidget {
             Text(
               '${formatInt(c.active28d)} de ${formatInt(c.students)} ativos · '
               '${c.assignments} tarefas',
-              style: const TextStyle(color: MistakeMapDesign.steel),
+              style: TextStyle(color: MistakeMapDesign.steel),
             ),
           ],
         ),
@@ -479,7 +479,7 @@ class _Heatmap extends StatelessWidget {
                       child: Text(
                         errorTypeLabel(t),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: MistakeMapDesign.steel,
                         ),
@@ -496,7 +496,7 @@ class _Heatmap extends StatelessWidget {
                         c.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: MistakeMapDesign.deep),
+                        style: TextStyle(color: MistakeMapDesign.deep),
                       ),
                     ),
                     for (final t in types) _cell(c, t, maxCell),
@@ -509,7 +509,7 @@ class _Heatmap extends StatelessWidget {
         Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            const Text(
+            Text(
               'Menos',
               style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
             ),
@@ -525,7 +525,7 @@ class _Heatmap extends StatelessWidget {
                 ),
               ),
             const SizedBox(width: 4),
-            const Text(
+            Text(
               'Mais erros',
               style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
             ),
@@ -610,7 +610,7 @@ class _FinancialView extends StatelessWidget {
           subtitulo: 'Pago e em aberto em cada mês de referência.',
           children: [
             if (byMonth.isEmpty)
-              const Text(
+              Text(
                 'Nenhuma fatura no período.',
                 style: TextStyle(color: MistakeMapDesign.content),
               )
@@ -629,7 +629,7 @@ class _FinancialView extends StatelessWidget {
           subtitulo: 'Valor pago em cada forma no período.',
           children: [
             if (report.byMethod.isEmpty)
-              const Text(
+              Text(
                 'Nenhum pagamento no período.',
                 style: TextStyle(color: MistakeMapDesign.content),
               )
@@ -678,7 +678,7 @@ class _FinancialView extends StatelessWidget {
           titulo: 'Situação das faturas',
           children: [
             if (report.byStatus.isEmpty)
-              const Text(
+              Text(
                 'Nenhuma fatura no período.',
                 style: TextStyle(color: MistakeMapDesign.content),
               )
@@ -706,7 +706,7 @@ class _FinancialView extends StatelessWidget {
           subtitulo: 'As mais recentes primeiro.',
           children: [
             if (report.invoices.isEmpty)
-              const Text(
+              Text(
                 'Nenhuma fatura no período.',
                 style: TextStyle(color: MistakeMapDesign.content),
               )
@@ -741,7 +741,7 @@ class _InvoiceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(vertical: 10),
-    decoration: const BoxDecoration(
+    decoration: BoxDecoration(
       border: Border(bottom: BorderSide(color: MistakeMapDesign.hairline)),
     ),
     child: Row(
@@ -754,7 +754,7 @@ class _InvoiceRow extends StatelessWidget {
                 '${monthLabel(i.referenceMonth)} · '
                 '${invoiceKindLabel(i.kind)} · '
                 '${formatInt(i.students)} alunos',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: MistakeMapDesign.deep,
                 ),
@@ -764,14 +764,14 @@ class _InvoiceRow extends StatelessWidget {
                 '${invoiceStatusLabels[i.status] ?? i.status}'
                 '${i.nfseNumber == null ? '' : ' · NFS-e ${i.nfseNumber}'}'
                 '${i.purchaseOrder == null ? '' : ' · ${i.purchaseOrder}'}',
-                style: const TextStyle(color: MistakeMapDesign.steel),
+                style: TextStyle(color: MistakeMapDesign.steel),
               ),
             ],
           ),
         ),
         Text(
           formatBrl(i.total),
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             color: MistakeMapDesign.deep,
           ),
@@ -794,7 +794,7 @@ class _SampleNote extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: MistakeMapDesign.amber.withValues(alpha: .5)),
     ),
-    child: const Row(
+    child: Row(
       children: [
         Icon(FluentIcons.info, color: MistakeMapDesign.amberInk, size: 16),
         SizedBox(width: 8),
@@ -846,7 +846,7 @@ class _KpiRow extends StatelessWidget {
                   children: [
                     Text(
                       k.label,
-                      style: const TextStyle(color: MistakeMapDesign.steel),
+                      style: TextStyle(color: MistakeMapDesign.steel),
                     ),
                     const SizedBox(height: 4),
                     FittedBox(
@@ -854,7 +854,7 @@ class _KpiRow extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         k.value,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           color: MistakeMapDesign.primary,
@@ -864,7 +864,7 @@ class _KpiRow extends StatelessWidget {
                     if (k.note != null)
                       Text(
                         k.note!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: MistakeMapDesign.steel,
                         ),
@@ -887,7 +887,7 @@ class _Subtitle extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 8),
     child: Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontWeight: FontWeight.w600,
         color: MistakeMapDesign.deep,
       ),
@@ -913,10 +913,7 @@ class _Chip extends StatelessWidget {
         Icon(icon, size: 14, color: MistakeMapDesign.steel),
         const SizedBox(width: 6),
         Flexible(
-          child: Text(
-            text,
-            style: const TextStyle(color: MistakeMapDesign.deep),
-          ),
+          child: Text(text, style: TextStyle(color: MistakeMapDesign.deep)),
         ),
       ],
     ),
@@ -941,10 +938,7 @@ class _LegendItem extends StatelessWidget {
       ),
       const SizedBox(width: 8),
       Flexible(
-        child: Text(
-          label,
-          style: const TextStyle(color: MistakeMapDesign.deep),
-        ),
+        child: Text(label, style: TextStyle(color: MistakeMapDesign.deep)),
       ),
     ],
   );
@@ -983,7 +977,7 @@ class _MonthBars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (values.isEmpty) {
-      return const Text(
+      return Text(
         'Sem dados no período.',
         style: TextStyle(color: MistakeMapDesign.content),
       );
@@ -995,7 +989,7 @@ class _MonthBars extends StatelessWidget {
       return Text(
         'Nenhum registro no período (${monthLabel(months.last)}: '
         '${format(0)}).',
-        style: const TextStyle(color: MistakeMapDesign.content),
+        style: TextStyle(color: MistakeMapDesign.content),
       );
     }
     return Semantics(
@@ -1009,7 +1003,7 @@ class _MonthBars extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Text(
                 '${monthLabel(months.last)}: ${format(values.last)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: MistakeMapDesign.deep,
                 ),
@@ -1091,10 +1085,7 @@ class _MonthAxis extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.clip,
-              style: const TextStyle(
-                fontSize: 11,
-                color: MistakeMapDesign.steel,
-              ),
+              style: TextStyle(fontSize: 11, color: MistakeMapDesign.steel),
             ),
           ),
       ],
@@ -1195,12 +1186,12 @@ class _HorizontalBars extends StatelessWidget {
                     Expanded(
                       child: Text(
                         r.label,
-                        style: const TextStyle(color: MistakeMapDesign.deep),
+                        style: TextStyle(color: MistakeMapDesign.deep),
                       ),
                     ),
                     Text(
                       r.detail,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         color: MistakeMapDesign.steel,
                       ),

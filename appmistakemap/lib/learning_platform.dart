@@ -366,7 +366,7 @@ class _PostEditorState extends State<_PostEditor> {
           TextBox(controller: _link, placeholder: 'Link HTTPS (opcional)'),
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(_error!, style: const TextStyle(color: Cores.vermelho)),
+            Text(_error!, style: TextStyle(color: Cores.vermelho)),
           ],
         ],
       ),
