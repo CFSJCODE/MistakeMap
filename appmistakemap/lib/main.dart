@@ -1569,10 +1569,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
   /// Voltar do sistema: primeiro desempilha o que estiver aberto dentro do
   /// Mapa; numa aba que não é o Início, volta ao Início; no Início, sai.
   void _voltar() {
-    if (_indiceAtual == 0) {
-      VoltarAosPerfis.of(context)?.call();
-      return;
-    }
+    if (_indiceAtual == 0) return;
     if (_indiceAtual == _mapa) {
       final pilha = _mapaNavegador.currentState;
       if (pilha != null && pilha.canPop()) {
@@ -1659,7 +1656,7 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       onStudy: () => _irAoMapa(ErrorMapRequest.study),
       onAnalysis: () => _irAoMapa(ErrorMapRequest.analysis),
       child: PopScope(
-        canPop: _indiceAtual == 0 && VoltarAosPerfis.of(context) == null,
+        canPop: _indiceAtual == 0,
         onPopInvokedWithResult: (didPop, result) {
           if (!didPop) _voltar();
         },
@@ -5780,7 +5777,6 @@ class TelaEquipe extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final voltarAosPerfis = VoltarAosPerfis.of(context);
     return _PaginaVidro(
       titulo: 'Central da Equipe',
       corpo: Padding(
@@ -5803,7 +5799,6 @@ class TelaEquipe extends StatelessWidget {
             servidor: Uri.parse(_supabaseUrl).host,
             patch: atualizacoes.codigo.patchAtual,
           ),
-          onVoltarAosPerfis: voltarAosPerfis,
           onAbrirAdministracao: user.isAdmin
               ? () => Navigator.of(context).push(
                   MistakeMapPageRoute(

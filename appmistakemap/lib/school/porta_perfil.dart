@@ -94,7 +94,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
   bool _consentimentoDispensado = false;
 
   /// Tela inicial do seletor (lista de perfis): aparece a cada abertura do
-  /// app (nos dois apps) e pelo voltar.
+  /// app quando a conta tem dois perfis ou mais.
   late bool _naInicial = widget.onVoltarAoInicio == null;
 
   /// Perfil pedido no "Já tenho conta: entrar" antes deste login.
@@ -191,15 +191,6 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     );
   }
 
-  void _voltarAosPerfis() {
-    final inicio = widget.onVoltarAoInicio;
-    if (inicio != null) {
-      inicio();
-      return;
-    }
-    setState(() => _naInicial = true);
-  }
-
   /// Sai para o login (no app da equipe, com os atalhos das contas).
   Future<void> _trocarConta() async {
     final sair = widget.sair ?? () => Supabase.instance.client.auth.signOut();
@@ -230,10 +221,6 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     }
     final perfis = ctx.perfis;
     final ativo = ctx.perfilInicial(_chaveAtiva);
-    // Com o início do app (perfis antes do login), o voltar e a barra de
-    // perfil aparecem mesmo para quem tem um perfil só.
-    final comInicio = widget.onVoltarAoInicio != null;
-    final variosPerfis = perfis.length >= 2 || comInicio;
     if (perfis.length >= 2 && _naInicial) {
       return TelaInicialPerfis(
         perfis: perfis,
@@ -269,25 +256,13 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
       );
     }
     final noEstudante = identical(conteudo, widget.estudante);
-    // Fora do app de estudante (que trata o próprio voltar e chama
-    // VoltarAosPerfis no Início), o voltar do sistema leva aos perfis.
-    if (!noEstudante && variosPerfis) {
-      conteudo = PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) _voltarAosPerfis();
-        },
-        child: conteudo,
-      );
-    }
-    // O app de estudante fica vivo (IndexedStack) ao trocar de perfil, para
-    // não perder abas, rascunhos e a fila de sincronização.
-    final pilha = VoltarAosPerfis(
-      onVoltar: variosPerfis ? _voltarAosPerfis : null,
-      child: IndexedStack(
-        index: noEstudante ? 0 : 1,
-        children: [widget.estudante, noEstudante ? const SizedBox() : conteudo],
-      ),
+    // O voltar do sistema não troca de perfil: fecha o que estiver aberto e,
+    // na primeira tela do perfil, fecha o app. Trocar de perfil é só pelo
+    // botão de conta. O app de estudante fica vivo (IndexedStack) ao trocar
+    // de perfil, para não perder abas, rascunhos e a fila de sincronização.
+    final pilha = IndexedStack(
+      index: noEstudante ? 0 : 1,
+      children: [widget.estudante, noEstudante ? const SizedBox() : conteudo],
     );
     // A troca de perfil, a aparência e o sair ficam no botão de conta do
     // topo de cada tela (sem pedir a senha de novo).
@@ -299,26 +274,6 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
       child: pilha,
     );
   }
-}
-
-/// Avisa o app de estudante de que existe a tela de perfis acima dele: no
-/// Início, o voltar do sistema leva para lá em vez de fechar o app.
-class VoltarAosPerfis extends InheritedWidget {
-  const VoltarAosPerfis({
-    super.key,
-    required this.onVoltar,
-    required super.child,
-  });
-
-  /// Nulo quando a conta tem um perfil só (o voltar fecha o app, como antes).
-  final VoidCallback? onVoltar;
-
-  static VoidCallback? of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<VoltarAosPerfis>()?.onVoltar;
-
-  @override
-  bool updateShouldNotify(VoltarAosPerfis old) =>
-      (old.onVoltar == null) != (onVoltar == null);
 }
 
 /// Tela inicial do seletor: todos os perfis da conta. O voltar daqui fecha o
