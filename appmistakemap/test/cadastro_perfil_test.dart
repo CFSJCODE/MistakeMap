@@ -564,6 +564,51 @@ void main() {
     expect(find.byType(TelaInicialPerfis), findsNothing);
   });
 
+  testWidgets('porta: estudante escondido não segura o voltar do painel', (
+    tester,
+  ) async {
+    var voltasNoEstudante = 0;
+    await _render(
+      tester,
+      PortaDePerfil(
+        usuarioId: _uid,
+        repositorio: _RepoFalso(
+          ctx: const ContextoPerfil(
+            papeis: [
+              PapelEscola(
+                escolaId: _escola,
+                escolaNome: 'Escola de Robótica',
+                papel: 'owner',
+              ),
+            ],
+          ),
+        ),
+        // Como o app de estudante numa aba que não é o Início: segura o
+        // voltar enquanto está na tela.
+        estudante: Builder(
+          builder: (context) => PopScope(
+            canPop: !PerfilEmTela.of(context),
+            onPopInvokedWithResult: (didPop, _) {
+              if (!didPop) voltasNoEstudante++;
+            },
+            child: const Column(
+              children: [Text('APP DO ESTUDANTE'), BotaoConta()],
+            ),
+          ),
+        ),
+      ),
+    );
+    await _tocar(tester, find.byKey(const ValueKey('perfil-student')));
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    expect(voltasNoEstudante, 1);
+
+    await _tocar(tester, find.byKey(const Key('botao-conta')));
+    await _tocar(tester, find.byKey(Key('conta-perfil-owner:$_escola')));
+    expect(find.text('Painel do dono'), findsOneWidget);
+    expect(await tester.binding.handlePopRoute(), isFalse);
+    expect(voltasNoEstudante, 1);
+  });
+
   testWidgets('porta: app da equipe abre nos perfis e troca de conta', (
     tester,
   ) async {

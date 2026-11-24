@@ -1656,7 +1656,8 @@ class _TelaNavegacaoState extends State<TelaNavegacao> {
       onStudy: () => _irAoMapa(ErrorMapRequest.study),
       onAnalysis: () => _irAoMapa(ErrorMapRequest.analysis),
       child: PopScope(
-        canPop: _indiceAtual == 0,
+        // Escondido atrás de outro perfil, não segura o voltar do painel.
+        canPop: _indiceAtual == 0 || !PerfilEmTela.of(context),
         onPopInvokedWithResult: (didPop, result) {
           if (!didPop) _voltar();
         },

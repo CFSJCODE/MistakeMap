@@ -260,9 +260,13 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
     // na primeira tela do perfil, fecha o app. Trocar de perfil é só pelo
     // botão de conta. O app de estudante fica vivo (IndexedStack) ao trocar
     // de perfil, para não perder abas, rascunhos e a fila de sincronização.
+    // Escondido, o app de estudante não pode segurar o voltar do painel.
     final pilha = IndexedStack(
       index: noEstudante ? 0 : 1,
-      children: [widget.estudante, noEstudante ? const SizedBox() : conteudo],
+      children: [
+        PerfilEmTela(visivel: noEstudante, child: widget.estudante),
+        noEstudante ? const SizedBox() : conteudo,
+      ],
     );
     // A troca de perfil, a aparência e o sair ficam no botão de conta do
     // topo de cada tela (sem pedir a senha de novo).
@@ -274,6 +278,22 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
       child: pilha,
     );
   }
+}
+
+/// Diz ao app de estudante se ele está na tela. Escondido atrás de outro
+/// perfil (IndexedStack), ele continua vivo, mas não trata o voltar.
+class PerfilEmTela extends InheritedWidget {
+  const PerfilEmTela({super.key, required this.visivel, required super.child});
+
+  final bool visivel;
+
+  /// Fora da porta de perfil, está sempre na tela.
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PerfilEmTela>()?.visivel ??
+      true;
+
+  @override
+  bool updateShouldNotify(PerfilEmTela old) => old.visivel != visivel;
 }
 
 /// Tela inicial do seletor: todos os perfis da conta. O voltar daqui fecha o
