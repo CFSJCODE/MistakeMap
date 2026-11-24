@@ -323,6 +323,10 @@ void main() {
           relatorios: _FakeReports(_report()),
         ),
       );
+      // Os relatórios ficam na seção própria do painel.
+      final secao = find.byKey(const Key('secao-relatorios'));
+      expect(secao, ped || fin ? findsOneWidget : findsNothing, reason: papel);
+      if (ped || fin) await _tap(tester, secao);
       expect(
         find.text('Relatório pedagógico'),
         ped ? findsOneWidget : findsNothing,
@@ -345,6 +349,7 @@ void main() {
         relatorios: _FakeReports(_report()),
       ),
     );
+    await _tap(tester, find.byKey(const Key('secao-relatorios')));
     await _tap(tester, find.text('Relatório financeiro'));
     expect(find.text('Forma de pagamento'), findsOneWidget);
     expect(find.text('Relatórios'), findsOneWidget);

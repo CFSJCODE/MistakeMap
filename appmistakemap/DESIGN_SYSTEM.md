@@ -312,6 +312,28 @@ no Início levava à lista de perfis) e o botão "Voltar à escolha de perfil"
 da Central da Equipe. A lista de perfis (`TelaInicialPerfis`) continua só
 como tela de abertura de quem tem dois perfis ou mais.
 
+### Perfis, etapa 3: seções dos painéis de escola
+
+O painel de escola deixou de ser uma página longa: cada perfil tem a própria
+barra de seções (`lib/school/secoes_escola.dart`). No celular (menos de
+720 px) ela fica embaixo, em fatias iguais com a pílula do acento do perfil;
+em telas largas, vira abas logo abaixo do cabeçalho, que quebram em duas
+linhas em vez de esconder seção. Só aparecem as seções com conteúdo para o
+papel:
+
+| Perfil | Seções |
+|---|---|
+| Dono | Visão geral · Pessoas · Equipes · Cobrança · Relatórios · TI |
+| Coordenação | Visão geral · Pessoas · Equipes · Cobrança · Relatórios |
+| Financeiro | Visão geral · Cobrança · Relatórios (+ Pessoas, se houver equipe) |
+| TI | Visão geral · Licenças · Pessoas |
+| Professor | Visão geral · Equipes (Turmas entram na etapa 4) |
+
+Os cartões são os mesmos de antes, só agrupados. Avisos e erros ficam acima
+da seção aberta. Voltar numa seção que não é a primeira leva à Visão geral;
+nela, fecha o app (regra da etapa 2). Na barra do celular, "Visão geral"
+aparece como "Início" (`rotuloCurto`). Keys: `secao-<chave>`.
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |
