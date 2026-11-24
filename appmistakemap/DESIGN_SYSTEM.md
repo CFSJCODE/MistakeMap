@@ -290,6 +290,22 @@ projeto). Esta etapa:
 - Painéis de escola no celular: ícone e botões numa linha, nome da escola
   na linha de baixo (não quebra no meio).
 
+### Perfis, etapa 2: regras do voltar
+
+O voltar (do aparelho, do navegador ou a seta do topo) segue as mesmas
+regras em todos os perfis e nunca troca de perfil:
+
+1. Página aberta por cima (detalhe, Sobre, Administração, diálogo): fecha.
+2. Dentro do Mapa: desempilha o que estiver aberto no Mapa.
+3. Aba que não é a primeira: volta à primeira aba (Início, no aluno).
+4. Primeira tela do perfil: fecha o app (no navegador, volta à página
+   anterior). Vale para quem tem um perfil ou vários.
+
+Trocar de perfil é só pelo botão de conta. Sai o `VoltarAosPerfis` (o voltar
+no Início levava à lista de perfis) e o botão "Voltar à escolha de perfil"
+da Central da Equipe. A lista de perfis (`TelaInicialPerfis`) continua só
+como tela de abertura de quem tem dois perfis ou mais.
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |

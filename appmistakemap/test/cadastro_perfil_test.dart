@@ -516,7 +516,7 @@ void main() {
     },
   );
 
-  testWidgets('porta: voltar leva à tela de perfis e dali a outro perfil', (
+  testWidgets('porta: voltar não troca de perfil; a troca é pelo botão', (
     tester,
   ) async {
     final repo = _RepoFalso(
@@ -544,13 +544,16 @@ void main() {
     await _tocar(tester, find.byKey(const ValueKey('perfil-owner:$_escola')));
     expect(find.text('Painel do dono'), findsOneWidget);
 
-    // Voltar do aparelho no painel: abre a tela de perfis.
-    await tester.binding.handlePopRoute();
+    // Voltar do aparelho na primeira tela do painel: o app fecha (ninguém
+    // segura o voltar) e o perfil não muda.
+    final segurou = await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    expect(find.byType(TelaInicialPerfis), findsOneWidget);
-    expect(find.text('Escolha o perfil'), findsOneWidget);
+    expect(segurou, isFalse);
+    expect(find.text('Painel do dono'), findsOneWidget);
+    expect(find.byType(TelaInicialPerfis), findsNothing);
 
-    await _tocar(tester, find.byKey(const ValueKey('perfil-student')));
+    await _tocar(tester, find.byKey(const Key('botao-conta')));
+    await _tocar(tester, find.byKey(const Key('conta-perfil-student')));
     expect(find.text('APP DO ESTUDANTE'), findsOneWidget);
     expect(find.byType(TelaInicialPerfis), findsNothing);
 

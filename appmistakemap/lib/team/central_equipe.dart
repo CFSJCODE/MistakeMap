@@ -74,7 +74,6 @@ class CentralEquipe extends StatefulWidget {
     required this.sessaoValida,
     this.active = true,
     this.onAbrirAdministracao,
-    this.onVoltarAosPerfis,
   });
 
   final RepositorioEquipe repositorio;
@@ -86,7 +85,6 @@ class CentralEquipe extends StatefulWidget {
   final bool Function() sessaoValida;
   final bool active;
   final VoidCallback? onAbrirAdministracao;
-  final VoidCallback? onVoltarAosPerfis;
 
   @override
   State<CentralEquipe> createState() => _CentralEquipeState();
@@ -835,17 +833,10 @@ class _CentralEquipeState extends State<CentralEquipe> {
         const SizedBox(height: 8),
         Text(
           'Para testar outro perfil (estudante, professor, dono, coordenação, '
-          'TI ou responsável), use o seletor "Perfil" no topo: as contas '
+          'TI ou responsável), use o botão de conta no topo: as contas '
           'dev.demo e admin.demo têm os 6 papéis da escola demo.',
           style: TextStyle(color: MistakeMapDesign.steel),
         ),
-        if (widget.onVoltarAosPerfis != null) ...[
-          const SizedBox(height: 12),
-          BotaoEscola(
-            'Voltar à escolha de perfil',
-            onPressed: widget.onVoltarAosPerfis,
-          ),
-        ],
       ],
     ),
     CartaoEscola(
