@@ -382,11 +382,7 @@ class _StudyEmptyState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: mapTitleBlue,
-            ),
+            style: Tipo.tituloSecao.copyWith(color: mapTitleBlue),
           ),
           Text(message, textAlign: TextAlign.center),
         ],
@@ -409,8 +405,7 @@ Widget _panel({required List<Widget> children, Key? key}) => GlassSurface(
   ),
 );
 
-TextStyle get _panelTitle =>
-    TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: mapTitleBlue);
+TextStyle get _panelTitle => Tipo.tituloSecao.copyWith(color: mapTitleBlue);
 
 class _SummaryPanel extends StatelessWidget {
   final StudySummary summary;
@@ -688,7 +683,7 @@ class _QuizPanelState extends State<QuizPanel> {
           value: _index / _quiz.length,
           semanticsLabel: 'Progresso do quiz',
         ),
-        Text(question.prompt, style: const TextStyle(fontSize: 16)),
+        Text(question.prompt, style: Tipo.corpo),
         // A opção escolhida acende no violeta da IA, com borda e tom.
         for (var option = 0; option < question.options.length; option++)
           Card(
