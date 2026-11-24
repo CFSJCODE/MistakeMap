@@ -616,55 +616,79 @@ class _StudyCallout extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Card(
-    key: const Key('map-study-callout'),
-    color: mapSurface,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        spacing: 16,
-        children: [
-          const Icon(
-            Icons.auto_stories_outlined,
-            size: 32,
-            color: MistakeMapDesign.violetInk,
-          ),
-          Expanded(
-            child: Column(
+  Widget build(BuildContext context) {
+    final texto = [
+      if (topConcept != null) 'O que mais se repete: $topConcept.',
+      subjectName == null
+          ? 'No Estudar você treina isso com resumo, cartões, '
+                'quiz e exercícios novos.'
+          : 'No Estudar você treina $subjectName com resumo, '
+                'cartões, quiz e exercícios novos.',
+    ].join(' ');
+    final botao = FilledButton(
+      key: const Key('open-study-material'),
+      onPressed: onStudy,
+      child: const Text('Estudar'),
+    );
+    return Card(
+      key: const Key('map-study-callout'),
+      color: mapSurface,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        // Em tela estreita o botão desce para baixo do texto: lado a lado,
+        // o texto ficava espremido numa coluna de uma palavra por linha.
+        child: LayoutBuilder(
+          builder: (context, limites) {
+            final largo =
+                limites.maxWidth / MediaQuery.textScalerOf(context).scale(1) >=
+                480;
+            final cabecalho = Row(
+              spacing: 12,
               crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 4,
               children: [
-                const Text(
-                  'Próximo passo: treinar',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: mapTitleBlue,
+                const Icon(
+                  Icons.auto_stories_outlined,
+                  size: 28,
+                  color: MistakeMapDesign.violetInk,
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 4,
+                    children: [
+                      const Text(
+                        'Próximo passo: treinar',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: mapTitleBlue,
+                        ),
+                      ),
+                      Text(texto),
+                    ],
                   ),
                 ),
-                Text(
-                  [
-                    if (topConcept != null)
-                      'O que mais se repete: $topConcept.',
-                    subjectName == null
-                        ? 'No Estudar você treina isso com resumo, cartões, '
-                              'quiz e exercícios novos.'
-                        : 'No Estudar você treina $subjectName com resumo, '
-                              'cartões, quiz e exercícios novos.',
-                  ].join(' '),
-                ),
               ],
-            ),
-          ),
-          FilledButton(
-            key: const Key('open-study-material'),
-            onPressed: onStudy,
-            child: const Text('Estudar'),
-          ),
-        ],
+            );
+            if (largo) {
+              return Row(
+                spacing: 16,
+                children: [
+                  Expanded(child: cabecalho),
+                  botao,
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 12,
+              children: [cabecalho, botao],
+            );
+          },
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class SectionLabel extends StatelessWidget {

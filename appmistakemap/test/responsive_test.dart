@@ -250,7 +250,7 @@ void main() {
       // O trilho continua à vista com o Mapa aberto.
       expect(find.byKey(const ValueKey('navigation-0')), findsOneWidget);
       await _voltar(tester);
-      expect(find.text('O que fazer agora'), findsOneWidget);
+      expect(find.text('Atalhos'), findsOneWidget);
       expect(find.text('Sua resposta'), findsNothing);
       expect(tester.takeException(), isNull);
     },
@@ -266,24 +266,23 @@ void main() {
         size: Size(width, 900),
       );
       expect(find.text('Analisar com a IA'), findsNothing);
-      // O Início mostra o ciclo de estudo em passos, com o primeiro indicado.
-      expect(find.text('O que fazer agora'), findsOneWidget);
-      expect(find.text('Próximo passo'), findsOneWidget);
+      // O Início mostra uma ação principal e o ciclo de estudo em atalhos.
+      expect(find.text('Atalhos'), findsOneWidget);
       expect(find.text('Estudar com a IA', skipOffstage: false), findsWidgets);
       // Atalho do Início: troca para a aba do Mapa com o painel de análise
       // aberto; a navegação continua à vista.
       await Scrollable.ensureVisible(
-        tester.element(find.text('Analisar um exercício')),
+        tester.element(find.byKey(const Key('study-analyze'))),
         alignment: .5,
       );
-      await tester.tap(find.text('Analisar um exercício'));
+      await tester.tap(find.byKey(const Key('study-analyze')));
       await _settle(tester);
       expect(find.byType(ErrorMapView), findsOneWidget);
       expect(find.text('Sua resposta'), findsOneWidget);
       expect(find.byKey(const ValueKey('navigation-0')), findsOneWidget);
       // Voltar do sistema leva ao Início; o Mapa continua vivo, fora da tela.
       await _voltar(tester);
-      expect(find.text('O que fazer agora'), findsOneWidget);
+      expect(find.text('Atalhos'), findsOneWidget);
       expect(find.text('Sua resposta'), findsNothing);
       expect(find.text('Sua resposta', skipOffstage: false), findsOneWidget);
       // Mapa e análise na mesma página: sem tentativas, o painel já abre.
@@ -293,7 +292,7 @@ void main() {
       expect(find.text('Analisar com a IA'), findsOneWidget);
       expect(find.text('Sua resposta'), findsOneWidget);
       await _voltar(tester);
-      expect(find.text('O que fazer agora'), findsOneWidget);
+      expect(find.text('Atalhos'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
@@ -324,7 +323,7 @@ void main() {
     expect(find.text('Praticar meus erros'), findsNothing);
     expect(find.byType(ErrorMapView), findsOneWidget);
     await _voltar(tester);
-    expect(find.text('O que fazer agora'), findsOneWidget);
+    expect(find.text('Atalhos'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -507,22 +506,18 @@ void main() {
     expect(exercises.dy, closeTo(review.dy, 1));
     expect(review.dy, closeTo(progress.dy, 1));
     // A rolagem ocupa a janela toda (barra de rolagem na borda direita);
-    // a coluna de leitura continua em 1120 px com o recuo de 24 px.
+    // a coluna de leitura fica em 720 px.
     expect(tester.getSize(find.byType(SingleChildScrollView)).width, 1440);
     final column = find
         .ancestor(
           of: find.text('Tentativas'),
           matching: find.byWidgetPredicate(
             (widget) =>
-                widget is ConstrainedBox && widget.constraints.maxWidth == 1072,
+                widget is ConstrainedBox && widget.constraints.maxWidth == 720,
           ),
         )
         .first;
-    expect(tester.getSize(column).width, lessThanOrEqualTo(1120));
-    final cards = find
-        .ancestor(of: find.text('Tentativas'), matching: find.byType(Container))
-        .first;
-    expect(tester.getSize(cards).width, lessThanOrEqualTo(360));
+    expect(tester.getSize(column).width, lessThanOrEqualTo(720));
     expect(find.text('3'), findsOneWidget);
   });
 
@@ -536,7 +531,10 @@ void main() {
           size: Size(scenario.$1, 900),
           scale: scenario.$2,
         );
-        _expectOutsideTopFade(tester, find.text('MistakeMap'));
+        _expectOutsideTopFade(
+          tester,
+          find.text('Um próximo passo para cada dificuldade.'),
+        );
         await _render(
           tester,
           const TelaMapaConceitual(user: _user),
@@ -601,7 +599,7 @@ void main() {
         expect(tester.takeException(), isNull);
         // Voltar do sistema numa aba que não é o Início leva ao Início.
         await _voltar(tester);
-        expect(find.text('O que fazer agora'), findsOneWidget);
+        expect(find.text('Atalhos'), findsOneWidget);
         if (user.isAdmin) {
           await tester.tap(find.byKey(const ValueKey('navigation-more')));
           await _settle(tester);

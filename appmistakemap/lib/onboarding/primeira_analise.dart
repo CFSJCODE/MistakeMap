@@ -113,10 +113,14 @@ class GuiaPrimeiraAnalise extends StatefulWidget {
     required this.usuarioId,
     required this.onComecar,
     this.preferencia = const PreferenciaPrimeiraAnalise(),
+    this.onVisibilidade,
   });
 
   final String usuarioId;
   final Future<void> Function() onComecar;
+
+  /// Avisa o Início quando o cartão aparece ou some ("Agora não").
+  final ValueChanged<bool>? onVisibilidade;
   final PreferenciaPrimeiraAnalise preferencia;
 
   @override
@@ -132,6 +136,7 @@ class _GuiaPrimeiraAnaliseState extends State<GuiaPrimeiraAnalise> {
     super.initState();
     widget.preferencia.dispensada(widget.usuarioId).then((d) {
       if (mounted) setState(() => _dispensada = d);
+      widget.onVisibilidade?.call(!d);
     });
   }
 
@@ -157,6 +162,7 @@ class _GuiaPrimeiraAnaliseState extends State<GuiaPrimeiraAnalise> {
           onComecar: _comecar,
           onDispensar: () {
             setState(() => _dispensada = true);
+            widget.onVisibilidade?.call(false);
             widget.preferencia.dispensar(widget.usuarioId);
           },
         ),

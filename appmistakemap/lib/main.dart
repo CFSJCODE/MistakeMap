@@ -21,6 +21,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'theme/design_tokens.dart';
 import 'theme/control_styles.dart';
+import 'theme/componentes.dart';
 import 'theme/glass_surface.dart';
 import 'theme/rolagem.dart';
 import 'theme/motion.dart';
@@ -599,27 +600,21 @@ class _CartaoFluent extends StatelessWidget {
 
 // Etiqueta em pílula (status, papéis, tecnologias).
 class _Pilula extends StatelessWidget {
-  const _Pilula({
-    required this.texto,
-    required this.cor,
-    this.icone,
-    this.solida = false,
-  });
+  const _Pilula({required this.texto, required this.cor, this.icone});
 
   final String texto;
   final Color cor;
   final IconData? icone;
-  final bool solida;
 
   @override
   Widget build(BuildContext context) {
-    final frente = solida ? MistakeMapDesign.hoverInk(cor, Cores.branco) : cor;
+    final frente = cor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: solida ? cor : cor.withValues(alpha: 0.1),
+        color: cor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(kRadiusSm),
-        border: solida ? null : Border.all(color: cor.withValues(alpha: 0.4)),
+        border: Border.all(color: cor.withValues(alpha: 0.4)),
       ),
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
@@ -2628,6 +2623,10 @@ class _TelaInicialState extends State<TelaInicial> {
   bool _falhaEstatisticas = false;
   bool _carregando = true;
 
+  /// O guia da primeira análise está à vista (conta nova que não o
+  /// dispensou): ele é a ação principal e o painel não mostra outra.
+  bool _guiaVisivel = true;
+
   @override
   void initState() {
     super.initState();
@@ -2703,34 +2702,47 @@ class _TelaInicialState extends State<TelaInicial> {
     if (mounted) await carregarEstatisticas();
   }
 
-  // O título repete o nome do destino na navegação: o aluno sabe onde está.
-  // Sair e Sobre ficam só no Mais e no trilho, junto da conta; no Início
-  // eles competiam com o ciclo de estudo.
+  // Arquitetura do Início (DESIGN_SYSTEM.md, seção 4): cabeçalho curto, uma
+  // ação principal, progresso, o que está pendente hoje e atalhos em lista.
+  // Só existe um botão cheio na página; o resto são linhas de lista.
   @override
   Widget build(BuildContext context) {
+    final largura = MediaQuery.sizeOf(context).width;
+    final recuo = largura < 600 ? Espaco.pagina : Espaco.paginaLarga;
+    final onboarding =
+        widget.onPrimeiraAnalise != null &&
+        !_falhaEstatisticas &&
+        _totalExercicios == 0 &&
+        _guiaVisivel;
     return _PaginaVidro(
       titulo: 'Início',
       corpo: _carregando
           ? const Center(child: ProgressRing())
           // A rolagem ocupa a largura toda (barra colada na borda da janela);
-          // só a coluna de conteúdo fica limitada a 1120 px, recuo incluso.
+          // só a coluna de leitura fica limitada.
           : SingleChildScrollView(
-              padding: _paddingCorpo(context, horizontal: 24, topo: 8),
+              padding: _paddingCorpo(context, horizontal: recuo, topo: 8),
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1120 - 2 * 24),
-                  // Ordem de leitura = ordem de uso: quem é, o que fazer
-                  // agora (o ciclo de estudo em passos) e só depois os números.
+                  constraints: const BoxConstraints(
+                    maxWidth: Espaco.larguraLeitura,
+                  ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _cabecalho(context),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: Espaco.md),
                       if (widget.onPrimeiraAnalise != null &&
                           !_falhaEstatisticas &&
                           _totalExercicios == 0)
                         GuiaPrimeiraAnalise(
                           usuarioId: widget.user.id,
+                          onVisibilidade: (visivel) {
+                            if (mounted && visivel != _guiaVisivel) {
+                              setState(() => _guiaVisivel = visivel);
+                            }
+                          },
                           onComecar: () async {
                             await widget.onPrimeiraAnalise!();
                             if (mounted) await carregarEstatisticas();
@@ -2741,28 +2753,16 @@ class _TelaInicialState extends State<TelaInicial> {
                         userId: widget.user.id,
                         client: _db,
                         repository: widget.studyRepository,
-                        // "Explorar conteúdos" abre o mesmo destino em todo o
-                        // app (Explorar e aprender); biblioteca, planos e
-                        // simulados têm o botão próprio logo abaixo.
                         onExplore: widget.onAprender ?? _abrirEspacoEstudos,
                         onAnalyze: widget.onAnalysis,
                         onStudy: widget.onEstudar,
+                        onExercises: widget.onExercicios,
+                        attemptsTotal: _totalExercicios,
+                        attemptsToReview: _paraRevisar,
+                        onboarding: onboarding,
+                        summary: _resumo(context),
+                        shortcuts: _atalhos(),
                       ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: MistakeMapFilledButton(
-                          onPressed: _abrirEspacoEstudos,
-                          child: const Text('Biblioteca, planos e simulados'),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 720),
-                        child: _proximosPassos(context),
-                      ),
-                      const SizedBox(height: 32),
-                      _resumo(context),
                     ],
                   ),
                 ),
@@ -2771,141 +2771,86 @@ class _TelaInicialState extends State<TelaInicial> {
     );
   }
 
-  /// O ciclo de estudo em passos: registrar, conferir, entender o padrão,
-  /// estudar e anotar. O passo indicado agora fica em destaque, para o
-  /// estudante seguir o caminho sem procurar a função no app.
-  Widget _proximosPassos(BuildContext context) {
-    final indicado = _totalExercicios == 0
-        ? 0
-        : _paraRevisar > 0
-        ? 1
-        : 3;
-    final passos =
-        <
-          ({
-            IconData icone,
-            String titulo,
-            String descricao,
-            Color acento,
-            Color tinta,
-            VoidCallback? acao,
-          })
-        >[
-          (
-            icone: WindowsIcons.lightbulb,
-            titulo: 'Analisar um exercício',
-            descricao:
-                'Envie a foto ou o texto da sua resposta; a IA corrige '
-                'e aponta onde está o erro.',
-            acento: MistakeMapDesign.aqua,
-            tinta: MistakeMapDesign.aquaInk,
-            acao: widget.onAnalysis,
-          ),
-          (
-            icone: WindowsIcons.bulleted_list,
-            titulo: _paraRevisar > 0
-                ? (_paraRevisar == 1
-                      ? 'Revisar 1 exercício'
-                      : 'Revisar $_paraRevisar exercícios')
-                : 'Ver meus exercícios',
-            descricao:
-                'Confira a correção de cada tentativa e edite o que '
-                'precisar.',
-            acento: MistakeMapDesign.azure,
-            tinta: MistakeMapDesign.azureInk,
-            acao: widget.onExercicios,
-          ),
-          (
-            icone: WindowsIcons.relationship,
-            titulo: 'Ver o mapa de erros',
-            descricao:
-                'Diagnóstico: quais tipos de erro se repetem e em quais '
-                'matérias e conceitos.',
-            acento: MistakeMapDesign.violet,
-            tinta: MistakeMapDesign.violetInk,
-            acao: widget.onMapa,
-          ),
-          (
-            icone: WindowsIcons.education,
-            titulo: 'Estudar com a IA',
-            descricao:
-                'Treino: resumo, cartões, quiz e exercícios novos sobre o '
-                'que o mapa apontou.',
-            acento: MistakeMapDesign.violet,
-            tinta: MistakeMapDesign.violetInk,
-            acao: widget.onEstudar,
-          ),
-          (
-            icone: WindowsIcons.quick_note,
-            titulo: 'Anotar no caderno de erros',
-            descricao:
-                'Suas regras: escreva com suas palavras como não errar '
-                'de novo.',
-            acento: MistakeMapDesign.amber,
-            tinta: MistakeMapDesign.amberInk,
-            acao: widget.onCaderno,
-          ),
-        ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  /// Os destinos do ciclo de estudo e os conteúdos, em lista: um toque leva
+  /// a cada um, sem competir com a ação principal.
+  List<Widget> _atalhos() => [
+    if (widget.onAnalysis != null)
+      LinhaLista(
+        key: const Key('study-analyze'),
+        icone: WindowsIcons.camera,
+        titulo: 'Analisar um exercício',
+        subtitulo: 'Foto ou texto da resposta; a IA aponta o erro',
+        acento: MistakeMapDesign.aqua,
+        tinta: MistakeMapDesign.aquaInk,
+        onPressed: widget.onAnalysis,
+      ),
+    if (widget.onMapa != null)
+      LinhaLista(
+        icone: WindowsIcons.relationship,
+        titulo: 'Ver o mapa de erros',
+        subtitulo: 'Diagnóstico: o que se repete e onde',
+        acento: MistakeMapDesign.violet,
+        tinta: MistakeMapDesign.violetInk,
+        onPressed: widget.onMapa,
+      ),
+    if (widget.onEstudar != null)
+      LinhaLista(
+        icone: WindowsIcons.education,
+        titulo: 'Estudar com a IA',
+        subtitulo: 'Treino do que o mapa apontou',
+        acento: MistakeMapDesign.violet,
+        tinta: MistakeMapDesign.violetInk,
+        onPressed: widget.onEstudar,
+      ),
+    if (widget.onCaderno != null)
+      LinhaLista(
+        icone: WindowsIcons.quick_note,
+        titulo: 'Anotar no caderno de erros',
+        subtitulo: 'Suas regras, com suas palavras',
+        acento: MistakeMapDesign.amber,
+        tinta: MistakeMapDesign.amberInk,
+        onPressed: widget.onCaderno,
+      ),
+    LinhaLista(
+      key: const Key('study-explore'),
+      icone: WindowsIcons.library,
+      titulo: 'Explorar conteúdos',
+      subtitulo: 'Matérias, assuntos e explicações',
+      acento: MistakeMapDesign.azure,
+      tinta: MistakeMapDesign.azureInk,
+      onPressed: widget.onAprender ?? _abrirEspacoEstudos,
+    ),
+    LinhaLista(
+      key: const Key('study-library'),
+      icone: WindowsIcons.reading_list,
+      titulo: 'Biblioteca, planos e simulados',
+      subtitulo: 'Materiais e tarefas da sua turma',
+      acento: MistakeMapDesign.azure,
+      tinta: MistakeMapDesign.azureInk,
+      onPressed: _abrirEspacoEstudos,
+    ),
+  ];
+
+  // Cabeçalho curto: a marca já está no ícone e na barra; aqui só o
+  // propósito do Início e, para administradores, o papel.
+  Widget _cabecalho(BuildContext context) {
+    return Wrap(
+      spacing: Espaco.xs,
+      runSpacing: Espaco.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Text(
-          'O que fazer agora',
-          style: context.tipo.subtitle?.copyWith(color: titleBlue),
-        ),
-        const SizedBox(height: 12),
-        for (final (i, passo) in passos.indexed)
-          if (passo.acao != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _PassoCard(
-                numero: i + 1,
-                icone: passo.icone,
-                titulo: passo.titulo,
-                descricao: passo.descricao,
-                acento: passo.acento,
-                tinta: passo.tinta,
-                indicado: i == indicado,
-                onPressed: passo.acao!,
-              ),
-            ),
+        Text('Um próximo passo para cada dificuldade.', style: Tipo.secundario),
+        if (widget.user.isAdmin)
+          const _Pilula(
+            texto: 'Administrador',
+            cor: contentBlue,
+            icone: WindowsIcons.admin,
+          ),
       ],
     );
   }
 
-  // Cabeçalho com nome/email e badge de admin
-  Widget _cabecalho(BuildContext context) {
-    return GlassHero(
-      child: Column(
-        children: [
-          Text(
-            'MistakeMap',
-            style: context.tipo.title?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Cores.branco,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Um próximo passo para cada dificuldade.',
-            textAlign: TextAlign.center,
-            style: context.tipo.body?.copyWith(color: Cores.branco),
-          ),
-          if (widget.user.isAdmin) ...[
-            const SizedBox(height: 8),
-            const _Pilula(
-              texto: 'Administrador',
-              cor: contentBlue,
-              icone: WindowsIcons.admin,
-              solida: true,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // Cards de estatísticas
+  // Faixa de progresso das tentativas.
   Widget _resumo(BuildContext context) {
     if (_falhaEstatisticas) {
       return InfoBar(
@@ -2923,190 +2868,34 @@ class _TelaInicialState extends State<TelaInicial> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
+        const SecaoTitulo(
           'Suas tentativas',
-          textAlign: TextAlign.center,
-          style: context.tipo.subtitle?.copyWith(color: titleBlue),
+          descricao: 'Andamento das análises da IA.',
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Andamento das análises. Os resultados de estudo aparecem na sua sessão.',
-          textAlign: TextAlign.center,
-          style: context.tipo.body?.copyWith(color: contentBlue),
-        ),
-        const SizedBox(height: 24),
-        GradeAdaptativa(
-          larguraMinimaItem: MediaQuery.sizeOf(context).width < 600 ? 320 : 160,
-          maxColunas: 3,
-          children: [
-            _ResumoCard(
+        FaixaIndicadores(
+          itens: [
+            // Conta tentativas (attempts), não os exercícios da lista.
+            (
+              rotulo: 'Tentativas',
+              valor: '$_totalExercicios',
               icone: WindowsIcons.bulleted_list,
-              // Conta tentativas (attempts), não os exercícios da lista.
-              label: 'Tentativas',
-              value: '$_totalExercicios',
-              acento: MistakeMapDesign.azure,
               tinta: MistakeMapDesign.azureInk,
             ),
-            _ResumoCard(
+            (
+              rotulo: 'Correções para conferir',
+              valor: '$_paraRevisar',
               icone: WindowsIcons.history,
-              label: 'Correções para conferir',
-              value: '$_paraRevisar',
-              acento: MistakeMapDesign.amber,
               tinta: MistakeMapDesign.amberInk,
             ),
-            _ResumoCard(
-              icone: WindowsIcons.education,
-              label: 'Análises concluídas',
-              value: _analisesConcluidas,
-              acento: MistakeMapDesign.mint,
+            (
+              rotulo: 'Análises concluídas',
+              valor: _analisesConcluidas,
+              icone: WindowsIcons.completed,
               tinta: MistakeMapDesign.mintInk,
             ),
           ],
         ),
       ],
-    );
-  }
-}
-
-class _ResumoCard extends StatelessWidget {
-  const _ResumoCard({
-    required this.icone,
-    required this.label,
-    required this.value,
-    required this.acento,
-    required this.tinta,
-  });
-
-  final IconData icone;
-  final String label;
-  final String value;
-
-  /// Cor com função: cada número leva o acento do que ele mede.
-  final Color acento;
-  final Color tinta;
-
-  @override
-  Widget build(BuildContext context) {
-    return _PainelVidro(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      raio: kRadius,
-      acento: acento,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GlassIconTile(icon: icone, ink: tinta, accent: acento, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: context.tipo.subtitle?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: MistakeMapDesign.abyss,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: context.tipo.caption?.copyWith(color: contentBlue),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Um passo do ciclo de estudo no Início: o cartão inteiro é o botão.
-class _PassoCard extends StatelessWidget {
-  const _PassoCard({
-    required this.numero,
-    required this.icone,
-    required this.titulo,
-    required this.descricao,
-    required this.acento,
-    required this.tinta,
-    required this.indicado,
-    required this.onPressed,
-  });
-
-  final int numero;
-  final IconData icone;
-  final String titulo;
-  final String descricao;
-  final Color acento;
-  final Color tinta;
-
-  /// O passo sugerido agora: fundo tingido e etiqueta "Próximo passo".
-  final bool indicado;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final fundo = indicado
-        ? Color.alphaBlend(acento.withValues(alpha: .16), Cores.branco)
-        : kGlassBg;
-    // O afundar ao toque vem do MistakeMapButton, igual em todo o app.
-    return Semantics(
-      label: 'Passo $numero: $titulo',
-      child: SizedBox(
-        width: double.infinity,
-        child: MistakeMapButton(
-          onPressed: onPressed,
-          style: MistakeMapControls.button(
-            radius: kRadius,
-            padding: const EdgeInsets.all(16),
-            background: fundo,
-            foreground: MistakeMapDesign.abyss,
-          ),
-          child: Row(
-            children: [
-              GlassIconTile(icon: icone, ink: tinta, accent: acento),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          'PASSO $numero',
-                          style: context.tipo.caption?.copyWith(
-                            color: tinta,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                        if (indicado)
-                          _Pilula(texto: 'Próximo passo', cor: tinta),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      titulo,
-                      textAlign: TextAlign.start,
-                      style: context.tipo.bodyStrong?.copyWith(
-                        color: MistakeMapDesign.abyss,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      descricao,
-                      textAlign: TextAlign.start,
-                      style: context.tipo.caption?.copyWith(
-                        color: MistakeMapDesign.steel,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Icon(WindowsIcons.chevron_right, size: 14, color: tinta),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
