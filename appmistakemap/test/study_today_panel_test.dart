@@ -1,6 +1,7 @@
 import 'package:appmistakemap/study/study_today_panel.dart';
 import 'package:appmistakemap/theme/componentes.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _MemoryStore implements StudyStore {
@@ -300,6 +301,17 @@ void main() {
         expect(analyze.top, greaterThanOrEqualTo(explore.bottom));
         expect(explore.width, moreOrLessEquals(analyze.width));
         expect(explore.height, greaterThanOrEqualTo(48));
+        // O leitor de tela consegue ativar a linha (o nó dela tem a ação).
+        final semantics = tester.ensureSemantics();
+        await tester.pump();
+        expect(
+          tester
+              .getSemantics(find.byKey(const Key('study-explore')))
+              .getSemanticsData()
+              .hasAction(SemanticsAction.tap),
+          isTrue,
+        );
+        semantics.dispose();
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
         repo.dispose();

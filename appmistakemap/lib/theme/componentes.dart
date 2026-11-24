@@ -169,6 +169,9 @@ class LinhaLista extends StatelessWidget {
     return Semantics(
       button: true,
       label: subtitulo == null ? titulo : '$titulo. $subtitulo',
+      // O nó substitui o do botão: precisa da ação, senão o leitor de tela
+      // anuncia a linha e não consegue ativá-la.
+      onTap: acao,
       excludeSemantics: true,
       child: MistakeMapButton(
         onPressed: acao,
@@ -333,8 +336,10 @@ class CartaoProximoPasso extends StatelessWidget {
             const SizedBox(height: Espaco.xs),
             Text(descricao, style: Tipo.corpo),
             const SizedBox(height: Espaco.md),
-            SizedBox(
-              height: Espaco.alvoToque,
+            ConstrainedBox(
+              // Altura mínima, não fixa: com fonte ampliada o rótulo quebra
+              // em duas linhas e o botão cresce junto.
+              constraints: const BoxConstraints(minHeight: Espaco.alvoToque),
               child: MistakeMapFilledButton(
                 onPressed: onPressed,
                 child: Text(rotuloBotao, textAlign: TextAlign.center),
