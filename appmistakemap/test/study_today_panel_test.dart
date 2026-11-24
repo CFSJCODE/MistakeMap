@@ -1,4 +1,5 @@
 import 'package:appmistakemap/study/study_today_panel.dart';
+import 'package:appmistakemap/theme/componentes.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -86,7 +87,10 @@ void main() {
       );
       expect(find.text('Seu estudo de hoje'), findsOneWidget);
       expect(find.text('Começar revisão'), findsOneWidget);
-      expect(find.text('6 autoavaliações nos últimos 7 dias.'), findsOneWidget);
+      expect(
+        find.textContaining('6 autoavaliações nos últimos 7 dias.'),
+        findsOneWidget,
+      );
       expect(find.textContaining('não representa nota'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
@@ -238,9 +242,9 @@ void main() {
     repo.dispose();
   });
 
-  for (final (width, sideBySide) in const [(1000.0, true), (360.0, false)]) {
+  for (final width in const [360.0, 1000.0]) {
     testWidgets(
-      'atalhos ficam ${sideBySide ? 'lado a lado' : 'empilhados'} e centralizados em ${width.toInt()} px',
+      'Início tem uma única ação principal e atalhos em lista em ${width.toInt()} px',
       (tester) async {
         final repo = SupabaseStudyRepository.withTransport(
           (userId, body) async =>
@@ -256,26 +260,46 @@ void main() {
                 repository: repo,
                 onExplore: () {},
                 onAnalyze: () {},
+                shortcuts: [
+                  LinhaLista(
+                    key: const Key('study-explore'),
+                    icone: WindowsIcons.library,
+                    titulo: 'Explorar conteúdos',
+                    onPressed: () {},
+                  ),
+                  LinhaLista(
+                    key: const Key('study-analyze'),
+                    icone: WindowsIcons.camera,
+                    titulo: 'Analisar um exercício',
+                    onPressed: () {},
+                  ),
+                ],
               ),
             ),
           ),
           width: width,
         );
+        // Revisão vencida vira a ação principal: o único botão cheio.
+        expect(find.byKey(const Key('home-next-action')), findsOneWidget);
+        expect(
+          find.byWidgetPredicate((w) => w is FilledButton),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byWidgetPredicate((w) => w is FilledButton),
+            matching: find.text('Começar revisão'),
+          ),
+          findsOneWidget,
+        );
+        // A sugestão pendente não repete a ação principal: vira uma linha.
+        expect(find.text('Conferir sugestões'), findsOneWidget);
+        // Atalhos empilhados, um por linha, na largura toda do grupo.
         final explore = tester.getRect(find.byKey(const Key('study-explore')));
         final analyze = tester.getRect(find.byKey(const Key('study-analyze')));
-        final panel = tester.getRect(find.byType(StudyTodayPanel));
-        if (sideBySide) {
-          expect(explore.center.dy, moreOrLessEquals(analyze.center.dy));
-          expect(analyze.left - explore.right, moreOrLessEquals(16));
-          expect(
-            (explore.left + analyze.right) / 2,
-            moreOrLessEquals(panel.center.dx),
-          );
-        } else {
-          expect(analyze.top, greaterThan(explore.bottom));
-          expect(explore.center.dx, moreOrLessEquals(panel.center.dx));
-          expect(analyze.center.dx, moreOrLessEquals(panel.center.dx));
-        }
+        expect(analyze.top, greaterThanOrEqualTo(explore.bottom));
+        expect(explore.width, moreOrLessEquals(analyze.width));
+        expect(explore.height, greaterThanOrEqualTo(48));
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
         repo.dispose();

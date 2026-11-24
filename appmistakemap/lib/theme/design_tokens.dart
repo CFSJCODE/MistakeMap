@@ -1,6 +1,7 @@
 import 'dart:ui' show ColorFilter, ImageFilter;
 
 import 'package:flutter/painting.dart';
+import 'package:flutter/animation.dart' show Curves;
 
 /// Obsidian Glass (modo claro): identidade visual compartilhada pelos fluxos
 /// Fluent e Material. Fundo Pearl iluminado, vidro branco fosco, tinta escura
@@ -223,4 +224,105 @@ abstract final class MistakeMapDesign {
     // A paleta tem uma tinta clara e uma escura; vence a mais legível.
     return contrast(white) >= contrast(abyss) ? white : abyss;
   }
+}
+
+// ─── Escalas do design system (ver DESIGN_SYSTEM.md) ─────────────────────────
+// Valores novos saem daqui, não de números soltos no widget.
+
+/// Espaçamento em grade de 4 dp, com preferência pelos múltiplos de 8.
+abstract final class Espaco {
+  static const xxs = 4.0;
+  static const xs = 8.0;
+  static const sm = 12.0;
+  static const md = 16.0;
+  static const lg = 24.0;
+  static const xl = 32.0;
+  static const xxl = 48.0;
+
+  /// Recuo lateral das páginas no celular e acima de 600 px.
+  static const pagina = md;
+  static const paginaLarga = lg;
+
+  /// Distância entre seções de uma página.
+  static const secao = xl;
+
+  /// Largura de leitura de uma coluna de conteúdo.
+  static const larguraLeitura = 720.0;
+
+  /// Alvo de toque mínimo (Material 48 dp; Apple 44 pt).
+  static const alvoToque = 48.0;
+}
+
+/// Raios de canto. Controles pequenos têm raio menor que superfícies.
+abstract final class Raio {
+  static const sm = 8.0;
+  static const md = 12.0;
+  static const lg = 16.0;
+  static const xl = 20.0;
+  static const pilula = 999.0;
+}
+
+/// Escala tipográfica do app (tamanhos em sp; a escala de texto do sistema
+/// multiplica todos). Dois pesos de destaque só: 600 e 700.
+abstract final class Tipo {
+  static const tituloPagina = TextStyle(
+    fontSize: 24,
+    height: 1.25,
+    fontWeight: FontWeight.w700,
+    color: MistakeMapDesign.abyss,
+  );
+  static const tituloSecao = TextStyle(
+    fontSize: 18,
+    height: 1.3,
+    fontWeight: FontWeight.w600,
+    color: MistakeMapDesign.abyss,
+  );
+  static const tituloComponente = TextStyle(
+    fontSize: 16,
+    height: 1.3,
+    fontWeight: FontWeight.w600,
+    color: MistakeMapDesign.abyss,
+  );
+  static const corpo = TextStyle(
+    fontWeight: FontWeight.w400,
+    fontSize: 15,
+    height: 1.4,
+    color: MistakeMapDesign.slate,
+  );
+  static const secundario = TextStyle(
+    fontWeight: FontWeight.w400,
+    fontSize: 13,
+    height: 1.35,
+    color: MistakeMapDesign.steel,
+  );
+  static const legenda = TextStyle(
+    fontWeight: FontWeight.w400,
+    fontSize: 12,
+    height: 1.3,
+    color: MistakeMapDesign.steel,
+  );
+
+  /// Número de um indicador.
+  static const numero = TextStyle(
+    fontSize: 22,
+    height: 1.15,
+    fontWeight: FontWeight.w700,
+    color: MistakeMapDesign.abyss,
+  );
+
+  /// Rótulo curto acima de um bloco ("PRÓXIMO PASSO").
+  static const sobretitulo = TextStyle(
+    fontSize: 12,
+    height: 1.2,
+    fontWeight: FontWeight.w700,
+    letterSpacing: .6,
+  );
+}
+
+/// Durações e curvas: 120 a 300 ms, nada mais longo em interação.
+abstract final class Movimento {
+  static const rapido = Duration(milliseconds: 120);
+  static const padrao = Duration(milliseconds: 200);
+  static const enfatico = Duration(milliseconds: 300);
+  static const curva = Curves.easeOutCubic;
 }

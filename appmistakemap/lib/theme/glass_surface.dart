@@ -308,6 +308,7 @@ class GradientBar extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: FractionallySizedBox(
             widthFactor: fraction,
+            heightFactor: 1,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(colors: [ink, accent]),

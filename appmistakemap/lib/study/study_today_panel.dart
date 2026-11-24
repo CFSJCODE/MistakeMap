@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/motion.dart';
 import '../ai/analysis_models.dart' show categoryLabels;
+import '../theme/componentes.dart';
 import '../theme/control_styles.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
@@ -30,6 +30,12 @@ class StudyTodayPanel extends StatefulWidget {
     this.onExplore,
     this.onAnalyze,
     this.onStudy,
+    this.onExercises,
+    this.attemptsTotal = 0,
+    this.attemptsToReview = 0,
+    this.onboarding = false,
+    this.summary,
+    this.shortcuts = const [],
   });
 
   final String userId;
@@ -38,6 +44,22 @@ class StudyTodayPanel extends StatefulWidget {
   final VoidCallback? onExplore;
   final VoidCallback? onAnalyze;
   final VoidCallback? onStudy;
+
+  /// Exercícios com correção para conferir: abre a aba Exercícios.
+  final VoidCallback? onExercises;
+
+  /// Tentativas da conta e quantas aguardam conferência (vêm do Início).
+  final int attemptsTotal;
+  final int attemptsToReview;
+
+  /// A conta nova já tem o guia da primeira análise como ação principal.
+  final bool onboarding;
+
+  /// Faixa de progresso, logo abaixo da ação principal.
+  final Widget? summary;
+
+  /// Linhas da seção Atalhos, no fim do Início.
+  final List<Widget> shortcuts;
 
   @override
   State<StudyTodayPanel> createState() => StudyTodayPanelState();
@@ -236,233 +258,284 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
     super.dispose();
   }
 
+  /// A próxima ação do Início, na ordem de prioridade pedagógica: retomar o
+  /// que está aberto, revisar o que venceu, conferir o que a IA sugeriu,
+  /// conferir correções, definir o objetivo e, por fim, treinar.
+  _NextAction? _nextAction(StudyDashboard dashboard) {
+    final total = widget.attemptsTotal;
+    final toReview = widget.attemptsToReview;
+    if (_session?.status == 'active') {
+      return _NextAction(
+        icon: WindowsIcons.history,
+        title: 'Continue sua revisão',
+        description:
+            'Você parou no meio de uma sessão. Ela continua de onde parou.',
+        button: 'Continuar revisão',
+        onPressed: _busy ? null : _review,
+        kind: _ActionKind.review,
+      );
+    }
+    if (dashboard.dueCount > 0) {
+      return _NextAction(
+        icon: WindowsIcons.history,
+        title:
+            '${_plural(dashboard.dueCount, 'revisão', 'revisões')} para hoje',
+        description:
+            'Cerca de ${dashboard.estimatedMinutes} min, com pausas quando precisar.',
+        button: 'Começar revisão',
+        onPressed: _busy ? null : _review,
+        kind: _ActionKind.review,
+      );
+    }
+    if (dashboard.pendingDiagnostics > 0) {
+      return _NextAction(
+        icon: WindowsIcons.lightbulb,
+        title: 'Confira suas correções',
+        description:
+            '${_plural(dashboard.pendingDiagnostics, 'sugestão da IA aguarda', 'sugestões da IA aguardam')} sua conferência. Você confirma, corrige ou rejeita.',
+        button: 'Conferir sugestões',
+        onPressed: _busy ? null : _diagnostics,
+        kind: _ActionKind.diagnostics,
+        accent: MistakeMapDesign.amber,
+        ink: MistakeMapDesign.amberInk,
+      );
+    }
+    if (toReview > 0 && widget.onExercises != null) {
+      return _NextAction(
+        icon: WindowsIcons.bulleted_list,
+        title: toReview == 1
+            ? 'Revisar 1 exercício'
+            : 'Revisar $toReview exercícios',
+        description:
+            'A correção chegou. Confira o que a IA apontou em cada tentativa.',
+        button: 'Ver meus exercícios',
+        onPressed: widget.onExercises,
+        kind: _ActionKind.exercises,
+        accent: MistakeMapDesign.azure,
+        ink: MistakeMapDesign.azureInk,
+      );
+    }
+    if (dashboard.profile == null) {
+      return _NextAction(
+        icon: WindowsIcons.education,
+        title: 'Como podemos ajudar você a estudar?',
+        description: 'Escolha seu objetivo, etapa e tempo disponível para preparar sua rotina.',
+        button: 'Definir meu objetivo',
+        onPressed: _busy ? null : _editProfile,
+        kind: _ActionKind.profile,
+      );
+    }
+    if (total == 0 && widget.onAnalyze != null) {
+      return _NextAction(
+        icon: WindowsIcons.camera,
+        title: 'Analisar um exercício',
+        description: 'Envie a foto ou o texto da sua resposta; a IA corrige e aponta onde está o erro.',
+        button: 'Analisar um exercício',
+        onPressed: widget.onAnalyze,
+        kind: _ActionKind.analyze,
+      );
+    }
+    if (widget.onStudy != null) {
+      return _NextAction(
+        icon: WindowsIcons.education,
+        title: 'Revisões em dia',
+        description: 'Treine o que o Mapa apontou: resumo, cartões, quiz e exercícios novos.',
+        button: 'Praticar um conceito',
+        onPressed: widget.onStudy,
+        kind: _ActionKind.study,
+        accent: MistakeMapDesign.violet,
+        ink: MistakeMapDesign.violetInk,
+      );
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final dashboard = _dashboard;
     final sync = _repository.syncState.value;
     final profile = dashboard?.profile;
+    final action = dashboard == null || widget.onboarding
+        ? null
+        : _nextAction(dashboard);
+    final notices = <Widget>[
+      if (_busy) const ProgressBar(),
+      if (_error != null) ...[
+        AvisoLinha(_error!, erro: true),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: _StudyButton(
+            label: 'Tentar novamente',
+            onPressed: _busy ? null : refresh,
+          ),
+        ),
+      ],
+      if (_notice != null) AvisoLinha(_notice!),
+      if (sync.offline || sync.pending > 0 || sync.rejected > 0) ...[
+        AvisoLinha(
+          sync.offline
+              ? 'Sem conexão. Exibindo o estudo salvo neste aparelho.'
+              : 'Respostas salvas neste aparelho: ${sync.pending} aguardando envio, ${sync.rejected} precisam de atenção.',
+        ),
+        if (sync.pending > 0)
+          AvisoLinha(
+            '${_plural(sync.pending, 'autoavaliação aguarda', 'autoavaliações aguardam')} envio. A agenda será atualizada ao sincronizar.',
+          ),
+        if (sync.updatedAt != null)
+          AvisoLinha(
+            'Última atualização: ${_dateTime(context, sync.updatedAt!)}',
+          ),
+        if (sync.message != null) AvisoLinha(sync.message!, erro: true),
+      ],
+      for (final pending in _pending.where((item) => item.failure != null)) ...[
+        AvisoLinha(
+          'Uma resposta não foi aceita: ${pending.failure}',
+          erro: true,
+        ),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: _StudyButton(
+            label: 'Descartar resposta recusada',
+            onPressed: _busy ? null : () => _discard(pending),
+          ),
+        ),
+      ],
+    ];
+    // Pendências que não viraram a ação principal: cada uma uma linha.
+    final today = <Widget>[
+      if (dashboard != null) ...[
+        if (dashboard.dueCount > 0 && action?.kind != _ActionKind.review)
+          LinhaLista(
+            icone: WindowsIcons.history,
+            titulo: _session?.status == 'active'
+                ? 'Continuar revisão'
+                : 'Começar revisão',
+            subtitulo:
+                '${_plural(dashboard.dueCount, 'revisão', 'revisões')} · cerca de ${dashboard.estimatedMinutes} min',
+            acento: MistakeMapDesign.aqua,
+            tinta: MistakeMapDesign.aquaInk,
+            onPressed: _busy ? null : _review,
+          ),
+        if (dashboard.pendingDiagnostics > 0 &&
+            action?.kind != _ActionKind.diagnostics)
+          LinhaLista(
+            icone: WindowsIcons.lightbulb,
+            titulo: 'Conferir sugestões',
+            subtitulo:
+                '${_plural(dashboard.pendingDiagnostics, 'sugestão da IA aguarda', 'sugestões da IA aguardam')} você',
+            valor: '${dashboard.pendingDiagnostics}',
+            acento: MistakeMapDesign.amber,
+            tinta: MistakeMapDesign.amberInk,
+            onPressed: _busy ? null : _diagnostics,
+          ),
+        if (widget.attemptsToReview > 0 &&
+            action?.kind != _ActionKind.exercises &&
+            widget.onExercises != null)
+          LinhaLista(
+            icone: WindowsIcons.bulleted_list,
+            titulo: widget.attemptsToReview == 1
+                ? 'Revisar 1 exercício'
+                : 'Revisar ${widget.attemptsToReview} exercícios',
+            subtitulo: 'Correções da IA prontas para conferir',
+            acento: MistakeMapDesign.azure,
+            tinta: MistakeMapDesign.azureInk,
+            onPressed: widget.onExercises,
+          ),
+        if (profile == null && action?.kind != _ActionKind.profile)
+          LinhaLista(
+            key: const Key('study-goal-row'),
+            icone: WindowsIcons.education,
+            titulo: 'Definir meu objetivo',
+            subtitulo: 'Objetivo, etapa e tempo para montar sua rotina',
+            acento: MistakeMapDesign.mint,
+            tinta: MistakeMapDesign.mintInk,
+            onPressed: _busy ? null : _editProfile,
+          ),
+        if (profile != null)
+          LinhaLista(
+            key: const Key('study-goal-row'),
+            icone: WindowsIcons.education,
+            titulo: profile.goal.isEmpty
+                ? _stageLabels[profile.stage] ?? 'Seu objetivo'
+                : profile.goal,
+            subtitulo:
+                '${profile.dailyMinutes} minutos por sessão · ${_stageLabels[profile.stage] ?? 'Estudo'}',
+            acento: MistakeMapDesign.mint,
+            tinta: MistakeMapDesign.mintInk,
+            onPressed: _busy ? null : _editProfile,
+          ),
+      ],
+    ];
+    final week = dashboard?.progress;
     return Semantics(
       container: true,
       label: 'Seu estudo de hoje',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _StudyCard(
-            accent: MistakeMapDesign.aqua,
-            children: [
-              const _StudyTitle('Seu estudo de hoje', large: true),
-              const SizedBox(height: 8),
-              const Text('Um próximo passo que cabe na sua rotina.'),
-              if (_loading) ...[
-                const SizedBox(height: 24),
-                // Centralizado e com tamanho fixo: na coluna esticada o anel
-                // virava uma elipse da largura do cartão.
-                Semantics(
-                  label: 'Carregando seu estudo',
-                  child: const Center(
-                    child: SizedBox.square(
-                      dimension: 32,
-                      child: ProgressRing(),
-                    ),
-                  ),
-                ),
-              ] else if (dashboard != null) ...[
-                const SizedBox(height: 24),
-                if (profile == null) ...[
-                  const Text(
-                    'Como podemos ajudar você a estudar?',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Escolha seu objetivo, etapa e tempo disponível para preparar sua rotina.',
-                  ),
-                  const SizedBox(height: 16),
-                  _StudyButton(
-                    label: 'Definir meu objetivo',
-                    onPressed: _busy ? null : _editProfile,
-                    primary: true,
-                  ),
-                ] else ...[
-                  Text(
-                    profile.goal.isEmpty
-                        ? _stageLabels[profile.stage] ?? 'Seu objetivo'
-                        : profile.goal,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${profile.dailyMinutes} minutos por sessão · ${_stageLabels[profile.stage] ?? 'Estudo'}',
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    dashboard.dueCount > 0
-                        ? '${_plural(dashboard.dueCount, 'revisão', 'revisões')} para hoje'
-                        : 'Revisões em dia',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: MistakeMapDesign.abyss,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    dashboard.dueCount > 0
-                        ? 'Cerca de ${dashboard.estimatedMinutes} min, com pausas quando precisar.'
-                        : 'Você pode praticar um novo conceito ou explorar conteúdos.',
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (dashboard.dueCount > 0 ||
-                          _session?.status == 'active')
-                        _StudyButton(
-                          label: _session?.status == 'active'
-                              ? 'Continuar revisão'
-                              : 'Começar revisão',
-                          onPressed: _busy ? null : _review,
-                          primary: true,
-                        ),
-                      if (widget.onStudy != null)
-                        _StudyButton(
-                          label: 'Praticar um conceito',
-                          onPressed: widget.onStudy,
-                        ),
-                      _StudyButton(
-                        label: 'Ajustar objetivo',
-                        onPressed: _busy ? null : _editProfile,
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-              if (_busy) ...[const SizedBox(height: 16), const ProgressBar()],
-              if (_error != null) ...[
-                const SizedBox(height: 16),
-                _StudyNotice(_error!, error: true),
-                const SizedBox(height: 8),
-                _StudyButton(
-                  label: 'Tentar novamente',
-                  onPressed: _busy ? null : refresh,
-                ),
-              ],
-              if (_notice != null) ...[
-                const SizedBox(height: 16),
-                _StudyNotice(_notice!),
-              ],
-              if (sync.offline || sync.pending > 0 || sync.rejected > 0) ...[
-                const SizedBox(height: 16),
-                _StudyNotice(
-                  sync.offline
-                      ? 'Sem conexão. Exibindo o estudo salvo neste aparelho.'
-                      : 'Respostas salvas neste aparelho: ${sync.pending} aguardando envio, ${sync.rejected} precisam de atenção.',
-                ),
-                if (sync.pending > 0) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    '${_plural(sync.pending, 'autoavaliação aguarda', 'autoavaliações aguardam')} envio. A agenda será atualizada ao sincronizar.',
-                  ),
-                ],
-                if (sync.updatedAt != null)
-                  Text(
-                    'Última atualização: ${_dateTime(context, sync.updatedAt!)}',
-                  ),
-                if (sync.message != null)
-                  _StudyNotice(sync.message!, error: true),
-              ],
-              for (final pending in _pending.where(
-                (item) => item.failure != null,
-              )) ...[
-                const SizedBox(height: 16),
-                _StudyNotice(
-                  'Uma resposta não foi aceita: ${pending.failure}',
-                  error: true,
-                ),
-                _StudyButton(
-                  label: 'Descartar resposta recusada',
-                  onPressed: _busy ? null : () => _discard(pending),
-                ),
-              ],
+          if (_loading)
+            const CartaoProximoPasso(
+              icone: WindowsIcons.education,
+              titulo: '',
+              descricao: '',
+              rotuloBotao: '',
+              onPressed: null,
+              carregando: true,
+            )
+          else if (action != null)
+            CartaoProximoPasso(
+              key: const Key('home-next-action'),
+              icone: action.icon,
+              titulo: action.title,
+              descricao: action.description,
+              rotuloBotao: action.button,
+              onPressed: action.onPressed,
+              acento: action.accent,
+              tinta: action.ink,
+            ),
+          if (notices.isNotEmpty) ...[
+            const SizedBox(height: Espaco.md),
+            for (final (i, notice) in notices.indexed) ...[
+              if (i > 0) const SizedBox(height: Espaco.xs),
+              notice,
             ],
-          ),
-          if (dashboard != null) ...[
-            const SizedBox(height: 16),
-            if (dashboard.pendingDiagnostics > 0) ...[
-              _StudyCard(
-                accent: MistakeMapDesign.amber,
-                children: [
-                  const _StudyTitle('Confira suas correções'),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${_plural(dashboard.pendingDiagnostics, 'sugestão aguarda', 'sugestões aguardam')} sua conferência. Você confirma, corrige ou rejeita.',
-                  ),
-                  const SizedBox(height: 16),
-                  _StudyButton(
-                    label: 'Conferir sugestões',
-                    onPressed: _busy ? null : _diagnostics,
-                  ),
-                ],
+          ],
+          if (widget.summary != null) ...[
+            const SizedBox(height: Espaco.lg),
+            widget.summary!,
+          ],
+          if (today.isNotEmpty) ...[
+            const SizedBox(height: Espaco.secao),
+            const SecaoTitulo('Seu estudo de hoje'),
+            GrupoLista(children: today),
+          ],
+          if (week != null) ...[
+            const SizedBox(height: Espaco.secao),
+            SecaoTitulo(
+              'Sua semana de revisão',
+              descricao: week.reviews > 0 && week.recallRate != null
+                  ? '${_plural(week.reviews, 'autoavaliação', 'autoavaliações')} nos últimos ${week.periodDays} dias. Você relatou lembrar em ${(week.recallRate! * 100).round()}% delas.'
+                  : '${_plural(week.reviews, 'autoavaliação', 'autoavaliações')} nos últimos ${week.periodDays} dias. Ainda não há amostra suficiente para mostrar sua lembrança relatada.',
+            ),
+            if (week.reviews > 0 && week.recallRate != null) ...[
+              GradientBar(
+                value: week.recallRate!,
+                accent: MistakeMapDesign.mint,
+                ink: MistakeMapDesign.mintInk,
+                semanticsLabel: 'Lembrança relatada',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Espaco.xs),
             ],
-            _StudyCard(
-              accent: MistakeMapDesign.mint,
-              children: [
-                const _StudyTitle('Sua semana de revisão'),
-                const SizedBox(height: 8),
-                Text(
-                  '${_plural(dashboard.progress.reviews, 'autoavaliação', 'autoavaliações')} nos últimos ${dashboard.progress.periodDays} dias.',
-                ),
-                const SizedBox(height: 8),
-                if (dashboard.progress.recallRate != null &&
-                    dashboard.progress.reviews > 0)
-                  Text(
-                    'Você relatou lembrar em ${(dashboard.progress.recallRate! * 100).round()}% dessas revisões.',
-                  )
-                else
-                  const Text(
-                    'Ainda não há amostra suficiente para mostrar sua lembrança relatada.',
-                  ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Esta medida usa a sua autoavaliação. Ela não representa nota, acerto em prova ou domínio comprovado.',
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  dashboard.reviewedToday == 0
-                      ? 'Nenhuma revisão registrada hoje.'
-                      : 'Hoje: ${_plural(dashboard.reviewedToday, 'revisão registrada', 'revisões registradas')}.',
-                ),
-              ],
+            Text(
+              '${dashboard!.reviewedToday == 0 ? 'Nenhuma revisão registrada hoje.' : 'Hoje: ${_plural(dashboard.reviewedToday, 'revisão registrada', 'revisões registradas')}.'} '
+              'Esta medida usa a sua autoavaliação. Ela não representa nota, acerto em prova ou domínio comprovado.',
+              style: Tipo.legenda,
             ),
           ],
-          if (widget.onExplore != null || widget.onAnalyze != null) ...[
-            const SizedBox(height: 16),
-            _StudyActions(
-              children: [
-                if (widget.onExplore != null)
-                  _StudyActionButton(
-                    key: const Key('study-explore'),
-                    icon: WindowsIcons.education,
-                    label: 'Explorar conteúdos',
-                    accent: MistakeMapDesign.azure,
-                    onPressed: widget.onExplore,
-                  ),
-                if (widget.onAnalyze != null)
-                  _StudyActionButton(
-                    key: const Key('study-analyze'),
-                    icon: WindowsIcons.camera,
-                    label: 'Enviar exercício',
-                    accent: MistakeMapDesign.violet,
-                    onPressed: widget.onAnalyze,
-                  ),
-              ],
-            ),
+          if (widget.shortcuts.isNotEmpty) ...[
+            const SizedBox(height: Espaco.secao),
+            const SecaoTitulo('Atalhos'),
+            GrupoLista(children: widget.shortcuts),
           ],
         ],
       ),
@@ -1236,87 +1309,6 @@ class _StudyButton extends StatelessWidget {
   );
 }
 
-/// Atalhos do fim do painel: lado a lado e centralizados quando cabem;
-/// em tela estreita, empilhados e centralizados, Explorar conteúdos primeiro.
-class _StudyActions extends StatelessWidget {
-  const _StudyActions({required this.children});
-  final List<Widget> children;
-
-  static const _gap = 16.0;
-  static const _width = 264.0;
-  static const _maxStacked = 340.0;
-
-  @override
-  Widget build(BuildContext context) {
-    if (children.isEmpty) return const SizedBox.shrink();
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final fitsInRow =
-            constraints.maxWidth >=
-            children.length * _width + (children.length - 1) * _gap;
-        if (fitsInRow) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 0; i < children.length; i++) ...[
-                if (i > 0) const SizedBox(width: _gap),
-                SizedBox(width: _width, child: children[i]),
-              ],
-            ],
-          );
-        }
-        final width = math.min(constraints.maxWidth, _maxStacked);
-        return Column(
-          children: [
-            for (var i = 0; i < children.length; i++) ...[
-              if (i > 0) const SizedBox(height: 12),
-              SizedBox(width: width, child: children[i]),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// Botão de atalho com ícone e acento Aurora; a tinta Abyss sobre o
-/// preenchimento vivo mantém o contraste acima de 4,5:1.
-class _StudyActionButton extends StatelessWidget {
-  const _StudyActionButton({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.accent,
-    required this.onPressed,
-  });
-  final IconData icon;
-  final String label;
-  final Color accent;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: const BoxConstraints(minHeight: 52),
-    child: MistakeMapButton(
-      onPressed: onPressed,
-      style: MistakeMapControls.button(
-        radius: 14,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-        background: accent,
-        foreground: MistakeMapDesign.abyss,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 20),
-          const SizedBox(width: 10),
-          Flexible(child: Text(label, textAlign: TextAlign.center)),
-        ],
-      ),
-    ),
-  );
-}
-
 class _StudyNotice extends StatelessWidget {
   const _StudyNotice(this.message, {this.error = false});
   final String message;
@@ -1332,4 +1324,28 @@ class _StudyNotice extends StatelessWidget {
       ),
     ),
   );
+}
+
+enum _ActionKind { review, diagnostics, exercises, profile, analyze, study }
+
+class _NextAction {
+  const _NextAction({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.button,
+    required this.onPressed,
+    required this.kind,
+    this.accent = MistakeMapDesign.aqua,
+    this.ink = MistakeMapDesign.aquaInk,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final String button;
+  final VoidCallback? onPressed;
+  final _ActionKind kind;
+  final Color accent;
+  final Color ink;
 }
