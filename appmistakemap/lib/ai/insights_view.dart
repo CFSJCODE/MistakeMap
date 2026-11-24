@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../layout/conta.dart' show BotaoConta;
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
@@ -364,6 +365,11 @@ class _ErrorMapViewState extends State<ErrorMapView> {
             tooltip: 'Atualizar mapa',
             onPressed: _loading ? null : _reload,
             icon: const Icon(Icons.refresh),
+          ),
+          // Troca de perfil, aparência e sair, como nas outras abas.
+          const Padding(
+            padding: EdgeInsetsDirectional.only(start: 4, end: 8),
+            child: BotaoConta(tamanho: 40),
           ),
         ],
       ),

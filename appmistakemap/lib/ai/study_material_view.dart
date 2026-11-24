@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../layout/conta.dart' show BotaoConta;
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
@@ -129,6 +130,13 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
       appBar: AppBar(
         title: const Text('Estudar com a IA'),
         foregroundColor: mapTitleBlue,
+        // Troca de perfil, aparência e sair, como nas outras abas.
+        actions: const [
+          Padding(
+            padding: EdgeInsetsDirectional.only(end: 8),
+            child: BotaoConta(tamanho: 40),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView(
