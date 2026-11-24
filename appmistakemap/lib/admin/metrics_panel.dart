@@ -226,11 +226,7 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
       children: [
         Text(
           'Funcionamento do aplicativo',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: MistakeMapDesign.primary,
-          ),
+          style: Tipo.tituloSecao.copyWith(color: MistakeMapDesign.primary),
         ),
         const SizedBox(height: 8),
         Text(switch (_network) {
@@ -274,11 +270,7 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
         const SizedBox(height: 24),
         Text(
           'IA · consumo e resultados',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: MistakeMapDesign.primary,
-          ),
+          style: Tipo.tituloSecao.copyWith(color: MistakeMapDesign.primary),
         ),
         const SizedBox(height: 12),
         GradeAdaptativa(
@@ -336,11 +328,7 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
         const SizedBox(height: 24),
         Text(
           'Armazenamento e cotas',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: MistakeMapDesign.primary,
-          ),
+          style: Tipo.tituloSecao.copyWith(color: MistakeMapDesign.primary),
         ),
         const SizedBox(height: 12),
         GradeAdaptativa(
@@ -400,7 +388,7 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
       for (final row in rows.whereType<Map>()) ...[
         Text(
           'Operação · ${row['model']?.toString() ?? 'Modelo não informado'}',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: Tipo.tituloSecao,
         ),
         const SizedBox(height: 12),
         GradeAdaptativa(

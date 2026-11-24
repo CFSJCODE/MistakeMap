@@ -203,10 +203,7 @@ class _PlatformSessionPageState extends State<PlatformSessionPage> {
                 const SizedBox(height: 24),
                 Text(
                   '${_session['title'] ?? 'Sua sessão'}',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Tipo.tituloPagina,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -250,10 +247,7 @@ class _PlatformSessionPageState extends State<PlatformSessionPage> {
                             result['verdict'] == 'correct'
                                 ? 'Resposta equivalente ao gabarito'
                                 : 'Confira sua resolução',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: Tipo.tituloSecao,
                           ),
                           const SizedBox(height: 16),
                           SelectableText(
@@ -285,10 +279,7 @@ class _PlatformSessionPageState extends State<PlatformSessionPage> {
                         children: [
                           Text(
                             'Questão ${index + 1} · ${item['theme']}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: Tipo.tituloSecao,
                           ),
                           const SizedBox(height: 16),
                           SelectableText('${item['prompt']}'),

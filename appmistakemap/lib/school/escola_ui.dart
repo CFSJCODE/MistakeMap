@@ -34,11 +34,7 @@ class CartaoEscola extends StatelessWidget {
       children: [
         Text(
           titulo,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: MistakeMapDesign.primary,
-          ),
+          style: Tipo.tituloSecao.copyWith(color: MistakeMapDesign.primary),
         ),
         if (subtitulo != null) ...[
           const SizedBox(height: 6),
@@ -179,9 +175,7 @@ Future<void> mostrarCodigo(
           child: SelectableText(
             codigo,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
+            style: Tipo.numero.copyWith(
               letterSpacing: 3,
               color: MistakeMapDesign.primary,
             ),

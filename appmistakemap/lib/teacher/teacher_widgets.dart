@@ -43,13 +43,7 @@ class TeacherPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text(title, style: Tipo.tituloPagina),
               const SizedBox(height: 8),
               Text(subtitle),
               const SizedBox(height: 16),
@@ -93,10 +87,7 @@ class TeacherCard extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-        ),
+        Text(title, style: Tipo.tituloSecao),
         const SizedBox(height: 16),
         ...children,
       ],

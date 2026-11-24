@@ -443,10 +443,7 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
           ],
           if (faturas.isNotEmpty) ...[
             const SizedBox(height: 20),
-            const Text(
-              'Faturas',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            ),
+            Text('Faturas', style: Tipo.tituloComponente),
             const SizedBox(height: 8),
             for (final f in faturas.take(12))
               _LinhaFatura(
@@ -471,15 +468,10 @@ class _Numero extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(
-        rotulo,
-        style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
-      ),
+      Text(rotulo, style: Tipo.legenda.copyWith(color: MistakeMapDesign.steel)),
       Text(
         valor,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+        style: Tipo.tituloSecao.copyWith(
           color: MistakeMapDesign.abyss,
           fontFeatures: [FontFeature.tabularFigures()],
         ),
@@ -562,12 +554,12 @@ class _LinhaFatura extends StatelessWidget {
                 _nfse[fatura['nfse_status']]!,
               if (fatura['nfse_number'] != null) 'nº ${fatura['nfse_number']}',
             ].join(' · '),
-            style: TextStyle(fontSize: 12.5, color: cor),
+            style: Tipo.legenda.copyWith(color: cor),
           ),
           if (fatura['failure_reason'] != null && status != 'paid')
             Text(
               '${fatura['failure_reason']}',
-              style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
+              style: Tipo.legenda.copyWith(color: MistakeMapDesign.steel),
             ),
           if (podePagar) ...[
             if ((status == 'awaiting_payment' || status == 'overdue') &&

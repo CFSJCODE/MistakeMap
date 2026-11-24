@@ -16,7 +16,7 @@ visto, não o que foi presumido.
 | 2 | Caminhos duplicados no Início: "Enviar exercício" = Passo 1, "Praticar um conceito" = Passo 4, "Explorar conteúdos" ao lado de "Biblioteca" | idem | Alta | Resolvido |
 | 3 | Bloco de marca (gradiente "MistakeMap") ocupando o topo do Início sem função | `_cabecalho` | Média | Resolvido |
 | 4 | Três parágrafos de método no cartão "Sua semana de revisão" | `StudyTodayPanel` | Média | Resolvido (uma frase + barra + nota) |
-| 5 | Tamanhos de fonte soltos: 21 valores distintos (9,5 a 30 sp) em `fontSize:` | todo o `lib/` | Média | Escala `Tipo` criada; migração tela a tela |
+| 5 | Tamanhos de fonte soltos: 21 valores distintos (9,5 a 30 sp) em `fontSize:` | todo o `lib/` | Média | Escala `Tipo` criada; telas de escola, TI, professor, equipe, relatórios e admin migradas na etapa 6. Ficam a cobrança (fluxo desenhado à parte) e partes do Mapa |
 | 6 | Cartão "Próximo passo: treinar" do Mapa com o botão ao lado do texto: a 360–390 px o texto virava uma coluna de uma palavra por linha | `_StudyCallout` em `insights_view.dart` | Média | Resolvido (empilha abaixo de 480 px) |
 | 7 | `GradientBar` sem altura no preenchimento: a barra aparecia vazia | `glass_surface.dart` | Baixa | Resolvido (`heightFactor: 1`) |
 | 8 | Só modo claro: as cores são constantes (`MistakeMapDesign.*`, ~700 usos) e o app força `Brightness.light` | `design_tokens.dart`, `MistakeMapApp` | Média | Resolvido nas etapas 5a a 5c: modo escuro liberado em Mais > Aparência |
@@ -234,6 +234,20 @@ capturas trocam a família só no momento de gerar a imagem.
 - Verificação: claro idêntico ao `main` em 18 capturas (11 telas do aluno,
   5 passos da cobrança e 2 dos relatórios); escuro conferido nas mesmas.
 
+### Etapa 6: escala `Tipo` nas telas de escola, TI e professor
+
+- 52 estilos com `fontSize:` solto viraram tokens `Tipo` (com `copyWith`
+  só para cor ou espaçamento): títulos de página de 26 a 30 sp →
+  `tituloPagina` (24); títulos de cartão e seção de 18 a 22 sp →
+  `tituloSecao` (18); valores de indicador de 22 a 26 sp → `numero` (22);
+  11 a 12,5 sp → `legenda` (12); 14 e 16 sp → `secundario` e `corpo`.
+- Arquivos: Quem é você, entrada por perfil, painel da escola, painel de
+  TI, código da turma, professor, Central da Equipe, relatórios, cobrança
+  no painel, cota de modelos, métricas e plataforma de estudos.
+- Ficam de fora: o eixo do gráfico dos relatórios (11 sp, rótulo cortado
+  num espaço fixo), a cobrança (`checkout_page.dart`, que segue o
+  protótipo próprio) e tamanhos passados como parâmetro de componente.
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |
@@ -242,7 +256,7 @@ capturas trocam a família só no momento de gerar a imagem.
 | 3 | Estudar e sessão de revisão: modo foco, menos navegação visível durante a sessão | Feita para a revisão e a conferência (itens 13 e 14). A aba Estudar (material da IA, em Material) fica com a etapa 4 |
 | 4 | Mapa: chips e botões Material com a mesma aparência dos Fluent; visão em lista como alternativa ao grafo | Feita em parte (itens 15 e 16): segmentos Material com o visual do `GlassSegmented`. A visão "Tentativas" já é a lista alternativa ao grafo |
 | 5 | Modo escuro: trocar as constantes `MistakeMapDesign.*` por cores da paleta, tela a tela | Feita (5a, 5b e 5c). Escolha em Mais > Aparência; padrão "Igual ao aparelho" |
-| 6 | Migrar `fontSize:` soltos para `Tipo` nas telas de escola, TI e professor | |
+| 6 | Migrar `fontSize:` soltos para `Tipo` nas telas de escola, TI e professor | Feita (52 estilos em 14 arquivos) |
 
 Lembrete de publicação: todo merge no `main` que toca `lib/` vira patch do
 Shorebird, que não pode trazer assets novos; este redesign não adiciona

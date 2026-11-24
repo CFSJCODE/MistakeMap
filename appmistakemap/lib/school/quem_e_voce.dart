@@ -199,17 +199,13 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
   List<Widget> _escolha() => [
     Text(
       'Quem é você?',
-      style: TextStyle(
-        fontSize: 30,
-        fontWeight: FontWeight.w700,
-        color: MistakeMapDesign.primary,
-      ),
+      style: Tipo.tituloPagina.copyWith(color: MistakeMapDesign.primary),
     ),
     const SizedBox(height: 8),
     Text(
       'Escolha como você vai usar o MistakeMap. Dá para ter mais de um perfil '
       'depois: o app mostra um seletor no topo.',
-      style: TextStyle(fontSize: 16, color: MistakeMapDesign.content),
+      style: Tipo.corpo.copyWith(color: MistakeMapDesign.content),
     ),
     const SizedBox(height: 24),
     LayoutBuilder(
@@ -250,11 +246,7 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
         Expanded(
           child: Text(
             perfil.titulo,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: MistakeMapDesign.primary,
-            ),
+            style: Tipo.tituloPagina.copyWith(color: MistakeMapDesign.primary),
           ),
         ),
       ],
@@ -475,9 +467,7 @@ class CartaoPerfil extends StatelessWidget {
                 children: [
                   Text(
                     perfil.titulo,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
+                    style: Tipo.tituloComponente.copyWith(
                       color: MistakeMapDesign.primary,
                     ),
                   ),
@@ -490,8 +480,7 @@ class CartaoPerfil extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Só com convite',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: Tipo.legenda.copyWith(
                         fontWeight: FontWeight.w600,
                         color: MistakeMapDesign.warn,
                       ),

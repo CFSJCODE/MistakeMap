@@ -202,16 +202,9 @@ class _Indicador extends StatelessWidget {
         Text(rotulo, style: TextStyle(color: MistakeMapDesign.steel)),
         Text(
           valor,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: MistakeMapDesign.primary,
-          ),
+          style: Tipo.numero.copyWith(color: MistakeMapDesign.primary),
         ),
-        Text(
-          nota,
-          style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
-        ),
+        Text(nota, style: Tipo.legenda.copyWith(color: MistakeMapDesign.steel)),
       ],
     ),
   );
@@ -261,9 +254,7 @@ class _TelaTi extends StatelessWidget {
                           children: [
                             Text(
                               titulo,
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w700,
+                              style: Tipo.tituloPagina.copyWith(
                                 color: MistakeMapDesign.primary,
                               ),
                             ),
@@ -646,8 +637,7 @@ class _TelaPessoasTiState extends State<TelaPessoasTi> {
                           '${p.papeis.map((r) => r.ativo ? r.nome : '${r.nome} (suspenso)').join(', ')}'
                           ' · último acesso ${quandoRelativo(p.ultimoAcesso)}'
                           '${p.sessoes > 0 ? ' · ${p.sessoes} ${p.sessoes == 1 ? 'aparelho' : 'aparelhos'}' : ''}',
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: Tipo.legenda.copyWith(
                             color: p.suspensa
                                 ? MistakeMapDesign.coralInk
                                 : MistakeMapDesign.steel,
@@ -732,8 +722,7 @@ class _TelaPessoasTiState extends State<TelaPessoasTi> {
                       'Sessões e senha desta conta só o dono da escola ou a '
                       'própria pessoa administram (ela tem papel de gestão '
                       'ou outra escola).',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: Tipo.legenda.copyWith(
                         color: MistakeMapDesign.steel,
                       ),
                     ),
@@ -1057,10 +1046,7 @@ class _TelaAuditoriaTiState extends State<TelaAuditoriaTi> {
                       'por ${r.quem ?? 'sistema'}',
                       if (r.alvo != null) 'pessoa: ${r.alvo}',
                     ].join(' · '),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: MistakeMapDesign.steel,
-                    ),
+                    style: Tipo.legenda.copyWith(color: MistakeMapDesign.steel),
                   ),
                 ],
               ),

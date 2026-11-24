@@ -765,9 +765,7 @@ class _MolduraPerfil extends StatelessWidget {
                         children: [
                           Text(
                             titulo,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
+                            style: Tipo.tituloPagina.copyWith(
                               color: MistakeMapDesign.primary,
                             ),
                           ),

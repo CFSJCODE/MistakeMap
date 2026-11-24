@@ -135,10 +135,7 @@ class _ClassMapPageState extends State<ClassMapPage> {
         const Text('Nenhum erro registrado no período.'),
       for (final (index, c) in map.topConcepts.indexed) ...[
         if (index > 0) const SizedBox(height: 16),
-        Text(
-          '${index + 1}. ${c.concept}',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
+        Text('${index + 1}. ${c.concept}', style: Tipo.tituloComponente),
         const SizedBox(height: 4),
         Text(
           '${c.subject.isEmpty ? '' : '${c.subject} · '}'
