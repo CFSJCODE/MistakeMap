@@ -19,6 +19,7 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'theme/aparencia.dart';
 import 'theme/design_tokens.dart';
 import 'theme/control_styles.dart';
 import 'theme/componentes.dart';
@@ -73,8 +74,8 @@ part 'onboarding/primeira_analise.dart';
 // ─── Cores da identidade visual (Obsidian Glass, modo claro) ─────────────────
 // titleBlue e contentBlue mantêm o nome histórico; hoje são as tintas escuras
 // da paleta para títulos e texto.
-const Color titleBlue = MistakeMapDesign.primary;
-const Color contentBlue = MistakeMapDesign.content;
+Color get titleBlue => MistakeMapDesign.primary;
+Color get contentBlue => MistakeMapDesign.content;
 // Preenchimento do botão principal (Aqua); a tinta escura vem do contraste.
 const Color kAcento = MistakeMapDesign.accent;
 
@@ -83,29 +84,29 @@ const Color kAcento = MistakeMapDesign.accent;
 abstract final class Cores {
   static const Color branco = Color(0xFFFFFFFF);
   static const Color transparente = Color(0x00000000);
-  static const Color vermelho = MistakeMapDesign.coralInk;
+  static Color get vermelho => MistakeMapDesign.coralInk;
   static const Color vermelho300 = MistakeMapDesign.coral;
   static const Color vermelho400 = Color(0xFFC8364A);
-  static const Color vermelho600 = MistakeMapDesign.coralInk;
+  static Color get vermelho600 => MistakeMapDesign.coralInk;
   static const Color vermelho700 = Color(0xFF9E1F31);
-  static const Color verde = MistakeMapDesign.mintInk;
+  static Color get verde => MistakeMapDesign.mintInk;
   static const Color verde600 = Color(0xFF0F6640);
-  static const Color laranja = MistakeMapDesign.amberInk;
+  static Color get laranja => MistakeMapDesign.amberInk;
   static const Color laranja400 = Color(0xFF9A5E00);
   static const Color laranja700 = Color(0xFF7A4900);
   static const Color ambar = MistakeMapDesign.amber;
-  static const Color azul600 = MistakeMapDesign.azureInk;
-  static const Color cinza = MistakeMapDesign.steel;
-  static const Color cinza100 = MistakeMapDesign.well;
-  static const Color cinza200 = MistakeMapDesign.disabledFill;
-  static const Color cinza300 = MistakeMapDesign.mist;
-  static const Color cinza600 = MistakeMapDesign.steel;
-  static const Color cinza700 = MistakeMapDesign.slate;
+  static Color get azul600 => MistakeMapDesign.azureInk;
+  static Color get cinza => MistakeMapDesign.steel;
+  static Color get cinza100 => MistakeMapDesign.well;
+  static Color get cinza200 => MistakeMapDesign.disabledFill;
+  static Color get cinza300 => MistakeMapDesign.mist;
+  static Color get cinza600 => MistakeMapDesign.steel;
+  static Color get cinza700 => MistakeMapDesign.slate;
 }
 
 // ─── Fluent UI + Liquid Glass — tokens ───────────────────────────────────────
-const Color kGlassBg = MistakeMapDesign.surface;
-const Color kScaffoldBg = MistakeMapDesign.background;
+Color get kGlassBg => MistakeMapDesign.surface;
+Color get kScaffoldBg => MistakeMapDesign.background;
 const double kRadius = 16;
 const double kRadiusSm = 10;
 const double kAlturaBarraSuperior = 64;
@@ -115,8 +116,11 @@ double _alturaBarraSuperior(BuildContext context) =>
       double.infinity,
     );
 
-final FluentThemeData temaFluent = FluentThemeData(
-  brightness: Brightness.light,
+/// Tema Fluent montado a partir da paleta atual (clara ou escura).
+FluentThemeData get temaFluent => _temaFluent(MistakeMapDesign.paleta);
+
+FluentThemeData _temaFluent(PaletaMistakeMap paleta) => FluentThemeData(
+  brightness: paleta.brightness,
   accentColor: MistakeMapDesign.aquaInk.toAccentColor(),
   scaffoldBackgroundColor: kScaffoldBg,
   cardColor: kGlassBg,
@@ -124,31 +128,47 @@ final FluentThemeData temaFluent = FluentThemeData(
   micaBackgroundColor: MistakeMapDesign.canvas,
   inactiveColor: MistakeMapDesign.steel,
   shadowColor: MistakeMapDesign.deep,
-  resources: const ResourceDictionary.light(
-    textFillColorPrimary: MistakeMapDesign.deep,
-    textFillColorSecondary: MistakeMapDesign.steel,
-    cardStrokeColorDefault: MistakeMapDesign.hairline,
-    controlStrokeColorDefault: MistakeMapDesign.edge,
-    solidBackgroundFillColorBase: MistakeMapDesign.canvas,
-  ),
+  resources: MistakeMapDesign.escuro
+      ? ResourceDictionary.dark(
+          textFillColorPrimary: MistakeMapDesign.deep,
+          textFillColorSecondary: MistakeMapDesign.steel,
+          cardStrokeColorDefault: MistakeMapDesign.hairline,
+          controlStrokeColorDefault: MistakeMapDesign.edge,
+          solidBackgroundFillColorBase: MistakeMapDesign.canvas,
+        )
+      : ResourceDictionary.light(
+          textFillColorPrimary: MistakeMapDesign.deep,
+          textFillColorSecondary: MistakeMapDesign.steel,
+          cardStrokeColorDefault: MistakeMapDesign.hairline,
+          controlStrokeColorDefault: MistakeMapDesign.edge,
+          solidBackgroundFillColorBase: MistakeMapDesign.canvas,
+        ),
   // Diálogos em acrílico: quase opacos para o texto, cantos de cartão, borda
   // clara e véu escuro suave atrás.
-  dialogTheme: const ContentDialogThemeData(
+  dialogTheme: ContentDialogThemeData(
     decoration: BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFAFFFFFF), Color(0xF2F8FAFB)],
+        colors: MistakeMapDesign.escuro
+            ? [MistakeMapDesign.raised, MistakeMapDesign.well]
+            : const [Color(0xFAFFFFFF), Color(0xF2F8FAFB)],
       ),
       borderRadius: BorderRadius.all(Radius.circular(20)),
-      border: Border.fromBorderSide(BorderSide(color: Color(0xE6FFFFFF))),
+      border: Border.fromBorderSide(
+        BorderSide(
+          color: MistakeMapDesign.escuro
+              ? MistakeMapDesign.edge
+              : const Color(0xE6FFFFFF),
+        ),
+      ),
       boxShadow: MistakeMapDesign.liquidShadow,
     ),
     actionsDecoration: BoxDecoration(
-      color: Color(0x0A11212D),
+      color: paleta.sombra.withAlpha(MistakeMapDesign.escuro ? 0x33 : 0x0A),
       borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
     ),
-    barrierColor: Color(0x6606141B),
+    barrierColor: MistakeMapDesign.veu,
   ),
   fasterAnimationDuration: MistakeMapMotion.hover,
   fastAnimationDuration: MistakeMapMotion.controls,
@@ -159,7 +179,8 @@ final FluentThemeData temaFluent = FluentThemeData(
     outlinedButtonStyle: MistakeMapControls.button(),
     filledButtonStyle: MistakeMapControls.button(
       background: kAcento,
-      foreground: MistakeMapDesign.abyss,
+      // Glifo escuro sobre o acento vivo, nos dois temas.
+      foreground: MistakeMapDesign.onAccent,
     ),
     iconButtonStyle: MistakeMapControls.button(
       padding: const EdgeInsets.all(14),
@@ -174,10 +195,8 @@ final FluentThemeData temaFluent = FluentThemeData(
 );
 
 // As cores semânticas do vidro (toasts, brilhos) seguem os acentos Aurora.
-const GlassThemeData temaVidro = GlassThemeData(
-  brightness: Brightness.light,
-  interaction: GlassInteractionSettings(stretch: 0, interactionScale: 0.98),
-  light: GlassThemeVariant(
+GlassThemeData get temaVidro {
+  final variante = GlassThemeVariant(
     quality: GlassQuality.standard,
     glowColors: GlassGlowColors(
       primary: MistakeMapDesign.aquaInk,
@@ -187,8 +206,17 @@ const GlassThemeData temaVidro = GlassThemeData(
       warning: MistakeMapDesign.amberInk,
       danger: MistakeMapDesign.coralInk,
     ),
-  ),
-);
+  );
+  return GlassThemeData(
+    brightness: MistakeMapDesign.paleta.brightness,
+    interaction: const GlassInteractionSettings(
+      stretch: 0,
+      interactionScale: 0.98,
+    ),
+    light: variante,
+    dark: variante,
+  );
+}
 
 // ─── Modo demonstração ───────────────────────────────────────────────────────
 // Defina como true para exibir o banner "Demonstração" nas telas com dados de seed.
@@ -350,7 +378,7 @@ class _BarraVidro extends StatelessWidget implements PreferredSizeWidget {
     final solida = PreferenciaVidro.solido(context);
     if (solida) {
       return DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: MistakeMapDesign.white,
           border: Border(bottom: BorderSide(color: MistakeMapDesign.steel)),
         ),
@@ -361,7 +389,7 @@ class _BarraVidro extends StatelessWidget implements PreferredSizeWidget {
     // inferior que pega a luz (linha clara sobre a linha escura) e sombra
     // projetada no conteúdo que passa por baixo.
     final barra = DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -377,7 +405,7 @@ class _BarraVidro extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       child: DecoratedBox(
-        decoration: const BoxDecoration(gradient: MistakeMapDesign.glint),
+        decoration: BoxDecoration(gradient: MistakeMapDesign.glint),
         child: DecoratedBox(
           position: DecorationPosition.foreground,
           decoration: const BoxDecoration(
@@ -462,13 +490,13 @@ class _BotaoBarra extends StatelessWidget {
     required this.icone,
     required this.dica,
     required this.onPressed,
-    this.cor = titleBlue,
+    this.cor,
   });
 
   final IconData icone;
   final String dica;
   final VoidCallback? onPressed;
-  final Color cor;
+  final Color? cor;
 
   @override
   Widget build(BuildContext context) {
@@ -479,7 +507,7 @@ class _BotaoBarra extends StatelessWidget {
         child: MistakeMapIconButton(
           style: MistakeMapControls.button(
             padding: const EdgeInsets.all(11),
-            foreground: cor,
+            foreground: cor ?? titleBlue,
           ),
           icon: _IconeBotao(icone, size: 18),
           onPressed: onPressed,
@@ -686,7 +714,7 @@ MenuFlyoutItemBuilder _itemMenu({
   required IconData icone,
   required String texto,
   required VoidCallback? onPressed,
-  Color cor = contentBlue,
+  Color? cor,
   Key? chave,
 }) => MenuFlyoutItemBuilder(
   builder: (context) => MistakeMapButton(
@@ -695,7 +723,7 @@ MenuFlyoutItemBuilder _itemMenu({
         MistakeMapControls.button(
           radius: 4,
           background: Cores.transparente,
-          foreground: cor,
+          foreground: cor ?? contentBlue,
           fontSize: 14,
           padding: const EdgeInsetsDirectional.only(
             top: 4,
@@ -985,11 +1013,15 @@ void main() async {
       },
     ).instalar();
   }
+  await Aparencia.instancia.carregar();
   runApp(
-    LiquidGlassWidgets.wrap(
-      theme: temaVidro,
-      brightnessResolver: (context) => FluentTheme.maybeOf(context)?.brightness,
-      child: const MistakeMapApp(),
+    AparenciaApp(
+      builder: (context) => LiquidGlassWidgets.wrap(
+        theme: temaVidro,
+        brightnessResolver: (context) =>
+            FluentTheme.maybeOf(context)?.brightness,
+        child: const MistakeMapApp(),
+      ),
     ),
   );
   // Patches de código e aviso de versão nativa nova (Android e Windows). O
@@ -1009,12 +1041,14 @@ class MistakeMapApp extends StatelessWidget {
     return FluentApp(
       title: kTeamBuild ? 'MistakeMap Equipe' : 'MistakeMap',
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.light,
+      themeMode: MistakeMapDesign.escuro ? ThemeMode.dark : ThemeMode.light,
       theme: temaFluent,
+      darkTheme: temaFluent,
       // Barra de rolagem colada na borda direita, sempre visível na web.
       scrollBehavior: const RolagemVidro(),
-      // O app é só claro; sem isso, os textos Cupertino dos overlays de vidro
-      // (toasts) seguem o modo escuro do sistema e somem sobre o vidro claro.
+      // O brilho vem da paleta do app, não do sistema: sem isso, os textos
+      // Cupertino dos overlays de vidro (toasts) seguiriam o aparelho e
+      // sumiriam sobre o vidro do tema oposto.
       builder: (context, child) {
         final media = MediaQuery.of(context);
         return FluentTheme(
@@ -1026,7 +1060,9 @@ class MistakeMapApp extends StatelessWidget {
                 )
               : temaFluent,
           child: MediaQuery(
-            data: media.copyWith(platformBrightness: Brightness.light),
+            data: media.copyWith(
+              platformBrightness: MistakeMapDesign.paleta.brightness,
+            ),
             child: PreferenciaVidro(child: child!),
           ),
         );
@@ -1694,12 +1730,12 @@ class _TelaCadastroState extends State<TelaCadastro> {
               Text(
                 'Entrar como ${perfil.titulo.toLowerCase()}',
                 key: const Key('login-perfil-entrada'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: MistakeMapDesign.primary,
                 ),
               ),
-              const Text(
+              Text(
                 'Use o e-mail e a senha da conta desse perfil.',
                 style: TextStyle(color: MistakeMapDesign.content),
               ),
@@ -2113,13 +2149,13 @@ class _TelaCadastroState extends State<TelaCadastro> {
     return ButtonStyle(
       padding: const WidgetStatePropertyAll(EdgeInsets.all(12)),
       backgroundColor: const WidgetStatePropertyAll(Cores.transparente),
-      foregroundColor: const WidgetStatePropertyAll(contentBlue),
+      foregroundColor: WidgetStatePropertyAll(contentBlue),
       elevation: const WidgetStatePropertyAll(0),
       shape: WidgetStateProperty.resolveWith(
         (states) => RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kRadiusSm),
           side: states.contains(WidgetState.focused)
-              ? const BorderSide(color: titleBlue, width: 2)
+              ? BorderSide(color: titleBlue, width: 2)
               : BorderSide.none,
         ),
       ),
@@ -2134,7 +2170,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
   }
 
   Widget _divisor() {
-    return const Divider(
+    return Divider(
       style: DividerThemeData(
         thickness: 1,
         horizontalMargin: EdgeInsets.zero,
@@ -2159,7 +2195,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
           autocorrect: false,
           autofillHints: const [AutofillHints.email],
           placeholder: 'email@dominio.com',
-          placeholderStyle: const TextStyle(color: contentBlue),
+          placeholderStyle: TextStyle(color: contentBlue),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: _decoracaoCampo,
           unfocusedColor: Cores.transparente,
@@ -2179,7 +2215,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
             if (!_carregando) _entrarComEmailSenha();
           },
           placeholder: 'senha',
-          placeholderStyle: const TextStyle(color: contentBlue),
+          placeholderStyle: TextStyle(color: contentBlue),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: _decoracaoCampo,
           unfocusedColor: Cores.transparente,
@@ -2216,7 +2252,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
           ),
           onPressed: _carregando ? null : _entrarComEmailSenha,
           child: _carregando
-              ? const SizedBox(
+              ? SizedBox(
                   height: 16,
                   width: 16,
                   child: ProgressRing(
@@ -2278,7 +2314,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
                   shape: WidgetStatePropertyAll(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(kRadiusSm),
-                      side: const BorderSide(color: contentBlue),
+                      side: BorderSide(color: contentBlue),
                     ),
                   ),
                 ),
@@ -2326,7 +2362,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(kRadiusSm),
-            side: const BorderSide(color: contentBlue),
+            side: BorderSide(color: contentBlue),
           ),
         ),
       );
@@ -2392,7 +2428,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
     return Text.rich(
       TextSpan(
         style: context.tipo.caption?.copyWith(color: contentBlue),
-        children: const [
+        children: [
           TextSpan(text: 'Ao continuar, você concorda com nossos '),
           TextSpan(
             text: 'Termos de Serviço\n',
@@ -2482,7 +2518,7 @@ class _TelaNovaSenhaState extends State<TelaNovaSenha> {
       controller: controller,
       obscureText: true,
       placeholder: placeholder,
-      placeholderStyle: const TextStyle(color: contentBlue),
+      placeholderStyle: TextStyle(color: contentBlue),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: WidgetStatePropertyAll(
         BoxDecoration(
@@ -2491,7 +2527,7 @@ class _TelaNovaSenhaState extends State<TelaNovaSenha> {
         ),
       ),
       unfocusedColor: Cores.transparente,
-      prefix: const Padding(
+      prefix: Padding(
         padding: EdgeInsetsDirectional.only(start: 12),
         child: Icon(WindowsIcons.lock, size: 16, color: contentBlue),
       ),
@@ -2540,7 +2576,7 @@ class _TelaNovaSenhaState extends State<TelaNovaSenha> {
               ),
               onPressed: _salvando ? null : _salvar,
               child: _salvando
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 16,
                       width: 16,
                       child: ProgressRing(
@@ -2822,7 +2858,7 @@ class _TelaInicialState extends State<TelaInicial> {
       children: [
         Text('Um próximo passo para cada dificuldade.', style: Tipo.secundario),
         if (widget.user.isAdmin)
-          const _Pilula(
+          _Pilula(
             texto: 'Administrador',
             cor: contentBlue,
             icone: WindowsIcons.admin,
@@ -3159,7 +3195,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
       shape: WidgetStatePropertyAll(
         RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kRadiusSm),
-          side: const BorderSide(color: contentBlue),
+          side: BorderSide(color: contentBlue),
         ),
       ),
     );
@@ -3196,7 +3232,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                             color: Cores.verde.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             WindowsIcons.completed,
                             size: 72,
                             color: Cores.verde,
@@ -3384,7 +3420,7 @@ class _TelaAdicionarExercicioState extends State<TelaAdicionarExercicio> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (_enviando)
-                        const SizedBox(
+                        SizedBox(
                           width: 16,
                           height: 16,
                           child: ProgressRing(
@@ -3762,7 +3798,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
                 child: Container(
                   height: 6,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       colors: [Cores.vermelho400, Cores.laranja, Cores.verde],
                     ),
                     borderRadius: BorderRadius.circular(3),
@@ -3770,7 +3806,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
                 ),
               ),
               const SizedBox(width: 8),
-              const _MapaLegenda(cor: Cores.verde, texto: '100%'),
+              _MapaLegenda(cor: Cores.verde, texto: '100%'),
             ],
           ),
         ],
@@ -3794,7 +3830,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
           ),
           const SizedBox(height: 4),
           // Wrap evita estouro horizontal das quatro legendas em telas estreitas.
-          const Wrap(
+          Wrap(
             spacing: 12,
             runSpacing: 8,
             children: [
@@ -3823,7 +3859,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
         children: [
           Row(
             children: [
-              const Icon(WindowsIcons.warning, size: 16, color: Cores.laranja),
+              Icon(WindowsIcons.warning, size: 16, color: Cores.laranja),
               const SizedBox(width: 8),
               Expanded(child: _tituloSecao('Principais fragilidades')),
             ],
@@ -3981,7 +4017,7 @@ class _SubjectBar extends StatelessWidget {
                 if (data.concluidos > 0)
                   Expanded(
                     flex: data.concluidos,
-                    child: const ColoredBox(color: Cores.verde),
+                    child: ColoredBox(color: Cores.verde),
                   ),
                 if (data.pendentes > 0)
                   Expanded(
@@ -3996,10 +4032,10 @@ class _SubjectBar extends StatelessWidget {
                 if (data.semTentativa > 0)
                   Expanded(
                     flex: data.semTentativa,
-                    child: const ColoredBox(color: Cores.cinza300),
+                    child: ColoredBox(color: Cores.cinza300),
                   ),
                 if (total == 1 && data.total == 0)
-                  const Expanded(child: ColoredBox(color: Cores.cinza200)),
+                  Expanded(child: ColoredBox(color: Cores.cinza200)),
               ],
             ),
           ),
@@ -4533,7 +4569,7 @@ class ListaVazia extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const GlassIconTile(
+            GlassIconTile(
               icon: WindowsIcons.bulleted_list,
               ink: MistakeMapDesign.azureInk,
               accent: MistakeMapDesign.azure,
@@ -4771,74 +4807,74 @@ class _EstadoTentativa {
   final bool pedeAcao;
 
   static _EstadoTentativa de(String status) => switch (status) {
-    'completed' => const _EstadoTentativa(
+    'completed' => _EstadoTentativa(
       'Concluído',
       MistakeMapDesign.mint,
       MistakeMapDesign.mintInk,
       WindowsIcons.completed,
     ),
-    'pending' => const _EstadoTentativa(
+    'pending' => _EstadoTentativa(
       'Pendente',
       MistakeMapDesign.amber,
       MistakeMapDesign.amberInk,
       WindowsIcons.history,
       pedeAcao: true,
     ),
-    'uploading' => const _EstadoTentativa(
+    'uploading' => _EstadoTentativa(
       'Enviando',
       MistakeMapDesign.azure,
       MistakeMapDesign.azureInk,
       WindowsIcons.upload,
     ),
     // Estados do pipeline de IA (attempts_status_check).
-    'queued' || 'processing' => const _EstadoTentativa(
+    'queued' || 'processing' => _EstadoTentativa(
       'Analisando',
       MistakeMapDesign.violet,
       MistakeMapDesign.violetInk,
       WindowsIcons.lightbulb,
     ),
-    'awaiting_review' => const _EstadoTentativa(
+    'awaiting_review' => _EstadoTentativa(
       'Revisar',
       MistakeMapDesign.amber,
       MistakeMapDesign.amberInk,
       WindowsIcons.view,
       pedeAcao: true,
     ),
-    'retryable_failed' => const _EstadoTentativa(
+    'retryable_failed' => _EstadoTentativa(
       'Nova tentativa',
       MistakeMapDesign.amber,
       MistakeMapDesign.amberInk,
       WindowsIcons.refresh,
       pedeAcao: true,
     ),
-    'dead_letter' || 'error' => const _EstadoTentativa(
+    'dead_letter' || 'error' => _EstadoTentativa(
       'Erro',
       MistakeMapDesign.coral,
       MistakeMapDesign.coralInk,
       WindowsIcons.error_badge,
       pedeAcao: true,
     ),
-    'cancelled' => const _EstadoTentativa(
+    'cancelled' => _EstadoTentativa(
       'Cancelado',
       MistakeMapDesign.mist,
       MistakeMapDesign.steel,
       WindowsIcons.cancel,
     ),
     // Só no aparelho (fila offline), ainda sem resposta do servidor.
-    statusOffline => const _EstadoTentativa(
+    statusOffline => _EstadoTentativa(
       'Aguardando conexão',
       MistakeMapDesign.azure,
       MistakeMapDesign.azureInk,
       WindowsIcons.cloud_not_synced,
     ),
-    statusRecusado => const _EstadoTentativa(
+    statusRecusado => _EstadoTentativa(
       'Não enviado',
       MistakeMapDesign.coral,
       MistakeMapDesign.coralInk,
       WindowsIcons.error_badge,
       pedeAcao: true,
     ),
-    _ => const _EstadoTentativa(
+    _ => _EstadoTentativa(
       'Sem tentativa',
       MistakeMapDesign.mist,
       MistakeMapDesign.steel,
@@ -5328,7 +5364,7 @@ class _TelaEditarExercicioState extends State<TelaEditarExercicio> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (_salvando)
-                          const SizedBox(
+                          SizedBox(
                             width: 16,
                             height: 16,
                             child: ProgressRing(
@@ -5522,7 +5558,7 @@ class _TelaAdminState extends State<TelaAdmin> {
         raio: kRadiusSm,
         child: Row(
           children: [
-            const Icon(WindowsIcons.people, size: 20, color: contentBlue),
+            Icon(WindowsIcons.people, size: 20, color: contentBlue),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -5768,7 +5804,7 @@ class TelaSobre extends StatelessWidget {
                 // Missão, Visão, Valores
                 const _SobreSecaoTitulo(titulo: 'Nossa Identidade'),
                 const SizedBox(height: 12),
-                const _MvvCard(
+                _MvvCard(
                   icone: WindowsIcons.flag,
                   cor: MistakeMapDesign.aquaInk,
                   acento: MistakeMapDesign.aqua,
@@ -5779,7 +5815,7 @@ class TelaSobre extends StatelessWidget {
                       'para orientar revisões inteligentes.',
                 ),
                 const SizedBox(height: 12),
-                const _MvvCard(
+                _MvvCard(
                   icone: WindowsIcons.view,
                   cor: MistakeMapDesign.violetInk,
                   acento: MistakeMapDesign.violet,
@@ -5790,7 +5826,7 @@ class TelaSobre extends StatelessWidget {
                       'mensurada e guiada por inteligência artificial.',
                 ),
                 const SizedBox(height: 12),
-                const _MvvCard(
+                _MvvCard(
                   icone: WindowsIcons.heart,
                   cor: MistakeMapDesign.amberInk,
                   acento: MistakeMapDesign.amber,
@@ -5835,7 +5871,7 @@ class TelaSobre extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const _MvvCard(
+                _MvvCard(
                   icone: WindowsIcons.people,
                   cor: MistakeMapDesign.aquaInk,
                   acento: MistakeMapDesign.aqua,
@@ -5850,7 +5886,7 @@ class TelaSobre extends StatelessWidget {
                 // Stack técnica
                 const _SobreSecaoTitulo(titulo: 'Stack Tecnológica'),
                 const SizedBox(height: 12),
-                const Wrap(
+                Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
@@ -6074,7 +6110,10 @@ const List<_AreaContribuicao> _contribuicoesLucas = [
 ];
 
 /// O que já está construído, na ordem em que o estudante encontra no app.
-const _funcionalidades = [
+List<
+  ({IconData icone, Color tinta, Color acento, String titulo, String descricao})
+>
+get _funcionalidades => [
   (
     icone: WindowsIcons.camera,
     tinta: MistakeMapDesign.violetInk,
@@ -6320,7 +6359,7 @@ class CartaoVersaoApp extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const GlassIconTile(
+                  GlassIconTile(
                     icon: WindowsIcons.sync,
                     ink: MistakeMapDesign.azureInk,
                     accent: MistakeMapDesign.azure,

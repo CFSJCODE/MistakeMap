@@ -35,14 +35,14 @@ class ModelQuotaCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [MistakeMapDesign.white, MistakeMapDesign.well],
         ),
         borderRadius: BorderRadius.circular(MistakeMapDesign.radius),
         border: Border.all(color: MistakeMapDesign.border),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: MistakeMapDesign.hairline,
             blurRadius: 16,
@@ -65,7 +65,7 @@ class ModelQuotaCard extends StatelessWidget {
                   color: MistakeMapDesign.violet.withValues(alpha: .16),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   WindowsIcons.lightbulb,
                   size: 18,
                   color: MistakeMapDesign.violetInk,
@@ -73,7 +73,7 @@ class ModelQuotaCard extends StatelessWidget {
               ),
               Text(
                 model,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: MistakeMapDesign.navy,
@@ -88,7 +88,7 @@ class ModelQuotaCard extends StatelessWidget {
                   color: MistakeMapDesign.mint.withValues(alpha: .18),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
+                child: Text(
                   'Plano gratuito',
                   style: TextStyle(
                     fontSize: 12,
@@ -104,10 +104,7 @@ class ModelQuotaCard extends StatelessWidget {
             telemetryAvailable
                 ? 'Consumo registrado pelo aplicativo'
                 : 'Aguardando dados de consumo',
-            style: const TextStyle(
-              fontSize: 12,
-              color: MistakeMapDesign.content,
-            ),
+            style: TextStyle(fontSize: 12, color: MistakeMapDesign.content),
           ),
           const SizedBox(height: 20),
           _quotaRow(
@@ -170,7 +167,7 @@ class ModelQuotaCard extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: MistakeMapDesign.content,
@@ -192,7 +189,7 @@ class ModelQuotaCard extends StatelessWidget {
                 ),
                 Text(
                   '/ ${formatarMilhar(limit)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     color: MistakeMapDesign.content,
                   ),
@@ -225,7 +222,7 @@ class ModelQuotaCard extends StatelessWidget {
                 Text(percent, style: TextStyle(fontSize: 12, color: color)),
                 Text(
                   balance,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: MistakeMapDesign.content,

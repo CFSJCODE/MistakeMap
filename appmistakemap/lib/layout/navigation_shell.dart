@@ -75,7 +75,7 @@ class AppNavigationShell extends StatelessWidget {
   ];
 
   /// O mesmo acento escurecido, para ícones legíveis sobre o vidro branco.
-  static const accentInks = [
+  static List<Color> get accentInks => [
     MistakeMapDesign.aquaInk,
     MistakeMapDesign.azureInk,
     MistakeMapDesign.violetInk,
@@ -93,7 +93,7 @@ class AppNavigationShell extends StatelessWidget {
   ButtonStyle _style(
     bool selected, {
     bool compact = false,
-    Color accent = MistakeMapDesign.mist,
+    Color? accent,
   }) => ButtonStyle(
     textStyle: WidgetStatePropertyAll(
       TextStyle(
@@ -111,14 +111,14 @@ class AppNavigationShell extends StatelessWidget {
       (states) => RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: states.contains(WidgetState.focused)
-            ? const BorderSide(color: MistakeMapDesign.aquaInk, width: 2)
+            ? BorderSide(color: MistakeMapDesign.aquaInk, width: 2)
             : BorderSide(
                 // A aba atual fica marcada mesmo sem foco: borda e fundo
                 // no acento do destino.
                 // Na barra inferior a aba atual é marcada pela pílula que
                 // desliza por trás dos botões, não pelo botão.
                 color: selected && !compact
-                    ? accent.withValues(alpha: .55)
+                    ? (accent ?? MistakeMapDesign.mist).withValues(alpha: .55)
                     : states.contains(WidgetState.hovered) ||
                           states.contains(WidgetState.pressed)
                     ? MistakeMapDesign.edge
@@ -131,7 +131,7 @@ class AppNavigationShell extends StatelessWidget {
       // Opaco: a sombra da aba atual não pode aparecer através do fundo.
       if (selected && !compact) {
         return Color.alphaBlend(
-          accent.withValues(alpha: .16),
+          (accent ?? MistakeMapDesign.mist).withValues(alpha: .16),
           MistakeMapDesign.white,
         );
       }
@@ -141,7 +141,7 @@ class AppNavigationShell extends StatelessWidget {
       }
       return Colors.transparent;
     }),
-    foregroundColor: const WidgetStatePropertyAll(MistakeMapDesign.content),
+    foregroundColor: WidgetStatePropertyAll(MistakeMapDesign.content),
     // A sombra da aba atual vem da superfície; sobre o vidro líquido a sombra
     // padrão do botão escurecia as abas em repouso.
     elevation: const WidgetStatePropertyAll(0),
@@ -194,21 +194,21 @@ class AppNavigationShell extends StatelessWidget {
     IconData icon,
     bool selected, {
     bool compact = false,
-    Color accent = MistakeMapDesign.mist,
-    Color ink = MistakeMapDesign.steel,
+    Color? accent,
+    Color? ink,
   }) => _NavigationIcon(
     icon: icon,
     selected: selected,
     compact: compact,
-    accent: accent,
-    ink: ink,
+    accent: accent ?? MistakeMapDesign.mist,
+    ink: ink ?? MistakeMapDesign.steel,
   );
 
   Widget _section(String label) => Padding(
     padding: const EdgeInsets.only(left: 4, bottom: 8),
     child: Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.9,
@@ -393,7 +393,7 @@ class AppNavigationShell extends StatelessWidget {
       menuColor: MistakeMapDesign.white,
       menuShape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: MistakeMapDesign.border),
+        side: BorderSide(color: MistakeMapDesign.border),
       ),
       buttonBuilder: (context, open) => Tooltip(
         message: 'Mais opções de navegação',
@@ -477,8 +477,8 @@ class AppNavigationShell extends StatelessWidget {
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
-    Color accent = MistakeMapDesign.mist,
-    Color ink = MistakeMapDesign.steel,
+    Color? accent,
+    Color? ink,
   }) => _surface(
     context,
     false,
@@ -579,7 +579,7 @@ class AppNavigationShell extends StatelessWidget {
           child: ShaderMask(
             blendMode: BlendMode.srcIn,
             shaderCallback: MistakeMapDesign.hero.createShader,
-            child: const Text(
+            child: Text(
               'MistakeMap',
               style: TextStyle(
                 color: MistakeMapDesign.strong,
@@ -860,7 +860,7 @@ class AppNavigationShell extends StatelessWidget {
               useBackdropGroup: true,
               shape: const LiquidRoundedRectangle(borderRadius: 0),
               settings: LiquidGlassSettings.ios27Regular(
-                brightness: Brightness.light,
+                brightness: MistakeMapDesign.paleta.brightness,
               ),
               shadows: MistakeMapDesign.liquidShadow,
               child: content,
@@ -935,7 +935,7 @@ class AppNavigationShell extends StatelessWidget {
           shape: WidgetStateProperty.resolveWith(
             (states) => CircleBorder(
               side: states.contains(WidgetState.focused)
-                  ? const BorderSide(color: MistakeMapDesign.aquaInk, width: 2)
+                  ? BorderSide(color: MistakeMapDesign.aquaInk, width: 2)
                   : BorderSide.none,
             ),
           ),
@@ -971,7 +971,7 @@ class AppNavigationShell extends StatelessWidget {
         useBackdropGroup: true,
         shape: const LiquidOval(),
         settings: LiquidGlassSettings.ios27Regular(
-          brightness: Brightness.light,
+          brightness: MistakeMapDesign.paleta.brightness,
         ),
         shadows: MistakeMapDesign.liquidShadow,
         child: button,

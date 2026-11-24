@@ -224,7 +224,7 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Funcionamento do aplicativo',
           style: TextStyle(
             fontSize: 22,
@@ -272,7 +272,7 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
         if (_error != null)
           Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!)),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           'IA · consumo e resultados',
           style: TextStyle(
             fontSize: 22,
@@ -334,7 +334,7 @@ class _AdminMetricsPanelState extends State<AdminMetricsPanel>
           'Os máximos históricos dos prints não são usados como consumo atual. As cotas diárias da API reiniciam à meia-noite no horário do Pacífico. Consulte o AI Studio para o saldo oficial do projeto.',
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           'Armazenamento e cotas',
           style: TextStyle(
             fontSize: 22,

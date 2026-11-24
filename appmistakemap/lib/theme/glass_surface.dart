@@ -104,7 +104,7 @@ class GlassSurface extends StatelessWidget {
         gradient: liquid ? MistakeMapDesign.liquid : MistakeMapDesign.acrylic,
       ),
       child: DecoratedBox(
-        decoration: const BoxDecoration(gradient: MistakeMapDesign.glint),
+        decoration: BoxDecoration(gradient: MistakeMapDesign.glint),
         child: content,
       ),
     );
@@ -281,16 +281,18 @@ class GradientBar extends StatelessWidget {
   const GradientBar({
     super.key,
     required this.value,
-    this.accent = MistakeMapDesign.violet,
-    this.ink = MistakeMapDesign.violetInk,
+    this.accent,
+    this.ink,
     this.height = 8,
     this.semanticsLabel,
   });
 
   /// Fração preenchida, de 0 a 1.
   final double value;
-  final Color accent;
-  final Color ink;
+  final Color? accent;
+  final Color? ink;
+  Color get _accent => accent ?? MistakeMapDesign.violet;
+  Color get _ink => ink ?? MistakeMapDesign.violetInk;
   final double height;
   final String? semanticsLabel;
 
@@ -311,7 +313,7 @@ class GradientBar extends StatelessWidget {
             heightFactor: 1,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [ink, accent]),
+                gradient: LinearGradient(colors: [_ink, _accent]),
                 borderRadius: BorderRadius.circular(height / 2),
               ),
             ),
@@ -330,15 +332,17 @@ class GlassSegmented<T> extends StatelessWidget {
     required this.segments,
     required this.selected,
     required this.onSelected,
-    this.accent = MistakeMapDesign.violet,
-    this.ink = MistakeMapDesign.violetInk,
+    this.accent,
+    this.ink,
   });
 
   final List<({T value, Widget label, IconData? icon, Key? key})> segments;
   final T selected;
   final ValueChanged<T> onSelected;
-  final Color accent;
-  final Color ink;
+  final Color? accent;
+  final Color? ink;
+  Color get _accent => accent ?? MistakeMapDesign.violet;
+  Color get _ink => ink ?? MistakeMapDesign.violetInk;
 
   @override
   Widget build(BuildContext context) => GlassSurface(
@@ -359,8 +363,8 @@ class GlassSegmented<T> extends StatelessWidget {
               label: segment.label,
               icon: segment.icon,
               selected: segment.value == selected,
-              accent: accent,
-              ink: ink,
+              accent: _accent,
+              ink: _ink,
               onTap: () => onSelected(segment.value),
             ),
         ],

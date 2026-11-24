@@ -27,7 +27,7 @@ class LinkedInProfileButton extends StatefulWidget {
 
 class _LinkedInProfileButtonState extends State<LinkedInProfileButton>
     with SingleTickerProviderStateMixin {
-  static const _rest = MistakeMapDesign.azureInk;
+  static Color get _rest => MistakeMapDesign.azureInk;
   static const _expanded = Color(0xFF1A4FA0);
   static const _white = MistakeMapDesign.white;
   static const _tipWidth = 18.0;
@@ -213,7 +213,7 @@ class _LinkedInProfileButtonState extends State<LinkedInProfileButton>
                                           ? Border.all(color: _white, width: 2)
                                           : null,
                                       boxShadow: _focused
-                                          ? const [
+                                          ? [
                                               BoxShadow(
                                                 color: MistakeMapDesign.abyss,
                                                 spreadRadius: 2,

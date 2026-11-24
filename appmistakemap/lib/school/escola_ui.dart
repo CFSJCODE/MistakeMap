@@ -34,7 +34,7 @@ class CartaoEscola extends StatelessWidget {
       children: [
         Text(
           titulo,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
             color: MistakeMapDesign.primary,
@@ -42,10 +42,7 @@ class CartaoEscola extends StatelessWidget {
         ),
         if (subtitulo != null) ...[
           const SizedBox(height: 6),
-          Text(
-            subtitulo!,
-            style: const TextStyle(color: MistakeMapDesign.steel),
-          ),
+          Text(subtitulo!, style: TextStyle(color: MistakeMapDesign.steel)),
         ],
         const SizedBox(height: 16),
         ...children,
@@ -182,7 +179,7 @@ Future<void> mostrarCodigo(
           child: SelectableText(
             codigo,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w700,
               letterSpacing: 3,
@@ -191,7 +188,7 @@ Future<void> mostrarCodigo(
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Anote ou copie agora: por segurança ele não aparece de novo.',
           style: TextStyle(color: MistakeMapDesign.steel),
         ),

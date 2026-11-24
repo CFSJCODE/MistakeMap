@@ -19,7 +19,7 @@ visto, não o que foi presumido.
 | 5 | Tamanhos de fonte soltos: 21 valores distintos (9,5 a 30 sp) em `fontSize:` | todo o `lib/` | Média | Escala `Tipo` criada; migração tela a tela |
 | 6 | Cartão "Próximo passo: treinar" do Mapa com o botão ao lado do texto: a 360–390 px o texto virava uma coluna de uma palavra por linha | `_StudyCallout` em `insights_view.dart` | Média | Resolvido (empilha abaixo de 480 px) |
 | 7 | `GradientBar` sem altura no preenchimento: a barra aparecia vazia | `glass_surface.dart` | Baixa | Resolvido (`heightFactor: 1`) |
-| 8 | Só modo claro: as cores são constantes (`MistakeMapDesign.*`, ~700 usos) e o app força `Brightness.light` | `design_tokens.dart`, `MistakeMapApp` | Média | Pendente (seção 6) |
+| 8 | Só modo claro: as cores são constantes (`MistakeMapDesign.*`, ~700 usos) e o app força `Brightness.light` | `design_tokens.dart`, `MistakeMapApp` | Média | Em andamento: base pronta na etapa 5a (paleta clara/escura); falta migrar as cores fixas das telas |
 | 9 | Mapa em Material e o resto em Fluent: duas famílias de controles (chips, botões) | `lib/ai/` | Média | Pendente |
 | 10 | Praticar com 12 chips de filtro (~300 px a 390 px) antes do primeiro exercício e um cartão pesado por questão | `banco_exercicios.dart` | Alta | Resolvido na etapa 2 (2 menus: Tipo e Situação; lista num grupo só) |
 | 11 | Meus exercícios e Caderno: cartões soltos com fundo tingido, botão "Opções" com moldura em cada cartão, 3 a 4 pílulas por cartão e texto de introdução centralizado | `main.dart` (`_ExercicioCard`), `caderno_erros.dart` | Média | Resolvido na etapa 2 (linhas em `GrupoLista`, sobretítulo matéria · tipo, menu sem moldura com alvo de 48 dp) |
@@ -173,6 +173,33 @@ Capturas: as pílulas e botões Material usam a fonte padrão da plataforma
 (sem família no estilo); no teste de widget isso vira blocos, então as
 capturas trocam a família só no momento de gerar a imagem.
 
+### Etapa 5a: base do modo escuro
+
+- `PaletaMistakeMap` (em `design_tokens.dart`) guarda os papéis de cor que
+  mudam com o tema: tintas de texto (`abyss`…`pearl`), superfícies
+  (`canvas`, `raised`, `hover`, `pressed`, `well`), linhas, tintas dos
+  acentos, gradientes do vidro, sombra e véu. `PaletaMistakeMap.claro` é a
+  aparência publicada valor a valor; `PaletaMistakeMap.escuro` usa vidro
+  grafite e tintas clareadas (≥ 4,5:1 sobre `canvas`, `raised` e `hover`,
+  conferido em teste).
+- `MistakeMapDesign.*` passou a ler a paleta atual (getters). Os acentos
+  vivos (`aqua`…`coral`) e `white` continuam constantes; `onAccent` é o
+  glifo escuro sobre um acento, nos dois temas.
+- Onde a cor precisa ser constante (enum, valor padrão de parâmetro), usar
+  `Acento` (acento + tinta do tema) ou parâmetro anulável com o padrão
+  resolvido no build. `const` com token de cor não compila mais, de
+  propósito: é isso que garante que nada fica preso no claro.
+- `theme/aparencia.dart`: `Aparencia` (Claro, Escuro, Igual ao aparelho,
+  salva no aparelho) e `AparenciaApp`, que troca a paleta e reconstrói a
+  árvore inteira. Tema Fluent, vidro líquido e brilho do `MediaQuery` saem
+  da paleta.
+- O modo escuro fica **escondido** até as telas saírem das cores fixas
+  (~50 `MistakeMapDesign.white` usados como superfície, ~90 `Color(0x…)`
+  e o tema Material de `lib/ai`). Para testar:
+  `--dart-define=MISTAKEMAP_MODO_ESCURO=true` (segue o aparelho).
+- Verificação: as 11 telas da captura a 390 px saíram idênticas pixel a
+  pixel às do `main` no modo claro.
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |
@@ -180,7 +207,7 @@ capturas trocam a família só no momento de gerar a imagem.
 | 2 | Exercícios e Caderno: listas compactas, filtros em menu | Feita (itens 10 a 12 da auditoria). Estados vazios mantidos como estavam |
 | 3 | Estudar e sessão de revisão: modo foco, menos navegação visível durante a sessão | Feita para a revisão e a conferência (itens 13 e 14). A aba Estudar (material da IA, em Material) fica com a etapa 4 |
 | 4 | Mapa: chips e botões Material com a mesma aparência dos Fluent; visão em lista como alternativa ao grafo | Feita em parte (itens 15 e 16): segmentos Material com o visual do `GlassSegmented`. A visão "Tentativas" já é a lista alternativa ao grafo |
-| 5 | Modo escuro: trocar as constantes `MistakeMapDesign.*` por cores lidas do tema (`ThemeExtension`), tela a tela | Mudança grande; cada etapa precisa sair sem deixar o app misto |
+| 5 | Modo escuro: trocar as constantes `MistakeMapDesign.*` por cores da paleta, tela a tela | 5a feita (paleta e troca de aparência, escondida). 5b: superfícies brancas e `Color(0x…)` fixas, tema Material de `lib/ai`, barra superior; depois liberar a escolha em Mais |
 | 6 | Migrar `fontSize:` soltos para `Tipo` nas telas de escola, TI e professor | |
 
 Lembrete de publicação: todo merge no `main` que toca `lib/` vira patch do

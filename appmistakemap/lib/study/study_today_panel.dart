@@ -490,8 +490,8 @@ class StudyTodayPanelState extends State<StudyTodayPanel>
               descricao: action.description,
               rotuloBotao: action.button,
               onPressed: action.onPressed,
-              acento: action.accent,
-              tinta: action.ink,
+              acento: action._accent,
+              tinta: action._ink,
             ),
           if (notices.isNotEmpty) ...[
             const SizedBox(height: Espaco.md),
@@ -959,7 +959,7 @@ class _StudyReviewPageState extends State<StudyReviewPage> {
       const SizedBox(height: Espaco.lg),
       const _StudyTitle('Como foi lembrar?'),
       const SizedBox(height: Espaco.xxs),
-      const Text(
+      Text(
         'Sua resposta é uma autoavaliação; não é uma correção automática do rascunho.',
         style: Tipo.secundario,
       ),
@@ -1003,13 +1003,13 @@ class _StudyReviewPageState extends State<StudyReviewPage> {
       const SizedBox(height: Espaco.md),
       Row(
         children: [
-          const Icon(
+          Icon(
             WindowsIcons.calendar,
             size: 16,
             color: MistakeMapDesign.violetInk,
           ),
           const SizedBox(width: Espaco.xs),
-          const Text('Próxima revisão: ', style: Tipo.corpo),
+          Text('Próxima revisão: ', style: Tipo.corpo),
           Flexible(
             child: Text(
               _dateTime(context, feedback.nextDueAt!),
@@ -1040,7 +1040,7 @@ class _StudyReviewPageState extends State<StudyReviewPage> {
   ];
 
   List<Widget> _conclusao(BuildContext context) => [
-    const Row(
+    Row(
       children: [
         Icon(WindowsIcons.completed, size: 22, color: MistakeMapDesign.mintInk),
         SizedBox(width: Espaco.xs),
@@ -1048,7 +1048,7 @@ class _StudyReviewPageState extends State<StudyReviewPage> {
       ],
     ),
     const SizedBox(height: Espaco.xs),
-    const Text(
+    Text(
       'Sua lembrança foi registrada por autoavaliação. Praticar questões novas ajuda a verificar o que você aprendeu.',
       style: Tipo.corpo,
     ),
@@ -1156,7 +1156,7 @@ class _GradeAvaliacao extends StatelessWidget {
 
   final ValueChanged<String>? onAvaliar;
 
-  static const _opcoes = [
+  static List<(String, String, IconData, Color, Color)> get _opcoes => [
     (
       'again',
       'Não lembrei',
@@ -1590,8 +1590,8 @@ class _NextAction {
     required this.button,
     required this.onPressed,
     required this.kind,
-    this.accent = MistakeMapDesign.aqua,
-    this.ink = MistakeMapDesign.aquaInk,
+    this.accent,
+    this.ink,
   });
 
   final IconData icon;
@@ -1600,6 +1600,8 @@ class _NextAction {
   final String button;
   final VoidCallback? onPressed;
   final _ActionKind kind;
-  final Color accent;
-  final Color ink;
+  final Color? accent;
+  final Color? ink;
+  Color get _accent => accent ?? MistakeMapDesign.aqua;
+  Color get _ink => ink ?? MistakeMapDesign.aquaInk;
 }

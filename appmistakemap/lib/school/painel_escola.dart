@@ -377,7 +377,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
         _ =>
           'Convide professores, estudantes e responsáveis. Em "Relatórios" '
               'você acompanha o uso da escola e o mapa de erros, só com totais.',
-      }, style: const TextStyle(color: MistakeMapDesign.content)),
+      }, style: TextStyle(color: MistakeMapDesign.content)),
     ],
   );
 
@@ -765,7 +765,7 @@ class _MolduraPerfil extends StatelessWidget {
                         children: [
                           Text(
                             titulo,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
                               color: MistakeMapDesign.primary,
@@ -773,9 +773,7 @@ class _MolduraPerfil extends StatelessWidget {
                           ),
                           Text(
                             subtitulo,
-                            style: const TextStyle(
-                              color: MistakeMapDesign.steel,
-                            ),
+                            style: TextStyle(color: MistakeMapDesign.steel),
                           ),
                         ],
                       ),

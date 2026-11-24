@@ -62,7 +62,7 @@ class GrupoLista extends StatelessWidget {
         children: [
           for (final (i, filho) in children.indexed) ...[
             if (i > 0)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(left: 64),
                 child: SizedBox(
                   height: 1,
@@ -85,8 +85,8 @@ class LinhaLista extends StatelessWidget {
     required this.icone,
     required this.titulo,
     this.subtitulo,
-    this.acento = MistakeMapDesign.steel,
-    this.tinta = MistakeMapDesign.steel,
+    this.acento,
+    this.tinta,
     this.valor,
     this.onPressed,
   });
@@ -94,8 +94,10 @@ class LinhaLista extends StatelessWidget {
   final IconData icone;
   final String titulo;
   final String? subtitulo;
-  final Color acento;
-  final Color tinta;
+  final Color? acento;
+  final Color? tinta;
+  Color get _acento => acento ?? MistakeMapDesign.steel;
+  Color get _tinta => tinta ?? MistakeMapDesign.steel;
 
   /// Texto curto à direita (uma contagem, por exemplo).
   final String? valor;
@@ -112,12 +114,12 @@ class LinhaLista extends StatelessWidget {
             height: 36,
             decoration: BoxDecoration(
               color: Color.alphaBlend(
-                acento.withValues(alpha: .16),
+                _acento.withValues(alpha: .16),
                 MistakeMapDesign.white,
               ),
               borderRadius: BorderRadius.circular(Raio.md),
             ),
-            child: Icon(icone, size: 18, color: tinta),
+            child: Icon(icone, size: 18, color: _tinta),
           ),
           const SizedBox(width: Espaco.sm),
           Expanded(
@@ -143,11 +145,11 @@ class LinhaLista extends StatelessWidget {
           ),
           if (valor != null) ...[
             const SizedBox(width: Espaco.xs),
-            Text(valor!, style: Tipo.tituloComponente.copyWith(color: tinta)),
+            Text(valor!, style: Tipo.tituloComponente.copyWith(color: _tinta)),
           ],
           if (onPressed != null) ...[
             const SizedBox(width: Espaco.xs),
-            const Icon(
+            Icon(
               WindowsIcons.chevron_right,
               size: 12,
               color: MistakeMapDesign.steel,
@@ -242,14 +244,14 @@ class FaixaIndicadores extends StatelessWidget {
             ),
           ),
         );
-        const fio = ColoredBox(color: MistakeMapDesign.hairline);
+        final fio = ColoredBox(color: MistakeMapDesign.hairline);
         if (lado) {
           return IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final (n, i) in itens.indexed) ...[
-                  if (n > 0) const SizedBox(width: 1, child: fio),
+                  if (n > 0) SizedBox(width: 1, child: fio),
                   Expanded(child: item(i)),
                 ],
               ],
@@ -260,7 +262,7 @@ class FaixaIndicadores extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (final (n, i) in itens.indexed) ...[
-              if (n > 0) const SizedBox(height: 1, child: fio),
+              if (n > 0) SizedBox(height: 1, child: fio),
               item(i),
             ],
           ],
@@ -281,8 +283,8 @@ class CartaoProximoPasso extends StatelessWidget {
     required this.rotuloBotao,
     required this.onPressed,
     this.sobretitulo = 'Próximo passo',
-    this.acento = MistakeMapDesign.aqua,
-    this.tinta = MistakeMapDesign.aquaInk,
+    this.acento,
+    this.tinta,
     this.carregando = false,
     this.rodape,
   });
@@ -293,8 +295,10 @@ class CartaoProximoPasso extends StatelessWidget {
   final String descricao;
   final String rotuloBotao;
   final VoidCallback? onPressed;
-  final Color acento;
-  final Color tinta;
+  final Color? acento;
+  final Color? tinta;
+  Color get _acento => acento ?? MistakeMapDesign.aqua;
+  Color get _tinta => tinta ?? MistakeMapDesign.aquaInk;
 
   /// Dados ainda chegando: o cartão guarda o lugar, sem botão.
   final bool carregando;
@@ -308,19 +312,24 @@ class CartaoProximoPasso extends StatelessWidget {
     label: sobretitulo,
     child: GlassSurface(
       radius: Raio.xl,
-      accent: acento,
+      accent: _acento,
       padding: const EdgeInsets.all(Espaco.lg - 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              GlassIconTile(icon: icone, ink: tinta, accent: acento, size: 32),
+              GlassIconTile(
+                icon: icone,
+                ink: _tinta,
+                accent: _acento,
+                size: 32,
+              ),
               const SizedBox(width: Espaco.sm),
               Expanded(
                 child: Text(
                   sobretitulo.toUpperCase(),
-                  style: Tipo.sobretitulo.copyWith(color: tinta),
+                  style: Tipo.sobretitulo.copyWith(color: _tinta),
                 ),
               ),
             ],

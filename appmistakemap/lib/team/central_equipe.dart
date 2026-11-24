@@ -353,7 +353,7 @@ class _CentralEquipeState extends State<CentralEquipe> {
               capturado == null
                   ? titulo
                   : '$titulo · atualizado às ${_hora(capturado)}',
-              style: const TextStyle(color: MistakeMapDesign.steel),
+              style: TextStyle(color: MistakeMapDesign.steel),
             ),
           ),
           if (_carregando)
@@ -472,7 +472,7 @@ class _CentralEquipeState extends State<CentralEquipe> {
             'Papéis: ${inteiroEquipe(papeis['admin'])} admin · '
             '${inteiroEquipe(papeis['developer'])} desenvolvedor · '
             '${inteiroEquipe(papeis['user'])} usuário',
-            style: const TextStyle(color: MistakeMapDesign.steel),
+            style: TextStyle(color: MistakeMapDesign.steel),
           ),
         ],
       ),
@@ -833,7 +833,7 @@ class _CentralEquipeState extends State<CentralEquipe> {
         ),
         _Linha('Conta de teste', _contaDeTeste ? 'sim' : 'não'),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Para testar outro perfil (estudante, professor, dono, coordenação, '
           'TI ou responsável), use o seletor "Perfil" no topo: as contas '
           'dev.demo e admin.demo têm os 6 papéis da escola demo.',
@@ -983,15 +983,12 @@ class _Linha extends StatelessWidget {
       children: [
         Text(
           '$rotulo:',
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             color: MistakeMapDesign.deep,
           ),
         ),
-        SelectableText(
-          valor,
-          style: const TextStyle(color: MistakeMapDesign.slate),
-        ),
+        SelectableText(valor, style: TextStyle(color: MistakeMapDesign.slate)),
       ],
     ),
   );
@@ -1028,16 +1025,13 @@ class _LinhaSituacao extends StatelessWidget {
               children: [
                 Text(
                   titulo,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: MistakeMapDesign.deep,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  detalhe,
-                  style: const TextStyle(color: MistakeMapDesign.steel),
-                ),
+                Text(detalhe, style: TextStyle(color: MistakeMapDesign.steel)),
               ],
             ),
           ),
@@ -1096,7 +1090,7 @@ class _Numeros extends StatelessWidget {
       children: [
         Text(
           '$valor',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
             color: MistakeMapDesign.abyss,
@@ -1104,7 +1098,7 @@ class _Numeros extends StatelessWidget {
         ),
         Text(
           rotulo,
-          style: const TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
+          style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
         ),
       ],
     ),

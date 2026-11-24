@@ -15,8 +15,7 @@ enum PerfilCadastro {
     'Envio meus erros, vejo meu mapa e treino. Entro com o código da turma ou '
         'estudo por conta própria.',
     WindowsIcons.education,
-    MistakeMapDesign.aquaInk,
-    MistakeMapDesign.aqua,
+    Acento.aqua,
   ),
   estudanteEquipe(
     'student_team',
@@ -24,8 +23,7 @@ enum PerfilCadastro {
     'Tudo do estudante e mais a equipe de competição ou projeto, com a minha '
         'função nela.',
     WindowsIcons.relationship,
-    MistakeMapDesign.violetInk,
-    MistakeMapDesign.violet,
+    Acento.violet,
   ),
   professor(
     'teacher',
@@ -33,8 +31,7 @@ enum PerfilCadastro {
     'Dou aula ou treino equipe. Entro com o convite da escola ou começo '
         'sozinho no plano Grátis.',
     WindowsIcons.people,
-    MistakeMapDesign.azureInk,
-    MistakeMapDesign.azure,
+    Acento.azure,
   ),
   responsavel(
     'guardian',
@@ -42,24 +39,21 @@ enum PerfilCadastro {
     'Acompanho a evolução do meu filho e dou o consentimento para ele usar o '
         'app.',
     WindowsIcons.contact,
-    MistakeMapDesign.mintInk,
-    MistakeMapDesign.mint,
+    Acento.mint,
   ),
   dono(
     'owner',
     'Dono da escola',
     'Contrato o MistakeMap para a minha escola, curso ou equipe.',
     WindowsIcons.home,
-    MistakeMapDesign.amberInk,
-    MistakeMapDesign.amber,
+    Acento.amber,
   ),
   coordenador(
     'coordinator',
     'Coordenador',
     'Cuido da gestão pedagógica da escola. Preciso do convite do dono.',
     WindowsIcons.bulleted_list,
-    MistakeMapDesign.coralInk,
-    MistakeMapDesign.coral,
+    Acento.coral,
   ),
   ti(
     'it_admin',
@@ -67,8 +61,7 @@ enum PerfilCadastro {
     'Cuido das contas, dos acessos e dos aparelhos. Preciso do convite do '
         'dono.',
     WindowsIcons.admin,
-    MistakeMapDesign.deep,
-    MistakeMapDesign.steel,
+    null,
   ),
   financeiro(
     'finance',
@@ -76,8 +69,7 @@ enum PerfilCadastro {
     'Contrato e pago o MistakeMap pela escola ou rede: pedido de compra, '
         'boleto e nota fiscal. Preciso do convite do dono.',
     WindowsIcons.payment_card,
-    MistakeMapDesign.azureInk,
-    MistakeMapDesign.azure,
+    Acento.azure,
   );
 
   const PerfilCadastro(
@@ -85,16 +77,18 @@ enum PerfilCadastro {
     this.titulo,
     this.descricao,
     this.icone,
-    this.tinta,
-    this.acento,
+    this.tom,
   );
 
   final String codigo;
   final String titulo;
   final String descricao;
   final IconData icone;
-  final Color tinta;
-  final Color acento;
+
+  /// Acento do perfil; sem acento (TI) usa o neutro.
+  final Acento? tom;
+  Color get tinta => tom?.tinta ?? MistakeMapDesign.deep;
+  Color get acento => tom?.cor ?? MistakeMapDesign.steel;
 
   /// Coordenação, TI e Financeiro só ganham o papel com convite. O professor
   /// da escola também, mas ele tem a saída do plano Grátis.

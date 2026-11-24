@@ -117,7 +117,7 @@ class _CartaoAdministracaoTiState extends State<CartaoAdministracaoTi> {
             'Análises de IA do mês: ${l.analisesUsadas} de ${l.analisesPote}'
             '${l.analisesExtras > 0 ? ' (+${l.analisesExtras} além do pote)' : ''}'
             ' · treinos: ${l.treinosUsados} de ${l.treinosPote}',
-            style: const TextStyle(color: MistakeMapDesign.content),
+            style: TextStyle(color: MistakeMapDesign.content),
           ),
           const SizedBox(height: 8),
           ProgressBar(value: l.usoAnalises * 100),
@@ -199,10 +199,10 @@ class _Indicador extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(rotulo, style: const TextStyle(color: MistakeMapDesign.steel)),
+        Text(rotulo, style: TextStyle(color: MistakeMapDesign.steel)),
         Text(
           valor,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
             color: MistakeMapDesign.primary,
@@ -210,7 +210,7 @@ class _Indicador extends StatelessWidget {
         ),
         Text(
           nota,
-          style: const TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
+          style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
         ),
       ],
     ),
@@ -261,7 +261,7 @@ class _TelaTi extends StatelessWidget {
                           children: [
                             Text(
                               titulo,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w700,
                                 color: MistakeMapDesign.primary,
@@ -269,9 +269,7 @@ class _TelaTi extends StatelessWidget {
                             ),
                             Text(
                               escolaNome,
-                              style: const TextStyle(
-                                color: MistakeMapDesign.steel,
-                              ),
+                              style: TextStyle(color: MistakeMapDesign.steel),
                             ),
                           ],
                         ),
@@ -642,9 +640,7 @@ class _TelaPessoasTiState extends State<TelaPessoasTi> {
                         if (p.nome != null && p.nome!.isNotEmpty)
                           Text(
                             p.email,
-                            style: const TextStyle(
-                              color: MistakeMapDesign.steel,
-                            ),
+                            style: TextStyle(color: MistakeMapDesign.steel),
                           ),
                         Text(
                           '${p.papeis.map((r) => r.ativo ? r.nome : '${r.nome} (suspenso)').join(', ')}'
@@ -676,7 +672,7 @@ class _TelaPessoasTiState extends State<TelaPessoasTi> {
                 children: [
                   Text(
                     'Na escola desde ${_dataCurta(p.entrou)}',
-                    style: const TextStyle(color: MistakeMapDesign.steel),
+                    style: TextStyle(color: MistakeMapDesign.steel),
                   ),
                   const SizedBox(height: 8),
                   for (final papel in p.papeis)
@@ -732,7 +728,7 @@ class _TelaPessoasTiState extends State<TelaPessoasTi> {
                       ],
                     ),
                   ] else if (!p.souEu)
-                    const Text(
+                    Text(
                       'Sessões e senha desta conta só o dono da escola ou a '
                       'própria pessoa administram (ela tem papel de gestão '
                       'ou outra escola).',
@@ -927,7 +923,7 @@ class _TelaConvitesLoteTiState extends State<TelaConvitesLoteTi> {
                       if (l['status'] == 'created')
                         SelectableText(
                           '${l['code']}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.5,
                             color: MistakeMapDesign.primary,
@@ -937,9 +933,7 @@ class _TelaConvitesLoteTiState extends State<TelaConvitesLoteTi> {
                         Flexible(
                           child: Text(
                             motivosLinha['${l['status']}'] ?? '${l['status']}',
-                            style: const TextStyle(
-                              color: MistakeMapDesign.coralInk,
-                            ),
+                            style: TextStyle(color: MistakeMapDesign.coralInk),
                           ),
                         ),
                     ],
@@ -1063,7 +1057,7 @@ class _TelaAuditoriaTiState extends State<TelaAuditoriaTi> {
                       'por ${r.quem ?? 'sistema'}',
                       if (r.alvo != null) 'pessoa: ${r.alvo}',
                     ].join(' · '),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       color: MistakeMapDesign.steel,
                     ),

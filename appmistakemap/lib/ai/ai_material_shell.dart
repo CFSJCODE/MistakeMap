@@ -108,7 +108,7 @@ class AiMaterialShell extends StatefulWidget {
   static ThemeData _theme(BuildContext context) {
     final inputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: MistakeMapDesign.fieldBorder),
+      borderSide: BorderSide(color: MistakeMapDesign.fieldBorder),
     );
     final inputTheme = InputDecorationTheme(
       filled: true,
@@ -119,19 +119,19 @@ class AiMaterialShell extends StatefulWidget {
       enabledBorder: inputBorder,
       disabledBorder: inputBorder,
       focusedBorder: inputBorder.copyWith(
-        borderSide: const BorderSide(color: MistakeMapDesign.aquaInk, width: 2),
+        borderSide: BorderSide(color: MistakeMapDesign.aquaInk, width: 2),
       ),
       errorBorder: inputBorder.copyWith(
-        borderSide: const BorderSide(color: MistakeMapDesign.bad),
+        borderSide: BorderSide(color: MistakeMapDesign.bad),
       ),
-      labelStyle: const TextStyle(color: MistakeMapDesign.steel),
-      floatingLabelStyle: const TextStyle(color: MistakeMapDesign.aquaInk),
-      hintStyle: const TextStyle(color: MistakeMapDesign.disabledInk),
-      errorStyle: const TextStyle(color: MistakeMapDesign.bad),
+      labelStyle: TextStyle(color: MistakeMapDesign.steel),
+      floatingLabelStyle: TextStyle(color: MistakeMapDesign.aquaInk),
+      hintStyle: TextStyle(color: MistakeMapDesign.disabledInk),
+      errorStyle: TextStyle(color: MistakeMapDesign.bad),
     );
     final menuShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(14),
-      side: const BorderSide(color: MistakeMapDesign.border),
+      side: BorderSide(color: MistakeMapDesign.border),
     );
     final menuStyle = MenuStyle(
       backgroundColor: const WidgetStatePropertyAll(MistakeMapDesign.white),
@@ -166,7 +166,7 @@ class AiMaterialShell extends StatefulWidget {
       ),
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme.light(
         primary: MistakeMapDesign.aquaInk,
         onPrimary: MistakeMapDesign.white,
         primaryContainer: Color(0xFFD7F7F3),
@@ -201,8 +201,8 @@ class AiMaterialShell extends StatefulWidget {
         bodyColor: MistakeMapDesign.content,
         displayColor: MistakeMapDesign.strong,
       ),
-      iconTheme: const IconThemeData(color: MistakeMapDesign.steel),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
+      iconTheme: IconThemeData(color: MistakeMapDesign.steel),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
         color: MistakeMapDesign.aquaInk,
         linearTrackColor: MistakeMapDesign.disabledFill,
         circularTrackColor: MistakeMapDesign.disabledFill,
@@ -245,7 +245,7 @@ class AiMaterialShell extends StatefulWidget {
                 ? MistakeMapDesign.violetInk
                 : MistakeMapDesign.deep,
           ),
-          side: const WidgetStatePropertyAll(
+          side: WidgetStatePropertyAll(
             BorderSide(color: MistakeMapDesign.border),
           ),
           shape: const WidgetStatePropertyAll(StadiumBorder()),
@@ -258,16 +258,16 @@ class AiMaterialShell extends StatefulWidget {
           MistakeMapDesign.violet.withValues(alpha: .22),
           MistakeMapDesign.white,
         ),
-        side: const BorderSide(color: MistakeMapDesign.border),
+        side: BorderSide(color: MistakeMapDesign.border),
         shape: const StadiumBorder(),
-        labelStyle: const TextStyle(
+        labelStyle: TextStyle(
           color: MistakeMapDesign.deep,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: const IconThemeData(color: MistakeMapDesign.violetInk),
+        iconTheme: IconThemeData(color: MistakeMapDesign.violetInk),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: MistakeMapDesign.strong,
         surfaceTintColor: Colors.transparent,
@@ -303,7 +303,7 @@ class AiMaterialShell extends StatefulWidget {
       dropdownMenuTheme: DropdownMenuThemeData(
         inputDecorationTheme: inputTheme,
         menuStyle: menuStyle,
-        textStyle: const TextStyle(color: MistakeMapDesign.deep, fontSize: 14),
+        textStyle: TextStyle(color: MistakeMapDesign.deep, fontSize: 14),
         disabledColor: MistakeMapDesign.disabledInk,
       ),
       menuTheme: MenuThemeData(style: menuStyle),

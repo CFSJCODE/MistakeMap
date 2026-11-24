@@ -312,21 +312,21 @@ class _SchoolCheckoutPageState extends State<SchoolCheckoutPage> {
 
 // ─── Estilos ────────────────────────────────────────────────────────────────
 
-const _display = TextStyle(
+TextStyle get _display => TextStyle(
   color: MistakeMapDesign.abyss,
   fontSize: 26,
   height: 1.1,
   fontWeight: FontWeight.w700,
   letterSpacing: -.3,
 );
-const _sub = TextStyle(color: MistakeMapDesign.steel, height: 1.45);
-const _eyebrow = TextStyle(
+TextStyle get _sub => TextStyle(color: MistakeMapDesign.steel, height: 1.45);
+TextStyle get _eyebrow => TextStyle(
   fontSize: 11,
   letterSpacing: .9,
   fontWeight: FontWeight.w600,
   color: MistakeMapDesign.steel,
 );
-const _mono = TextStyle(
+TextStyle get _mono => TextStyle(
   fontFamily: 'monospace',
   fontFamilyFallback: ['Consolas', 'Menlo', 'Roboto Mono', 'Courier New'],
   fontSize: 10.5,
@@ -460,7 +460,7 @@ class _RoundBack extends StatelessWidget {
           width: states.contains(WidgetState.focused) ? 2 : 1,
         ),
       ),
-      child: const Icon(
+      child: Icon(
         FluentIcons.chevron_left,
         size: 14,
         color: MistakeMapDesign.abyss,
@@ -617,9 +617,7 @@ class _Panel extends StatelessWidget {
             decoration: BoxDecoration(
               border: i == 0
                   ? null
-                  : const Border(
-                      top: BorderSide(color: MistakeMapDesign.hairline),
-                    ),
+                  : Border(top: BorderSide(color: MistakeMapDesign.hairline)),
             ),
             child: rows[i],
           ),
@@ -964,9 +962,9 @@ class _PlanStepState extends State<_PlanStep> {
       ],
       children: [
         const SizedBox(height: 6),
-        const Text('Escolha o plano', style: _display),
+        Text('Escolha o plano', style: _display),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Você paga só pelos alunos que usaram o app no mês. '
           'Professores não pagam.',
           style: _sub,
@@ -978,7 +976,7 @@ class _PlanStepState extends State<_PlanStep> {
           child: AnimatedOpacity(
             opacity: isCurrent ? 1 : 0,
             duration: _d(context, 200),
-            child: const Center(
+            child: Center(
               child: Text(
                 'Seu plano atual',
                 key: Key('checkout-current-plan'),
@@ -1195,11 +1193,7 @@ class _ConfirmStep extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             spacing: 6,
             children: [
-              const Icon(
-                FluentIcons.lock,
-                size: 12,
-                color: MistakeMapDesign.steel,
-              ),
+              Icon(FluentIcons.lock, size: 12, color: MistakeMapDesign.steel),
               Flexible(
                 child: Text(
                   busy
@@ -1209,7 +1203,7 @@ class _ConfirmStep extends StatelessWidget {
                       : 'Pagamento processado pelo Asaas. Nota fiscal '
                             'emitida após a confirmação.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11.5,
                     color: MistakeMapDesign.steel,
                   ),
@@ -1221,7 +1215,7 @@ class _ConfirmStep extends StatelessWidget {
       ],
       children: [
         const SizedBox(height: 6),
-        const Text('Confirmar assinatura', style: _display),
+        Text('Confirmar assinatura', style: _display),
         const SizedBox(height: 4),
         Text(
           plan.isFree
@@ -1276,7 +1270,7 @@ class _ConfirmStep extends StatelessWidget {
                   if (!plan.isFree && quote.cycle == CheckoutCycle.annual)
                     Text(
                       '−${plan.annualDiscountPercent}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         color: MistakeMapDesign.mintInk,
                       ),
@@ -1291,7 +1285,7 @@ class _ConfirmStep extends StatelessWidget {
                   '−${quote.volumeDiscountPercent}% · '
                   '−${formatBrl(quote.discount)}',
                   key: const Key('checkout-volume'),
-                  style: const TextStyle(color: MistakeMapDesign.mintInk),
+                  style: TextStyle(color: MistakeMapDesign.mintInk),
                 ),
               ),
             if (!plan.isFree)
@@ -1478,7 +1472,7 @@ class _CardForm extends StatelessWidget {
                     ),
                   ],
                 ),
-                const Text(
+                Text(
                   'O titular da cobrança é a escola (CNPJ, e-mail, CEP e '
                   'telefone dos dados de cobrança). O MistakeMap guarda só '
                   'um token do Asaas para as próximas faturas.',
@@ -1531,7 +1525,7 @@ class _CardFace extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment(-1, -1),
               end: Alignment(1, 1),
               colors: [
@@ -1863,7 +1857,7 @@ class _ChargeStepState extends State<_ChargeStep>
               ? 'Liberando o plano…'
               : 'A tela confere sozinha a cada poucos segundos.',
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 11.5, color: MistakeMapDesign.steel),
+          style: TextStyle(fontSize: 11.5, color: MistakeMapDesign.steel),
         ),
       ],
       children: [
@@ -1904,7 +1898,7 @@ class _ChargeStepState extends State<_ChargeStep>
                           ),
                         )
                       : _pix
-                      ? const Padding(
+                      ? Padding(
                           padding: EdgeInsets.all(24),
                           child: Text(
                             'Use o Pix copia e cola abaixo no app do banco.',
@@ -1914,7 +1908,7 @@ class _ChargeStepState extends State<_ChargeStep>
                         )
                       : FadeTransition(
                           opacity: _draw,
-                          child: const Padding(
+                          child: Padding(
                             padding: EdgeInsets.all(26),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -2025,7 +2019,7 @@ class _ChargeStepState extends State<_ChargeStep>
         ),
         const SizedBox(height: 10),
         DefaultTextStyle.merge(
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             color: MistakeMapDesign.steel,
             fontFeatures: [FontFeature.tabularFigures()],
@@ -2288,7 +2282,7 @@ class _ActivatedStepState extends State<_ActivatedStep>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Pagamento confirmado',
                 textAlign: TextAlign.center,
                 style: _display,
@@ -2339,7 +2333,7 @@ class _TerminalPainter extends CustomPainter {
   final double t;
 
   static const _c = 0.866; // cos 30°
-  static const _line = MistakeMapDesign.abyss;
+  static Color get _line => MistakeMapDesign.abyss;
 
   Offset _iso(Size size, double x, double y, double z) => Offset(
     size.width / 2 + (x - y) * _c,
@@ -2582,7 +2576,7 @@ class _ReceiptStepState extends State<_ReceiptStep>
     );
     return _StepFrame(
       onBack: widget.onBack,
-      topLabel: const Text('RECIBO', style: _eyebrow),
+      topLabel: Text('RECIBO', style: _eyebrow),
       actions: [
         AnimatedBuilder(
           animation: _print,
@@ -2591,10 +2585,7 @@ class _ReceiptStepState extends State<_ReceiptStep>
             child: Text(
               _print.value >= .889 ? 'Recibo pronto' : 'Imprimindo seu recibo…',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                color: MistakeMapDesign.steel,
-              ),
+              style: TextStyle(fontSize: 12, color: MistakeMapDesign.steel),
             ),
           ),
         ),
@@ -2791,7 +2782,7 @@ class _Paper extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     spacing: 6,
                     children: [
@@ -2877,7 +2868,7 @@ class _Paper extends StatelessWidget {
                     style: caption,
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Obrigado por ensinar com o MistakeMap.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -3013,7 +3004,7 @@ class _Stamp extends StatelessWidget {
           color: MistakeMapDesign.mintInk.withValues(alpha: .6),
         ),
       ),
-      child: const Text(
+      child: Text(
         'PAGO',
         style: TextStyle(
           color: MistakeMapDesign.mintInk,

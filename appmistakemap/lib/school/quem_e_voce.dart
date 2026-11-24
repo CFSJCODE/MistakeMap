@@ -197,7 +197,7 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
   );
 
   List<Widget> _escolha() => [
-    const Text(
+    Text(
       'Quem é você?',
       style: TextStyle(
         fontSize: 30,
@@ -206,7 +206,7 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
       ),
     ),
     const SizedBox(height: 8),
-    const Text(
+    Text(
       'Escolha como você vai usar o MistakeMap. Dá para ter mais de um perfil '
       'depois: o app mostra um seletor no topo.',
       style: TextStyle(fontSize: 16, color: MistakeMapDesign.content),
@@ -250,7 +250,7 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
         Expanded(
           child: Text(
             perfil.titulo,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: MistakeMapDesign.primary,
@@ -475,7 +475,7 @@ class CartaoPerfil extends StatelessWidget {
                 children: [
                   Text(
                     perfil.titulo,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
                       color: MistakeMapDesign.primary,
@@ -484,11 +484,11 @@ class CartaoPerfil extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     perfil.descricao,
-                    style: const TextStyle(color: MistakeMapDesign.content),
+                    style: TextStyle(color: MistakeMapDesign.content),
                   ),
                   if (perfil.soComConvite) ...[
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Só com convite',
                       style: TextStyle(
                         fontSize: 12,

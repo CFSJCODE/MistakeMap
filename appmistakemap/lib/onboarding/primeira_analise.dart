@@ -226,7 +226,7 @@ class CartaoPrimeiraAnalise extends StatelessWidget {
         children: [
           Row(
             children: [
-              const GlassIconTile(
+              GlassIconTile(
                 icon: WindowsIcons.relationship,
                 ink: MistakeMapDesign.violetInk,
                 accent: MistakeMapDesign.violet,
@@ -236,7 +236,7 @@ class CartaoPrimeiraAnalise extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _Pilula(
+                    _Pilula(
                       texto: 'Leva 2 minutos',
                       cor: MistakeMapDesign.violetInk,
                     ),
