@@ -1,6 +1,8 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
+import '../theme/aparencia.dart';
+import '../theme/aparencia_dialogo.dart';
 import '../theme/control_styles.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
@@ -373,7 +375,7 @@ class AppNavigationShell extends StatelessWidget {
     ),
   );
 
-  /// Menu Mais: Admin, Estudar (se disponível), Sobre o App, Sair (se
+  /// Menu Mais: Admin, Estudar (se disponível), Aparência, Sobre o App, Sair (se
   /// disponível). Na barra de 7 fatias, Estudar e Sobre estão na barra;
   /// o flyout contém Admin e Sair.
   Widget _more(
@@ -444,6 +446,13 @@ class AppNavigationShell extends StatelessWidget {
             icon: WindowsIcons.education,
             label: 'Estudar com a IA',
             action: onStudy!,
+          ),
+        if (Aparencia.disponivel)
+          _flyoutItem(
+            context,
+            icon: WindowsIcons.brightness,
+            label: 'Aparência',
+            action: () => mostrarAparencia(context),
           ),
         if (compactRail || withAbout)
           _flyoutItem(
@@ -619,6 +628,15 @@ class AppNavigationShell extends StatelessWidget {
         _section('CONTA'),
         if (hasAdmin) ...[
           _destination(context, 4, compact: false),
+          const SizedBox(height: 8),
+        ],
+        if (Aparencia.disponivel) ...[
+          _railAction(
+            context,
+            icon: WindowsIcons.brightness,
+            label: 'Aparência',
+            onPressed: () => mostrarAparencia(context),
+          ),
           const SizedBox(height: 8),
         ],
         _railAction(

@@ -38,7 +38,7 @@ class ModelQuotaCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [MistakeMapDesign.white, MistakeMapDesign.well],
+          colors: [MistakeMapDesign.raised, MistakeMapDesign.well],
         ),
         borderRadius: BorderRadius.circular(MistakeMapDesign.radius),
         border: Border.all(color: MistakeMapDesign.border),

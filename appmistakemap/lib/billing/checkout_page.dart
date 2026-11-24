@@ -333,15 +333,28 @@ TextStyle get _mono => TextStyle(
   height: 1.7,
   color: MistakeMapDesign.deep,
 );
-const _cardShadow = [
+List<BoxShadow> get _cardShadow => [
   BoxShadow(
-    color: Color(0x5911212D),
+    color: MistakeMapDesign.sombra(0x59),
     blurRadius: 40,
     spreadRadius: -18,
-    offset: Offset(0, 18),
+    offset: const Offset(0, 18),
   ),
-  BoxShadow(color: Color(0x0F11212D), blurRadius: 6, offset: Offset(0, 2)),
+  BoxShadow(
+    color: MistakeMapDesign.sombra(0x0F),
+    blurRadius: 6,
+    offset: const Offset(0, 2),
+  ),
 ];
+
+/// Tinta do texto de apoio num cartão de plano: a do cartão quando ele é
+/// colorido (branco no Plus; escuro no Escola, no tema escuro), senão
+/// [padrao].
+Color _tintaApoio(Color ink, Color padrao) =>
+    ink == MistakeMapDesign.white ||
+        (MistakeMapDesign.escuro && ink == MistakeMapDesign.onAccent)
+    ? ink
+    : padrao;
 
 Duration _d(BuildContext context, int ms) =>
     MediaQuery.disableAnimationsOf(context)
@@ -358,7 +371,7 @@ Duration _d(BuildContext context, int ms) =>
           colors: [Color(0xFF8FF0E4), MistakeMapDesign.aqua, Color(0xFF5FB6FF)],
           stops: [0, .38, 1],
         ),
-        ink: MistakeMapDesign.abyss,
+        ink: MistakeMapDesign.onAccent,
         bordered: false,
       ),
       'plus' => (
@@ -373,11 +386,16 @@ Duration _d(BuildContext context, int ms) =>
         bordered: false,
       ),
       _ => (
-        fill: const LinearGradient(
-          begin: Alignment(-.35, -1),
-          end: Alignment(.35, 1),
-          colors: [MistakeMapDesign.white, Color(0xFFE7ECEE)],
-          stops: [0, .7],
+        fill: LinearGradient(
+          begin: const Alignment(-.35, -1),
+          end: const Alignment(.35, 1),
+          colors: [
+            MistakeMapDesign.raised,
+            MistakeMapDesign.escuro
+                ? MistakeMapDesign.well
+                : const Color(0xFFE7ECEE),
+          ],
+          stops: const [0, .7],
         ),
         ink: MistakeMapDesign.abyss,
         bordered: true,
@@ -451,8 +469,8 @@ class _RoundBack extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: states.contains(WidgetState.hovered)
-            ? MistakeMapDesign.white
-            : const Color(0xB3FFFFFF),
+            ? MistakeMapDesign.raised
+            : MistakeMapDesign.pelicula(0xB3),
         border: Border.all(
           color: states.contains(WidgetState.focused)
               ? MistakeMapDesign.azureInk
@@ -489,9 +507,14 @@ class _Cta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (fill, ink) = switch (kind) {
-      _CtaKind.accent => (MistakeMapDesign.aqua, MistakeMapDesign.abyss),
-      _CtaKind.ghost => (const Color(0xBFFFFFFF), MistakeMapDesign.abyss),
-      _CtaKind.dark => (MistakeMapDesign.abyss, MistakeMapDesign.white),
+      _CtaKind.accent => (MistakeMapDesign.aqua, MistakeMapDesign.onAccent),
+      _CtaKind.ghost => (
+        MistakeMapDesign.pelicula(0xBF),
+        MistakeMapDesign.abyss,
+      ),
+      // Pílula de alto contraste: tinta do texto como fundo, superfície como
+      // letra (escura no claro, clara no escuro).
+      _CtaKind.dark => (MistakeMapDesign.abyss, MistakeMapDesign.raised),
     };
     final enabled = onPressed != null && !busy;
     return LayoutBuilder(
@@ -504,7 +527,7 @@ class _Cta extends StatelessWidget {
             final pressed = states.contains(WidgetState.pressed);
             final color = !enabled && !busy
                 ? (kind == _CtaKind.ghost
-                      ? const Color(0x99FFFFFF)
+                      ? MistakeMapDesign.pelicula(0x99)
                       : MistakeMapDesign.disabledFill)
                 : pressed
                 ? MistakeMapDesign.pressedFill(fill)
@@ -849,9 +872,10 @@ class _PlanCard extends StatelessWidget {
                                         child: Text(
                                           feature,
                                           style: TextStyle(
-                                            color: ink == MistakeMapDesign.white
-                                                ? ink
-                                                : MistakeMapDesign.deep,
+                                            color: _tintaApoio(
+                                              ink,
+                                              MistakeMapDesign.deep,
+                                            ),
                                             fontSize: 12,
                                           ),
                                         ),
@@ -875,9 +899,7 @@ class _PlanCard extends StatelessWidget {
                     Text(
                       plan.priceNote,
                       style: TextStyle(
-                        color: ink == MistakeMapDesign.white
-                            ? ink
-                            : MistakeMapDesign.slate,
+                        color: _tintaApoio(ink, MistakeMapDesign.slate),
                         fontSize: 11.5,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1530,7 +1552,7 @@ class _CardFace extends StatelessWidget {
               end: Alignment(1, 1),
               colors: [
                 Color(0xFF253745),
-                MistakeMapDesign.abyss,
+                MistakeMapDesign.onAccent,
                 Color(0xFF1B2A35),
               ],
               stops: [0, .55, 1],
@@ -1685,7 +1707,7 @@ class _StepperState extends State<_Stepper> {
         shape: BoxShape.circle,
         color: states.contains(WidgetState.hovered)
             ? MistakeMapDesign.hover
-            : MistakeMapDesign.white,
+            : MistakeMapDesign.raised,
         border: Border.all(
           color: states.contains(WidgetState.focused)
               ? MistakeMapDesign.azureInk
@@ -1874,7 +1896,7 @@ class _ChargeStepState extends State<_ChargeStep>
             width: 230,
             height: 230,
             decoration: BoxDecoration(
-              color: MistakeMapDesign.white,
+              color: MistakeMapDesign.raised,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(color: MistakeMapDesign.edge),
               boxShadow: _cardShadow,
@@ -1938,7 +1960,7 @@ class _ChargeStepState extends State<_ChargeStep>
                     duration: _d(context, 400),
                     opacity: paid ? 1 : 0,
                     child: Container(
-                      color: const Color(0xE0FFFFFF),
+                      color: MistakeMapDesign.pelicula(0xE0),
                       alignment: Alignment.center,
                       child: AnimatedBuilder(
                         animation: _check,
@@ -1967,7 +1989,7 @@ class _ChargeStepState extends State<_ChargeStep>
         Container(
           padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
           decoration: BoxDecoration(
-            color: MistakeMapDesign.white,
+            color: MistakeMapDesign.raised,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: MistakeMapDesign.edge),
           ),
@@ -2006,8 +2028,8 @@ class _ChargeStepState extends State<_ChargeStep>
                   ),
                   child: Text(
                     _copied ? 'Copiado' : 'Copiar',
-                    style: const TextStyle(
-                      color: MistakeMapDesign.white,
+                    style: TextStyle(
+                      color: MistakeMapDesign.raised,
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2613,7 +2635,10 @@ class _ReceiptStepState extends State<_ReceiptStep>
         Container(
           padding: const EdgeInsets.fromLTRB(12, 20, 12, 8),
           decoration: BoxDecoration(
-            color: MistakeMapDesign.abyss,
+            // No escuro, o fundo fica mais fundo que o papel do recibo.
+            color: MistakeMapDesign.escuro
+                ? const Color(0xFF05090C)
+                : MistakeMapDesign.abyss,
             borderRadius: BorderRadius.circular(28),
           ),
           child: Column(
@@ -2624,10 +2649,15 @@ class _ReceiptStepState extends State<_ReceiptStep>
                   height: 44,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [MistakeMapDesign.white, Color(0xFFE4E9EB)],
+                      colors: [
+                        MistakeMapDesign.raised,
+                        MistakeMapDesign.escuro
+                            ? MistakeMapDesign.well
+                            : const Color(0xFFE4E9EB),
+                      ],
                     ),
                     border: Border.all(color: MistakeMapDesign.edge),
                     boxShadow: _cardShadow,
@@ -2641,7 +2671,9 @@ class _ReceiptStepState extends State<_ReceiptStep>
                         child: Container(
                           height: 6,
                           decoration: BoxDecoration(
-                            color: MistakeMapDesign.deep,
+                            color: MistakeMapDesign.escuro
+                                ? const Color(0xFF05090C)
+                                : MistakeMapDesign.deep,
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -2761,10 +2793,10 @@ class _Paper extends StatelessWidget {
       color: MistakeMapDesign.steel,
     );
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Color(0x8011212D),
+            color: MistakeMapDesign.sombra(0x80),
             blurRadius: 24,
             spreadRadius: -14,
             offset: Offset(0, 10),
@@ -2774,7 +2806,7 @@ class _Paper extends StatelessWidget {
       child: ClipPath(
         clipper: const _ScallopClipper(),
         child: ColoredBox(
-          color: MistakeMapDesign.white,
+          color: MistakeMapDesign.raised,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 22, 16, 26),
             child: DefaultTextStyle.merge(

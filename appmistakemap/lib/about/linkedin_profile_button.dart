@@ -27,7 +27,8 @@ class LinkedInProfileButton extends StatefulWidget {
 
 class _LinkedInProfileButtonState extends State<LinkedInProfileButton>
     with SingleTickerProviderStateMixin {
-  static Color get _rest => MistakeMapDesign.azureInk;
+  // Azul da marca nos dois temas: o rótulo é sempre branco.
+  static final _rest = PaletaMistakeMap.claro.azureInk;
   static const _expanded = Color(0xFF1A4FA0);
   static const _white = MistakeMapDesign.white;
   static const _tipWidth = 18.0;

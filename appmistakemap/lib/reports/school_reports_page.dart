@@ -21,8 +21,22 @@ abstract final class ReportColors {
   static const bar = Color(0xFF2A78D6);
   static const paid = Color(0xFF0CA30C);
   static const open = Color(0xFFFAB219);
-  static const grid = Color(0x1F11212D);
-  static const ramp = [
+  static Color get grid => MistakeMapDesign.tom(0x1F);
+
+  /// Rampa da intensidade: do mais claro ao mais forte no tema claro; no
+  /// escuro, do grafite ao azul claro (o vazio continua sendo o fundo).
+  static List<Color> get ramp =>
+      MistakeMapDesign.escuro ? _rampaEscura : _rampaClara;
+  static const _rampaEscura = [
+    Color(0xFF1A2633),
+    Color(0xFF1B3250),
+    Color(0xFF1D4373),
+    Color(0xFF205796),
+    Color(0xFF2A6FC0),
+    Color(0xFF4C8FE0),
+    Color(0xFF7FB2F0),
+  ];
+  static const _rampaClara = [
     Color(0xFFF0F5FC),
     Color(0xFFCDE2FB),
     Color(0xFF9EC5F4),
@@ -40,8 +54,9 @@ abstract final class ReportColors {
   }
 
   /// Texto legível sobre a célula.
-  static Color heatInk(double t) =>
-      t > .5 ? const Color(0xFFFFFFFF) : MistakeMapDesign.deep;
+  static Color heatInk(double t) => MistakeMapDesign.escuro
+      ? (t > .7 ? MistakeMapDesign.onAccent : MistakeMapDesign.abyss)
+      : (t > .5 ? const Color(0xFFFFFFFF) : MistakeMapDesign.deep);
 }
 
 enum ReportSection { pedagogical, financial }
