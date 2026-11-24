@@ -137,4 +137,21 @@ void main() {
     await a.alternar(Brightness.light);
     expect(a.value, ModoAparencia.escuro);
   });
+
+  testWidgets('botão da tela de perfil alterna e salva', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final a = Aparencia(ModoAparencia.claro);
+    await tester.pumpWidget(
+      FluentApp(
+        home: ScaffoldPage(
+          content: Center(child: BotaoAparencia(aparencia: a)),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('botao-aparencia')));
+    await tester.pumpAndSettle();
+    expect(a.value, ModoAparencia.escuro);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('mistakemap.aparencia'), 'escuro');
+  });
 }

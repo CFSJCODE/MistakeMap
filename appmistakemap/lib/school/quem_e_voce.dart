@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../platform/platform_forms.dart' show PlatformCheck;
 import '../layout/adaptativo.dart';
+import '../theme/aparencia_dialogo.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'escola_repositorio.dart';
@@ -197,9 +198,18 @@ class _TelaQuemEVoceState extends State<TelaQuemEVoce> {
   );
 
   List<Widget> _escolha() => [
-    Text(
-      'Quem é você?',
-      style: Tipo.tituloPagina.copyWith(color: MistakeMapDesign.primary),
+    Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            'Quem é você?',
+            style: Tipo.tituloPagina.copyWith(color: MistakeMapDesign.primary),
+          ),
+        ),
+        const SizedBox(width: 12),
+        const BotaoAparencia(),
+      ],
     ),
     const SizedBox(height: 8),
     Text(
