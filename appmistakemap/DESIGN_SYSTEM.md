@@ -334,6 +334,17 @@ da seção aberta. Voltar numa seção que não é a primeira leva à Visão ger
 nela, fecha o app (regra da etapa 2). Na barra do celular, "Visão geral"
 aparece como "Início" (`rotuloCurto`). Keys: `secao-<chave>`.
 
+### Perfis, etapa 5: login primeiro
+
+A primeira tela do app é o login (e-mail e senha, "Criar conta", "Esqueci
+minha senha" e o botão claro/escuro no canto). A tela "Como você vai entrar?"
+com os 8 perfis saiu. Depois do login, o app abre no último perfil usado (ou no
+do cadastro, na primeira vez) e a troca fica só no botão de conta. Como nada é
+escolhido antes de entrar, não existe mais o erro "Esta conta não tem o
+perfil...". O "Já tenho conta: entrar" do "Quem é você?" continua: o login
+mostra "Entrar como ..." e o app abre nesse perfil se a conta o tiver. Quem
+decide o acesso continua sendo o servidor (RLS e Edge Functions).
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |
