@@ -1,3 +1,5 @@
+import '../theme/esqueleto.dart';
+
 import 'dart:math' as math;
 
 import 'package:fluent_ui/fluent_ui.dart';
@@ -151,10 +153,7 @@ class _SchoolReportsPageState extends State<SchoolReportsPage> {
                     AvisoEscola('$_copied copiado.', sucesso: true),
                   if (_error != null) AvisoEscola(_error!),
                   if (_loading)
-                    const Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Center(child: ProgressRing()),
-                    )
+                    const EsqueletoPagina(titulo: false)
                   else if (r != null) ...[
                     if (r.pedagogical != null && r.financial != null)
                       _sectionPicker(),

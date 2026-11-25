@@ -2,6 +2,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 
 import '../theme/control_styles.dart';
 import '../theme/design_tokens.dart';
+import '../theme/esqueleto.dart';
 
 /// Moldura das telas do professor, igual à da sessão de estudos: voltar,
 /// título, avisos e conteúdo numa coluna centralizada.
@@ -59,7 +60,7 @@ class TeacherPage extends StatelessWidget {
                 InfoBar(title: const Text('Concluído'), content: Text(notice!)),
                 const SizedBox(height: 16),
               ],
-              if (loading) const Center(child: ProgressRing()) else ...children,
+              if (loading) const EsqueletoLista() else ...children,
             ],
           ),
         ),

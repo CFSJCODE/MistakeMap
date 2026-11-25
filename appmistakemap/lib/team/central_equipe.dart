@@ -1,3 +1,5 @@
+import '../theme/esqueleto.dart';
+
 import 'dart:async';
 
 import 'package:fluent_ui/fluent_ui.dart';
@@ -377,7 +379,7 @@ class _CentralEquipeState extends State<CentralEquipe> {
     if (r == null) {
       return [
         ..._cabecalhoCarga('Saúde do sistema'),
-        if (_erro == null) const Center(child: ProgressRing()),
+        if (_erro == null) const EsqueletoCartoes(),
       ];
     }
     final uso = mapaEquipe(r['usage']);
@@ -574,7 +576,7 @@ class _CentralEquipeState extends State<CentralEquipe> {
     return [
       ..._cabecalhoCarga('Erros do backend e do app'),
       ..._cartaoErrosApp(),
-      if (r == null && _erro == null) const Center(child: ProgressRing()),
+      if (r == null && _erro == null) const EsqueletoLista(itens: 3),
       if (r != null) ...[
         CartaoEscola(
           titulo: 'Últimas 24 horas',

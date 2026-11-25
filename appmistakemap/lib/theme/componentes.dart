@@ -2,6 +2,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 
 import 'control_styles.dart';
 import 'design_tokens.dart';
+import 'esqueleto.dart';
 import 'glass_surface.dart';
 
 // Componentes do design system (DESIGN_SYSTEM.md). Regras comuns:
@@ -336,8 +337,17 @@ class CartaoProximoPasso extends StatelessWidget {
           ),
           const SizedBox(height: Espaco.md),
           if (carregando) ...[
-            const Center(
-              child: SizedBox.square(dimension: 28, child: ProgressRing()),
+            const Esqueleto(
+              rotulo: 'Carregando o próximo passo',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: Espaco.xs,
+                children: [
+                  BlocoEsqueleto(fracao: .6, altura: 22),
+                  BlocoEsqueleto(fracao: .85),
+                  BlocoEsqueleto(fracao: .5),
+                ],
+              ),
             ),
             const SizedBox(height: Espaco.xs),
           ] else ...[

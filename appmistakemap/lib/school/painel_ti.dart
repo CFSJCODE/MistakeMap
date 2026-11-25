@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/botao_redondo.dart';
 import '../theme/design_tokens.dart';
+import '../theme/esqueleto.dart';
 import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
 import 'escola_repositorio.dart';
@@ -74,11 +75,7 @@ class _CartaoAdministracaoTiState extends State<CartaoAdministracaoTi> {
           'mapa de aluno nem valores.',
       children: [
         if (_erro != null) AvisoEscola(_erro!),
-        if (l == null && _erro == null)
-          const Padding(
-            padding: EdgeInsets.all(12),
-            child: Center(child: ProgressRing()),
-          ),
+        if (l == null && _erro == null) const EsqueletoCartoes(),
         if (l != null) ...[
           Wrap(
             spacing: 12,
@@ -578,10 +575,7 @@ class _TelaPessoasTiState extends State<TelaPessoasTi> {
           ],
         ),
         if (_carregando)
-          const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: ProgressRing()),
-          )
+          const EsqueletoLista()
         else
           CartaoEscola(
             titulo: lista.length == 1 ? '1 pessoa' : '${lista.length} pessoas',

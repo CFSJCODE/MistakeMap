@@ -380,6 +380,23 @@ do app e no Mapa, 44 nos cabeçalhos de escola, TI, relatórios e equipe e nas
 telas antes do login. Desligado, o círculo fica mais transparente e o ícone
 apagado. Fora de um app Fluent, o botão leva o próprio tema.
 
+### Carregamento com esqueleto
+
+Quando uma tela ou um cartão inteiro espera dados, ele mostra o esqueleto do
+que vai chegar (`lib/theme/esqueleto.dart`), e não um anel girando:
+
+| Componente | Formato | Onde |
+|---|---|---|
+| `EsqueletoPagina` | título, grade de números, lista | Início, painéis de escola, relatórios, plataforma |
+| `EsqueletoCartoes` | grade de cartões de número (2 ou 4 colunas) | licenças da TI, saúde do sistema |
+| `EsqueletoLista` | cartões com ícone e duas linhas | Exercícios, Praticar, Caderno, Mapa, Estudar hoje, professor, TI, admin |
+| `BlocoEsqueleto` | um bloco solto | cartão "Próximo passo" |
+
+Os blocos usam o tom neutro do tema e um brilho que atravessa cada bloco em
+1,4 s; com "reduzir movimento", ficam parados. O leitor de tela ouve um só
+"Carregando" por esqueleto, mesmo com esqueletos aninhados. O anel continua nas
+ações curtas (validar, diagnosticar, carregar mais) e na abertura do app.
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |

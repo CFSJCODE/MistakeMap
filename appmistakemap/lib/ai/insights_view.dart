@@ -1,3 +1,5 @@
+import '../theme/esqueleto.dart';
+
 import 'dart:math' as math;
 
 import 'package:fluent_ui/fluent_ui.dart' show WindowsIcons;
@@ -403,8 +405,8 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                 // rolagem não se perdem ao voltar à aba.
                 if (_loading && _attempts.isEmpty)
                   const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: EsqueletoLista(),
                   )
                 else if (_error != null)
                   RetryMessage(message: _error!, retry: _reload)

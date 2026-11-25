@@ -23,6 +23,7 @@ import 'theme/aparencia.dart';
 import 'theme/design_tokens.dart';
 import 'theme/control_styles.dart';
 import 'theme/componentes.dart';
+import 'theme/esqueleto.dart';
 import 'theme/glass_surface.dart';
 import 'theme/rolagem.dart';
 import 'theme/motion.dart';
@@ -2678,7 +2679,10 @@ class _TelaInicialState extends State<TelaInicial> {
     return _PaginaVidro(
       titulo: 'Início',
       corpo: _carregando
-          ? const Center(child: ProgressRing())
+          ? SingleChildScrollView(
+              padding: _paddingCorpo(context),
+              child: const EsqueletoPagina(),
+            )
           // A rolagem ocupa a largura toda (barra colada na borda da janela);
           // só a coluna de leitura fica limitada.
           : SingleChildScrollView(
@@ -3540,7 +3544,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
         ),
       ],
       corpo: _carregando && _stats.isEmpty
-          ? _estadoFixo(const ProgressRing())
+          ? _estadoFixo(const EsqueletoLista())
           : _stats.isEmpty
           ? _estadoFixo(_buildVazio())
           : _ListaAtualizavel(
@@ -4414,8 +4418,8 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         children: [
           _seletorSecao(),
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 48),
-            child: Center(child: ProgressRing()),
+            padding: EdgeInsets.only(top: Espaco.md),
+            child: EsqueletoLista(),
           ),
         ],
       );
@@ -5468,7 +5472,7 @@ class _TelaAdminState extends State<TelaAdmin> {
                           : _perfis.length + 1,
                       itemBuilder: (ctx, i) {
                         if (_carregando) {
-                          return const Center(child: ProgressRing());
+                          return const EsqueletoLista();
                         }
                         if (_erro != null) {
                           return Text(

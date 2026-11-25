@@ -1,3 +1,5 @@
+import '../theme/esqueleto.dart';
+
 import 'dart:async';
 
 import 'package:fluent_ui/fluent_ui.dart';
@@ -406,11 +408,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
       avisos: [
         if (_erro != null) AvisoEscola(_erro!),
         if (_aviso != null) AvisoEscola(_aviso!, sucesso: true),
-        if (_carregando)
-          const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: ProgressRing()),
-          ),
+        if (_carregando) const EsqueletoPagina(titulo: false),
       ],
     );
   }
@@ -907,7 +905,7 @@ class _TelaResponsavelState extends State<TelaResponsavel> {
         titulo: 'Filhos que você acompanha',
         children: [
           if (_carregando)
-            const Center(child: ProgressRing())
+            const EsqueletoLista(itens: 2, cartoes: false)
           else if (_filhos.isEmpty)
             const Text('Nenhum ainda. Use o código abaixo.')
           else

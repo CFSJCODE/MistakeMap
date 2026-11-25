@@ -164,7 +164,7 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
     if (_carregando && _registros.isEmpty) {
       return Padding(
         padding: _paddingCorpo(context),
-        child: const Center(child: ProgressRing()),
+        child: const EsqueletoLista(),
       );
     }
     final pendentes = _registros.where((r) => !r.revisado).length;
