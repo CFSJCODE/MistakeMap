@@ -359,11 +359,14 @@ comparação com o mês anterior; os cartões de uma linha têm a mesma altura.
 | Dono | Alunos ativos no mês · Análises no mês · Faturas em aberto · Professores |
 | Coordenação | Alunos ativos no mês · Análises no mês · Estudantes · Professores |
 | Financeiro | Faturas em aberto · Custo do mês · Alunos ativos no mês · Faturas vencidas |
-| TI | Pessoas · Estudantes · Professores · Convites ativos |
+| TI | Pessoas ativas · Estudantes · Professores · Convites abertos |
 
-Os números do mês vêm da RPC `school_reports` (2 meses, recortada por papel no
-servidor); os totais de pessoas, do `school_overview`. Professor e Responsável
-seguem sem grade. Sem o relatório, o cartão mostra "—".
+Os números do mês vêm da RPC `school_reports` (12 meses, recortada por papel no
+servidor). O mês atual é o do calendário: sem atividade ainda, o uso é zero.
+Faturas em aberto e vencidas contam os 12 meses, e escola de demonstração
+mostra "Dados de exemplo". Estudantes e professores vêm do `school_overview`;
+pessoas ativas (distintas) e convites abertos, das licenças da TI. Professor e
+Responsável seguem sem grade. Sem a resposta, o cartão mostra "—".
 
 ## 6. Próximas etapas
 

@@ -348,10 +348,11 @@ void main() {
         perfil: const PerfilAtivo('owner', escolaId: _escola),
         repositorio: _FakeEscola(),
         relatorios: relatorios,
+        hoje: DateTime(2026, 11, 20),
       ),
     );
-    // Só os 2 últimos meses: o mês atual e o anterior para comparar.
-    expect(relatorios.calls, [2]);
+    // 12 meses: faturas em aberto do ano e o uso do mês com o anterior.
+    expect(relatorios.calls, [12]);
     final grade = find.byKey(const Key('painel-indicadores'));
     expect(grade, findsOneWidget);
     Finder dentro(String texto) =>
@@ -361,6 +362,36 @@ void main() {
     expect(dentro('23.220'), findsOneWidget);
     expect(dentro('Faturas em aberto'), findsOneWidget);
     expect(dentro('R\$ 480,00'), findsOneWidget);
+    expect(dentro('+25 desde out/26'), findsOneWidget);
+    expect(dentro('Últimos 12 meses'), findsOneWidget);
+
+    // Mês novo ainda sem atividade: zero, não os números do mês passado.
+    await _render(
+      tester,
+      TelaPainelEscola(
+        key: const ValueKey('dezembro'),
+        perfil: const PerfilAtivo('owner', escolaId: _escola),
+        repositorio: _FakeEscola(),
+        relatorios: _FakeReports(_report()),
+        hoje: DateTime(2026, 12, 1),
+      ),
+    );
+    expect(dentro('1.935'), findsNothing);
+    expect(dentro('−1.935 desde nov/26'), findsOneWidget);
+
+    // Escola de demonstração: os valores vêm marcados como exemplo.
+    await _render(
+      tester,
+      TelaPainelEscola(
+        key: const ValueKey('demo'),
+        perfil: const PerfilAtivo('finance', escolaId: _escola),
+        repositorio: _FakeEscola(),
+        relatorios: _FakeReports(_report(demo: true)),
+        hoje: DateTime(2026, 11, 20),
+      ),
+    );
+    expect(dentro('Dados de exemplo'), findsWidgets);
+    expect(dentro('Últimos 12 meses'), findsNothing);
 
     // A TI não vê relatórios: os números vêm só do school_overview.
     final daTi = _FakeReports(_report());
@@ -374,7 +405,8 @@ void main() {
       ),
     );
     expect(daTi.calls, isEmpty);
-    expect(find.text('Convites ativos'), findsOneWidget);
+    expect(find.text('Convites abertos'), findsOneWidget);
+    expect(find.text('Pessoas ativas'), findsOneWidget);
     expect(find.text('Alunos ativos no mês'), findsNothing);
   });
 

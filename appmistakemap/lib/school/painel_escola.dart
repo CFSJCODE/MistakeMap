@@ -18,6 +18,7 @@ import 'escola_ui.dart';
 import 'painel_ti.dart';
 import 'perfil_modelos.dart';
 import 'secoes_escola.dart';
+import 'ti_modelos.dart' show LicencasTi;
 
 // ─── Tela inicial dos perfis de escola ───────────────────────────────────────
 // Dono, Financeiro/Compras, coordenação, TI e professor: escola, convites,
@@ -47,6 +48,7 @@ class TelaPainelEscola extends StatefulWidget {
     required this.repositorio,
     this.cobranca,
     this.relatorios,
+    this.hoje,
   });
 
   final PerfilAtivo perfil;
@@ -57,6 +59,9 @@ class TelaPainelEscola extends StatefulWidget {
 
   /// Relatórios (RPC school_reports). Sem ele, o cartão não aparece.
   final SchoolReportsRepository? relatorios;
+
+  /// Data de hoje para achar o mês atual nos números (testes fixam).
+  final DateTime? hoje;
 
   @override
   State<TelaPainelEscola> createState() => _TelaPainelEscolaState();
@@ -83,6 +88,10 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
   /// do school_overview.
   SchoolReport? _resumo;
 
+  /// Licenças da TI: pessoas distintas e convites abertos de verdade (o
+  /// school_overview só traz os 50 convites mais recentes).
+  LicencasTi? _licencas;
+
   @override
   void initState() {
     super.initState();
@@ -97,6 +106,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
     if (antigo.perfil.chave != widget.perfil.chave) {
       _secao = null;
       _resumo = null;
+      _licencas = null;
       final papeis = papeisConvidaveis[widget.perfil.papel];
       if (papeis != null) _papelConvite = papeis.first;
       _carregar();
@@ -132,13 +142,28 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
   }
 
   Future<void> _carregarResumo(String escola) async {
+    if (widget.perfil.papel == 'it_admin') {
+      try {
+        final dados = await widget.repositorio.executar('it_licenses', {
+          'school_id': escola,
+        });
+        if (mounted && widget.perfil.escolaId == escola) {
+          setState(() => _licencas = LicencasTi.deJson(dados));
+        }
+      } catch (_) {
+        // Sem as licenças, os cartões da TI mostram "—".
+      }
+      return;
+    }
     final relatorios = widget.relatorios;
     if (relatorios == null ||
         !_papeisComRelatorio.contains(widget.perfil.papel)) {
       return;
     }
     try {
-      final r = await relatorios.load(escola, months: 2);
+      // 12 meses: as faturas em aberto e vencidas contam o ano todo, e o uso
+      // do mês atual sai comparado com o anterior.
+      final r = await relatorios.load(escola, months: 12);
       if (mounted && widget.perfil.escolaId == escola) {
         setState(() => _resumo = r);
       }
@@ -297,7 +322,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
         rotuloCurto: 'Início',
         icone: WindowsIcons.home,
         cartoes: [
-          if (_indicadores(papel, membros, convites) case final itens
+          if (_indicadores(papel, membros) case final itens
               when itens.length >= 2)
             GradeIndicadoresEscola(
               key: const Key('painel-indicadores'),
@@ -391,68 +416,77 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
 
   /// Os números que cada papel acompanha no dia a dia. Os do mês vêm do
   /// relatório (o servidor só devolve o que o papel pode ver); os totais de
-  /// pessoas, do school_overview.
-  List<IndicadorEscola> _indicadores(
-    String papel,
-    List<DadosEscola> membros,
-    List<DadosEscola> convites,
-  ) {
+  /// pessoas, do school_overview; os da TI, das licenças.
+  List<IndicadorEscola> _indicadores(String papel, List<DadosEscola> membros) {
     int total(String role) => membros
         .where((m) => m['role'] == role)
         .fold(0, (s, m) => s + ((m['total'] as num?)?.toInt() ?? 0));
-    final pessoas = membros.fold<int>(
-      0,
-      (s, m) => s + ((m['total'] as num?)?.toInt() ?? 0),
-    );
     final ped = _resumo?.pedagogical;
     final fin = _resumo?.financial;
-    final mes = ped?.current;
-    final anterior = (ped?.usage.length ?? 0) >= 2
-        ? ped!.usage[ped.usage.length - 2]
-        : null;
+    // O mês atual é o do calendário: sem linha dele (nenhuma atividade ainda),
+    // o uso do mês é zero, e não o do último mês com dados.
+    final hoje = widget.hoje ?? DateTime.now();
+    final esteMes = DateTime(hoje.year, hoje.month);
+    final mesPassado = DateTime(hoje.year, hoje.month - 1);
+    bool mesmoMes(DateTime a, DateTime b) =>
+        a.year == b.year && a.month == b.month;
+    UsageMonth? uso(DateTime m) =>
+        ped?.usage.where((u) => mesmoMes(u.month, m)).firstOrNull;
+    final mes = uso(esteMes);
+    final anterior = uso(mesPassado);
+    final custo = fin?.cost
+        .where((c) => mesmoMes(c.month, esteMes))
+        .firstOrNull;
+    const exemplo = 'Dados de exemplo';
     String? comparar(int atual, int? antes) {
-      if (antes == null || anterior == null) return null;
-      final quando = monthLabel(anterior.month);
-      final dif = atual - antes;
+      if (ped?.sample ?? false) return exemplo;
+      final quando = monthLabel(mesPassado);
+      final dif = atual - (antes ?? 0);
       if (dif == 0) return 'Igual a $quando';
       return '${dif > 0 ? '+' : '−'}${formatInt(dif.abs())} desde $quando';
     }
 
+    final notaFinanceira = (fin?.sample ?? false)
+        ? exemplo
+        : 'Últimos 12 meses';
     const semValor = '—';
     final ativos = (
       rotulo: 'Alunos ativos no mês',
-      valor: mes == null ? semValor : formatInt(mes.activeStudents),
+      valor: ped == null ? semValor : formatInt(mes?.activeStudents ?? 0),
       icone: WindowsIcons.education,
       acento: Acento.aqua,
-      nota: mes == null
+      nota: ped == null
           ? null
-          : comparar(mes.activeStudents, anterior?.activeStudents),
+          : comparar(mes?.activeStudents ?? 0, anterior?.activeStudents),
     );
     final analises = (
       rotulo: 'Análises no mês',
-      valor: mes == null ? semValor : formatInt(mes.analyses),
+      valor: ped == null ? semValor : formatInt(mes?.analyses ?? 0),
       icone: WindowsIcons.search,
       acento: Acento.violet,
-      nota: mes == null ? null : comparar(mes.analyses, anterior?.analyses),
+      nota: ped == null
+          ? null
+          : comparar(mes?.analyses ?? 0, anterior?.analyses),
     );
     final emAberto = (
       rotulo: 'Faturas em aberto',
       valor: fin == null ? semValor : formatBrl(fin.openTotal),
       icone: WindowsIcons.payment_card,
       acento: Acento.amber,
-      nota: null,
+      nota: fin == null ? null : notaFinanceira,
     );
     IndicadorEscola contagem(
       String rotulo,
-      int valor,
+      int? valor,
       IconData icone,
-      Acento acento,
-    ) => (
+      Acento acento, {
+      String? nota,
+    }) => (
       rotulo: rotulo,
-      valor: formatInt(valor),
+      valor: valor == null ? semValor : formatInt(valor),
       icone: icone,
       acento: acento,
-      nota: null,
+      nota: nota,
     );
     final estudantes = contagem(
       'Estudantes',
@@ -466,6 +500,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
       WindowsIcons.contact,
       Acento.mint,
     );
+    final licencas = _licencas;
     return switch (papel) {
       'owner' => [ativos, analises, emAberto, professores],
       'coordinator' => [ativos, analises, estudantes, professores],
@@ -473,40 +508,41 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
         emAberto,
         (
           rotulo: 'Custo do mês',
-          valor: fin?.currentCost == null
-              ? semValor
-              : formatBrl(fin!.currentCost!.total),
+          valor: fin == null ? semValor : formatBrl(custo?.total ?? 0),
           icone: WindowsIcons.calculator,
           acento: Acento.violet,
-          nota: null,
+          nota: (fin?.sample ?? false) ? exemplo : null,
         ),
-        (
-          rotulo: 'Alunos ativos no mês',
-          valor: fin?.currentCost == null
-              ? semValor
-              : formatInt(fin!.currentCost!.activeStudents),
-          icone: WindowsIcons.education,
-          acento: Acento.aqua,
-          nota: null,
+        contagem(
+          'Alunos ativos no mês',
+          fin == null ? null : custo?.activeStudents ?? 0,
+          WindowsIcons.education,
+          Acento.aqua,
+          nota: (fin?.sample ?? false) ? exemplo : null,
         ),
         contagem(
           'Faturas vencidas',
-          fin == null
-              ? 0
-              : fin.byStatus
-                    .where((s) => s.status == 'overdue')
-                    .fold(0, (t, s) => t + s.count),
+          fin?.byStatus
+              .where((s) => s.status == 'overdue')
+              .fold<int>(0, (t, s) => t + s.count),
           WindowsIcons.warning,
           Acento.coral,
+          nota: fin == null ? null : notaFinanceira,
         ),
       ],
       'it_admin' => [
-        contagem('Pessoas', pessoas, WindowsIcons.people, Acento.azure),
+        // Pessoas distintas (uma pessoa com dois papéis conta uma vez).
+        contagem(
+          'Pessoas ativas',
+          licencas?.usuariosAtivos,
+          WindowsIcons.people,
+          Acento.azure,
+        ),
         estudantes,
         professores,
         contagem(
-          'Convites ativos',
-          convites.length,
+          'Convites abertos',
+          licencas?.convitesAbertos,
           WindowsIcons.mail,
           Acento.amber,
         ),
