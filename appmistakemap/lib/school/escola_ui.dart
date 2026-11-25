@@ -201,3 +201,120 @@ Future<void> mostrarCodigo(
     ],
   ),
 );
+
+/// Um número da Visão geral: valor grande, rótulo e, se houver, a comparação
+/// com o mês anterior.
+typedef IndicadorEscola = ({
+  String rotulo,
+  String valor,
+  IconData icone,
+  Acento acento,
+  String? nota,
+});
+
+/// Indicadores da Visão geral dos painéis: 2 colunas no celular, 4 em telas
+/// largas, 1 com fonte muito ampliada. Mesmo desenho do [CartaoEscola]
+/// (superfície com borda fina), um cartão por número.
+class GradeIndicadoresEscola extends StatelessWidget {
+  const GradeIndicadoresEscola({super.key, required this.itens});
+
+  final List<IndicadorEscola> itens;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: Espaco.md),
+    child: LayoutBuilder(
+      builder: (context, caixa) {
+        final escala = MediaQuery.textScalerOf(context).scale(1);
+        final largura = caixa.maxWidth / escala;
+        final colunas = largura >= 720
+            ? 4
+            : largura >= 280
+            ? 2
+            : 1;
+        // Cada linha numa altura só: o cartão com a comparação não deixa
+        // o vizinho mais baixo.
+        return Column(
+          spacing: Espaco.sm,
+          children: [
+            for (var n = 0; n < itens.length; n += colunas)
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: Espaco.sm,
+                  children: [
+                    for (var k = n; k < n + colunas; k++)
+                      Expanded(
+                        child: k < itens.length
+                            ? _CartaoIndicador(itens[k])
+                            : const SizedBox(),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
+    ),
+  );
+}
+
+class _CartaoIndicador extends StatelessWidget {
+  const _CartaoIndicador(this.i);
+
+  final IndicadorEscola i;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: [i.rotulo, i.valor, ?i.nota].join(': '),
+    excludeSemantics: true,
+    child: Container(
+      padding: const EdgeInsets.all(Espaco.md),
+      decoration: BoxDecoration(
+        color: MistakeMapDesign.surface,
+        border: Border.all(color: MistakeMapDesign.border),
+        borderRadius: BorderRadius.circular(Raio.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: i.acento.cor.withValues(alpha: .16),
+              borderRadius: BorderRadius.circular(Raio.sm),
+            ),
+            child: Icon(i.icone, size: 16, color: i.acento.tinta),
+          ),
+          const SizedBox(height: Espaco.sm),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              i.valor,
+              style: Tipo.numero.copyWith(color: MistakeMapDesign.primary),
+            ),
+          ),
+          const SizedBox(height: Espaco.xxs),
+          Text(
+            i.rotulo,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Tipo.secundario.copyWith(color: MistakeMapDesign.content),
+          ),
+          if (i.nota != null) ...[
+            const SizedBox(height: Espaco.xxs),
+            Text(
+              i.nota!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Tipo.legenda.copyWith(color: MistakeMapDesign.steel),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
+}

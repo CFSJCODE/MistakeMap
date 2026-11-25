@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:fluent_ui/fluent_ui.dart';
 
 import '../theme/motion.dart';
 import '../layout/conta.dart';
 import '../billing/billing_panel.dart';
 import '../billing/billing_repository.dart';
+import '../billing/checkout_models.dart' show formatBrl;
 import '../platform/platform_forms.dart' show PlatformCheck;
 import '../reports/school_reports.dart';
 import '../reports/school_reports_page.dart';
@@ -75,6 +78,11 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
   /// Seção aberta no painel (chave de [SecaoEscola]); a primeira por padrão.
   String? _secao;
 
+  /// Números do mês para a Visão geral (mesma RPC dos relatórios, que o
+  /// servidor recorta por papel). Sem ele, os cartões mostram só o que vem
+  /// do school_overview.
+  SchoolReport? _resumo;
+
   @override
   void initState() {
     super.initState();
@@ -88,6 +96,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
     super.didUpdateWidget(antigo);
     if (antigo.perfil.chave != widget.perfil.chave) {
       _secao = null;
+      _resumo = null;
       final papeis = papeisConvidaveis[widget.perfil.papel];
       if (papeis != null) _papelConvite = papeis.first;
       _carregar();
@@ -109,6 +118,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
       _carregando = true;
       _erro = null;
     });
+    unawaited(_carregarResumo(escola));
     try {
       final dados = await widget.repositorio.executar('school_overview', {
         'school_id': escola,
@@ -120,6 +130,24 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
       if (mounted) setState(() => _carregando = false);
     }
   }
+
+  Future<void> _carregarResumo(String escola) async {
+    final relatorios = widget.relatorios;
+    if (relatorios == null ||
+        !_papeisComRelatorio.contains(widget.perfil.papel)) {
+      return;
+    }
+    try {
+      final r = await relatorios.load(escola, months: 2);
+      if (mounted && widget.perfil.escolaId == escola) {
+        setState(() => _resumo = r);
+      }
+    } catch (_) {
+      // Sem os relatórios, a Visão geral fica com os totais da escola.
+    }
+  }
+
+  static const _papeisComRelatorio = {'owner', 'finance', 'coordinator'};
 
   Future<DadosEscola?> _rodar(String acao, DadosEscola dados) async {
     if (_enviando) return null;
@@ -268,7 +296,16 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
         rotulo: 'Visão geral',
         rotuloCurto: 'Início',
         icone: WindowsIcons.home,
-        cartoes: [_proximaEtapa(papel), ?pessoasNaEscola],
+        cartoes: [
+          if (_indicadores(papel, membros, convites) case final itens
+              when itens.length >= 2)
+            GradeIndicadoresEscola(
+              key: const Key('painel-indicadores'),
+              itens: itens,
+            ),
+          _proximaEtapa(papel),
+          ?pessoasNaEscola,
+        ],
       ),
       if (cartaoTi != null && papel == 'it_admin')
         SecaoEscola(
@@ -350,6 +387,132 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
           ),
       ],
     );
+  }
+
+  /// Os números que cada papel acompanha no dia a dia. Os do mês vêm do
+  /// relatório (o servidor só devolve o que o papel pode ver); os totais de
+  /// pessoas, do school_overview.
+  List<IndicadorEscola> _indicadores(
+    String papel,
+    List<DadosEscola> membros,
+    List<DadosEscola> convites,
+  ) {
+    int total(String role) => membros
+        .where((m) => m['role'] == role)
+        .fold(0, (s, m) => s + ((m['total'] as num?)?.toInt() ?? 0));
+    final pessoas = membros.fold<int>(
+      0,
+      (s, m) => s + ((m['total'] as num?)?.toInt() ?? 0),
+    );
+    final ped = _resumo?.pedagogical;
+    final fin = _resumo?.financial;
+    final mes = ped?.current;
+    final anterior = (ped?.usage.length ?? 0) >= 2
+        ? ped!.usage[ped.usage.length - 2]
+        : null;
+    String? comparar(int atual, int? antes) {
+      if (antes == null || anterior == null) return null;
+      final quando = monthLabel(anterior.month);
+      final dif = atual - antes;
+      if (dif == 0) return 'Igual a $quando';
+      return '${dif > 0 ? '+' : '−'}${formatInt(dif.abs())} desde $quando';
+    }
+
+    const semValor = '—';
+    final ativos = (
+      rotulo: 'Alunos ativos no mês',
+      valor: mes == null ? semValor : formatInt(mes.activeStudents),
+      icone: WindowsIcons.education,
+      acento: Acento.aqua,
+      nota: mes == null
+          ? null
+          : comparar(mes.activeStudents, anterior?.activeStudents),
+    );
+    final analises = (
+      rotulo: 'Análises no mês',
+      valor: mes == null ? semValor : formatInt(mes.analyses),
+      icone: WindowsIcons.search,
+      acento: Acento.violet,
+      nota: mes == null ? null : comparar(mes.analyses, anterior?.analyses),
+    );
+    final emAberto = (
+      rotulo: 'Faturas em aberto',
+      valor: fin == null ? semValor : formatBrl(fin.openTotal),
+      icone: WindowsIcons.payment_card,
+      acento: Acento.amber,
+      nota: null,
+    );
+    IndicadorEscola contagem(
+      String rotulo,
+      int valor,
+      IconData icone,
+      Acento acento,
+    ) => (
+      rotulo: rotulo,
+      valor: formatInt(valor),
+      icone: icone,
+      acento: acento,
+      nota: null,
+    );
+    final estudantes = contagem(
+      'Estudantes',
+      total('student'),
+      WindowsIcons.people,
+      Acento.azure,
+    );
+    final professores = contagem(
+      'Professores',
+      total('teacher'),
+      WindowsIcons.contact,
+      Acento.mint,
+    );
+    return switch (papel) {
+      'owner' => [ativos, analises, emAberto, professores],
+      'coordinator' => [ativos, analises, estudantes, professores],
+      'finance' => [
+        emAberto,
+        (
+          rotulo: 'Custo do mês',
+          valor: fin?.currentCost == null
+              ? semValor
+              : formatBrl(fin!.currentCost!.total),
+          icone: WindowsIcons.calculator,
+          acento: Acento.violet,
+          nota: null,
+        ),
+        (
+          rotulo: 'Alunos ativos no mês',
+          valor: fin?.currentCost == null
+              ? semValor
+              : formatInt(fin!.currentCost!.activeStudents),
+          icone: WindowsIcons.education,
+          acento: Acento.aqua,
+          nota: null,
+        ),
+        contagem(
+          'Faturas vencidas',
+          fin == null
+              ? 0
+              : fin.byStatus
+                    .where((s) => s.status == 'overdue')
+                    .fold(0, (t, s) => t + s.count),
+          WindowsIcons.warning,
+          Acento.coral,
+        ),
+      ],
+      'it_admin' => [
+        contagem('Pessoas', pessoas, WindowsIcons.people, Acento.azure),
+        estudantes,
+        professores,
+        contagem(
+          'Convites ativos',
+          convites.length,
+          WindowsIcons.mail,
+          Acento.amber,
+        ),
+      ],
+      _ => const [],
+    };
   }
 
   Widget _cartaoRelatorios(String papel, String nome) {
