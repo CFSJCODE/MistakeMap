@@ -152,7 +152,7 @@ void main() {
     expect(find.text('Adicionar exercício'), findsNothing);
 
     // A seta do AppBar volta direto para quem abriu, sem tela vazia no meio.
-    await tester.tap(find.byTooltip('Back'));
+    await tester.tap(find.byTooltip('Voltar'));
     await tester.pumpAndSettle();
     expect(find.text('Correção e evidências'), findsNothing);
     expect(find.text('Ver correção'), findsOneWidget);

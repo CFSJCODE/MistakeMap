@@ -1,3 +1,4 @@
+import 'package:fluent_ui/fluent_ui.dart' show WindowsIcons;
 import 'package:flutter/material.dart';
 
 import '../layout/conta.dart' show BotaoConta;
@@ -130,6 +131,7 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
       appBar: AppBar(
         title: const Text('Estudar com a IA'),
         foregroundColor: mapTitleBlue,
+        leading: voltarDaBarra(context),
         // Troca de perfil, aparência e sair, como nas outras abas.
         actions: const [
           Padding(
@@ -155,7 +157,7 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
             if (widget.subjects.isEmpty)
               const _StudyEmptyState(
                 key: Key('study-no-subjects'),
-                icon: Icons.menu_book_outlined,
+                icon: WindowsIcons.reading_list,
                 // As matérias vêm das tentativas analisadas: exercícios da
                 // Lista ainda sem resposta não entram aqui.
                 title: 'Nenhuma tentativa analisada ainda',
@@ -190,7 +192,7 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
               ElevatedButton.icon(
                 key: const Key('study-generate'),
                 onPressed: _generating || _subject == null ? null : _generate,
-                icon: const Icon(Icons.auto_awesome_outlined),
+                icon: const Icon(WindowsIcons.lightbulb),
                 label: Text(
                   _generating
                       ? 'Montando seu material…'
@@ -229,10 +231,10 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
                           value: tab,
                           key: null,
                           icon: switch (tab) {
-                            _StudyTab.summary => Icons.article_outlined,
-                            _StudyTab.flashcards => Icons.style_outlined,
-                            _StudyTab.quiz => Icons.quiz_outlined,
-                            _StudyTab.exercises => Icons.edit_note_outlined,
+                            _StudyTab.summary => WindowsIcons.document,
+                            _StudyTab.flashcards => WindowsIcons.copy,
+                            _StudyTab.quiz => WindowsIcons.checkbox_composite,
+                            _StudyTab.exercises => WindowsIcons.quick_note,
                           },
                           label: Text(switch (tab) {
                             _StudyTab.summary => 'Resumo',
@@ -282,7 +284,7 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
               else if (!_loading && !_generating)
                 const _StudyEmptyState(
                   key: Key('study-empty'),
-                  icon: Icons.auto_stories_outlined,
+                  icon: WindowsIcons.library,
                   title: 'Seu primeiro material',
                   message:
                       'Toque em “Gerar material de estudo”. Quanto mais '
@@ -316,7 +318,7 @@ class _StudyMaterialViewState extends State<StudyMaterialView> {
           PopupMenuButton<String>(
             key: const Key('study-history'),
             tooltip: 'Materiais anteriores',
-            icon: const Icon(Icons.history),
+            icon: const Icon(WindowsIcons.history),
             onSelected: (id) => setState(() {
               _openMaterialId = id;
               _tab = _StudyTab.summary;
@@ -354,7 +356,7 @@ class _PracticeEntry extends StatelessWidget {
       ElevatedButton.icon(
         key: const Key('study-open-practice'),
         onPressed: onOpen,
-        icon: const Icon(Icons.play_arrow),
+        icon: const Icon(WindowsIcons.play),
         label: const Text('Começar rodada de exercícios'),
       ),
     ],
@@ -456,14 +458,14 @@ class _SummaryPanel extends StatelessWidget {
             'Pontos-chave',
             style: TextStyle(fontWeight: FontWeight.w600, color: mapTitleBlue),
           ),
-          _bullets(summary.keyPoints, Icons.check_circle_outline),
+          _bullets(summary.keyPoints, WindowsIcons.completed),
         ],
         if (summary.commonMistakes.isNotEmpty) ...[
           Text(
             'Onde você costuma errar',
             style: TextStyle(fontWeight: FontWeight.w600, color: mapTitleBlue),
           ),
-          _bullets(summary.commonMistakes, Icons.warning_amber_outlined),
+          _bullets(summary.commonMistakes, WindowsIcons.warning),
         ],
       ],
     );
@@ -525,7 +527,7 @@ class _FlashcardDeckState extends State<FlashcardDeck> {
             ElevatedButton.icon(
               key: const Key('flashcards-review-unknown'),
               onPressed: () => _restart(review),
-              icon: const Icon(Icons.replay),
+              icon: const Icon(WindowsIcons.repeat_all),
               label: Text('Revisar os ${review.length} que faltaram'),
             ),
           OutlinedButton(
@@ -716,8 +718,8 @@ class _QuizPanelState extends State<QuizPanel> {
               selected: chosen == option,
               leading: Icon(
                 chosen == option
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
+                    ? WindowsIcons.radio_btn_on
+                    : WindowsIcons.radio_btn_off,
                 color: chosen == option
                     ? MistakeMapDesign.violetInk
                     : MistakeMapDesign.steel,
@@ -792,7 +794,7 @@ class _QuizPanelState extends State<QuizPanel> {
             children: [
               for (final concept in missed)
                 Chip(
-                  avatar: const Icon(Icons.bubble_chart_outlined, size: 18),
+                  avatar: const Icon(WindowsIcons.cloud, size: 18),
                   label: Text('${concept.label} (${concept.count})'),
                 ),
             ],
@@ -806,7 +808,7 @@ class _QuizPanelState extends State<QuizPanel> {
         ElevatedButton.icon(
           key: const Key('quiz-restart'),
           onPressed: widget.generating ? null : widget.onRestart,
-          icon: const Icon(Icons.replay),
+          icon: const Icon(WindowsIcons.repeat_all),
           label: Text(
             widget.generating
                 ? 'Gerando novas perguntas…'
@@ -831,7 +833,9 @@ class _QuizPanelState extends State<QuizPanel> {
           spacing: 8,
           children: [
             Icon(
-              item.isCorrect ? Icons.check_circle : Icons.cancel,
+              item.isCorrect
+                  ? WindowsIcons.completed_solid
+                  : WindowsIcons.error_badge,
               color: item.isCorrect
                   ? MistakeMapDesign.ok
                   : MistakeMapDesign.bad,

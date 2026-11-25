@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:fluent_ui/fluent_ui.dart' show WindowsIcons;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -79,7 +80,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
               width: double.infinity,
               height: 56,
               child: MenuItemButton(
-                leadingIcon: const Icon(Icons.photo_camera_outlined),
+                leadingIcon: const Icon(WindowsIcons.camera),
                 onPressed: () => Navigator.pop(ctx, ImageSource.camera),
                 child: const Text('Tirar uma foto'),
               ),
@@ -88,7 +89,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
               width: double.infinity,
               height: 56,
               child: MenuItemButton(
-                leadingIcon: const Icon(Icons.photo_library_outlined),
+                leadingIcon: const Icon(WindowsIcons.photo_collection),
                 onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
                 child: const Text('Escolher da galeria'),
               ),
@@ -264,13 +265,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
               : 'Resolver exercício',
         ),
         foregroundColor: mapTitleBlue,
-        leading: widget.onClose != null
-            ? IconButton(
-                tooltip: 'Voltar',
-                icon: const Icon(Icons.arrow_back),
-                onPressed: widget.onClose,
-              )
-            : null,
+        leading: voltarDaBarra(context, onPressed: widget.onClose),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -358,7 +353,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
           if (_imageBytes == null)
             OutlinedButton.icon(
               onPressed: locked ? null : _pickImage,
-              icon: const Icon(Icons.add_photo_alternate_outlined),
+              icon: const Icon(WindowsIcons.photo_collection),
               label: const Text('Adicionar foto do exercício'),
               style:
                   MistakeMapMaterialControls.button(
@@ -388,7 +383,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                       _imageBytes = null;
                       _imageName = null;
                     }),
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(WindowsIcons.delete),
               label: const Text('Remover imagem'),
             ),
           ],
@@ -428,7 +423,7 @@ class _ExerciseSubmissionViewState extends State<ExerciseSubmissionView> {
                       color: MistakeMapDesign.onAccent,
                     ),
                   )
-                : const Icon(Icons.check),
+                : const Icon(WindowsIcons.check_mark),
             label: Text(
               _busy
                   ? _stage

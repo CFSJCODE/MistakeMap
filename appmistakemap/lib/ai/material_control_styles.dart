@@ -1,5 +1,7 @@
+import 'package:fluent_ui/fluent_ui.dart' show WindowsIcons;
 import 'package:flutter/material.dart';
 
+import '../theme/botao_redondo.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
@@ -100,8 +102,12 @@ abstract final class MistakeMapMaterialControls {
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
       ),
       animationDuration: duration,
-      textStyle: const WidgetStatePropertyAll(
-        TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      // Mesma família de letra do resto da casca Material.
+      textStyle: WidgetStatePropertyAll(
+        Typography.blackMountainView.labelLarge!.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       foregroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
@@ -233,4 +239,20 @@ class _MaterialHoverSurface extends StatelessWidget {
       },
     );
   }
+}
+
+/// Voltar redondo de vidro das barras Material (Mapa, Estudar e correções),
+/// igual ao das páginas Fluent. Com [onPressed], fecha a tela embutida; sem
+/// ele, aparece só quando a rota pode voltar.
+Widget? voltarDaBarra(BuildContext context, {VoidCallback? onPressed}) {
+  final podeVoltar = ModalRoute.of(context)?.impliesAppBarDismissal ?? false;
+  if (onPressed == null && !podeVoltar) return null;
+  return Center(
+    child: BotaoRedondo(
+      icone: WindowsIcons.back,
+      dica: 'Voltar',
+      tamanho: 40,
+      onPressed: onPressed ?? () => Navigator.of(context).maybePop(),
+    ),
+  );
 }
