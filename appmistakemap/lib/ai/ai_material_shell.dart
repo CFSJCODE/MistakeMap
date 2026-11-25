@@ -149,8 +149,13 @@ class AiMaterialShell extends StatefulWidget {
       shape: WidgetStatePropertyAll(menuShape),
     );
 
+    // Mesma família de letra em todos os textos da casca (barra, cápsulas e
+    // segmentos), em vez de estilos soltos sem família.
+    final letra = Typography.blackMountainView.labelLarge!;
     return ThemeData(
       useMaterial3: true,
+      // Sem a onda do Material: como no Fluent, o toque só muda a cor.
+      splashFactory: NoSplash.splashFactory,
       // Mesma barra de rolagem do resto do app: colada na borda direita,
       // sempre visível, mais grossa sob o ponteiro.
       scrollbarTheme: ScrollbarThemeData(
@@ -243,8 +248,8 @@ class AiMaterialShell extends StatefulWidget {
             EdgeInsets.symmetric(horizontal: 12),
           ),
           visualDensity: VisualDensity.standard,
-          textStyle: const WidgetStatePropertyAll(
-            TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: WidgetStatePropertyAll(
+            letra.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           backgroundColor: WidgetStateProperty.resolveWith(
             (states) => states.contains(WidgetState.selected)
@@ -276,14 +281,22 @@ class AiMaterialShell extends StatefulWidget {
         ),
         side: BorderSide(color: MistakeMapDesign.border),
         shape: const StadiumBorder(),
-        labelStyle: TextStyle(
+        labelStyle: letra.copyWith(
           color: MistakeMapDesign.deep,
           fontWeight: FontWeight.w600,
         ),
         iconTheme: IconThemeData(color: MistakeMapDesign.violetInk),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        // As cápsulas do Fluent marcam a escolhida só pela cor.
+        showCheckmark: false,
       ),
       appBarTheme: AppBarTheme(
+        // Título no tamanho e no peso das barras Fluent.
+        titleTextStyle: letra.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: mapTitleBlue,
+        ),
         backgroundColor: Colors.transparent,
         foregroundColor: MistakeMapDesign.strong,
         surfaceTintColor: Colors.transparent,
@@ -319,7 +332,7 @@ class AiMaterialShell extends StatefulWidget {
       dropdownMenuTheme: DropdownMenuThemeData(
         inputDecorationTheme: inputTheme,
         menuStyle: menuStyle,
-        textStyle: TextStyle(color: MistakeMapDesign.deep, fontSize: 14),
+        textStyle: letra.copyWith(color: MistakeMapDesign.deep, fontSize: 14),
         disabledColor: MistakeMapDesign.disabledInk,
       ),
       menuTheme: MenuThemeData(style: menuStyle),

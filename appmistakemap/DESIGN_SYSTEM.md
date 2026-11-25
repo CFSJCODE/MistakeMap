@@ -397,6 +397,19 @@ Os blocos usam o tom neutro do tema e um brilho que atravessa cada bloco em
 "Carregando" por esqueleto, mesmo com esqueletos aninhados. O anel continua nas
 ações curtas (validar, diagnosticar, carregar mais) e na abertura do app.
 
+### Mapa e Estudar no visual Fluent
+
+O Mapa, o Estudar, as correções e o Praticar seguem em Material por dentro
+(rotas, folhas e formulários), mas com a aparência das páginas Fluent:
+
+- ícones do Windows (`WindowsIcons`) no lugar dos ícones do Material;
+- Voltar redondo de vidro (`voltarDaBarra` em
+  `lib/ai/material_control_styles.dart`), igual ao das barras Fluent;
+- título da barra em 20/semibold, como o `subtitle` das páginas Fluent;
+- sem a onda de toque do Material (`NoSplash`), e cápsulas sem o tique de
+  selecionado: a escolhida aparece só pela cor;
+- a mesma família de letra em barra, cápsulas, segmentos e botões.
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |

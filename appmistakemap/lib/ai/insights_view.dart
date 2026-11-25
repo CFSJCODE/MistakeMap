@@ -199,7 +199,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
       onExpansionChanged: (open) => setState(() => _analysisOpen = open),
       // O formulário guarda o que já foi digitado ao recolher o painel.
       maintainState: true,
-      leading: Icon(Icons.lightbulb_outline, color: mapTitleBlue),
+      leading: Icon(WindowsIcons.lightbulb, color: mapTitleBlue),
       title: Text(
         'Analisar com a IA',
         style: TextStyle(color: mapTitleBlue, fontWeight: FontWeight.w600),
@@ -357,16 +357,9 @@ class _ErrorMapViewState extends State<ErrorMapView> {
       appBar: AppBar(
         title: const Text('Mapa de erros'),
         foregroundColor: mapTitleBlue,
-        leading: widget.onClose != null
-            ? Center(
-                child: BotaoRedondo(
-                  icone: WindowsIcons.back,
-                  dica: 'Voltar',
-                  tamanho: 40,
-                  onPressed: widget.onClose,
-                ),
-              )
-            : null,
+        leading: widget.onClose == null
+            ? null
+            : voltarDaBarra(context, onPressed: widget.onClose),
         actions: [
           BotaoRedondo(
             icone: WindowsIcons.refresh,
@@ -387,7 +380,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
               onPressed: _openAnalysis,
               backgroundColor: MistakeMapDesign.accent,
               foregroundColor: MistakeMapDesign.abyss,
-              icon: const Icon(Icons.lightbulb_outline),
+              icon: const Icon(WindowsIcons.lightbulb),
               label: const Text('Analisar exercício'),
             ),
       body: SafeArea(
@@ -413,7 +406,7 @@ class _ErrorMapViewState extends State<ErrorMapView> {
                 else if (_attempts.isEmpty) ...[
                   const SizedBox(height: 48),
                   Icon(
-                    Icons.account_tree_outlined,
+                    WindowsIcons.relationship,
                     size: 64,
                     color: MistakeMapDesign.violetInk,
                   ),
@@ -639,7 +632,7 @@ class _StudyCallout extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  Icons.auto_stories_outlined,
+                  WindowsIcons.library,
                   size: 28,
                   color: MistakeMapDesign.violetInk,
                 ),
@@ -847,7 +840,7 @@ class _ConceptGraphState extends State<ConceptGraph> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.circle, size: 12, color: entry.$2),
+                      Icon(WindowsIcons.circle_fill, size: 12, color: entry.$2),
                       const SizedBox(width: 6),
                       Text(
                         entry.$1,
@@ -909,7 +902,7 @@ class _ConceptGraphState extends State<ConceptGraph> {
                         child: IconButton.filledTonal(
                           tooltip: 'Reajustar grafo',
                           onPressed: () => _fit(viewport, canvasSize),
-                          icon: const Icon(Icons.center_focus_strong),
+                          icon: const Icon(WindowsIcons.fit_page),
                         ),
                       ),
                     ],
@@ -1039,7 +1032,7 @@ class AttemptTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text('${attempt.subjectName} · ${attempt.statusLabel}'),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: const Icon(WindowsIcons.chevron_right),
       ),
     ),
   );
@@ -1063,7 +1056,7 @@ class RetryMessage extends StatelessWidget {
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: retry,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(WindowsIcons.refresh),
             label: const Text('Tentar novamente'),
           ),
         ],
@@ -1169,11 +1162,13 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
       appBar: AppBar(
         title: const Text('Correção e evidências'),
         foregroundColor: mapTitleBlue,
+        leading: voltarDaBarra(context),
         actions: [
-          IconButton(
-            tooltip: 'Atualizar tentativa',
+          BotaoRedondo(
+            icone: WindowsIcons.refresh,
+            dica: 'Atualizar tentativa',
+            tamanho: 40,
             onPressed: _busy ? null : _load,
-            icon: const Icon(Icons.refresh),
           ),
         ],
       ),
@@ -1209,7 +1204,7 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: _busy ? null : _resumeUpload,
-                    icon: const Icon(Icons.photo_library_outlined),
+                    icon: const Icon(WindowsIcons.photo_collection),
                     label: const Text('Reenviar foto e analisar'),
                   ),
                 ] else if (attempt.status == 'dead_letter' ||
@@ -1220,7 +1215,7 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
                 else
                   ElevatedButton.icon(
                     onPressed: _busy ? null : _analyze,
-                    icon: const Icon(Icons.psychology_outlined),
+                    icon: const Icon(WindowsIcons.processing),
                     label: const Text('Analisar tentativa'),
                   ),
               ] else ...[
@@ -1302,7 +1297,7 @@ class _AttemptDetailViewState extends State<AttemptDetailView> {
                             ),
                           ),
                         ),
-                  icon: const Icon(Icons.school_outlined),
+                  icon: const Icon(WindowsIcons.education),
                   label: const Text('Gerar exercícios para praticar'),
                 ),
               ],
@@ -1496,7 +1491,7 @@ class _PracticeViewState extends State<PracticeView> {
       ElevatedButton.icon(
         key: const Key('practice-round-start'),
         onPressed: _busy ? null : () => setState(() => _roundStarted = true),
-        icon: const Icon(Icons.play_arrow),
+        icon: const Icon(WindowsIcons.play),
         label: const Text('Iniciar rodada'),
       ),
     ],
@@ -1519,7 +1514,7 @@ class _PracticeViewState extends State<PracticeView> {
         ElevatedButton.icon(
           key: const Key('practice-round-resolve'),
           onPressed: _roundBusy ? null : _answerRoundQuestion,
-          icon: const Icon(Icons.edit_outlined),
+          icon: const Icon(WindowsIcons.edit),
           label: Text(_roundBusy ? 'Analisando resposta…' : 'Responder'),
         ),
       ],
@@ -1567,7 +1562,7 @@ class _PracticeViewState extends State<PracticeView> {
           for (final concept in missed)
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.bubble_chart_outlined),
+              leading: const Icon(WindowsIcons.cloud),
               title: Text(concept.label),
               trailing: Text('${concept.count} questão(ões)'),
             ),
@@ -1583,6 +1578,7 @@ class _PracticeViewState extends State<PracticeView> {
       appBar: AppBar(
         title: const Text('Praticar meus erros'),
         foregroundColor: mapTitleBlue,
+        leading: voltarDaBarra(context),
       ),
       body: SafeArea(
         child: ListView(
@@ -1669,7 +1665,7 @@ class _PracticeViewState extends State<PracticeView> {
               onPressed: controlsDisabled || _subject == null
                   ? null
                   : _generate,
-              icon: const Icon(Icons.auto_awesome_outlined),
+              icon: const Icon(WindowsIcons.lightbulb),
               label: Text(
                 _busy
                     ? 'Preparando exercícios…'

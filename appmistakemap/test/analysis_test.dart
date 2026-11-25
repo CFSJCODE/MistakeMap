@@ -692,7 +692,7 @@ void main() {
         'Resposta',
       );
       await tapKey('submit-exercise');
-      await tester.pageBack();
+      await tester.tap(find.byTooltip('Voltar'));
       await tester.pumpAndSettle();
     }
 
