@@ -62,6 +62,7 @@ import 'school/escola_repositorio.dart'
     show PreferenciasPerfil, RepositorioEscolaSupabase;
 import 'school/perfil_modelos.dart' show PerfilCadastro;
 import 'theme/aparencia_dialogo.dart' show BotaoAparencia;
+import 'theme/botao_redondo.dart';
 import 'school/porta_perfil.dart';
 import 'team/central_equipe.dart';
 import 'team/central_equipe_dados.dart';
@@ -359,7 +360,7 @@ class _PaginaVidro extends StatelessWidget {
           actions: [
             const _IndicadorConexao(),
             ...acoes,
-            if (Aparencia.disponivel) const _BotaoAparencia(),
+            const BotaoAparencia(tamanho: 40),
             const Padding(
               padding: EdgeInsetsDirectional.only(start: 4),
               child: BotaoConta(tamanho: 40),
@@ -506,42 +507,6 @@ class _IndicadorConexao extends StatelessWidget {
   }
 }
 
-/// Sol/lua na barra do topo: alterna claro e escuro na hora.
-class _BotaoAparencia extends StatelessWidget {
-  const _BotaoAparencia();
-
-  @override
-  Widget build(BuildContext context) {
-    final aparencia = Aparencia.instancia;
-    return ValueListenableBuilder<ModoAparencia>(
-      valueListenable: aparencia,
-      builder: (context, _, _) {
-        final escuro = MistakeMapDesign.escuro;
-        // O MediaQuery do app segue a paleta; aqui vale o brilho do aparelho.
-        void alternar() => aparencia.alternar(
-          WidgetsBinding.instance.platformDispatcher.platformBrightness,
-        );
-        // O wrapper substitui a semântica do botão; por isso repete o toque.
-        return Semantics(
-          button: true,
-          toggled: escuro,
-          label: 'Modo escuro',
-          onTap: alternar,
-          excludeSemantics: true,
-          child: _BotaoBarra(
-            key: const Key('botao-aparencia'),
-            icone: escuro ? WindowsIcons.brightness : WindowsIcons.quiet_hours,
-            dica: escuro
-                ? 'Mudar para o modo claro'
-                : 'Mudar para o modo escuro',
-            onPressed: alternar,
-          ),
-        );
-      },
-    );
-  }
-}
-
 class _BotaoBarra extends StatelessWidget {
   const _BotaoBarra({
     super.key,
@@ -558,19 +523,12 @@ class _BotaoBarra extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: dica,
-      child: SizedBox.square(
-        dimension: 40,
-        child: MistakeMapIconButton(
-          style: MistakeMapControls.button(
-            padding: const EdgeInsets.all(11),
-            foreground: cor ?? titleBlue,
-          ),
-          icon: _IconeBotao(icone, size: 18),
-          onPressed: onPressed,
-        ),
-      ),
+    return BotaoRedondo(
+      icone: icone,
+      dica: dica,
+      tamanho: 40,
+      cor: cor,
+      onPressed: onPressed,
     );
   }
 }

@@ -368,6 +368,18 @@ mostra "Dados de exemplo". Estudantes e professores vêm do `school_overview`;
 pessoas ativas (distintas) e convites abertos, das licenças da TI. Professor e
 Responsável seguem sem grade. Sem a resposta, o cartão mostra "—".
 
+### Botões do topo redondos de vidro
+
+Todo botão de ícone das barras e cabeçalhos do topo é um `BotaoRedondo`
+(`lib/theme/botao_redondo.dart`): Voltar, Atualizar, Copiar, Aparência. Ele
+tem o desenho do botão de conta (círculo com 88% da área de toque, reflexo no
+topo, sombra curta que sobe no hover, anel de foco e toque de 0,97), mas com a
+película de vidro da superfície no lugar da cor. Assim o avatar do perfil
+continua sendo o único botão colorido da barra. Tamanhos: 40 na barra do topo
+do app e no Mapa, 44 nos cabeçalhos de escola, TI, relatórios e equipe e nas
+telas antes do login. Desligado, o círculo fica mais transparente e o ícone
+apagado. Fora de um app Fluent, o botão leva o próprio tema.
+
 ## 6. Próximas etapas
 
 | Etapa | Escopo | Observação |

@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/botao_redondo.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
@@ -240,12 +241,10 @@ class _TelaTi extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Row(
                     children: [
-                      Tooltip(
-                        message: 'Voltar',
-                        child: IconButton(
-                          icon: const Icon(FluentIcons.back, size: 18),
-                          onPressed: () => Navigator.of(context).maybePop(),
-                        ),
+                      BotaoRedondo(
+                        icone: FluentIcons.back,
+                        dica: 'Voltar',
+                        onPressed: () => Navigator.of(context).maybePop(),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -503,31 +502,27 @@ class _TelaPessoasTiState extends State<TelaPessoasTi> {
       titulo: 'Pessoas e acessos',
       escolaNome: widget.escolaNome,
       acoes: [
-        Tooltip(
-          message: 'Copiar lista (CSV)',
-          child: IconButton(
-            icon: const Icon(FluentIcons.copy, size: 18),
-            onPressed: lista.isEmpty
-                ? null
-                : () async {
-                    await Clipboard.setData(
-                      ClipboardData(text: pessoasCsv(lista)),
+        BotaoRedondo(
+          icone: FluentIcons.copy,
+          dica: 'Copiar lista (CSV)',
+          onPressed: lista.isEmpty
+              ? null
+              : () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: pessoasCsv(lista)),
+                  );
+                  if (mounted) {
+                    setState(
+                      () => _aviso =
+                          'Lista de ${lista.length} pessoas copiada (CSV).',
                     );
-                    if (mounted) {
-                      setState(
-                        () => _aviso =
-                            'Lista de ${lista.length} pessoas copiada (CSV).',
-                      );
-                    }
-                  },
-          ),
+                  }
+                },
         ),
-        Tooltip(
-          message: 'Atualizar',
-          child: IconButton(
-            icon: const Icon(FluentIcons.refresh, size: 18),
-            onPressed: _carregando ? null : _carregar,
-          ),
+        BotaoRedondo(
+          icone: FluentIcons.refresh,
+          dica: 'Atualizar',
+          onPressed: _carregando ? null : _carregar,
         ),
       ],
       children: [
@@ -997,26 +992,22 @@ class _TelaAuditoriaTiState extends State<TelaAuditoriaTi> {
     titulo: 'Registro de auditoria',
     escolaNome: widget.escolaNome,
     acoes: [
-      Tooltip(
-        message: 'Copiar registro (CSV)',
-        child: IconButton(
-          icon: const Icon(FluentIcons.copy, size: 18),
-          onPressed: _registros.isEmpty
-              ? null
-              : () async {
-                  await Clipboard.setData(
-                    ClipboardData(text: auditoriaCsv(_registros)),
-                  );
-                  if (mounted) setState(() => _aviso = 'Registro copiado.');
-                },
-        ),
+      BotaoRedondo(
+        icone: FluentIcons.copy,
+        dica: 'Copiar registro (CSV)',
+        onPressed: _registros.isEmpty
+            ? null
+            : () async {
+                await Clipboard.setData(
+                  ClipboardData(text: auditoriaCsv(_registros)),
+                );
+                if (mounted) setState(() => _aviso = 'Registro copiado.');
+              },
       ),
-      Tooltip(
-        message: 'Atualizar',
-        child: IconButton(
-          icon: const Icon(FluentIcons.refresh, size: 18),
-          onPressed: _carregando ? null : _carregar,
-        ),
+      BotaoRedondo(
+        icone: FluentIcons.refresh,
+        dica: 'Atualizar',
+        onPressed: _carregando ? null : _carregar,
       ),
     ],
     children: [

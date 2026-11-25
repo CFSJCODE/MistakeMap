@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../billing/checkout_models.dart' show formatBrl;
 import '../school/escola_ui.dart';
+import '../theme/botao_redondo.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import 'school_reports.dart';
@@ -194,12 +195,10 @@ class _SchoolReportsPageState extends State<SchoolReportsPage> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Tooltip(
-              message: 'Voltar',
-              child: IconButton(
-                icon: const Icon(FluentIcons.back, size: 18),
-                onPressed: () => Navigator.of(context).maybePop(),
-              ),
+            BotaoRedondo(
+              icone: FluentIcons.back,
+              dica: 'Voltar',
+              onPressed: () => Navigator.of(context).maybePop(),
             ),
             const SizedBox(width: 8),
             Flexible(
@@ -243,19 +242,15 @@ class _SchoolReportsPageState extends State<SchoolReportsPage> {
                     },
             ),
             if (r != null)
-              Tooltip(
-                message: 'Copiar resumo',
-                child: IconButton(
-                  icon: const Icon(FluentIcons.copy, size: 18),
-                  onPressed: () => _copy(reportSummary(r), 'Resumo'),
-                ),
+              BotaoRedondo(
+                icone: FluentIcons.copy,
+                dica: 'Copiar resumo',
+                onPressed: () => _copy(reportSummary(r), 'Resumo'),
               ),
-            Tooltip(
-              message: 'Atualizar',
-              child: IconButton(
-                icon: const Icon(FluentIcons.refresh, size: 18),
-                onPressed: _loading ? null : _load,
-              ),
+            BotaoRedondo(
+              icone: FluentIcons.refresh,
+              dica: 'Atualizar',
+              onPressed: _loading ? null : _load,
             ),
           ],
         ),

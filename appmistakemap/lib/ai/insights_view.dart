@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 
+import 'package:fluent_ui/fluent_ui.dart' show WindowsIcons;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../layout/conta.dart' show BotaoConta;
+import '../theme/botao_redondo.dart';
 import '../theme/design_tokens.dart';
 import '../theme/glass_surface.dart';
 import '../theme/motion.dart';
@@ -354,17 +356,21 @@ class _ErrorMapViewState extends State<ErrorMapView> {
         title: const Text('Mapa de erros'),
         foregroundColor: mapTitleBlue,
         leading: widget.onClose != null
-            ? IconButton(
-                tooltip: 'Voltar',
-                icon: const Icon(Icons.arrow_back),
-                onPressed: widget.onClose,
+            ? Center(
+                child: BotaoRedondo(
+                  icone: WindowsIcons.back,
+                  dica: 'Voltar',
+                  tamanho: 40,
+                  onPressed: widget.onClose,
+                ),
               )
             : null,
         actions: [
-          IconButton(
-            tooltip: 'Atualizar mapa',
+          BotaoRedondo(
+            icone: WindowsIcons.refresh,
+            dica: 'Atualizar mapa',
+            tamanho: 40,
             onPressed: _loading ? null : _reload,
-            icon: const Icon(Icons.refresh),
           ),
           // Troca de perfil, aparência e sair, como nas outras abas.
           const Padding(
