@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:appmistakemap/main.dart';
 import 'package:appmistakemap/study/study_repository.dart';
-import 'package:appmistakemap/school/entrada_perfil.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -90,20 +89,27 @@ Future<void> _renderApp(
   expect(tester.takeException(), isNull);
 }
 
-Future<void> _escolherPerfil(WidgetTester tester, String codigo) async {
-  final cartao = find.byKey(ValueKey('entrada-$codigo'));
-  await tester.ensureVisible(cartao);
-  await _settle(tester);
-  await tester.tap(cartao);
-  await _settle(tester);
-}
-
 Future<void> _entrar(WidgetTester tester) async {
   await tester.enterText(find.byType(TextBox).at(0), 'estudante@example.test');
   await tester.enterText(find.byType(TextBox).at(1), 'senha-de-teste');
   await tester.tap(find.text('Entrar'));
   await _settle(tester);
 }
+
+SupabaseStudyRepository _repositorioEstudo() =>
+    SupabaseStudyRepository.withTransport(
+      (userId, body) async => body['action'] == 'session'
+          ? {'session': null}
+          : {
+              'profile': null,
+              'due_count': 0,
+              'pending_diagnostics': 0,
+              'estimated_minutes': 0,
+              'reviewed_today': 0,
+              'progress': {'reviews': 0, 'period_days': 7},
+            },
+      store: _AuthStudyStore(),
+    );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -208,7 +214,6 @@ void main() {
   ) async {
     expect(_auth.currentSession, isNull);
     await _renderApp(tester);
-    await _escolherPerfil(tester, 'student');
     expect(find.byType(TelaCadastro), findsOneWidget);
 
     _injetarErro(const AuthException('Falha no retorno do OAuth.'));
@@ -249,7 +254,6 @@ void main() {
     }, store: _AuthStudyStore());
     addTearDown(studyRepository.dispose);
     await _renderApp(tester, studyRepository: studyRepository);
-    await _escolherPerfil(tester, 'student');
     await _entrar(tester);
     expect(find.byType(TelaNavegacao), findsOneWidget);
     expect(find.text('Seu estudo de hoje'), findsOneWidget);
@@ -272,7 +276,6 @@ void main() {
   ) async {
     _pedidosRecuperacao.clear();
     await _renderApp(tester);
-    await _escolherPerfil(tester, 'student');
     await tester.enterText(find.byType(TextBox).first, 'aluno@example.test');
     await tester.tap(find.byKey(const Key('login-esqueci-senha')));
     await _settle(tester);
@@ -296,69 +299,56 @@ void main() {
     tester,
   ) async {
     await _renderApp(tester);
-    await _escolherPerfil(tester, 'student');
     expect(find.byKey(const Key('login-esqueci-senha')), findsOneWidget);
     await tester.tap(find.text('Não tenho conta — Criar'));
     await _settle(tester);
     expect(find.byKey(const Key('login-esqueci-senha')), findsNothing);
   });
 
-  testWidgets('Sessão salva no aparelho não pula a escolha de perfil', (
+  testWidgets('Sessão salva abre direto o app, sem pedir a senha', (
     tester,
   ) async {
     await _auth.setInitialSession(jsonEncode(_sessaoJson()));
     addTearDown(_auth.signOut);
-    await _renderApp(tester);
-    expect(find.byType(TelaEntradaPorPerfil), findsOneWidget);
-    expect(find.byType(TelaNavegacao), findsNothing);
-    // Depois do perfil vem o login, mesmo com a sessão salva.
-    await _escolherPerfil(tester, 'teacher');
-    expect(find.byType(TelaCadastro), findsOneWidget);
-    expect(find.text('Entrar como professor'), findsOneWidget);
-    // Voltar leva de novo à lista de perfis.
-    await tester.tap(find.byKey(const Key('login-voltar-perfis')));
-    await _settle(tester);
-    expect(find.byType(TelaEntradaPorPerfil), findsOneWidget);
-  });
-
-  testWidgets('Perfil que a conta não tem no servidor é recusado no login', (
-    tester,
-  ) async {
-    addTearDown(_auth.signOut);
-    await _renderApp(tester);
-    await _escolherPerfil(tester, 'coordinator');
-    await _entrar(tester);
-    expect(find.byType(TelaCadastro), findsOneWidget);
-    expect(find.byType(TelaNavegacao), findsNothing);
-    expect(
-      find.textContaining('Esta conta não tem o perfil "Coordenador"'),
-      findsOneWidget,
-    );
-    expect(_auth.currentSession, isNull);
-    await tester.pump(const Duration(seconds: 4));
-    await _settle(tester);
-  });
-
-  testWidgets('Sair pelo botão de conta volta aos perfis do início', (
-    tester,
-  ) async {
-    addTearDown(_auth.signOut);
-    final studyRepository = SupabaseStudyRepository.withTransport(
-      (userId, body) async => body['action'] == 'session'
-          ? {'session': null}
-          : {
-              'profile': null,
-              'due_count': 0,
-              'pending_diagnostics': 0,
-              'estimated_minutes': 0,
-              'reviewed_today': 0,
-              'progress': {'reviews': 0, 'period_days': 7},
-            },
-      store: _AuthStudyStore(),
-    );
+    final studyRepository = _repositorioEstudo();
     addTearDown(studyRepository.dispose);
     await _renderApp(tester, studyRepository: studyRepository);
-    await _escolherPerfil(tester, 'student');
+    expect(find.byType(TelaNavegacao), findsOneWidget);
+    expect(find.byType(TelaCadastro), findsNothing);
+    // Sem escolha de perfil antes de entrar.
+    expect(find.text('Como você vai entrar?'), findsNothing);
+  });
+
+  testWidgets('Sem sessão, a primeira tela é o login', (tester) async {
+    await _renderApp(tester);
+    expect(find.byType(TelaCadastro), findsOneWidget);
+    expect(find.byType(TelaNavegacao), findsNothing);
+    expect(find.text('Como você vai entrar?'), findsNothing);
+  });
+
+  testWidgets('Login abre o app; perfil que a conta não tem não barra', (
+    tester,
+  ) async {
+    // Pedido do "Já tenho conta: entrar" num perfil que a conta não tem.
+    SharedPreferences.setMockInitialValues({
+      'perfil_pedido_login': 'coordinator',
+    });
+    addTearDown(_auth.signOut);
+    final studyRepository = _repositorioEstudo();
+    addTearDown(studyRepository.dispose);
+    await _renderApp(tester, studyRepository: studyRepository);
+    expect(find.text('Entrar como coordenador'), findsOneWidget);
+    await _entrar(tester);
+    expect(find.byType(TelaNavegacao), findsOneWidget);
+    expect(find.textContaining('Esta conta não tem o perfil'), findsNothing);
+    expect(_auth.currentSession, isNotNull);
+  });
+
+  testWidgets('Sair pelo botão de conta volta ao login', (tester) async {
+    addTearDown(_auth.signOut);
+    final studyRepository = _repositorioEstudo();
+    addTearDown(studyRepository.dispose);
+    await _renderApp(tester, studyRepository: studyRepository);
     await _entrar(tester);
     expect(find.byType(TelaNavegacao), findsOneWidget);
     await tester.tap(find.byKey(const Key('botao-conta')).first);
@@ -367,11 +357,8 @@ void main() {
     await _settle(tester);
     await tester.tap(find.byKey(const Key('conta-sair-confirmar')));
     await _settle(tester);
-    expect(find.byType(TelaEntradaPorPerfil), findsOneWidget);
-    expect(find.byType(TelaNavegacao), findsNothing);
-    // Escolher de novo pede o login outra vez.
-    await _escolherPerfil(tester, 'student');
     expect(find.byType(TelaCadastro), findsOneWidget);
+    expect(find.byType(TelaNavegacao), findsNothing);
   });
 
   test('Falha do perfil vira aviso amigável', () {

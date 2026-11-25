@@ -34,7 +34,6 @@ class PortaDePerfil extends StatefulWidget {
     this.sair,
     this.rodapeCadastro,
     this.modoEquipe = kTeamBuild,
-    this.perfilEntrada,
     this.onVoltarAoInicio,
   });
 
@@ -58,12 +57,9 @@ class PortaDePerfil extends StatefulWidget {
   /// papéis que a conta tiver nas escolas.
   final bool modoEquipe;
 
-  /// Perfil escolhido na tela inicial antes do login (já conferido no
-  /// servidor). Abre direto nele.
-  final PerfilCadastro? perfilEntrada;
-
-  /// Volta à tela inicial do app (escolha de perfil + login). Com ela, a
-  /// lista de perfis da conta não aparece: o voltar leva sempre ao início.
+  /// Volta à tela inicial do app (o login). Com ela, a lista de perfis da
+  /// conta não aparece: o app abre no último perfil usado e a troca fica no
+  /// botão de conta.
   final VoidCallback? onVoltarAoInicio;
 
   @override
@@ -109,8 +105,7 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
   Future<void> _iniciar() async {
     final salvo = await widget.preferencias.contexto(widget.usuarioId);
     final chave = await widget.preferencias.perfilAtivo(widget.usuarioId);
-    _pedido =
-        widget.perfilEntrada ?? await widget.preferencias.perfilPedidoNoLogin();
+    _pedido = await widget.preferencias.perfilPedidoNoLogin();
     if (!mounted) return;
     setState(() {
       _chaveAtiva = chave;
@@ -118,8 +113,8 @@ class _PortaDePerfilState extends State<PortaDePerfil> {
         _ctx = salvo;
         _carregado = true;
         // O contexto salvo veio do servidor no login: já abre no perfil
-        // pedido, sem passar pelo último usado.
-        if (widget.perfilEntrada != null) _aplicarPedido(salvo);
+        // pedido em "Já tenho conta: entrar", sem passar pelo último usado.
+        _aplicarPedido(salvo);
       }
     });
     await _atualizar();
