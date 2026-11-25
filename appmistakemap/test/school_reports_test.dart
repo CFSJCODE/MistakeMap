@@ -340,6 +340,76 @@ void main() {
     }
   });
 
+  testWidgets('visão geral mostra os números do mês por papel', (tester) async {
+    final relatorios = _FakeReports(_report());
+    await _render(
+      tester,
+      TelaPainelEscola(
+        perfil: const PerfilAtivo('owner', escolaId: _escola),
+        repositorio: _FakeEscola(),
+        relatorios: relatorios,
+        hoje: DateTime(2026, 11, 20),
+      ),
+    );
+    // 12 meses: faturas em aberto do ano e o uso do mês com o anterior.
+    expect(relatorios.calls, [12]);
+    final grade = find.byKey(const Key('painel-indicadores'));
+    expect(grade, findsOneWidget);
+    Finder dentro(String texto) =>
+        find.descendant(of: grade, matching: find.text(texto));
+    expect(dentro('Alunos ativos no mês'), findsOneWidget);
+    expect(dentro('1.935'), findsOneWidget);
+    expect(dentro('23.220'), findsOneWidget);
+    expect(dentro('Faturas em aberto'), findsOneWidget);
+    expect(dentro('R\$ 480,00'), findsOneWidget);
+    expect(dentro('+25 desde out/26'), findsOneWidget);
+    expect(dentro('Últimos 12 meses'), findsOneWidget);
+
+    // Mês novo ainda sem atividade: zero, não os números do mês passado.
+    await _render(
+      tester,
+      TelaPainelEscola(
+        key: const ValueKey('dezembro'),
+        perfil: const PerfilAtivo('owner', escolaId: _escola),
+        repositorio: _FakeEscola(),
+        relatorios: _FakeReports(_report()),
+        hoje: DateTime(2026, 12, 1),
+      ),
+    );
+    expect(dentro('1.935'), findsNothing);
+    expect(dentro('−1.935 desde nov/26'), findsOneWidget);
+
+    // Escola de demonstração: os valores vêm marcados como exemplo.
+    await _render(
+      tester,
+      TelaPainelEscola(
+        key: const ValueKey('demo'),
+        perfil: const PerfilAtivo('finance', escolaId: _escola),
+        repositorio: _FakeEscola(),
+        relatorios: _FakeReports(_report(demo: true)),
+        hoje: DateTime(2026, 11, 20),
+      ),
+    );
+    expect(dentro('Dados de exemplo'), findsWidgets);
+    expect(dentro('Últimos 12 meses'), findsNothing);
+
+    // A TI não vê relatórios: os números vêm só do school_overview.
+    final daTi = _FakeReports(_report());
+    await _render(
+      tester,
+      TelaPainelEscola(
+        key: const ValueKey('ti'),
+        perfil: const PerfilAtivo('it_admin', escolaId: _escola),
+        repositorio: _FakeEscola(),
+        relatorios: daTi,
+      ),
+    );
+    expect(daTi.calls, isEmpty);
+    expect(find.text('Convites abertos'), findsOneWidget);
+    expect(find.text('Pessoas ativas'), findsOneWidget);
+    expect(find.text('Alunos ativos no mês'), findsNothing);
+  });
+
   testWidgets('dono abre o relatório financeiro pelo painel', (tester) async {
     await _render(
       tester,
