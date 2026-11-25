@@ -305,17 +305,25 @@ void main() {
     expect(find.byKey(const Key('login-esqueci-senha')), findsNothing);
   });
 
-  testWidgets('A primeira tela é o login, mesmo com a sessão salva', (
+  testWidgets('Sessão salva abre direto o app, sem pedir a senha', (
     tester,
   ) async {
     await _auth.setInitialSession(jsonEncode(_sessaoJson()));
     addTearDown(_auth.signOut);
+    final studyRepository = _repositorioEstudo();
+    addTearDown(studyRepository.dispose);
+    await _renderApp(tester, studyRepository: studyRepository);
+    expect(find.byType(TelaNavegacao), findsOneWidget);
+    expect(find.byType(TelaCadastro), findsNothing);
+    // Sem escolha de perfil antes de entrar.
+    expect(find.text('Como você vai entrar?'), findsNothing);
+  });
+
+  testWidgets('Sem sessão, a primeira tela é o login', (tester) async {
     await _renderApp(tester);
     expect(find.byType(TelaCadastro), findsOneWidget);
     expect(find.byType(TelaNavegacao), findsNothing);
-    // Sem escolha de perfil antes do login.
     expect(find.text('Como você vai entrar?'), findsNothing);
-    expect(find.byKey(const Key('login-voltar-perfis')), findsNothing);
   });
 
   testWidgets('Login abre o app; perfil que a conta não tem não barra', (

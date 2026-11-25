@@ -1163,11 +1163,8 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   bool _recuperandoSenha = false;
 
-  /// Login feito nesta abertura. A primeira tela é sempre o login; o perfil
-  /// vem depois, da conta (o último usado, trocado no botão de conta).
-  bool _entradaLiberada = false;
-
-  void _voltarAoInicio() => setState(() => _entradaLiberada = false);
+  /// Depois do Sair a sessão some e o AuthGate volta ao login sozinho.
+  void _voltarAoInicio() => setState(() {});
 
   @override
   void initState() {
@@ -1202,19 +1199,20 @@ class _AuthGateState extends State<AuthGate> {
         // não deve cair no login nem perder o estado das abas.
         final session = _db.auth.currentSession;
         final offline = session == null ? _sessaoOffline.value : null;
-        // Saiu da conta (Trocar de conta, conta recusada): volta ao início.
-        if (session == null && offline == null) _entradaLiberada = false;
         if (session != null && _recuperandoSenha) {
           return TelaNovaSenha(
             onConcluido: () => setState(() => _recuperandoSenha = false),
           );
         }
-        if (!_entradaLiberada) {
+        // Sem conta neste aparelho, a primeira tela é o login. Com a sessão
+        // salva, o app abre direto no último perfil usado e fica logado até
+        // a pessoa tocar em Sair no botão de conta.
+        if (session == null && offline == null) {
           return TelaCadastro(
             erroAuth: snapshot.error,
             rodape: const CartaoVersaoApp(),
             google: false,
-            onEntradaLiberada: () => setState(() => _entradaLiberada = true),
+            onEntradaLiberada: _atualizar,
           );
         }
         // Entrou sem rede com a conta salva neste aparelho: o app funciona

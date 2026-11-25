@@ -336,8 +336,9 @@ aparece como "Início" (`rotuloCurto`). Keys: `secao-<chave>`.
 
 ### Perfis, etapa 5: login primeiro
 
-A primeira tela do app é o login (e-mail e senha, "Criar conta", "Esqueci
-minha senha" e o botão claro/escuro no canto). A tela "Como você vai entrar?"
+Sem sessão no aparelho, a primeira tela do app é o login (e-mail e senha,
+"Criar conta", "Esqueci minha senha" e o botão claro/escuro no canto). Com a
+sessão salva, o app abre direto e fica logado até a pessoa tocar em Sair. A tela "Como você vai entrar?"
 com os 8 perfis saiu. Depois do login, o app abre no último perfil usado (ou no
 do cadastro, na primeira vez) e a troca fica só no botão de conta. Como nada é
 escolhido antes de entrar, não existe mais o erro "Esta conta não tem o
