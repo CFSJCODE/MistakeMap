@@ -1,3 +1,5 @@
+import '../theme/esqueleto.dart';
+
 import 'dart:async';
 
 import 'package:fluent_ui/fluent_ui.dart';
@@ -1434,8 +1436,7 @@ class _StudyDiagnosticsPageState extends State<StudyDiagnosticsPage> {
             onPressed: _busy ? null : _load,
           ),
         ],
-        if (_items == null && _error == null)
-          const Center(child: ProgressRing()),
+        if (_items == null && _error == null) const EsqueletoLista(itens: 3),
         if (_items?.isEmpty == true)
           const _StudyCard(
             children: [

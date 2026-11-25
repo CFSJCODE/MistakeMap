@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/esqueleto.dart';
 import '../theme/motion.dart';
 import '../auth/team_login.dart';
 import '../school/escola_ui.dart';
@@ -245,7 +246,7 @@ class _CartaoCobrancaState extends State<CartaoCobranca> {
     if (_carregando && _dados.isEmpty) {
       return const CartaoEscola(
         titulo: 'Plano e cobrança',
-        children: [Center(child: ProgressRing())],
+        children: [EsqueletoLista(itens: 2, cartoes: false)],
       );
     }
     final escola = billingMap(_dados['school']);

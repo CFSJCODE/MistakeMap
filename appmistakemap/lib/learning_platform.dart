@@ -78,7 +78,10 @@ class _TelaAprenderState extends State<TelaAprender> {
         future: _data,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: ProgressRing());
+            return const SingleChildScrollView(
+              padding: EdgeInsets.all(Espaco.lg),
+              child: EsqueletoPagina(numeros: false),
+            );
           }
           if (snapshot.hasError) {
             return Center(

@@ -147,8 +147,8 @@ class BancoExerciciosState extends State<BancoExercicios> {
         const SizedBox(height: 16),
         if (_carregando && _questoes.isEmpty)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 48),
-            child: Center(child: ProgressRing()),
+            padding: EdgeInsets.only(top: Espaco.md),
+            child: EsqueletoLista(),
           )
         else if (_questoes.isEmpty)
           _AvisoBanco(

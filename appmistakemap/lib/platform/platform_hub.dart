@@ -1,3 +1,5 @@
+import '../theme/esqueleto.dart';
+
 import 'dart:convert';
 
 import 'package:fluent_ui/fluent_ui.dart';
@@ -1196,7 +1198,7 @@ class _PlatformHubPageState extends State<PlatformHubPage> {
                       const SizedBox(height: 16),
                     ],
                     if (_loading)
-                      const Center(child: ProgressRing())
+                      const EsqueletoLista()
                     else
                       ...switch (_section) {
                         'Biblioteca' => _library(),
