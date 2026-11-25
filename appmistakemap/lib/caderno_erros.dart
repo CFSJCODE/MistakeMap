@@ -162,7 +162,8 @@ class _TelaCadernoErrosState extends State<TelaCadernoErros> {
 
   Widget _corpo(BuildContext context) {
     if (_carregando && _registros.isEmpty) {
-      return Padding(
+      // Rola em telas baixas (celular deitado, janela pequena).
+      return SingleChildScrollView(
         padding: _paddingCorpo(context),
         child: const EsqueletoLista(),
       );

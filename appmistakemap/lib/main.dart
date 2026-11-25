@@ -3544,7 +3544,7 @@ class _TelaMapaConceitualState extends State<TelaMapaConceitual> {
         ),
       ],
       corpo: _carregando && _stats.isEmpty
-          ? _estadoFixo(const EsqueletoLista())
+          ? _estadoFixo(const SingleChildScrollView(child: EsqueletoLista()))
           : _stats.isEmpty
           ? _estadoFixo(_buildVazio())
           : _ListaAtualizavel(
