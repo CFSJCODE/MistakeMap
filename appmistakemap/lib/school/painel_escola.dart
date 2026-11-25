@@ -14,6 +14,7 @@ import 'escola_repositorio.dart';
 import 'escola_ui.dart';
 import 'painel_ti.dart';
 import 'perfil_modelos.dart';
+import 'secoes_escola.dart';
 
 // ─── Tela inicial dos perfis de escola ───────────────────────────────────────
 // Dono, Financeiro/Compras, coordenação, TI e professor: escola, convites,
@@ -71,6 +72,9 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
   final _equipe = TextEditingController();
   String _competicao = 'obr';
 
+  /// Seção aberta no painel (chave de [SecaoEscola]); a primeira por padrão.
+  String? _secao;
+
   @override
   void initState() {
     super.initState();
@@ -83,6 +87,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
   void didUpdateWidget(TelaPainelEscola antigo) {
     super.didUpdateWidget(antigo);
     if (antigo.perfil.chave != widget.perfil.chave) {
+      _secao = null;
       final papeis = papeisConvidaveis[widget.perfil.papel];
       if (papeis != null) _papelConvite = papeis.first;
       _carregar();
@@ -220,9 +225,109 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
       'coordinator',
       'teacher',
     }.contains(papel);
+    final nomeEscola =
+        '${escola['name'] ?? widget.perfil.escolaNome ?? 'Escola'}';
+    final escolaId = widget.perfil.escolaId;
+    final gestaoFinanceira = const {
+      'owner',
+      'finance',
+      'coordinator',
+    }.contains(papel);
+    final cartaoTi =
+        escolaId != null && const {'owner', 'it_admin'}.contains(papel)
+        ? CartaoAdministracaoTi(
+            key: ValueKey('ti-$escolaId'),
+            escolaId: escolaId,
+            escolaNome: nomeEscola,
+            repositorio: widget.repositorio,
+            onMudou: _carregar,
+          )
+        : null;
+    final pessoasNaEscola = membros.isNotEmpty && papel != 'teacher'
+        ? CartaoEscola(
+            titulo: 'Pessoas na escola',
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final m in membros)
+                    _Etiqueta(
+                      '${nomesPapel[m['role']] ?? m['role']}: ${m['total']}',
+                    ),
+                ],
+              ),
+            ],
+          )
+        : null;
+    // Cada perfil vê só as seções com conteúdo para o papel dele. A TI começa
+    // pelas licenças, que é o trabalho do dia a dia dela.
+    final secoes = <SecaoEscola>[
+      SecaoEscola(
+        chave: 'inicio',
+        rotulo: 'Visão geral',
+        rotuloCurto: 'Início',
+        icone: WindowsIcons.home,
+        cartoes: [_proximaEtapa(papel), ?pessoasNaEscola],
+      ),
+      if (cartaoTi != null && papel == 'it_admin')
+        SecaoEscola(
+          chave: 'ti',
+          rotulo: 'Licenças',
+          icone: WindowsIcons.permissions,
+          cartoes: [cartaoTi],
+        ),
+      if (equipeEscola.isNotEmpty || podeConvidar)
+        SecaoEscola(
+          chave: 'pessoas',
+          rotulo: 'Pessoas',
+          icone: WindowsIcons.people,
+          cartoes: [
+            if (equipeEscola.isNotEmpty) _cartaoOrganograma(equipeEscola),
+            if (podeConvidar) _cartaoConvites(papel, convites),
+          ],
+        ),
+      if (podeEquipe || equipes.isNotEmpty)
+        SecaoEscola(
+          chave: 'equipes',
+          rotulo: 'Equipes',
+          icone: WindowsIcons.robot,
+          cartoes: [_cartaoEquipes(podeEquipe, equipes)],
+        ),
+      if (widget.cobranca != null && escolaId != null && gestaoFinanceira)
+        SecaoEscola(
+          chave: 'cobranca',
+          rotulo: 'Cobrança',
+          icone: WindowsIcons.payment_card,
+          cartoes: [
+            CartaoCobranca(
+              escolaId: escolaId,
+              escolaNome: nomeEscola,
+              papel: papel,
+              repositorio: widget.cobranca!,
+            ),
+          ],
+        ),
+      if (widget.relatorios != null && escolaId != null && gestaoFinanceira)
+        SecaoEscola(
+          chave: 'relatorios',
+          rotulo: 'Relatórios',
+          icone: WindowsIcons.report_document,
+          cartoes: [_cartaoRelatorios(papel, nomeEscola)],
+        ),
+      if (cartaoTi != null && papel != 'it_admin')
+        SecaoEscola(
+          chave: 'ti',
+          rotulo: 'TI',
+          icone: WindowsIcons.permissions,
+          cartoes: [cartaoTi],
+        ),
+    ];
+    var indice = secoes.indexWhere((s) => s.chave == _secao);
+    if (indice < 0) indice = 0;
     return _MolduraPerfil(
       perfil: widget.perfil,
-      titulo: '${escola['name'] ?? widget.perfil.escolaNome ?? 'Escola'}',
+      titulo: nomeEscola,
       // Antes do servidor responder, usa o plano que veio com o perfil; sem
       // nenhum dos dois, não mostra plano (nada de "Grátis" piscando).
       subtitulo: [
@@ -232,64 +337,17 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
           'plano $plano',
       ].join(' · '),
       onAtualizar: _carregar,
-      children: [
+      secoes: _carregando ? const [] : secoes,
+      indice: indice,
+      onSecao: (i) => setState(() => _secao = secoes[i].chave),
+      avisos: [
         if (_erro != null) AvisoEscola(_erro!),
         if (_aviso != null) AvisoEscola(_aviso!, sucesso: true),
         if (_carregando)
           const Padding(
             padding: EdgeInsets.all(24),
             child: Center(child: ProgressRing()),
-          )
-        else ...[
-          _proximaEtapa(papel),
-          if (widget.cobranca != null &&
-              widget.perfil.escolaId != null &&
-              const {'owner', 'finance', 'coordinator'}.contains(papel))
-            CartaoCobranca(
-              escolaId: widget.perfil.escolaId!,
-              escolaNome:
-                  '${escola['name'] ?? widget.perfil.escolaNome ?? 'Escola'}',
-              papel: papel,
-              repositorio: widget.cobranca!,
-            ),
-          if (widget.relatorios != null &&
-              widget.perfil.escolaId != null &&
-              const {'owner', 'finance', 'coordinator'}.contains(papel))
-            _cartaoRelatorios(
-              papel,
-              '${escola['name'] ?? widget.perfil.escolaNome ?? 'Escola'}',
-            ),
-          if (widget.perfil.escolaId != null &&
-              const {'owner', 'it_admin'}.contains(papel))
-            CartaoAdministracaoTi(
-              key: ValueKey('ti-${widget.perfil.escolaId}'),
-              escolaId: widget.perfil.escolaId!,
-              escolaNome:
-                  '${escola['name'] ?? widget.perfil.escolaNome ?? 'Escola'}',
-              repositorio: widget.repositorio,
-              onMudou: _carregar,
-            ),
-          if (membros.isNotEmpty && papel != 'teacher')
-            CartaoEscola(
-              titulo: 'Pessoas na escola',
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final m in membros)
-                      _Etiqueta(
-                        '${nomesPapel[m['role']] ?? m['role']}: ${m['total']}',
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          if (equipeEscola.isNotEmpty) _cartaoOrganograma(equipeEscola),
-          if (podeConvidar) _cartaoConvites(papel, convites),
-          if (podeEquipe || equipes.isNotEmpty)
-            _cartaoEquipes(podeEquipe, equipes),
-        ],
+          ),
       ],
     );
   }
@@ -359,7 +417,7 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
     children: [
       Text(switch (papel) {
         'owner' =>
-          'Escolha o plano e quem paga em "Plano e cobrança". Numa rede, '
+          'Escolha o plano e quem paga na seção Cobrança. Numa rede, '
               'convide o Financeiro/Compras: ele paga (Pix, boleto ou cartão) '
               'e você acompanha as faturas. Convide também a coordenação, a '
               'TI e os professores.',
@@ -377,7 +435,8 @@ class _TelaPainelEscolaState extends State<TelaPainelEscola> {
               'aprender > Turmas: a turma fica ligada a esta escola. Aqui você '
               'cria as equipes de robótica.',
         _ =>
-          'Convide professores, estudantes e responsáveis. Em "Relatórios" '
+          'Convide professores, estudantes e responsáveis em Pessoas. Em '
+              'Relatórios '
               'você acompanha o uso da escola e o mapa de erros, só com totais.',
       }, style: TextStyle(color: MistakeMapDesign.content)),
     ],
@@ -730,96 +789,144 @@ class _MolduraPerfil extends StatelessWidget {
     required this.titulo,
     required this.subtitulo,
     required this.onAtualizar,
-    required this.children,
+    this.secoes = const [],
+    this.indice = 0,
+    this.onSecao,
+    this.avisos = const [],
+    this.children = const [],
   });
 
   final PerfilAtivo perfil;
   final String titulo;
   final String subtitulo;
   final Future<void> Function() onAtualizar;
+
+  /// Seções do perfil; com duas ou mais, aparece a barra de seções.
+  final List<SecaoEscola> secoes;
+  final int indice;
+  final ValueChanged<int>? onSecao;
+
+  /// Erros, avisos e o carregando: ficam acima da seção aberta.
+  final List<Widget> avisos;
+
+  /// Conteúdo sem seções (Responsável).
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     final cadastro = PerfilCadastro.doCodigo(perfil.papel);
-    return AuroraBackground(
-      child: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 960),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-              children: [
-                LayoutBuilder(
-                  builder: (context, caixa) {
-                    final icone = cadastro == null
-                        ? null
-                        : GlassIconTile(
-                            icon: cadastro.icone,
-                            ink: cadastro.tinta,
-                            accent: cadastro.acento,
-                          );
-                    final textos = Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          titulo,
-                          style: Tipo.tituloPagina.copyWith(
-                            color: MistakeMapDesign.primary,
-                          ),
-                        ),
-                        Text(
-                          subtitulo,
-                          style: TextStyle(color: MistakeMapDesign.steel),
-                        ),
-                      ],
-                    );
-                    final botoes = Row(
-                      mainAxisSize: MainAxisSize.min,
-                      spacing: Espaco.xs,
-                      children: [
-                        Tooltip(
-                          message: 'Atualizar',
-                          child: IconButton(
-                            icon: const Icon(WindowsIcons.refresh, size: 18),
-                            onPressed: onAtualizar,
-                          ),
-                        ),
-                        const BotaoAparencia(),
-                        const BotaoConta(),
-                      ],
-                    );
-                    // No celular os botões ficam numa linha própria, para o
-                    // nome da escola não quebrar no meio.
-                    if (caixa.maxWidth < 560) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(children: [?icone, const Spacer(), botoes]),
-                          const SizedBox(height: 12),
-                          textos,
-                        ],
-                      );
-                    }
-                    return Row(
-                      children: [
-                        if (icone != null) ...[
-                          icone,
-                          const SizedBox(width: 12),
-                        ],
-                        Expanded(child: textos),
-                        botoes,
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                ...children,
-              ],
+    final comBarra = secoes.length >= 2 && onSecao != null;
+    final atual = secoes.isEmpty ? null : secoes[indice];
+    final cartoes = [...avisos, ...?atual?.cartoes, ...children];
+    final cabecalho = LayoutBuilder(
+      builder: (context, caixa) {
+        final icone = cadastro == null
+            ? null
+            : GlassIconTile(
+                icon: cadastro.icone,
+                ink: cadastro.tinta,
+                accent: cadastro.acento,
+              );
+        final textos = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              titulo,
+              style: Tipo.tituloPagina.copyWith(
+                color: MistakeMapDesign.primary,
+              ),
             ),
-          ),
-        ),
+            Text(subtitulo, style: TextStyle(color: MistakeMapDesign.steel)),
+          ],
+        );
+        final botoes = Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: Espaco.xs,
+          children: [
+            Tooltip(
+              message: 'Atualizar',
+              child: IconButton(
+                icon: const Icon(WindowsIcons.refresh, size: 18),
+                onPressed: onAtualizar,
+              ),
+            ),
+            const BotaoAparencia(),
+            const BotaoConta(),
+          ],
+        );
+        // No celular os botões ficam numa linha própria, para o
+        // nome da escola não quebrar no meio.
+        if (caixa.maxWidth < 560) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [?icone, const Spacer(), botoes]),
+              const SizedBox(height: 12),
+              textos,
+            ],
+          );
+        }
+        return Row(
+          children: [
+            if (icone != null) ...[icone, const SizedBox(width: 12)],
+            Expanded(child: textos),
+            botoes,
+          ],
+        );
+      },
+    );
+    return AuroraBackground(
+      child: LayoutBuilder(
+        builder: (context, tela) {
+          final embaixo = tela.maxWidth < larguraBarraEmbaixo;
+          final barra = comBarra
+              ? BarraSecoesEscola(
+                  secoes: secoes,
+                  indice: indice,
+                  onSelecionar: onSecao!,
+                  acento: cadastro?.acento ?? MistakeMapDesign.mist,
+                  embaixo: embaixo,
+                )
+              : null;
+          final lista = Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 960),
+              child: ListView(
+                // Cada seção abre no topo.
+                key: ValueKey('painel-${atual?.chave}'),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                children: [
+                  cabecalho,
+                  const SizedBox(height: 16),
+                  if (barra != null && !embaixo) ...[
+                    barra,
+                    const SizedBox(height: 16),
+                  ],
+                  ...cartoes,
+                ],
+              ),
+            ),
+          );
+          final corpo = barra != null && embaixo
+              ? Column(
+                  children: [
+                    Expanded(child: SafeArea(bottom: false, child: lista)),
+                    barra,
+                  ],
+                )
+              : SafeArea(child: lista);
+          if (!comBarra) return corpo;
+          // Voltar numa seção que não é a primeira leva à primeira; na
+          // primeira, fecha o app (regra do voltar, etapa 2).
+          return PopScope(
+            canPop: indice == 0,
+            onPopInvokedWithResult: (didPop, _) {
+              if (!didPop) onSecao!(0);
+            },
+            child: corpo,
+          );
+        },
       ),
     );
   }

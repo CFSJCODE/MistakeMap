@@ -654,6 +654,61 @@ void main() {
     expect(find.text('Coordenador'), findsOneWidget);
   });
 
+  testWidgets('painel do dono: seções próprias e voltar à visão geral', (
+    tester,
+  ) async {
+    await _render(
+      tester,
+      TelaPainelEscola(
+        perfil: const PerfilAtivo(
+          'owner',
+          escolaId: _escola,
+          escolaNome: 'Escola de Robótica',
+        ),
+        repositorio: _RepoFalso(),
+      ),
+    );
+    for (final chave in ['inicio', 'pessoas', 'equipes', 'ti']) {
+      expect(find.byKey(Key('secao-$chave')), findsOneWidget, reason: chave);
+    }
+    expect(find.text('Painel do dono'), findsOneWidget);
+    expect(find.text('Convites'), findsNothing);
+
+    await _tocar(tester, find.byKey(const Key('secao-pessoas')));
+    expect(find.text('Convites'), findsOneWidget);
+    expect(find.text('Painel do dono'), findsNothing);
+
+    // Voltar numa seção que não é a primeira leva à visão geral; nela, o
+    // app fecha (ninguém segura o voltar).
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await _settle(tester);
+    expect(find.text('Painel do dono'), findsOneWidget);
+    expect(await tester.binding.handlePopRoute(), isFalse);
+  });
+
+  testWidgets('painel no celular: barra de seções embaixo; professor', (
+    tester,
+  ) async {
+    await _render(
+      tester,
+      TelaPainelEscola(
+        perfil: const PerfilAtivo('teacher', escolaId: _escola),
+        repositorio: _RepoFalso(),
+      ),
+    );
+    tester.view.physicalSize = const Size(390, 844);
+    await _settle(tester);
+    final inicio = find.byKey(const Key('secao-inicio'));
+    final equipes = find.byKey(const Key('secao-equipes'));
+    expect(inicio, findsOneWidget);
+    expect(equipes, findsOneWidget);
+    expect(find.byKey(const Key('secao-cobranca')), findsNothing);
+    // A barra fica na base da tela.
+    expect(tester.getBottomLeft(equipes).dy, greaterThan(844 - 80));
+    await _tocar(tester, equipes);
+    expect(find.text('Equipes de robótica'), findsOneWidget);
+  });
+
   testWidgets('dono gera convite de coordenação de uso único', (tester) async {
     final repo = _RepoFalso();
     await _render(
@@ -667,6 +722,7 @@ void main() {
         repositorio: repo,
       ),
     );
+    await _tocar(tester, find.byKey(const Key('secao-pessoas')));
     expect(find.text('Convites'), findsOneWidget);
     await _tocar(tester, find.text('Gerar convite'));
     final convite = repo.chamadas.firstWhere((c) => c.$1 == 'create_invite');
@@ -730,6 +786,7 @@ void main() {
         repositorio: _RepoFalso(),
       ),
     );
+    await _tocar(tester, find.byKey(const Key('secao-pessoas')));
     expect(find.text('Equipe e cargos'), findsOneWidget);
     expect(find.text('Sede — Diretoria Regional'), findsOneWidget);
     expect(find.text('Helena Vasconcelos'), findsOneWidget);

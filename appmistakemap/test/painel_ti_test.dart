@@ -275,6 +275,8 @@ void main() {
         repositorio: repo,
       ),
     );
+    // A TI abre na visão geral; as licenças têm seção própria.
+    await _tocar(tester, find.byKey(const Key('secao-ti')));
     expect(find.text('Licenças e acessos'), findsOneWidget);
     expect(find.text('4 de 5'), findsOneWidget);
     expect(find.textContaining('só há 1 vaga'), findsOneWidget);
@@ -293,6 +295,7 @@ void main() {
         repositorio: repo,
       ),
     );
+    expect(find.byKey(const Key('secao-ti')), findsNothing);
     expect(find.text('Licenças e acessos'), findsNothing);
     expect(repo.chamadas.map((c) => c.$1), isNot(contains('it_licenses')));
   });
