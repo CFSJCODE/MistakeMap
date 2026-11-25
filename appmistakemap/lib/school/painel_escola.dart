@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fluent_ui/fluent_ui.dart';
 
+import '../theme/botao_redondo.dart';
 import '../theme/motion.dart';
 import '../layout/conta.dart';
 import '../billing/billing_panel.dart';
@@ -1042,12 +1043,10 @@ class _MolduraPerfil extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           spacing: Espaco.xs,
           children: [
-            Tooltip(
-              message: 'Atualizar',
-              child: IconButton(
-                icon: const Icon(WindowsIcons.refresh, size: 18),
-                onPressed: onAtualizar,
-              ),
+            BotaoRedondo(
+              icone: WindowsIcons.refresh,
+              dica: 'Atualizar',
+              onPressed: onAtualizar,
             ),
             const BotaoAparencia(),
             const BotaoConta(),

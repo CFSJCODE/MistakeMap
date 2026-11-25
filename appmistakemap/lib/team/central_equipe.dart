@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../layout/adaptativo.dart';
 import '../school/escola_ui.dart';
+import '../theme/botao_redondo.dart';
 import '../theme/control_styles.dart';
 import '../theme/design_tokens.dart';
 import 'central_equipe_dados.dart';
@@ -357,13 +358,11 @@ class _CentralEquipeState extends State<CentralEquipe> {
           if (_carregando)
             const SizedBox(width: 20, height: 20, child: ProgressRing())
           else
-            Tooltip(
-              message: 'Atualizar',
-              child: IconButton(
-                key: const ValueKey('equipe-atualizar'),
-                icon: const Icon(WindowsIcons.refresh, size: 18),
-                onPressed: _carregar,
-              ),
+            BotaoRedondo(
+              icone: WindowsIcons.refresh,
+              dica: 'Atualizar',
+              botaoKey: const ValueKey('equipe-atualizar'),
+              onPressed: _carregar,
             ),
         ],
       ),

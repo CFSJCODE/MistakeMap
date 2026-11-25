@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
 import 'aparencia.dart';
+import 'botao_redondo.dart';
 import 'design_tokens.dart';
 
 /// Escolha da aparência: Igual ao aparelho, Claro ou Escuro. A troca vale na
@@ -59,12 +60,16 @@ Future<void> mostrarAparencia(BuildContext context, {Aparencia? aparencia}) {
 }
 
 /// Lua/sol que alterna claro e escuro na hora e salva a escolha. Para telas
-/// sem a barra do topo (como a escolha de perfil, antes do login).
+/// sem a barra do topo (como a escolha de perfil, antes do login) e na
+/// barra do topo, com [tamanho] 40.
 class BotaoAparencia extends StatelessWidget {
-  const BotaoAparencia({super.key, this.aparencia});
+  const BotaoAparencia({super.key, this.aparencia, this.tamanho = 44});
 
   /// Outra instância (testes); por padrão, [Aparencia.instancia].
   final Aparencia? aparencia;
+
+  /// Área de toque: 44 nas telas sem barra, 40 na barra do topo.
+  final double tamanho;
 
   @override
   Widget build(BuildContext context) {
@@ -87,31 +92,12 @@ class BotaoAparencia extends StatelessWidget {
           label: 'Modo escuro',
           onTap: alternar,
           excludeSemantics: true,
-          child: Tooltip(
-            message: dica,
-            child: SizedBox.square(
-              dimension: 44,
-              child: IconButton(
-                key: const Key('botao-aparencia'),
-                icon: Icon(
-                  escuro ? WindowsIcons.brightness : WindowsIcons.quiet_hours,
-                  size: 18,
-                  color: MistakeMapDesign.abyss,
-                ),
-                style: ButtonStyle(
-                  backgroundColor: WidgetStatePropertyAll(
-                    MistakeMapDesign.pelicula(0xC7),
-                  ),
-                  shape: WidgetStatePropertyAll(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(Raio.md),
-                      side: BorderSide(color: MistakeMapDesign.hairline),
-                    ),
-                  ),
-                ),
-                onPressed: alternar,
-              ),
-            ),
+          child: BotaoRedondo(
+            botaoKey: const Key('botao-aparencia'),
+            icone: escuro ? WindowsIcons.brightness : WindowsIcons.quiet_hours,
+            dica: dica,
+            tamanho: tamanho,
+            onPressed: alternar,
           ),
         );
       },
